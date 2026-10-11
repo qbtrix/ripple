@@ -1,11 +1,12 @@
 // Guards the model library: every catalog entry points at a real, in-budget file
 // with a usable licence and well-formed, unique anchors.
 import { describe, expect, it } from 'vitest';
-import { existsSync, readdirSync, statSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { MODEL_ASSETS } from './model-assets.js';
 
-const dir = resolve(__dirname, '../../../../static/models') + '/';
+// Tests run from the package root. ripple's tsconfig carries no node types.
+// @ts-ignore
+const { existsSync, readdirSync, statSync } = await import('node:fs');
+const dir = 'static/models/';
 const KEBAB = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const FILE_BUDGET = 600 * 1024;
 const TOTAL_BUDGET = 10 * 1024 * 1024;
@@ -40,13 +41,13 @@ describe('MODEL_ASSETS', () => {
 	});
 
 	it('ids are unique and every shipped GLB is in the catalog', () => {
-		const files = readdirSync(dir).filter((f) => f.endsWith('.glb'));
+		const files = readdirSync(dir).filter((f: string) => f.endsWith('.glb'));
 		expect(files.sort()).toEqual(assets.map(([, a]) => a.file).sort());
 	});
 
 	it('stays within the total budget', () => {
 		const total = readdirSync(dir).reduce(
-			(s, f) => s + statSync(dir + f).size,
+			(s: number, f: string) => s + statSync(dir + f).size,
 			0,
 		);
 		expect(total).toBeLessThanOrEqual(TOTAL_BUDGET);
