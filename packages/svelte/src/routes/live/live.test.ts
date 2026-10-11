@@ -6,6 +6,7 @@
 //     button click changes state. Each check runs when the spec has that kind
 //     of control; a data widget bound to state counts as one (its per-scenario
 //     block drives it). A spec with none fails, so render-only output fails (c).
+// A model-viewer's labels count as controls (they open notes).
 // Per-scenario blocks below check that the numbers are right, not just moving.
 
 import { fireEvent, render, within } from '@testing-library/svelte';
@@ -25,6 +26,8 @@ const waitFor = <T>(fn: () => T | Promise<T>, opts: { timeout?: number; interval
 // Each test streams a whole recorded fixture through the parser before it
 // asserts; the biggest (meal-plan) can pass 5 s under a full parallel suite.
 vi.setConfig({ testTimeout: 20_000 });
+// The 3D card's viewer needs WebGL, which jsdom lacks; its labels render without it.
+vi.mock('@google/model-viewer', () => ({}));
 
 const join = (f: ScenarioFixture) => f.chunks.map((c) => c.text).join('');
 
@@ -66,7 +69,10 @@ describe.each(scenarios.map((s) => [s.id, s] as const))('scenario %s', (_id, sce
 
 	test('(c) the final spec has a bound control, a button, or a bound data widget to interact with', () => {
 		const interactive = (n: SpecNode) =>
-			(controls.includes(n.type ?? '') && (n.type === 'button' || 'bind' in n)) || (DATA_WIDGETS.includes(n.type ?? '') && 'bind' in n);
+			(controls.includes(n.type ?? '') && (n.type === 'button' || 'bind' in n)) ||
+			(DATA_WIDGETS.includes(n.type ?? '') && 'bind' in n) ||
+			// A 3D model's labels are buttons that open their notes.
+			(n.type === 'model-viewer' && Array.isArray(n.props?.annotations) && n.props.annotations.length > 0);
 		expect(specHas(finalSpec, interactive)).toBe(true);
 	});
 
@@ -201,6 +207,20 @@ async function clickEachSpecButton(
 // The bill splitter is one bill-split widget; its numbers must add up, not
 // just change. $186.40 at 18% is $219.95 for 4: $54.99 for the first three,
 // $54.98 for the last (the spare cents go first).
+describe('helicopter-3d (model-viewer)', () => {
+	const scenario = scenarios.find((s) => s.id === 'helicopter-3d')!;
+
+	test('streams to a built-in helicopter with five labelled parts, the focused one open, and a label click switches it', async () => {
+		const { container } = await mountStreamed(scenario.fixture);
+		const items = [...container.querySelectorAll<HTMLButtonElement>('[data-slot="legend-item"]')];
+		expect(items.map((b) => b.textContent?.replace(/^\d+/, '').trim())).toEqual(['Nose', 'Cockpit', 'Main rotor', 'Tail boom', 'Tail rotor']);
+		expect(items.map((b) => b.getAttribute('aria-expanded'))).toEqual(['false', 'true', 'false', 'false', 'false']);
+		await fireEvent.click(items[2]);
+		expect(items[2].getAttribute('aria-expanded')).toBe('true');
+		expect(items[1].getAttribute('aria-expanded')).toBe('false');
+	});
+});
+
 describe('bill-splitter numbers (bill-split)', () => {
 	const scenario = scenarios.find((s) => s.id === 'bill-splitter')!;
 	const money = (s: string) => Math.round(Number(s.replace(/[$,]/g, '')) * 100);

@@ -7,6 +7,7 @@ import type { Component } from 'svelte';
 import Activity from '@lucide/svelte/icons/activity';
 import Bike from '@lucide/svelte/icons/bike';
 import BookOpen from '@lucide/svelte/icons/book-open';
+import Box from '@lucide/svelte/icons/box';
 import Briefcase from '@lucide/svelte/icons/briefcase';
 import Calendar from '@lucide/svelte/icons/calendar';
 import CalendarCheck from '@lucide/svelte/icons/calendar-check';
@@ -66,6 +67,7 @@ export const chipIcons: Record<string, Component> = {
 	'activity': Activity,
 	'bike': Bike,
 	'book-open': BookOpen,
+	'box': Box,
 	'briefcase': Briefcase,
 	'calendar': Calendar,
 	'calendar-check': CalendarCheck,

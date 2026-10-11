@@ -19,7 +19,8 @@
 // ms since the first delta, and clamps any single gap to MAX_GAP_MS.
 //
 // The model sees the spec envelope, the action grammar and the widgets in
-// CATEGORIES plus the DATA_WIDGETS listed by name; it prints the size of that
+// CATEGORIES plus the DATA_WIDGETS listed by name, and the 3D model library's
+// asset ids and anchor names (model-assets.ts); it prints the size of that
 // manifest slice. The fixture is written to src/routes/live/fixtures/<id>.json
 // (or --out) ONLY when the
 // recorded text parses as JSON and every node type is in the widget catalog.
@@ -32,6 +33,7 @@ import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { validateCatalog } from '../../core/src/core/validate-catalog.ts';
+import { MODEL_ASSETS } from '../src/lib/widgets/media/model-assets.ts';
 
 const MAX_GAP_MS = 400;
 // Widget categories offered to the model. The full manifest is ~250 KB; these
@@ -42,8 +44,13 @@ const CATEGORIES = new Set(['layout', 'display', 'input', 'data', 'control', 'ov
 const DATA_WIDGETS = new Set([
 	'itinerary', 'booking', 'menu-order', 'growth-projection', 'bill-split', 'recipe', 'meal-plan', 'interval-workout', 'flashcard-deck',
 	'word-guess', 'quiz', 'memory-match', 'habit-tracker', 'focus-timer', 'board-game',
-	'comparison-layout', 'exec-dashboard', 'entity-detail', 'timeline', 'kv-table'
+	'comparison-layout', 'exec-dashboard', 'entity-detail', 'timeline', 'kv-table', 'model-viewer'
 ]);
+// model-viewer names a built-in model by id and labels it by anchor name; the
+// model sees the ids and anchor names only (no files, no coordinates).
+const MODEL_LIBRARY = Object.values(MODEL_ASSETS)
+	.map((a) => `${a.id}: ${a.anchors.map((x) => x.name).join(', ')}`)
+	.join('\n');
 
 const here = dirname(fileURLToPath(import.meta.url));
 const { values: args } = parseArgs({
@@ -118,11 +125,16 @@ CARD SHAPE (pick this first)
   - sales, KPIs or a dashboard over records: exec-dashboard with "rows", "measures", "dimensions" (bind "filters")
   - choosing between options: comparison-layout
 - A summary of one thing (a person, an account, an order) starts with entity-detail (title, status, kpis, meta) and puts its sections in its children; dated events go in a timeline, plain facts in a kv-table.
+- A real object to turn around in 3D (a vehicle, an instrument, a skeleton): model-viewer with an "asset" from the 3D LIBRARY below, labelled with "annotations".
 - A drawing, animated icon or small scene: illustration, with "svg" written in single-quoted attributes (<svg viewBox='0 0 200 120'>) and every animation dur 0.5s or more.
 - A small tool no data widget covers (a calculator, a checklist, an explainer) is built from primitives with the rules above.
 
 LAYOUT
 - The card is about 720px wide on a desktop and must still read on a 360px phone. For a row of tiles give the grid "columns": "repeat(auto-fit, minmax(150px, 1fr))" so it wraps; otherwise at most 2 fixed grid columns. A number-input needs about 140px, so give number inputs and sliders a full-width row or a 2-column grid. A flex row with more than two children sets "wrap": true.
+
+3D LIBRARY (model-viewer "asset" ids, each followed by its anchor names)
+${MODEL_LIBRARY}
+- Name the model by "asset" only; never "src", "poster" or "environmentImage". Each annotation is {"anchor","label","note"}: "anchor" is one of that asset's names above, "label" at most 40 characters, "note" one or two plain sentences under 280 characters with no braces. Never write "position" or "normal". "focus" names the anchor whose note is open at start. Give "alt" a short description.
 
 MANIFEST (spec envelope, action grammar, widgets)
 ${JSON.stringify(reference)}${args.store ? await storeSection(args.store) : ''}`;
