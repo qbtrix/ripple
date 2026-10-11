@@ -42,6 +42,14 @@
 //      no `svg` string is checked (its props may stream before its `type`).
 //  12. A game's `on_complete` is no ASK_HANDLERS key: it fires with no click (a quiz
 //      countdown can end a run unattended), so it never sends the visitor's turn.
+//  13. A `model-viewer` node names a built-in model, never a file: no `src`, `poster`
+//      or `environmentImage` prop, and no annotation with a raw `position` or
+//      `normal` (both refused while streaming too). At final, `asset` is a
+//      MODEL_ASSETS key; `annotations` is a list of at most MODEL_MAX_NOTES
+//      `{anchor, label?, note?}` whose `anchor` is one of that asset's anchors, `label`
+//      plain text (no `{`) of at most MODEL_LABEL_MAX, `note` of at most MODEL_NOTE_MAX;
+//      `focus`, when set, is one of its anchors. Its node-level `on_select` (a click on
+//      a label) is an ASK_HANDLERS key under rule 10.
 // Rules 4 and 5 read strings after one pass of HTML character-reference decoding.
 // `partial` is for specs still streaming: a prefix of an allowed name is not
 // refused yet, flow verbs wait for the flow fields, and shapes are checked at final.
@@ -50,6 +58,7 @@
 import { ILLUSTRATION_MAX_HEIGHT } from '@ripple-ui/core/manifest';
 import { checkIllustrationAnnotations, checkIllustrationSvg } from '$lib/security/illustration-svg.js';
 import { getWidget } from '$lib/widgets/index.js';
+import { MODEL_ASSETS } from '$lib/widgets/media/model-assets.js';
 import { CHAT_WIDGET_TYPES } from './widget-types.js';
 
 export const ALLOWED_ACTIONS = ['set', 'toggle', 'push', 'remove', 'open', 'emit', 'flow', 'branch', 'validate', 'toast'] as const;
@@ -64,12 +73,18 @@ const FOLLOW_UP_EVENTS = ['follow-up', 'checkout', 'add_to_cart', 'book'];
 const FLOW_FIELDS = ['chain', 'chain_map', 'flowId', 'onComplete'];
 export const FLOW_STEP_KEYS: readonly string[] = ['version', 'id', 'flowId', 'intent', 'title', 'description', 'ui', 'chain', 'chain_map', 'onComplete', 'form_fields'];
 export const FLOW_EVENTS: readonly string[] = ['flow.next', 'flow.back', 'flow.forward', 'flow.submit'];
-/** The handler keys an `ask` or `flow.submit` may fire from: a click, a submit, a pick, a comparison's Choose click, a composite's button list. Never `on_complete` (rule 12). Same set as card_spec.py's ASK_HANDLERS. */
+/** The handler keys an `ask` or `flow.submit` may fire from: a click, a submit, a pick (an illustration's or a model-viewer's label click), a comparison's Choose click, a composite's button list. Never `on_complete` (rule 12). Same set as card_spec.py's ASK_HANDLERS. */
 const ASK_HANDLERS = new Set(['on_click', 'on_submit', 'on_select', 'on_choose', 'actions']);
 export const ASK_MAX = 500;
 export const MAX_FLOW_STEPS = 8;
 export const MAX_CARD_NODES = 400;
 export const MAX_DEPTH = 16;
+export const MODEL_MAX_NOTES = 12;
+export const MODEL_LABEL_MAX = 40;
+export const MODEL_NOTE_MAX = 280;
+/** model-viewer props that load a file: a chat card names a built-in `asset` instead (rule 13). */
+const MODEL_FILE_PROPS = ['src', 'poster', 'environmentImage'];
+const MODEL_NOTE_KEYS = ['anchor', 'label', 'note'];
 /** Keys whose value a widget or NodeRenderer hands to the dispatcher. Case-exact, as the widgets read them. */
 const HANDLER_KEY = /^on_|^(actions|[a-z]+Actions|learn_more|onRowClick)$/;
 const URL_KEY = /(href|url|uri|src|srcset|link|image|img|avatar|icon|favicon|poster|cover|background|action|target)$/i;
@@ -194,6 +209,30 @@ function illustrationRefusal(node: Record<string, unknown>, props: Record<string
 	return notes.ok ? null : `illustration:${notes.reason}`;
 }
 
+const shortText = (v: unknown, max: number) => v === undefined || (typeof v === 'string' && v.length <= max && !v.includes('{'));
+
+/** Rule 13 on a `model-viewer` node's props: why it is refused, or null. */
+function modelViewerRefusal(props: Record<string, unknown>, partial: boolean): string | null {
+	if (MODEL_FILE_PROPS.some((k) => k in props)) return 'model:file';
+	const notes = props.annotations;
+	if (Array.isArray(notes) && notes.some((n) => isRecord(n) && ('position' in n || 'normal' in n))) return 'model:position';
+	if (partial) return null;
+	const asset = typeof props.asset === 'string' && Object.hasOwn(MODEL_ASSETS, props.asset) ? MODEL_ASSETS[props.asset] : null;
+	if (!asset) return 'model:asset';
+	const anchors = new Set(asset.anchors.map((a) => a.name));
+	if (notes !== undefined) {
+		if (!Array.isArray(notes) || notes.length > MODEL_MAX_NOTES) return 'model:annotations';
+		for (const n of notes) {
+			if (!isRecord(n) || Object.keys(n).some((k) => !MODEL_NOTE_KEYS.includes(k))) return 'model:annotations';
+			if (typeof n.anchor !== 'string' || !anchors.has(n.anchor)) return 'model:anchor';
+			if (!shortText(n.label, MODEL_LABEL_MAX)) return 'model:label';
+			if (!shortText(n.note, MODEL_NOTE_MAX)) return 'model:note';
+		}
+	}
+	if (props.focus !== undefined && !(typeof props.focus === 'string' && anchors.has(props.focus))) return 'model:focus';
+	return null;
+}
+
 function emitRefusal(node: Record<string, unknown>, flow: boolean, ask: boolean | null, partial: boolean): string | null {
 	const t = node.target;
 	if (typeof t !== 'string') return null;
@@ -291,6 +330,10 @@ export function refuseCard(card: unknown, { partial = false } = {}): string | nu
 		const illustration = widget && type === 'illustration';
 		if (illustration) {
 			const why = illustrationRefusal(node, isRecord(nodeProps) ? nodeProps : {}, partial);
+			if (why) return why;
+		}
+		if (widget && type === 'model-viewer') {
+			const why = modelViewerRefusal(isRecord(nodeProps) ? nodeProps : {}, partial);
 			if (why) return why;
 		}
 		if (typeof type === 'string' && isRecord(nodeProps) && NODE_SLOTS.get(type)?.some((path) => slotExpression(nodeProps, path))) return 'node_expression';

@@ -100,6 +100,16 @@
 		"h": 600
 	},
 	{
+		"id": "live-plane-3d",
+		"title": "See a plane in 3D",
+		"caption": "Show me a plane in 3D. Label five of its main parts with a short note on what each one does, and start with the cockpit open.",
+		"group": "Learn",
+		"tag": "Recorded",
+		"href": "/live?s=plane-3d",
+		"w": 800,
+		"h": 600
+	},
+	{
 		"id": "live-memory-match",
 		"title": "Memory match",
 		"caption": "Make me a memory match game pairing Spanish animal words with their emoji",

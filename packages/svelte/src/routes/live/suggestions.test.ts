@@ -21,7 +21,7 @@ test('live, all 8 groups render with the listed chips in order', () => {
 	expect(groups['Browse & discover']).toEqual(['Help me pick a laptop', 'Shop headphones', 'Browse products', 'Compare tech', 'Find deals', 'Restaurant search', 'Find coffee shops', 'Get directions', 'Weather forecast']);
 	expect(groups['Create & build']).toEqual(['Draft announcement', 'Create survey', 'Drawing pad']);
 	expect(groups['Organize']).toEqual(['Pack for trip', 'Project timeline', 'Task checklist', 'Weekly schedule', 'Focus timer', 'Take notes', 'View calendar', 'Habit tracker']);
-	expect(groups['Learn & explore']).toEqual(['Spanish flashcards', 'Take a quiz', 'Explain concept', 'Study plan', 'How bike gears work', 'How a heart pumps']);
+	expect(groups['Learn & explore']).toEqual(['Spanish flashcards', 'Take a quiz', 'Explain concept', 'Study plan', 'How bike gears work', 'How a heart pumps', 'See a plane in 3D', 'Explore the heart in 3D', 'Explore a skeleton in 3D']);
 	expect(groups['Work & productivity']).toEqual(['Health summary', 'Expense breakdown', 'Sales dashboard', 'Create invoice', 'Financial summary', 'Review NDA', 'Due diligence', 'Compliance check', 'Meeting agenda', 'Split the bill', 'Watch savings grow']);
 	expect(groups['Lifestyle']).toEqual(['Order a burger', 'Order pizza', 'Meal planning', 'Find a recipe', 'HIIT workout', 'Yoga session', 'Track progress', 'Find documentaries', 'Play music', 'Podcast discovery']);
 	expect(groups['Planning']).toEqual(['Book a table', 'Plan a trip with me', 'Book appointment', 'Plan Tokyo trip', 'Weekend getaway']);

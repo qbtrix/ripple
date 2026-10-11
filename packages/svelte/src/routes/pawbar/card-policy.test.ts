@@ -14,6 +14,7 @@
 // and a node-level on_select may ask. The play cards (play-cards.ts) all pass, and a
 // game's on_complete may never ask. fixtures/headphones-comparison-card.json is a live
 // model card (2026-10-10, "Shop headphones") whose comparison Choose click asks.
+// A `model-viewer` names a built-in asset and its anchors, never a file or a point.
 
 import { describe, expect, test } from 'vitest';
 import { HOST_EVENTS, MAX_CARD_NODES, MAX_DEPTH, PATH_TARGET_ACTIONS, decodeEntities, refuseCard } from './card-policy.js';
@@ -808,6 +809,61 @@ describe('illustration notes and on_select', () => {
 		expect(refuseCard({ ui: { type: 'illustration', props: { svg: markup, title: 'A valve', on_select: ask() } } })).toBe('illustration:handler');
 		expect(refuseCard(art([note()], { on_click: ask() }))).toBe('illustration:handler');
 		expect(refuseCard(art([note()], { on_select: ask(), bind: '{state.x}' }))).toBe('illustration:handler');
+	});
+});
+
+describe('model-viewer', () => {
+	const pin = (anchor: string, extra: Record<string, unknown> = {}) => ({ anchor, label: 'Part', note: 'What it does.', ...extra });
+	const model = (props: Record<string, unknown>, extra: Record<string, unknown> = {}) => ({
+		ui: { type: 'flex', children: [{ type: 'model-viewer', props: { asset: 'helicopter', alt: 'A helicopter', ...props }, ...extra }] }
+	});
+
+	test('a built-in asset with anchor labels, a focus and an asking on_select passes', () => {
+		const annotations = [pin('nose'), pin('cockpit', { label: undefined }), pin('main-rotor'), pin('tail'), pin('tail-rotor')];
+		expect(refuseCard(model({ annotations, focus: 'cockpit' }, { on_select: ask({ text: 'Tell me more about the rotor.' }) }))).toBeNull();
+		expect(refuseCard(model({}))).toBeNull();
+	});
+
+	test.each([
+		['a src', { src: '/models/helicopter.glb' }, 'model:file'],
+		['a remote src', { src: 'https://cdn.example/x.glb' }, 'model:file'],
+		['a poster', { poster: '/models/x.webp' }, 'model:file'],
+		['an environment image', { environmentImage: '/hdr/room.hdr' }, 'model:file'],
+		['a raw position', { annotations: [pin('nose', { position: '0 1 0' })] }, 'model:position'],
+		['a raw normal', { annotations: [pin('nose', { normal: '0 1 0' })] }, 'model:position']
+	])('refuses %s, final and streaming', (_name, props, reason) => {
+		expect(refuseCard(model(props))).toBe(reason);
+		expect(refuseCard(model(props), { partial: true })).toBe(reason);
+	});
+
+	test.each([
+		['no asset', { asset: undefined }, 'model:asset'],
+		['an unknown asset', { asset: 'dragon' }, 'model:asset'],
+		['an expression asset', { asset: '{state.asset}' }, 'model:asset'],
+		['an inherited key as asset', { asset: 'constructor' }, 'model:asset'],
+		['an anchor the asset lacks', { annotations: [pin('left-wing')] }, 'model:anchor'],
+		['a note with no anchor', { annotations: [{ label: 'Part' }] }, 'model:anchor'],
+		['an unknown note key', { annotations: [pin('nose', { at: [1, 2] })] }, 'model:annotations'],
+		['notes that are not a list', { annotations: '{state.notes}' }, 'model:annotations'],
+		['more than 12 notes', { annotations: Array.from({ length: 13 }, () => pin('nose')) }, 'model:annotations'],
+		['a label over 40 characters', { annotations: [pin('nose', { label: 'x'.repeat(41) })] }, 'model:label'],
+		['an expression label', { annotations: [pin('nose', { label: '{state.name}' })] }, 'model:label'],
+		['a note over 280 characters', { annotations: [pin('nose', { note: 'x'.repeat(281) })] }, 'model:note'],
+		['an expression note', { annotations: [pin('nose', { note: 'Costs {state.price}' })] }, 'model:note'],
+		['a focus the asset lacks', { focus: 'left-wing' }, 'model:focus']
+	])('refuses %s at final only', (_name, props, reason) => {
+		expect(refuseCard(model(props))).toBe(reason);
+		expect(refuseCard(model(props), { partial: true })).toBeNull();
+	});
+
+	test('12 notes pass; note text still gets the text rules', () => {
+		expect(refuseCard(model({ annotations: Array.from({ length: 12 }, () => pin('nose')) }))).toBeNull();
+		expect(refuseCard(model({ annotations: [pin('nose', { note: 'See www.example.com' })] }))).toBe('markup');
+	});
+
+	test('on_select asks only with plain text, and only at node level', () => {
+		expect(refuseCard(model({}, { on_select: ask({ text: 'More about {state.x}' }) }))).toBe('ask_value');
+		expect(refuseCard(model({}, { on_complete: ask() }))).toBe('ask_handler');
 	});
 });
 

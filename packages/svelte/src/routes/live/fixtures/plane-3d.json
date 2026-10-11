@@ -1,0 +1,305 @@
+{
+ "id": "plane-3d",
+ "title": "See a plane in 3D",
+ "prompt": "Show me a plane in 3D. Label five of its main parts with a short note on what each one does, and start with the cockpit open.",
+ "model": "sonnet",
+ "recordedAt": "2026-10-11T19:30:03.311Z",
+ "chunks": [
+  {
+   "t": 0,
+   "text": "{\"version\":\"1.0"
+  },
+  {
+   "t": 26,
+   "text": "\",\"ui\":{\"type"
+  },
+  {
+   "t": 345,
+   "text": "\":\"model-viewer\",\""
+  },
+  {
+   "t": 345,
+   "text": "props\":{\"asset\":\""
+  },
+  {
+   "t": 345,
+   "text": "plane\",\"alt\":\"A"
+  },
+  {
+   "t": 346,
+   "text": " 3D model of the"
+  },
+  {
+   "t": 346,
+   "text": " N"
+  },
+  {
+   "t": 346,
+   "text": "ASA X-57"
+  },
+  {
+   "t": 347,
+   "text": " "
+  },
+  {
+   "t": 348,
+   "text": "Maxwell elect"
+  },
+  {
+   "t": 348,
+   "text": "ric research"
+  },
+  {
+   "t": 348,
+   "text": " plane\",\"c"
+  },
+  {
+   "t": 384,
+   "text": "ameraControls\":true,\""
+  },
+  {
+   "t": 416,
+   "text": "focus\":\"cockpit"
+  },
+  {
+   "t": 695,
+   "text": "\",\"annotations\":[{\""
+  },
+  {
+   "t": 695,
+   "text": "anchor\":\"n"
+  },
+  {
+   "t": 695,
+   "text": "ose\",\"label\":\"Nose"
+  },
+  {
+   "t": 695,
+   "text": "\",\"note\":\""
+  },
+  {
+   "t": 695,
+   "text": "C"
+  },
+  {
+   "t": 695,
+   "text": "uts through"
+  },
+  {
+   "t": 696,
+   "text": " the air and hou"
+  },
+  {
+   "t": 696,
+   "text": "ses for"
+  },
+  {
+   "t": 710,
+   "text": "ward equ"
+  },
+  {
+   "t": 746,
+   "text": "ipment."
+  },
+  {
+   "t": 776,
+   "text": " Its sm"
+  },
+  {
+   "t": 809,
+   "text": "ooth shape reduces dr"
+  },
+  {
+   "t": 1043,
+   "text": "ag.\"},{\"anchor"
+  },
+  {
+   "t": 1044,
+   "text": "\":\"cockpit\",\"label"
+  },
+  {
+   "t": 1044,
+   "text": "\":\"Cockpit\",\""
+  },
+  {
+   "t": 1044,
+   "text": "note\":\""
+  },
+  {
+   "t": 1044,
+   "text": "Where the pilot sits and"
+  },
+  {
+   "t": 1044,
+   "text": " fl"
+  },
+  {
+   "t": 1044,
+   "text": "ies the"
+  },
+  {
+   "t": 1077,
+   "text": " plane. It"
+  },
+  {
+   "t": 1110,
+   "text": " holds the contro"
+  },
+  {
+   "t": 1144,
+   "text": "ls and inst"
+  },
+  {
+   "t": 1175,
+   "text": "ruments,"
+  },
+  {
+   "t": 1208,
+   "text": " with"
+  },
+  {
+   "t": 1446,
+   "text": " a canopy for vis"
+  },
+  {
+   "t": 1447,
+   "text": "ibility.\"},{\"anch"
+  },
+  {
+   "t": 1448,
+   "text": "or\":\"left-wing\",\""
+  },
+  {
+   "t": 1448,
+   "text": "label\":\"Left w"
+  },
+  {
+   "t": 1449,
+   "text": "ing\",\"note\":\"Cre"
+  },
+  {
+   "t": 1449,
+   "text": "ates lift as"
+  },
+  {
+   "t": 1449,
+   "text": " air"
+  },
+  {
+   "t": 1476,
+   "text": " flows over"
+  },
+  {
+   "t": 1509,
+   "text": " it. It also car"
+  },
+  {
+   "t": 1541,
+   "text": "ries a"
+  },
+  {
+   "t": 1573,
+   "text": " mot"
+  },
+  {
+   "t": 1606,
+   "text": "or and hel"
+  },
+  {
+   "t": 1796,
+   "text": "ps ke"
+  },
+  {
+   "t": 1796,
+   "text": "ep the plane st"
+  },
+  {
+   "t": 1797,
+   "text": "able.\"},{\"anchor"
+  },
+  {
+   "t": 1798,
+   "text": "\":\"engine\",\"label\":\""
+  },
+  {
+   "t": 1799,
+   "text": "Engine\",\"note\":\"The"
+  },
+  {
+   "t": 1806,
+   "text": " elect"
+  },
+  {
+   "t": 1840,
+   "text": "ric motor turns the prop"
+  },
+  {
+   "t": 1874,
+   "text": "eller to"
+  },
+  {
+   "t": 1906,
+   "text": " produ"
+  },
+  {
+   "t": 1940,
+   "text": "ce thrust. It drives"
+  },
+  {
+   "t": 1975,
+   "text": " the plane forward.\"},{"
+  },
+  {
+   "t": 2009,
+   "text": "\"anchor\":\"tail"
+  },
+  {
+   "t": 2248,
+   "text": "\",\"label\":\"Tail\",\""
+  },
+  {
+   "t": 2248,
+   "text": "note\":\"Keeps the"
+  },
+  {
+   "t": 2248,
+   "text": " plane steady in"
+  },
+  {
+   "t": 2248,
+   "text": " fl"
+  },
+  {
+   "t": 2249,
+   "text": "ight."
+  },
+  {
+   "t": 2249,
+   "text": " Its rudder and el"
+  },
+  {
+   "t": 2274,
+   "text": "evators"
+  },
+  {
+   "t": 2306,
+   "text": " ste"
+  },
+  {
+   "t": 2339,
+   "text": "er left"
+  },
+  {
+   "t": 2374,
+   "text": ","
+  },
+  {
+   "t": 2405,
+   "text": " right, up"
+  },
+  {
+   "t": 2439,
+   "text": " and down.\"}]}}}"
+  }
+ ]
+}

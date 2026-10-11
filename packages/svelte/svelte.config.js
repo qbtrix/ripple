@@ -15,7 +15,8 @@ import { loadEnv } from 'vite';
 // attributes and transitions inject <style>. connect-src lists /live's test
 // store and, only when PUBLIC_PAWBAR_LIVE=1, the Paw Bar API, read at build time
 // like vite.config.ts does (which also fails a build with a half-set env); dev adds
-// localhost for the mock and Vite's HMR socket. img-src allows the two image
+// localhost for the mock and Vite's HMR socket, plus blob: for the 3D model
+// viewer's textures (unpacked from same-origin /models GLBs). img-src allows the two image
 // hosts the gallery demos use (its news feed's favicon service stays blocked) and
 // the store's origin, which serves the menu photos in a menu-order card, and
 // OpenStreetMap's tile server, which the tracking card's `order-status` map
@@ -38,6 +39,9 @@ const connectSrc = [
 	'self',
 	env.PUBLIC_PAWBAR_LIVE === '1' ? originOf(env.PUBLIC_PAWBAR_ENDPOINT) : null,
 	storeOrigin,
+	// model-viewer (three.js GLTFLoader) unpacks a GLB's embedded textures to blob:
+	// URLs of this page and fetches them; same-origin data, no network reach.
+	'blob:',
 	...(dev ? ['http://localhost:*', 'ws://localhost:*'] : [])
 ].filter((v) => v != null);
 
