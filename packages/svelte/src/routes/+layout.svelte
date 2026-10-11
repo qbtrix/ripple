@@ -18,7 +18,8 @@
     <html> before paint; this reads and flips that class and remembers it.
     Labs and dev routes stay reachable by URL, unlinked. The bar says "Try Paw
     OS" (the pill's accessible name carries "by PocketPaw"), and the footer
-    links "Paw OS by PocketPaw".
+    links "Paw OS by PocketPaw". It points the model-viewer library at the
+    site's own /models/ so 3D cards load same-origin.
 -->
 <script lang="ts">
 	import { onMount } from 'svelte';
@@ -33,6 +34,10 @@
 	import './site.css';
 	import Search from '$lib/site/docs/Search.svelte';
 	import { pawosBase } from './pawbar/session.svelte.js';
+	import { setModelAssetBase } from '$lib/widgets/media/model-asset-types.js';
+
+	// 3D cards load the built-in models from this site (static/models), so the CSP stays same-origin.
+	setModelAssetBase('/models/');
 
 	let { children } = $props();
 
