@@ -47,9 +47,9 @@ const DATA_WIDGETS = new Set([
 	'comparison-layout', 'exec-dashboard', 'entity-detail', 'timeline', 'kv-table', 'model-viewer'
 ]);
 // model-viewer names a built-in model by id and labels it by anchor name; the
-// model sees the ids and anchor names only (no files, no coordinates).
+// model sees ids, titles and anchor names only (no files, no coordinates).
 const MODEL_LIBRARY = Object.values(MODEL_ASSETS)
-	.map((a) => `${a.id}: ${a.anchors.map((x) => x.name).join(', ')}`)
+	.map((a) => `${a.id} (${a.title}): ${a.anchors.map((x) => x.name).join(', ')}`)
 	.join('\n');
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -132,7 +132,7 @@ CARD SHAPE (pick this first)
 LAYOUT
 - The card is about 720px wide on a desktop and must still read on a 360px phone. For a row of tiles give the grid "columns": "repeat(auto-fit, minmax(150px, 1fr))" so it wraps; otherwise at most 2 fixed grid columns. A number-input needs about 140px, so give number inputs and sliders a full-width row or a 2-column grid. A flex row with more than two children sets "wrap": true.
 
-3D LIBRARY (model-viewer "asset" ids, each followed by its anchor names)
+3D LIBRARY (model-viewer "asset" ids, what each model shows, then its anchor names)
 ${MODEL_LIBRARY}
 - Name the model by "asset" only; never "src", "poster" or "environmentImage". Each annotation is {"anchor","label","note"}: "anchor" is one of that asset's names above, "label" at most 40 characters, "note" one or two plain sentences under 280 characters with no braces. Never write "position" or "normal". "focus" names the anchor whose note is open at start. Give "alt" a short description.
 

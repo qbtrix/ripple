@@ -20,7 +20,7 @@ import flashcards from './fixtures/flashcards.json';
 import hiitWorkout from './fixtures/hiit-workout.json';
 import mealPlan from './fixtures/meal-plan.json';
 import explainer from './fixtures/explainer.json';
-import helicopter3d from './fixtures/helicopter-3d.json';
+import plane3d from './fixtures/plane-3d.json';
 
 export interface ScenarioFixture {
 	id: string;
@@ -68,7 +68,7 @@ export const scenarios: Scenario[] = [
 	{ id: 'hiit-workout', title: '20-minute HIIT', category: 'Fitness', fixture: hiitWorkout, group: 'Track' },
 	{ id: 'meal-plan', title: 'High-protein week', category: 'Food', fixture: mealPlan, group: 'Track' },
 	{ id: 'explainer', title: 'How bike gears work', category: 'Learning', fixture: explainer, prompt: 'How do bike gears work? Draw me an animated picture of the chain drive and explain it in a few lines.', group: 'Learn' },
-	{ id: 'helicopter-3d', title: 'See a helicopter in 3D', category: 'Learning', fixture: helicopter3d, prompt: 'Show me a helicopter in 3D and label its main parts', group: 'Learn' }
+	{ id: 'plane-3d', title: 'See a plane in 3D', category: 'Learning', fixture: plane3d, prompt: 'Show me a plane in 3D and label its parts', group: 'Learn' }
 ];
 
 export const chatPrompts: ChatPrompt[] = [
@@ -95,7 +95,7 @@ export const chatPrompts: ChatPrompt[] = [
 	{ id: 'take-quiz', title: 'Take a quiz', prompt: 'Quiz me with 5 world geography questions and show my score at the end' },
 	{ id: 'explain-concept', title: 'Explain concept', prompt: 'Explain how compound interest works in a few lines, with a simple chart' },
 	{ id: 'skeleton-3d', title: 'Explore a skeleton in 3D', prompt: 'Show me a human skeleton in 3D and label the main bones', group: 'Learn' },
-	{ id: 'astronaut-3d', title: 'Explore a spacesuit in 3D', prompt: 'Show me an astronaut in 3D and label the parts of the spacesuit', group: 'Learn' },
+	{ id: 'heart-3d', title: 'Explore the heart in 3D', prompt: 'Show me a human heart in 3D and label its chambers and main vessels', group: 'Learn' },
 	{ id: 'study-plan', title: 'Study plan', prompt: 'Make me a 4-week study plan for learning basic statistics, a few hours a week' },
 	{ id: 'health-summary', title: 'Health summary', prompt: 'Summarize my week of health data: steps, sleep and resting heart rate, with trends (sample data)' },
 	{ id: 'expense-breakdown', title: 'Expense breakdown', prompt: 'Break down my monthly expenses by category in a chart (sample budget)' },
@@ -165,9 +165,9 @@ export const suggestionGroups: { label: string; chips: GroupChip[] }[] = [
 			['study-plan', 'book-open'],
 			['explainer', 'bike'],
 			['heart', 'heart-pulse'],
-			['helicopter-3d', 'box'],
-			['skeleton-3d', 'box'],
-			['astronaut-3d', 'box']
+			['plane-3d', 'box'],
+			['heart-3d', 'box'],
+			['skeleton-3d', 'box']
 		]
 	},
 	{

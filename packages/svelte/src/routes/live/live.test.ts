@@ -207,13 +207,13 @@ async function clickEachSpecButton(
 // The bill splitter is one bill-split widget; its numbers must add up, not
 // just change. $186.40 at 18% is $219.95 for 4: $54.99 for the first three,
 // $54.98 for the last (the spare cents go first).
-describe('helicopter-3d (model-viewer)', () => {
-	const scenario = scenarios.find((s) => s.id === 'helicopter-3d')!;
+describe('plane-3d (model-viewer)', () => {
+	const scenario = scenarios.find((s) => s.id === 'plane-3d')!;
 
-	test('streams to a built-in helicopter with five labelled parts, the focused one open, and a label click switches it', async () => {
+	test('streams to a built-in plane with five labelled parts, the focused one open, and a label click switches it', async () => {
 		const { container } = await mountStreamed(scenario.fixture);
 		const items = [...container.querySelectorAll<HTMLButtonElement>('[data-slot="legend-item"]')];
-		expect(items.map((b) => b.textContent?.replace(/^\d+/, '').trim())).toEqual(['Nose', 'Cockpit', 'Main rotor', 'Tail boom', 'Tail rotor']);
+		expect(items.map((b) => b.textContent?.replace(/^\d+/, '').trim())).toEqual(['Nose', 'Cockpit', 'Left wing', 'Engine', 'Tail']);
 		expect(items.map((b) => b.getAttribute('aria-expanded'))).toEqual(['false', 'true', 'false', 'false', 'false']);
 		await fireEvent.click(items[2]);
 		expect(items[2].getAttribute('aria-expanded')).toBe('true');
