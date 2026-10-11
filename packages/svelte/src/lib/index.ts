@@ -82,6 +82,17 @@ export {
   type IllustrationCheck
 } from './security/illustration-svg.js';
 
+// The `model-viewer` widget's built-in model library contract and asset base.
+export {
+  setModelAssetBase,
+  getModelAssetBase,
+  resolveModelAsset,
+  type ModelAnchor,
+  type ModelAsset,
+  type ModelCatalog,
+  type ResolvedModelAsset
+} from './widgets/media/model-asset-types.js';
+
 // Widget registry
 export {
   getWidget,
