@@ -236,8 +236,8 @@
 				bind:this={viewer}
 				class="block h-80 w-full"
 				style={styleString}
-				src={model.src}
-				poster={model.poster}
+				src={safeUrl(model.src, { kind: 'resource' })}
+				poster={safeUrl(model.poster, { kind: 'resource' })}
 				{alt}
 				camera-controls={cameraControls ? '' : undefined}
 				auto-rotate={autoRotate && !reduced ? '' : undefined}
