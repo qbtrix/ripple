@@ -29,7 +29,7 @@ export interface ModelAsset {
 	poster?: string;
 	/** Default camera-orbit. */
 	orbit?: string;
-	license: 'CC0-1.0' | 'CC-BY-4.0';
+	license: 'CC0-1.0' | 'CC-BY-4.0' | 'public-domain';
 	author: string;
 	/** https page the file came from. */
 	source: string;
