@@ -196,6 +196,21 @@ Or let the component warn in the console whenever the spec changes, without bloc
 Two built-ins cover content that shouldn't become a one-off widget:
 
 - **`embed`** shows a remote page (`mode: 'url'`, `https` only) or an inline document (`mode: 'srcdoc'`) in a sandboxed iframe. The sandbox is set by the renderer and a spec can't widen it. The frame runs at an opaque origin, so it can't read your cookies or storage. `allow` accepts only `fullscreen`, `autoplay`, `encrypted-media` and `picture-in-picture`.
-- **`model-viewer`** shows a GLB or glTF 3D model with orbit controls, and loads its viewer only when first used.
+- **`model-viewer`** shows a GLB or glTF 3D model with orbit controls, and loads its viewer only when first used. A spec can name a built-in model by `asset` and label it by anchor name, with no URL or coordinates; `focus` opens one label at start:
+
+  ```json
+  {
+    "type": "model-viewer",
+    "props": {
+      "asset": "plane",
+      "alt": "A small electric plane",
+      "focus": "cockpit",
+      "annotations": [
+        { "anchor": "cockpit", "note": "Where the pilot sits." },
+        { "anchor": "engine", "label": "Motor", "note": "Turns the propeller." }
+      ]
+    }
+  }
+  ```
 
 If the content repeats across specs and deserves typed props, write a widget. If it is a third-party page or video, use `embed`. If it is neither, it probably shouldn't be rendered from a spec at all.
