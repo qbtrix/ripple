@@ -245,8 +245,8 @@
 				environment-image={safeUrl(environmentImage, { kind: 'resource' })}
 				exposure={exposure != null ? String(exposure) : undefined}
 				shadow-intensity={shadowIntensity != null ? String(shadowIntensity) : undefined}
-				camera-target={cameraTarget}
 				camera-orbit={cameraOrbit}
+				camera-target={cameraTarget}
 				interpolation-decay={reduced ? '1' : undefined}
 				onerror={onError}
 			>
