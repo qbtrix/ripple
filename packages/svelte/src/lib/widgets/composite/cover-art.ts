@@ -28,7 +28,7 @@ export const initials = (s: string) =>
 		.split(/\s+/)
 		.filter(Boolean)
 		.slice(0, 2)
-		.map((w) => [...w][0])
+		.map((w) => String.fromCodePoint(w.codePointAt(0) ?? 32))
 		.join('')
 		.toUpperCase();
 
