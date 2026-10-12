@@ -8,16 +8,17 @@
 // widget in liveRuns order, and a demo shows only when no run uses its widget.
 // A demo's widget is its id; a run's is the first demo widget its spec uses,
 // else its own id. A run that replaces a demo takes the demo's group, so
-// Drawings keeps its card. Pruned items still open: a pruned run by its key,
+// Drawings keeps its card. A business run (For business) is always its own
+// card in its own group. Pruned items still open: a pruned run by its key,
 // a pruned demo's key resolves to the run that replaced it (resolveKey). Thumbs
 // are static/thumbs/<id>.webp for grid items only, at THUMB_W x THUMB_H.
 // gallery.test.ts holds all of this. Old /showcase URLs redirect here
 // (routes/showcase/[...path]).
 
-import { scenarios } from './scenarios.js';
+import { businessScenarios, scenarios } from './scenarios.js';
 import { playScenarios } from '../pawbar/play-cards.js';
 
-export const GROUPS = ['Do', 'Learn', 'Play', 'Track', 'Flows', 'Drawings'] as const;
+export const GROUPS = ['Do', 'Learn', 'Play', 'Track', 'Flows', 'Drawings', 'For business'] as const;
 export type Group = (typeof GROUPS)[number];
 
 export const THUMB_W = 800;
@@ -81,11 +82,12 @@ export const demoItems: GalleryItem[] = [
 ];
 
 /** Every /live run: the model recordings, then the hand-written answers. */
-export const liveRuns = [...scenarios, ...playScenarios];
+export const liveRuns = [...scenarios, ...playScenarios, ...businessScenarios];
 
 const demoWidgets = new Set(demoItems.map((d) => d.widget));
-/** The first demo widget a run's spec names, else the run's own id. */
+/** The first demo widget a run's spec names, else the run's own id. A business run is always its own card. */
 const widgetOf = (s: (typeof liveRuns)[number]) => {
+	if (s.group === 'For business') return s.id;
 	const text = s.fixture.chunks.map((c) => c.text).join('');
 	for (const m of text.matchAll(/\\?"type\\?"\s*:\s*\\?"([a-z0-9-]+)/g)) if (demoWidgets.has(m[1])) return m[1];
 	return s.id;
