@@ -44,3 +44,16 @@ test('a line amount is an alias for its total', () => {
   });
   expect(rowText(container, 'Logo')).toContain('450.00');
 });
+
+test('an ISO currency code formats as money, a symbol still prefixes', () => {
+  const { container } = render(InvoiceLines, {
+    props: { currency: 'USD', lines: [{ description: 'Logo', quantity: 1, unitPrice: 450 }] },
+  });
+  expect(rowText(container, 'Logo')).toContain('$450.00');
+  expect(container.textContent).not.toContain('USD');
+  cleanup();
+  const { container: eur } = render(InvoiceLines, {
+    props: { currency: '€', lines: [{ description: 'Logo', quantity: 1, unitPrice: 450 }] },
+  });
+  expect(rowText(eur, 'Logo')).toContain('€450.00');
+});

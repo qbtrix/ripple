@@ -2,12 +2,13 @@
      subtotal, summary rows (tax, discount, shipping) and a grand total. Also
      composed by invoice-layout. Amounts are model output: a summary row reads
      `value`, then `amount`, then `total`; a line reads `total`, then `amount`,
-     then quantity x unitPrice. Numeric strings count. A row whose amount is not
+     then quantity x unitPrice. Numeric strings count. `currency` is a symbol
+     to prefix ("$") or an ISO code ("USD") formatted through Intl. A row whose amount is not
      a number renders "—" and drops out of the computed total; nothing ever
      paints "NaN". -->
 <script lang="ts">
   import { cn } from '$lib/utils.js';
-  import { finite } from '$lib/widgets/data-kit/format.js';
+  import { finite, money } from '$lib/widgets/data-kit/format.js';
 
   type Line = {
     id?: string | number;
@@ -71,6 +72,8 @@
 
   function format(n: number | undefined): string {
     if (n === undefined || !Number.isFinite(n)) return '—';
+    // An ISO code ("USD") formats as money ($761.40), not "USD761.40".
+    if (/^[A-Za-z]{3}$/.test(currency)) return money(n, currency);
     const sign = n < 0 ? '-' : '';
     return `${sign}${currency}${Math.abs(n).toLocaleString(undefined, {
       minimumFractionDigits: 2,

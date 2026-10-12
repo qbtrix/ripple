@@ -14,7 +14,7 @@ export const invoiceLayoutEntry: WidgetManifestEntry = {
     issueDate: { type: 'string', required: true, description: 'Issue date (any human-readable format).' },
     dueDate: { type: 'string', required: false, description: 'Due date.' },
     status: { type: '"draft" | "sent" | "paid" | "overdue" | "void"', required: false, description: 'Status badge.' },
-    currency: { type: 'string', required: false, description: 'Currency symbol prepended to numeric amounts. Default "$".' },
+    currency: { type: 'string', required: false, description: 'Currency symbol prepended to amounts, or an ISO code ("USD") formatted as money. Default "$".' },
     lines: { type: 'Array<{ id?: string | number; description: string; quantity?: number; unitPrice?: number; total?: number; note?: string }>', required: true, description: 'Line items.' },
     summary: { type: 'Array<{ label: string; value: number; isNegative?: boolean }>', required: false, description: 'Tax / discount / shipping rows shown after subtotal. `amount` is accepted for `value`; a non-number shows a dash.' },
     subtotal: { type: 'number', required: false, description: 'Override the auto-computed subtotal.' },
