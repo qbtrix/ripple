@@ -1,7 +1,7 @@
 {
   "schema": "ripple.manifest/v1",
   "version": "0.8.0",
-  "generatedAt": "2026-10-12T05:19:30.291Z",
+  "generatedAt": "2026-10-12T05:46:37.164Z",
   "spec": {
     "uiField": "ui",
     "stateField": "state",
@@ -11176,6 +11176,290 @@
           "first": "player",
           "difficulty": "medium",
           "best_of": 3
+        }
+      }
+    },
+    {
+      "type": "agenda",
+      "category": "composite",
+      "description": "Meeting agenda app: start \"HH:MM\", items[{title, owner?, minutes, notes?}]; start times, time share bar, tick done, reorder, run mode with a countdown. Bind value.",
+      "props": {
+        "title": {
+          "type": "string",
+          "required": true,
+          "description": "e.g. \"Weekly team sync\"."
+        },
+        "start": {
+          "type": "string",
+          "required": false,
+          "description": "Start time \"HH:MM\" (24 h). Without it items show offsets like +0:15."
+        },
+        "items": {
+          "type": "Array<{ id?: string; title: string; owner?: string; minutes: number; notes?: string; done?: boolean }>",
+          "required": true,
+          "description": "1 to 30 items in running order. minutes 1 to 240. Keep notes to one short line."
+        }
+      },
+      "example": {
+        "type": "agenda",
+        "bind": "{state.agenda}",
+        "props": {
+          "title": "Weekly team sync",
+          "start": "10:00",
+          "items": [
+            {
+              "title": "Wins from last week",
+              "owner": "Maya Chen",
+              "minutes": 5
+            },
+            {
+              "title": "Metrics review",
+              "owner": "Leo Park",
+              "minutes": 8,
+              "notes": "Signups, churn, support load"
+            },
+            {
+              "title": "Launch checklist",
+              "owner": "Ana Ruiz",
+              "minutes": 10
+            },
+            {
+              "title": "Blockers",
+              "minutes": 5
+            },
+            {
+              "title": "Actions and owners",
+              "owner": "Maya Chen",
+              "minutes": 2
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "week-schedule",
+      "category": "composite",
+      "description": "Week calendar app: events[{day, start \"HH:MM\", end, title, place?, color?}] as blocks on a days-by-hours grid; overlaps side by side, details on press. Bind value.",
+      "props": {
+        "title": {
+          "type": "string",
+          "required": false,
+          "description": "e.g. \"My week\"."
+        },
+        "startHour": {
+          "type": "number",
+          "required": false,
+          "description": "First hour shown, 0 to 23. Default 7."
+        },
+        "endHour": {
+          "type": "number",
+          "required": false,
+          "description": "Last hour shown, 1 to 24. Default 21."
+        },
+        "days": {
+          "type": "string[]",
+          "required": false,
+          "description": "Column names. Default [\"Mon\",\"Tue\",\"Wed\",\"Thu\",\"Fri\",\"Sat\",\"Sun\"]. An event day matches by name."
+        },
+        "events": {
+          "type": "Array<{ id?: string; day: string; start: string; end: string; title: string; place?: string; color?: \"blue\" | \"green\" | \"orange\" | \"purple\" | \"pink\" | \"teal\" | \"red\" | \"yellow\" | \"gray\" }>",
+          "required": true,
+          "description": "Up to 60 events. start and end are \"HH:MM\" (24 h). Same color for the same kind of event; leave it out to colour by title."
+        }
+      },
+      "example": {
+        "type": "week-schedule",
+        "bind": "{state.selected}",
+        "props": {
+          "title": "My week",
+          "startHour": 7,
+          "endHour": 21,
+          "events": [
+            {
+              "day": "Mon",
+              "start": "09:00",
+              "end": "12:30",
+              "title": "Deep work",
+              "color": "blue"
+            },
+            {
+              "day": "Mon",
+              "start": "18:00",
+              "end": "19:00",
+              "title": "Gym",
+              "place": "Studio 4",
+              "color": "green"
+            },
+            {
+              "day": "Tue",
+              "start": "09:00",
+              "end": "17:00",
+              "title": "Office",
+              "color": "gray"
+            },
+            {
+              "day": "Wed",
+              "start": "18:00",
+              "end": "19:00",
+              "title": "Gym",
+              "place": "Studio 4",
+              "color": "green"
+            },
+            {
+              "day": "Thu",
+              "start": "10:00",
+              "end": "11:00",
+              "title": "Design review",
+              "color": "purple"
+            },
+            {
+              "day": "Thu",
+              "start": "10:30",
+              "end": "11:30",
+              "title": "1:1 with Sam",
+              "color": "orange"
+            },
+            {
+              "day": "Sun",
+              "start": "19:00",
+              "end": "21:00",
+              "title": "Family dinner",
+              "place": "Home",
+              "color": "pink"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "weather-forecast",
+      "category": "composite",
+      "description": "Weather app card: place, now {temp, condition}, days[{day, condition, high, low, rainChance}], optional hourly. Animated icons, range bars, C/F toggle.",
+      "props": {
+        "place": {
+          "type": "string",
+          "required": true,
+          "description": "e.g. \"Lisbon\"."
+        },
+        "unit": {
+          "type": "\"C\" | \"F\"",
+          "required": false,
+          "description": "The unit the numbers are written in. Default \"C\". The visitor can toggle."
+        },
+        "now": {
+          "type": "{ temp: number; condition: \"sunny\" | \"partly-cloudy\" | \"cloudy\" | \"rain\" | \"heavy-rain\" | \"thunder\" | \"snow\" | \"fog\" | \"wind\" | \"night-clear\"; feelsLike?: number; humidity?: number; wind?: string }",
+          "required": false,
+          "description": "Current conditions. humidity is a percent; wind is text like \"14 km/h NW\"."
+        },
+        "days": {
+          "type": "Array<{ day: string; condition: \"sunny\" | \"partly-cloudy\" | \"cloudy\" | \"rain\" | \"heavy-rain\" | \"thunder\" | \"snow\" | \"fog\" | \"wind\" | \"night-clear\"; high: number; low: number; rainChance?: number; sunrise?: string; sunset?: string }>",
+          "required": true,
+          "description": "1 to 14 days, first is today. day is \"Mon\" or an ISO date. Other condition words map to the closest icon."
+        },
+        "hourly": {
+          "type": "Array<{ time: string; temp: number; condition: \"sunny\" | \"partly-cloudy\" | \"cloudy\" | \"rain\" | \"heavy-rain\" | \"thunder\" | \"snow\" | \"fog\" | \"wind\" | \"night-clear\"; rainChance?: number }>",
+          "required": false,
+          "description": "Up to 48 hours, time like \"14:00\" or \"2 PM\"."
+        },
+        "note": {
+          "type": "string",
+          "required": false,
+          "description": "Small note under the place. Write \"Sample forecast\" when the numbers are made up."
+        }
+      },
+      "example": {
+        "type": "weather-forecast",
+        "props": {
+          "place": "Lisbon",
+          "unit": "C",
+          "note": "Sample forecast",
+          "now": {
+            "temp": 21,
+            "condition": "partly-cloudy",
+            "feelsLike": 20,
+            "humidity": 64,
+            "wind": "14 km/h NW"
+          },
+          "hourly": [
+            {
+              "time": "Now",
+              "temp": 21,
+              "condition": "partly-cloudy"
+            },
+            {
+              "time": "15:00",
+              "temp": 22,
+              "condition": "sunny"
+            },
+            {
+              "time": "16:00",
+              "temp": 22,
+              "condition": "sunny"
+            },
+            {
+              "time": "17:00",
+              "temp": 21,
+              "condition": "partly-cloudy",
+              "rainChance": 10
+            },
+            {
+              "time": "18:00",
+              "temp": 19,
+              "condition": "cloudy",
+              "rainChance": 20
+            }
+          ],
+          "days": [
+            {
+              "day": "Mon",
+              "condition": "partly-cloudy",
+              "high": 23,
+              "low": 16,
+              "rainChance": 10,
+              "sunrise": "07:31",
+              "sunset": "18:52"
+            },
+            {
+              "day": "Tue",
+              "condition": "sunny",
+              "high": 25,
+              "low": 17
+            },
+            {
+              "day": "Wed",
+              "condition": "cloudy",
+              "high": 21,
+              "low": 16,
+              "rainChance": 30
+            },
+            {
+              "day": "Thu",
+              "condition": "rain",
+              "high": 18,
+              "low": 14,
+              "rainChance": 80
+            },
+            {
+              "day": "Fri",
+              "condition": "thunder",
+              "high": 17,
+              "low": 13,
+              "rainChance": 90
+            },
+            {
+              "day": "Sat",
+              "condition": "partly-cloudy",
+              "high": 20,
+              "low": 14,
+              "rainChance": 20
+            },
+            {
+              "day": "Sun",
+              "condition": "sunny",
+              "high": 22,
+              "low": 15
+            }
+          ]
         }
       }
     },

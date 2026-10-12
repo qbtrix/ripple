@@ -172,6 +172,10 @@ const DEFAULT_BIND_WIDGETS: ReadonlySet<string> = new Set([
   // board-game binds the game ({ board, turn, result, series }), written by
   // the widget on every move, Rematch and New series
   'board-game', 'tic-tac-toe', 'connect-four',
+  // week-schedule binds the selected event id (string | null)
+  'week-schedule', 'weekly-schedule', 'timetable',
+  // agenda binds its items as edited ([{ id, title, owner, minutes, notes, done }])
+  'agenda', 'meeting-agenda', 'run-of-show',
 ]);
 
 const warnedTypes = new Set<string>();
