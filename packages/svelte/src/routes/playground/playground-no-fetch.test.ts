@@ -52,9 +52,14 @@ test('/ focuses the composer and Esc stops a stream', async () => {
 test('Paste or edit a spec renders the JSON as it is typed and keeps the last good render on a broken edit', async () => {
 	const fetchSpy = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('no network in this test'));
 	// jsdom has no modal dialogs; the phone layout opens the editor in one.
-	HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) {
-		this.open = true;
-	};
+	if (!('showModal' in HTMLDialogElement.prototype)) {
+		Object.defineProperty(HTMLDialogElement.prototype, 'showModal', {
+			configurable: true,
+			value(this: HTMLDialogElement) {
+				this.open = true;
+			}
+		});
+	}
 	const view = render(Playground);
 
 	await fireEvent.click(view.getByRole('button', { name: 'Paste or edit a spec' }));
