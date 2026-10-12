@@ -302,6 +302,21 @@ describe('booking flow', () => {
 		expect(screen.queryByRole('group', { name: 'Guests' })).toBeNull();
 		expect(btn('Choose a time')).toBeEnabled();
 	});
+
+	// The live dentist card: the model wrote `party: 1` and nothing else. With an
+	// appointment service (no party bounds) there is no Guests stepper or stage;
+	// a table service with bounds keeps both.
+	it('shows Guests only when the service has party bounds, whatever party says', () => {
+		const checkup = { id: 'checkup', name: 'Check-up', kind: 'dental', duration_min: 30 };
+		render(Booking, { props: { title: 'Dentist appointment', party: 1, services: [checkup], days: DAYS } });
+		expect(screen.queryByRole('group', { name: 'Guests' })).toBeNull();
+		expect(screen.queryByText('Guests')).toBeNull();
+		expect(screen.getByText('Check-up')).toBeTruthy();
+		cleanup();
+		render(Booking, { props: { party: 1, services: [TABLE], days: DAYS } });
+		expect(screen.getByRole('group', { name: 'Guests' }).textContent).toContain('1');
+		expect(screen.getByText('1 to 8')).toBeTruthy();
+	});
 });
 
 describe('booking streamed and junk', () => {
