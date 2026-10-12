@@ -1,7 +1,7 @@
 {
   "schema": "ripple.manifest/v1",
   "version": "0.8.0",
-  "generatedAt": "2026-10-12T05:19:30.291Z",
+  "generatedAt": "2026-10-12T05:39:54.325Z",
   "spec": {
     "uiField": "ui",
     "stateField": "state",
@@ -10685,6 +10685,229 @@
               "tags": [
                 "read"
               ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "place-results",
+      "category": "composite",
+      "description": "Place search results (cafes, restaurants, parks): cards with rating, price, distance, open now, sort and filter, and a numbered-pin map when lat/lng are given.",
+      "props": {
+        "title": {
+          "type": "string",
+          "required": false,
+          "description": "e.g. \"Coffee near Union Square\"."
+        },
+        "query": {
+          "type": "string",
+          "required": false,
+          "description": "What was searched, shown under the title."
+        },
+        "places": {
+          "type": "Array<{ id?: string; name: string; kind: \"cafe\" | \"restaurant\" | \"bar\" | \"bakery\" | \"shop\" | \"park\" | \"museum\" | \"hotel\" | \"other\"; rating?: number; reviews?: number; price?: 1 | 2 | 3 | 4; distance?: string | number; walkMinutes?: number; open?: boolean; hours?: string; address?: string; tags?: string[]; blurb?: string; lat?: number; lng?: number }>",
+          "required": true,
+          "description": "Up to 20. `rating` 0 to 5, `price` 1 to 4 ($ to $$$$), `distance` like \"0.4 km\" (or km as a number). Give lat/lng to get the map. No images or links."
+        },
+        "showMap": {
+          "type": "boolean",
+          "required": false,
+          "description": "Default true when any place has lat/lng."
+        }
+      },
+      "events": {
+        "on_choose": {
+          "type": "EventAction | EventAction[]",
+          "required": false,
+          "description": "Fires with { id, name, text } on \"Tell me more\", e.g. { action: \"emit\", target: \"ask\", value: { text: \"Tell me more about this place\" } }."
+        }
+      },
+      "example": {
+        "type": "place-results",
+        "props": {
+          "title": "Coffee near Harbor Square",
+          "query": "quiet cafes with wifi",
+          "places": [
+            {
+              "id": "p1",
+              "name": "Blue Door Coffee",
+              "kind": "cafe",
+              "rating": 4.7,
+              "reviews": 812,
+              "price": 2,
+              "distance": "350 m",
+              "walkMinutes": 4,
+              "open": true,
+              "hours": "Until 6 pm",
+              "tags": [
+                "wifi",
+                "quiet"
+              ],
+              "blurb": "Bright corner room with long tables and single-origin pour-overs.",
+              "lat": 40.7359,
+              "lng": -73.9911
+            },
+            {
+              "id": "p2",
+              "name": "Morning Loaf",
+              "kind": "bakery",
+              "rating": 4.5,
+              "reviews": 403,
+              "price": 1,
+              "distance": "0.6 km",
+              "walkMinutes": 8,
+              "open": false,
+              "hours": "Opens 7 am",
+              "tags": [
+                "pastries"
+              ],
+              "lat": 40.7381,
+              "lng": -73.9873
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "product-grid",
+      "category": "composite",
+      "description": "Product grid for shopping and deals: cards with price, was-price and discount badge, rating, spec chips, sort, category chips and a pick-2-or-3 Compare tray.",
+      "props": {
+        "title": {
+          "type": "string",
+          "required": false,
+          "description": "e.g. \"Headphone deals this week\"."
+        },
+        "currency": {
+          "type": "string",
+          "required": false,
+          "description": "ISO code. Default \"USD\"."
+        },
+        "products": {
+          "type": "Array<{ id?: string; name: string; brand?: string; category?: string; price: number; was?: number; rating?: number; reviews?: number; badge?: string; color?: \"blue\" | \"violet\" | \"teal\" | \"green\" | \"amber\" | \"rose\" | \"orange\" | \"slate\"; image?: string; specs?: string[] }>",
+          "required": true,
+          "description": "Up to 24. `was` above `price` shows a strike-through and a computed discount. `badge` like \"Best seller\". Up to 3 short `specs`. Covers are generated; skip `image`."
+        },
+        "filters": {
+          "type": "boolean",
+          "required": false,
+          "description": "Category chips built from the data. Default true."
+        }
+      },
+      "events": {
+        "on_choose": {
+          "type": "EventAction | EventAction[]",
+          "required": false,
+          "description": "Fires with { id, name, text } on Choose and { ids, names, text: \"Compare A and B\" } from the Compare tray. May emit ask."
+        }
+      },
+      "example": {
+        "type": "product-grid",
+        "props": {
+          "title": "Headphone deals",
+          "currency": "USD",
+          "products": [
+            {
+              "id": "h1",
+              "name": "Quietline 700",
+              "brand": "Sonora",
+              "category": "Over-ear",
+              "price": 229,
+              "was": 299,
+              "rating": 4.6,
+              "reviews": 2140,
+              "badge": "Best seller",
+              "color": "slate",
+              "specs": [
+                "30 h battery",
+                "ANC"
+              ]
+            },
+            {
+              "id": "h2",
+              "name": "Pulse Buds",
+              "brand": "Arcwave",
+              "category": "Earbuds",
+              "price": 79,
+              "was": 99,
+              "rating": 4.3,
+              "reviews": 860,
+              "color": "violet",
+              "specs": [
+                "IPX4",
+                "8 h"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "media-grid",
+      "category": "composite",
+      "description": "Poster grid for documentaries, films, series, podcasts, books or albums: generated posters, genre chips, Add to list with a My list view, details on click. Bind value.",
+      "props": {
+        "title": {
+          "type": "string",
+          "required": false,
+          "description": "e.g. \"Nature documentaries\"."
+        },
+        "kind": {
+          "type": "\"documentary\" | \"film\" | \"series\" | \"podcast\" | \"book\" | \"album\"",
+          "required": false,
+          "description": "Sets the poster shape (square for podcast and album). Default \"documentary\"."
+        },
+        "items": {
+          "type": "Array<{ id?: string; title: string; by?: string; year?: number; minutes?: number; episodes?: number; rating?: number; genres?: string[]; blurb?: string; color?: \"blue\" | \"violet\" | \"teal\" | \"green\" | \"amber\" | \"rose\" | \"orange\" | \"slate\"; image?: string }>",
+          "required": true,
+          "description": "Up to 24. `by` is the director, host or author. `rating` 0 to 5. Posters are generated from the title; skip `image`."
+        },
+        "value": {
+          "type": "{ saved: string[] }",
+          "required": false,
+          "description": "Ids on the visitor's list. Use top-level `bind`."
+        }
+      },
+      "events": {
+        "on_choose": {
+          "type": "EventAction | EventAction[]",
+          "required": false,
+          "description": "Fires with { id, name, text } on \"Tell me more\" in the details panel. May emit ask."
+        }
+      },
+      "example": {
+        "type": "media-grid",
+        "bind": "{state.list}",
+        "props": {
+          "title": "Ocean documentaries",
+          "kind": "documentary",
+          "items": [
+            {
+              "id": "d1",
+              "title": "The Deep Blue Hours",
+              "by": "Mara Ellison",
+              "year": 2021,
+              "minutes": 94,
+              "rating": 4.5,
+              "genres": [
+                "Nature",
+                "Ocean"
+              ],
+              "blurb": "A year with the night feeders of a kelp forest.",
+              "color": "teal"
+            },
+            {
+              "id": "d2",
+              "title": "Salt and Ice",
+              "by": "Tomas Reyes",
+              "year": 2019,
+              "minutes": 82,
+              "rating": 4.2,
+              "genres": [
+                "Climate"
+              ],
+              "color": "blue"
             }
           ]
         }

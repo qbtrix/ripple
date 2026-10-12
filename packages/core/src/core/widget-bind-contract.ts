@@ -169,6 +169,8 @@ const DEFAULT_BIND_WIDGETS: ReadonlySet<string> = new Set([
   'focus-timer', 'pomodoro', 'pomodoro-timer',
   // notes binds { notes: [{ id, title, text, tags, pinned, color, at? }] }
   'notes', 'notepad', 'sticky-notes',
+  // media-grid binds the visitor's list ({ saved: ids })
+  'media-grid', 'watchlist', 'podcasts', 'shows',
   // board-game binds the game ({ board, turn, result, series }), written by
   // the widget on every move, Rematch and New series
   'board-game', 'tic-tac-toe', 'connect-four',
