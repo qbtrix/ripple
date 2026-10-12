@@ -1,6 +1,14 @@
-<!-- src/lib/widgets/vertical/InvoiceLines.svelte -->
+<!-- src/lib/widgets/vertical/InvoiceLines.svelte: invoice line items with
+     subtotal, summary rows (tax, discount, shipping) and a grand total. Also
+     composed by invoice-layout. Amounts are model output: a summary row reads
+     `value`, then `amount`, then `total`; a line reads `total`, then `amount`,
+     then quantity x unitPrice. Numeric strings count. `currency` is a symbol
+     to prefix ("$") or an ISO code ("USD") formatted through Intl. A row whose amount is not
+     a number renders "—" and drops out of the computed total; nothing ever
+     paints "NaN". -->
 <script lang="ts">
   import { cn } from '$lib/utils.js';
+  import { finite, money } from '$lib/widgets/data-kit/format.js';
 
   type Line = {
     id?: string | number;
@@ -9,6 +17,8 @@
     unitPrice?: number;
     /** Pre-computed total. If omitted, computed as quantity * unitPrice. */
     total?: number;
+    /** Alias for `total`. */
+    amount?: number;
     /** Optional secondary text under description. */
     note?: string;
   };
@@ -21,7 +31,7 @@
     /** Currency symbol. */
     currency?: string;
     /** Tax/discount/shipping rows shown after subtotal. */
-    summary?: { label: string; value: number; isNegative?: boolean }[];
+    summary?: { label: string; value?: number; amount?: number; total?: number; isNegative?: boolean }[];
     /** Override the auto-computed subtotal. */
     subtotal?: number;
     /** Override the auto-computed grand total. */
@@ -47,14 +57,23 @@
   );
 
   function rowTotal(l: Line): number {
-    if (typeof l.total === 'number') return l.total;
-    if (typeof l.quantity === 'number' && typeof l.unitPrice === 'number') {
-      return l.quantity * l.unitPrice;
-    }
-    return 0;
+    const t = finite(l.total) ?? finite(l.amount);
+    if (t !== undefined) return t;
+    const q = finite(l.quantity);
+    const u = finite(l.unitPrice);
+    return q !== undefined && u !== undefined ? q * u : 0;
   }
 
-  function format(n: number): string {
+  // A summary row's signed amount, or undefined when it is not a number.
+  function summaryValue(s: NonNullable<Props['summary']>[number]): number | undefined {
+    const v = finite(s.value) ?? finite(s.amount) ?? finite(s.total);
+    return v === undefined ? undefined : s.isNegative ? -Math.abs(v) : v;
+  }
+
+  function format(n: number | undefined): string {
+    if (n === undefined || !Number.isFinite(n)) return '—';
+    // An ISO code ("USD") formats as money ($761.40), not "USD761.40".
+    if (/^[A-Za-z]{3}$/.test(currency)) return money(n, currency);
     const sign = n < 0 ? '-' : '';
     return `${sign}${currency}${Math.abs(n).toLocaleString(undefined, {
       minimumFractionDigits: 2,
@@ -63,13 +82,11 @@
   }
 
   const computedSubtotal = $derived(
-    typeof subtotal === 'number' ? subtotal : lines.reduce((acc, l) => acc + rowTotal(l), 0)
+    finite(subtotal) ?? lines.reduce((acc, l) => acc + rowTotal(l), 0)
   );
   const computedTotal = $derived(
-    typeof total === 'number'
-      ? total
-      : computedSubtotal +
-        summary.reduce((acc, s) => acc + (s.isNegative ? -Math.abs(s.value) : s.value), 0)
+    finite(total) ??
+      computedSubtotal + summary.reduce((acc, s) => acc + (summaryValue(s) ?? 0), 0)
   );
 </script>
 
@@ -126,7 +143,7 @@
             {s.label}
           </td>
           <td class="px-3 py-1.5 text-right tabular-nums text-muted-foreground">
-            {format(s.isNegative ? -Math.abs(s.value) : s.value)}
+            {format(summaryValue(s))}
           </td>
         </tr>
       {/each}

@@ -7,6 +7,8 @@
 // Files are listed with Vite globs.
 import { expect, test } from 'vitest';
 import { demoItems, galleryItems, GROUPS, itemByKey, liveItems, liveRuns, resolveKey } from './gallery.js';
+import { businessScenarios } from './scenarios.js';
+import { BRANDS } from './brands.js';
 import { load } from '../showcase/[...path]/+page.js';
 import manifest from '../../../static/thumbs/thumbs.json';
 
@@ -20,6 +22,14 @@ test('ids and keys are unique, and every grid group is a filter', () => {
 	expect(new Set(all.map((i) => i.key)).size).toBe(all.length);
 	for (const i of galleryItems) expect(GROUPS as readonly string[], i.id).toContain(i.group);
 	for (const g of GROUPS) expect(galleryItems.some((i) => i.group === g), g).toBe(true);
+});
+
+test('every business run has its own card under For business, in a brand', () => {
+	for (const s of businessScenarios) {
+		const card = galleryItems.find((i) => i.key === s.id);
+		expect(card?.group, s.id).toBe('For business');
+		expect(BRANDS[s.id]?.name, s.id).toBeTruthy();
+	}
 });
 
 test('the grid has one card per widget type, and a run beats a demo', () => {

@@ -8,7 +8,7 @@
 // drifts from the manifest; regenerate it from there.
 
 export const CHAT_WIDGET_TYPES: ReadonlySet<string> = new Set([
-	'accordion', 'alert', 'analyst-bar', 'analytics-dashboard', 'animated-beam', 'api-key',
+	'accordion', 'agenda', 'alert', 'analyst-bar', 'analytics-dashboard', 'animated-beam', 'api-key',
 	'app-shell', 'approval-gate', 'article-meta', 'ask-user-questions', 'audio', 'audit-log',
 	'aurora', 'avatar', 'avatar-group', 'badge', 'bento-grid', 'bill-split', 'board-game', 'booking',
 	'border-beam', 'breadcrumb', 'bulk-action-bar', 'button', 'c4', 'calendar', 'callout', 'card',
@@ -24,11 +24,11 @@ export const CHAT_WIDGET_TYPES: ReadonlySet<string> = new Set([
 	'highlight', 'hover-card', 'icon', 'if', 'illustration', 'image', 'input', 'interval-workout',
 	'invoice-layout', 'invoice-lines', 'itinerary', 'kanban', 'kbd', 'kv-table', 'led-clock',
 	'link-preview', 'loading', 'location-picker', 'logo-cloud', 'map', 'markdown', 'marketing-hero',
-	'marquee', 'master-detail', 'meal-plan', 'memory-match', 'mention', 'menu-order', 'metric',
+	'marquee', 'master-detail', 'meal-plan', 'media-grid', 'memory-match', 'mention', 'menu-order', 'metric',
 	'modal', 'model-viewer', 'multi-select', 'music-player', 'navbar', 'news-card', 'newsletter',
 	'notes', 'notification-center', 'number-input', 'ops-dashboard', 'order-status', 'org-chart', 'otp-input',
-	'page-header', 'parallax', 'people-picker', 'permission-matrix', 'pipeline-dashboard', 'popover',
-	'pricing-table', 'progress', 'progress-ring', 'project-dashboard', 'pros-cons', 'qr', 'quiz',
+	'page-header', 'parallax', 'place-results', 'people-picker', 'permission-matrix', 'pipeline-dashboard', 'popover',
+	'pricing-table', 'product-grid', 'progress', 'progress-ring', 'project-dashboard', 'pros-cons', 'qr', 'quiz',
 	'quote', 'radio-group', 'range-bar', 'rating', 'reasoning-trace', 'recipe', 'report-layout',
 	'reveal', 'sankey', 'saved-views', 'search', 'section', 'segmented', 'seismograph', 'select',
 	'separator', 'settings-list', 'sheet', 'shimmer', 'sidebar', 'skeleton', 'slider', 'soul-status',
@@ -36,5 +36,5 @@ export const CHAT_WIDGET_TYPES: ReadonlySet<string> = new Set([
 	'streak-bars', 'stream-text', 'switch', 'table', 'tabs', 'terminal', 'testimonial', 'text',
 	'text-effect', 'textarea', 'ticker', 'time-picker', 'timeline', 'timer', 'toast', 'todo-list',
 	'tool-call', 'tooltip', 'tree', 'tree-table', 'treemap', 'trend', 'video', 'virtual-list',
-	'wizard-layout', 'word-guess', 'workflow'
+	'weather-forecast', 'week-schedule', 'wizard-layout', 'word-guess', 'workflow'
 ]);

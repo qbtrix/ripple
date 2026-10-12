@@ -16,7 +16,7 @@ import Ripple from '$lib/Ripple.svelte';
 import { streamSpec, type StreamSpecStore } from '$lib/streaming/index.js';
 import { validateCatalog } from '$lib/widgets/validate-catalog-bound.js';
 import { replay } from './replay.js';
-import { scenarios, type ScenarioFixture } from './scenarios.js';
+import { businessScenarios, scenarios, type ScenarioFixture } from './scenarios.js';
 import OrderReceipt from './OrderReceipt.svelte';
 
 // Streamed mounts recompute on later ticks; under a full parallel suite that can
@@ -60,7 +60,7 @@ describe('replay()', () => {
 	});
 });
 
-describe.each(scenarios.map((s) => [s.id, s] as const))('scenario %s', (_id, scenario) => {
+describe.each([...scenarios, ...businessScenarios].map((s) => [s.id, s] as const))('scenario %s', (_id, scenario) => {
 	const { fixture } = scenario;
 	const finalSpec = JSON.parse(join(fixture));
 	const hasInput = specHas(finalSpec, (n) => ['input', 'number-input'].includes(n.type ?? ''));
@@ -405,16 +405,16 @@ describe('meal-plan (meal-plan)', () => {
 });
 
 describe('explainer gearing', () => {
-	// 50/17 on a 2100 mm wheel: ratio 2.941, 6.176 m per pedal turn.
+	// 50/17 on a 2100 mm wheel: ratio 2.941, 6.176 m per pedal turn (stat tiles show 2 decimals below 10).
 	// 34/32: ratio 1.0625, 2.231 m.
 	test('after streaming, parts show their notes and the presets change the gearing', async () => {
 		const { container } = await mountStreamed(scenario('explainer'));
-		expect(text(container)).toMatch(/Gear ratio\s*2\.941/);
-		expect(text(container)).toMatch(/Metres per pedal turn\s*6\.176/);
+		expect(text(container)).toMatch(/Gear ratio\s*2\.94(?!\d)/);
+		expect(text(container)).toMatch(/Metres per pedal turn\s*6\.18(?!\d)/);
 		await fireEvent.click(button(container, '1 Pedals + crank'));
 		await waitFor(() => expect(text(container)).toContain('This is where all the power enters'));
 		await fireEvent.click(button(container, 'Climb 34/32'));
-		await waitFor(() => expect(text(container)).toMatch(/Metres per pedal turn\s*2\.231/));
+		await waitFor(() => expect(text(container)).toMatch(/Metres per pedal turn\s*2\.23(?!\d)/));
 	});
 });
 

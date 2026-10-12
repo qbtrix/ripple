@@ -38,7 +38,10 @@
 
   interface SummaryLine {
     label: string;
-    value: number;
+    /** The row amount. `amount` and `total` are accepted aliases. */
+    value?: number;
+    amount?: number;
+    total?: number;
     isNegative?: boolean;
   }
 

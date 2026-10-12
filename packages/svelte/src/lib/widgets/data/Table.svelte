@@ -1,28 +1,22 @@
-<!-- src/lib/widgets/data/Table.svelte
-     Modified: 2026-06-24 — in-place cell editing (feat/widget-direct-manipulation).
-     Table now supports user-initiated DIRECT MANIPULATION that persists, reusing
-     the Kanban manipulation→persist pattern exactly: on commit it builds the FULL
-     mutated rows array and fires `onchange(next)`; NodeRenderer turns that into
-     `stateManager.set(<bind path>, next)`, which surfaces to the host via
-     `onStateChange`. Editing is bound-path driven and opt-in: a cell is editable
-     only when the table prop `editable` is true (and, in a spec, the node carries a
-     `bind` so NodeRenderer supplies `onchange`). A column may set `editable:false`
-     to stay read-only. Unbound / non-editable tables render byte-identical
-     read-only output, preserving backward compat. A11y per the atoms roadmap:
-     editable cells get role="button" + tabindex=0 + Enter/Space to open; the editor
-     commits on Enter/blur and cancels on Escape; data-editable / data-editing attrs
-     for styling and tests.
-     Modified: 2026-09-06 — the href is run through `safeHref` (shared
-     url-sanitizer): a /browser result table carries URLs scraped from an
-     untrusted page, so a raw `javascript:`/`data:` href would be XSS. A cell
-     whose URL fails the scheme check renders as plain text, not a dead/unsafe
-     link.
-     Modified: 2026-09-06 — column `href`: name a row field that holds a URL and the cell
-     text becomes a link to it (new tab, rel=noopener). Read-only cells only; an
-     editable cell keeps its editor. Added for /browser results (a story title that
-     opens the story) without putting raw URLs in the visible text.
-     Modified: 2026-06-27 — forward node id: bind id + data-ripple-node on the root
-     div so the visual editor can select this widget directly (SP-0 id-forwarding). -->
+<!-- src/lib/widgets/data/Table.svelte: the data table widget. Rows come from
+     `data`, `rows` or the bound `value` (in that order); columns from `columns`
+     or the first row's keys. Optional sort, search, pagination and a status dot.
+
+     Layout: text cells wrap (top-aligned, overflow-wrap:anywhere, a small
+     min width) so a model's sentence-long cell is never clipped mid-word; a
+     column whose values are all numbers is right-aligned and kept on one line.
+     The primitive's container still scrolls sideways when columns cannot fit.
+
+     Editing is opt-in (`editable` plus a `bind`): a commit builds the FULL
+     mutated rows array and fires `onchange(next)`, which NodeRenderer turns
+     into `stateManager.set(<bind path>, next)` (the Kanban pattern). Editable
+     cells are role="button", open on Enter/Space, commit on Enter/blur and
+     cancel on Escape. A column may set `editable:false`.
+
+     Column `href` names a row field holding a URL; the cell text links to it
+     (new tab, rel=noopener) after `safeHref` rejects javascript:/data: URLs,
+     since /browser result tables carry URLs scraped from untrusted pages.
+     The root forwards `id` and data-ripple-node for the visual editor. -->
 
 <script lang="ts">
   import { safeStyle } from '@ripple-ui/core';
@@ -176,6 +170,23 @@
         }
         return [];
     });
+
+    // A column is numeric when every non-empty value in it is a number.
+    const numericCols = $derived.by(() => {
+        const out = new Set<string>();
+        for (const c of columns) {
+            const vals = tableData
+                .map((r) => r?.[c.accessorKey])
+                .filter((v) => v !== null && v !== undefined && v !== "");
+            if (vals.length > 0 && vals.every((v) => typeof v === "number"))
+                out.add(c.accessorKey);
+        }
+        return out;
+    });
+    const cellClass = (key: string) =>
+        numericCols.has(key)
+            ? "text-right tabular-nums whitespace-nowrap align-top"
+            : "whitespace-normal align-top [overflow-wrap:anywhere] min-w-[8ch]";
 
     let sortKey = $state<string | null>(null);
     let sortDir = $state<"asc" | "desc">("asc");
@@ -378,7 +389,7 @@
                 <Table.Row>
                     {#each columns as col}
                         {#if col.sortable && col.accessorKey}
-                            <Table.Head>
+                            <Table.Head class={numericCols.has(col.accessorKey) ? "text-right" : ""}>
                                 <button
                                     type="button"
                                     onclick={() => toggleSort(col.accessorKey!)}
@@ -400,7 +411,7 @@
                                 </button>
                             </Table.Head>
                         {:else}
-                            <Table.Head>{col.header}</Table.Head>
+                            <Table.Head class={numericCols.has(col.accessorKey) ? "text-right" : ""}>{col.header}</Table.Head>
                         {/if}
                     {/each}
                 </Table.Row>
@@ -426,7 +437,7 @@
                                     row[col.accessorKey] !== undefined
                                         ? row[col.accessorKey]
                                         : (Object.values(row)[ci] ?? "")}
-                                <Table.Cell>
+                                <Table.Cell class={cellClass(col.accessorKey)}>
                                     {#if ci === 0 && statusKey && row[statusKey]}
                                         <span
                                             class="mr-1.5 inline-block size-2 rounded-full align-middle"

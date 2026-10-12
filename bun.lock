@@ -68,6 +68,9 @@
         "zod": "^4.0.0",
       },
       "devDependencies": {
+        "@codemirror/language": "6.12.3",
+        "@humanspeak/svelte-json-view-lite": "0.2.5",
+        "@lezer/highlight": "1.2.3",
         "@playwright/test": "1.60.0",
         "@sveltejs/adapter-static": "3.0.10",
         "@sveltejs/kit": "^2.50.2",
@@ -227,6 +230,8 @@
     "@floating-ui/utils": ["@floating-ui/utils@0.2.11", "", {}, "sha512-RiB/yIh78pcIxl6lLMG0CgBXAZ2Y0eVHqMPYugu+9U0AeT6YBeiJpf7lbdJNIugFP5SIjwNRgo4DhR1Qxi26Gg=="],
 
     "@google/model-viewer": ["@google/model-viewer@4.2.0", "", { "dependencies": { "@monogrid/gainmap-js": "^3.1.0", "lit": "^3.2.1" }, "peerDependencies": { "three": "^0.182.0" } }, "sha512-RjpAI5cLs9CdvPcMRsOs8Bea/lNmGTTyaPyl16o9Fv6Qn8VSpgBMmXFr/11yb0hTrsojp2dOACEcY77R8hVUVA=="],
+
+    "@humanspeak/svelte-json-view-lite": ["@humanspeak/svelte-json-view-lite@0.2.5", "", { "peerDependencies": { "svelte": "^5.0.0" } }, "sha512-3QgB8kNws2XGIJetnu1VWVM2YcMaKucaIu82wqcjKhYmSJM1g7ANR0kCtEbhi1UVp/YpMjqlT0HqW5T33jXBFA=="],
 
     "@iconify/types": ["@iconify/types@2.0.0", "", {}, "sha512-+wluvCrRhXrhyOmRDJ3q8mux9JkKy5SJ/v8ol2tu4FVjyYvtEzkc/3pK15ET6RKg4b4w4BmTk1+gsCUhf21Ykg=="],
 

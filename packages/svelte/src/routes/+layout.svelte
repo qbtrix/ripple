@@ -3,7 +3,7 @@
   @description The site chrome every route shares, following Paw OS's TopBar
     (paw-enterprise components/os/TopBar.svelte, PlanBadge.svelte and the
     .liquid-glass pill in routes/+layout.svelte). One sticky strip: the Ripple
-    mark on the left; a centred icon nav (Chat, Gallery, Docs, Design system)
+    mark on the left; a centred icon nav (Chat, Gallery, Playground, Docs, Design system)
     where every item is an icon with an aria-label and a tooltip and the
     current one is PE's liquid-glass pill carrying its icon and label; on the
     right the docs search as a ⌘K chip, the GitHub and theme icon buttons, and a
@@ -12,6 +12,8 @@
     Below 640px the nav sits between the mark and the tools, GitHub and Try Paw
     OS leave the bar (the footer carries both), and on small phones a long
     active label (Design system) shows its short form so 375px never scrolls sideways.
+    Below 400px every tab is icon-only, the active one included, so five tabs
+    and the tools fit a 320px phone.
     A skip link (first focus) jumps to #main, the wrapper around every page.
     Glass falls back to solid under prefers-reduced-transparency. Tokens and
     fonts come from ./site.css. Theme: static/theme-init.js sets `dark` on
@@ -27,6 +29,7 @@
 	import { page } from '$app/state';
 	import MessageSquare from '@lucide/svelte/icons/message-square';
 	import LayoutGrid from '@lucide/svelte/icons/layout-grid';
+	import SquareCode from '@lucide/svelte/icons/square-code';
 	import BookOpen from '@lucide/svelte/icons/book-open';
 	import Palette from '@lucide/svelte/icons/palette';
 	import Sun from '@lucide/svelte/icons/sun';
@@ -52,6 +55,7 @@
 	const nav = [
 		{ href: '/', label: 'Chat', short: 'Chat', icon: MessageSquare },
 		{ href: '/live', label: 'Gallery', short: 'Gallery', icon: LayoutGrid },
+		{ href: '/playground', label: 'Playground', short: 'Play', icon: SquareCode },
 		{ href: '/docs', label: 'Docs', short: 'Docs', icon: BookOpen },
 		{ href: '/ds', label: 'Design system', short: 'DS', icon: Palette }
 	];
@@ -493,6 +497,17 @@
 			display: inline;
 		}
 		.no-short .label {
+			display: none;
+		}
+	}
+	/* Narrow phones: five tabs plus the tools only fit icon-only, so the
+	   active pill drops its label (the glass pill still marks it). */
+	@media (max-width: 399.98px) {
+		.tab,
+		.tab.active {
+			padding: 4px 6px;
+		}
+		.label {
 			display: none;
 		}
 	}

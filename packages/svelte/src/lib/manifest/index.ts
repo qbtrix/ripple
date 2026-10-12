@@ -131,6 +131,9 @@ import { billSplitEntry } from './entries/bill-split.js';
 import { intervalWorkoutEntry } from './entries/interval-workout.js';
 import { habitTrackerEntry } from './entries/habit-tracker.js';
 import { notesEntry } from './entries/notes.js';
+import { placeResultsEntry } from './entries/place-results.js';
+import { productGridEntry } from './entries/product-grid.js';
+import { mediaGridEntry } from './entries/media-grid.js';
 import { focusTimerEntry } from './entries/focus-timer.js';
 import { musicPlayerEntry } from './entries/music-player.js';
 import { flashcardDeckEntry } from './entries/flashcard-deck.js';
@@ -138,6 +141,9 @@ import { wordGuessEntry } from './entries/word-guess.js';
 import { quizEntry } from './entries/quiz.js';
 import { memoryMatchEntry } from './entries/memory-match.js';
 import { boardGameEntry } from './entries/board-game.js';
+import { agendaEntry } from './entries/agenda.js';
+import { weekScheduleEntry } from './entries/week-schedule.js';
+import { weatherForecastEntry } from './entries/weather-forecast.js';
 import { kanbanEntry } from './entries/kanban.js';
 import { kbdEntry } from './entries/kbd.js';
 import { kvTableEntry } from './entries/kv-table.js';
@@ -465,6 +471,9 @@ export const manifestEntries: WidgetManifestEntry[] = [
   intervalWorkoutEntry,
   habitTrackerEntry,
   notesEntry,
+  placeResultsEntry,
+  productGridEntry,
+  mediaGridEntry,
   focusTimerEntry,
   musicPlayerEntry,
   flashcardDeckEntry,
@@ -472,6 +481,9 @@ export const manifestEntries: WidgetManifestEntry[] = [
   quizEntry,
   memoryMatchEntry,
   boardGameEntry,
+  agendaEntry,
+  weekScheduleEntry,
+  weatherForecastEntry,
   orgChartEntry,
   otpInputEntry,
   pageHeaderEntry,

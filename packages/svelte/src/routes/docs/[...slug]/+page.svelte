@@ -1,6 +1,7 @@
 <!--
   @file routes/docs/[...slug]/+page.svelte
-  @description One docs page: title, Copy page / Copy for your model, the body
+  @description One docs page: title, Copy page / Copy for your model / View as
+    Markdown and the Open in dropdown (Claude, ChatGPT, PocketPaw; OpenIn.svelte), the body
     as HTML segments (marked output from our own src/docs markdown, rendered
     with {@html}) interleaved with live SpecExample blocks, then prev/next.
     Code-block Copy buttons come in the HTML and are wired here by delegation.
@@ -9,8 +10,9 @@
 -->
 <script lang="ts">
 	import SpecExample from '$lib/site/SpecExample.svelte';
-	import { forYourModel } from '$lib/site/docs/model.js';
+	import { forYourModel, SITE_URL } from '$lib/site/docs/model.js';
 	import { attachDiagrams } from '$lib/site/docs/diagrams.js';
+	import OpenIn from '../OpenIn.svelte';
 
 	let { data } = $props();
 
@@ -57,6 +59,7 @@
 				{copiedWhat === 'model' ? 'Copied' : 'Copy for your model'}
 			</button>
 			<a href="/docs/{data.slug}.md">View as Markdown</a>
+			<OpenIn markdownUrl="{SITE_URL}/docs/{data.slug}.md" title={data.meta.title} />
 		</div>
 	</header>
 
@@ -116,7 +119,8 @@
 		border-bottom: 1px solid var(--site-line);
 	}
 	.actions button,
-	.actions a {
+	.actions a,
+	.actions :global(.open-in > button) {
 		padding: 6px 11px;
 		border: 1px solid var(--site-line);
 		border-radius: var(--radius-control);
@@ -130,7 +134,8 @@
 			background 0.15s;
 	}
 	.actions button:hover,
-	.actions a:hover {
+	.actions a:hover,
+	.actions :global(.open-in > button:hover) {
 		color: var(--site-ink);
 		background: var(--site-hover);
 	}

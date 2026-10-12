@@ -1,12 +1,10 @@
 <!--
-  Stat.svelte — single metric display (label + formatted value + optional delta).
-  Change: formatValue now guards non-finite coercions (undefined/null/object)
-  and renders blank instead of the literal "NaN". Strings still pass through.
-  2026-09-17 (fix/port-gaps): status-coloured text moved onto the readable
-  text tokens (text-ripple-{error,success,warning,info}-text; red text that
-  read text-destructive now reads text-ripple-error-text, the same hue since
-  --ripple-error aliases --destructive). The raw tones are fill colours and
-  measured 1.7-3.3:1 as text in light mode. Fills and tints are unchanged.
+  Stat.svelte: single metric display (label + formatted value + optional delta).
+  Values are model output, so formatValue never paints "NaN" (non-finite
+  numbers render blank, strings pass through verbatim) and a plain number is
+  rounded for display by magnitude (0 decimals from 100, 1 from 10, else 2)
+  unless `decimals` / `precision` pins the digits. Status-coloured text uses
+  the readable text tokens (text-ripple-*-text); raw tones are fills only.
 -->
 <script lang="ts">
   import { tv } from 'tailwind-variants';
@@ -26,6 +24,8 @@
     currency?: string;
     locale?: string;
     precision?: number;
+    /** Max fraction digits for the value and delta. Overrides the magnitude-based default. */
+    decimals?: number;
     delta?: number;
     deltaPercent?: number;
     deltaFormat?: 'absolute' | 'percent' | 'both';
@@ -43,6 +43,7 @@
     currency = 'USD',
     locale,
     precision,
+    decimals,
     delta,
     deltaPercent,
     deltaFormat = 'percent',
@@ -62,22 +63,27 @@
     // the literal "NaN"; a widget must never do that. Render blank instead.
     if (typeof v !== 'number' || !Number.isFinite(v)) return '';
     const opts: Intl.NumberFormatOptions = {};
-    if (precision !== undefined) {
+    if (decimals !== undefined) {
+      opts.maximumFractionDigits = decimals;
+    } else if (precision !== undefined) {
       opts.minimumFractionDigits = precision;
       opts.maximumFractionDigits = precision;
+    } else if (format === 'number') {
+      const a = Math.abs(v);
+      opts.maximumFractionDigits = a >= 100 ? 0 : a >= 10 ? 1 : 2;
     }
     switch (format) {
       case 'currency':
         opts.style = 'currency';
         opts.currency = currency;
-        if (precision === undefined) {
+        if (precision === undefined && decimals === undefined) {
           opts.minimumFractionDigits = 2;
           opts.maximumFractionDigits = 2;
         }
         break;
       case 'percent':
         opts.style = 'percent';
-        if (precision === undefined) {
+        if (precision === undefined && decimals === undefined) {
           opts.maximumFractionDigits = 1;
         }
         break;

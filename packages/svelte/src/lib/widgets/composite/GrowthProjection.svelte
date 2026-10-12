@@ -582,7 +582,7 @@
 					<h3 class={caption}>Try other numbers</h3>
 					{#each controls as c (c.key)}
 						<div class="flex flex-col gap-1.5" data-control={c.key}>
-							<div class="flex items-center justify-between gap-2">
+							<div class="flex flex-wrap items-center justify-between gap-2">
 								<label for="{uid}-{c.key}" class="text-callout">{c.label}</label>
 								<div class="flex h-8 items-center gap-1 rounded-md border border-ripple-border bg-ripple-input px-2 text-callout text-ripple-input-foreground focus-within:outline-2 focus-within:outline-offset-1 focus-within:outline-ripple-ring">
 									{#if c.prefix}<span class="text-ripple-muted-foreground" aria-hidden="true">{c.prefix}</span>{/if}

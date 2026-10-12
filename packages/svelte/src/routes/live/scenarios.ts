@@ -21,11 +21,18 @@ import hiitWorkout from './fixtures/hiit-workout.json';
 import mealPlan from './fixtures/meal-plan.json';
 import explainer from './fixtures/explainer.json';
 import plane3d from './fixtures/plane-3d.json';
+import refundApproval from './fixtures/refund-approval.json';
+import incidentRollback from './fixtures/incident-rollback.json';
+import returnExchange from './fixtures/return-exchange.json';
+import bookAppointment from './fixtures/book-appointment.json';
+import quoteBuilder from './fixtures/quote-builder.json';
 
 export interface ScenarioFixture {
 	id: string;
 	title: string;
 	prompt: string;
+	/** What the model already knew when it drew (tool results, a shop's slots), from the recorder's --context. */
+	context?: string;
 	model: string;
 	/** ISO timestamp of the recording. */
 	recordedAt: string;
@@ -89,7 +96,7 @@ export const chatPrompts: ChatPrompt[] = [
 	{ id: 'pack-list', title: 'Pack for trip', prompt: 'Make me a packing checklist for a 4-day beach weekend, grouped into clothes, toiletries and gear' },
 	{ id: 'project-timeline', title: 'Project timeline', prompt: 'Show a timeline for a 6-week website redesign with milestones and owners (sample project)' },
 	{ id: 'task-checklist', title: 'Task checklist', prompt: 'Make me a checklist for moving apartments that I can tick off as I go' },
-	{ id: 'weekly-schedule', title: 'Weekly schedule', prompt: 'Lay out my weekly schedule: work blocks on weekdays, the gym three times and family dinner on Sunday' },
+	{ id: 'weekly-schedule', title: 'Weekly schedule', prompt: 'Lay out my weekly schedule on a week calendar: work blocks on weekdays, the gym three times and family dinner on Sunday' },
 	{ id: 'take-notes', title: 'Take notes', prompt: 'Give me a notepad for ideas with tags, start with two sample notes' },
 	{ id: 'view-calendar', title: 'View calendar', prompt: 'Show me a month calendar with a few sample events on it' },
 	{ id: 'take-quiz', title: 'Take a quiz', prompt: 'Quiz me with 5 world geography questions and show my score at the end' },
@@ -104,7 +111,7 @@ export const chatPrompts: ChatPrompt[] = [
 	{ id: 'review-nda', title: 'Review NDA', prompt: 'Review a sample mutual NDA and flag the clauses I should read closely, with a short note on each' },
 	{ id: 'due-diligence', title: 'Due diligence', prompt: 'Make me a due diligence checklist for buying a small online shop, with a status for each item' },
 	{ id: 'compliance-check', title: 'Compliance check', prompt: 'Run a privacy check on a sample signup form and list what passes and what needs fixing' },
-	{ id: 'meeting-agenda', title: 'Meeting agenda', prompt: 'Draft a 30-minute weekly team meeting agenda with timed items and owners' },
+	{ id: 'meeting-agenda', title: 'Meeting agenda', prompt: 'Draft a 30-minute weekly team meeting agenda starting at 10:00, with timed items and owners' },
 	{ id: 'pizza', title: 'Order pizza', prompt: 'Build me a pizza: pick a size, crust and toppings and show the price (sample menu)' },
 	{ id: 'find-recipe', title: 'Find a recipe', prompt: 'Find me a quick vegetarian dinner recipe with ingredients and steps' },
 	{ id: 'yoga', title: 'Yoga session', prompt: 'Guide me through a 15-minute morning yoga session, one pose at a time with a timer' },
@@ -245,3 +252,18 @@ export function groupedSuggestions(pool: (Scenario | ChatPrompt)[]): SuggestionC
 		})
 	);
 }
+
+/**
+ * Runs set inside a business: an agent asking before it acts, a shop's own
+ * widget, a work app. They play on /live under "For business", each in its
+ * business's brand (brands.ts). Not on the landing: its chips and answers
+ * come from `scenarios` and `playScenarios` only.
+ */
+export const BUSINESS_GROUP = 'For business';
+export const businessScenarios: Scenario[] = [
+	{ id: 'refund-approval', title: 'Approve a refund', category: 'Support', fixture: refundApproval, group: BUSINESS_GROUP },
+	{ id: 'incident-rollback', title: 'Roll back a bad deploy', category: 'Ops', fixture: incidentRollback, group: BUSINESS_GROUP },
+	{ id: 'return-exchange', title: 'Swap a size', category: 'Store', fixture: returnExchange, group: BUSINESS_GROUP },
+	{ id: 'book-appointment', title: 'Book a haircut', category: 'Booking', fixture: bookAppointment, group: BUSINESS_GROUP },
+	{ id: 'quote-builder', title: 'Draft a client quote', category: 'Work app', fixture: quoteBuilder, group: BUSINESS_GROUP }
+];

@@ -7,8 +7,10 @@
     under it (aria-expanded, aria-controls the panel). Expanded, it is the
     full grid: an uppercase label per group over wrapping pill chips (lucide
     icon from chip-icons.ts, then the title, then "step by step" on steps
-    chips), scrolling inside itself past 55vh. A chip tap collapses it and runs
-    here (session.send); text the visitor types goes to Paw OS
+    chips), on its own panel that floats over the bottom of the conversation
+    above the toggle (never taking the log's height), scrolling inside itself
+    past 55vh. Escape or a chip tap collapses it (focus inside it returns to
+    the toggle); a chip runs here (session.send); text the visitor types goes to Paw OS
     (session.handoff, opened from the send gesture) unless `typedLocal` keeps
     it on the Paw Bar (mock and dev only); the hint under the composer says so.
     The look follows Paw OS: the composer is ChatPill's glass pill (a round
@@ -31,8 +33,12 @@
     that plays the closest recorded answer into the same turn
     (session.replayRecorded).
     Each card has a spec peek (its JSON, pretty-printed as it streams, soft
-    wrapped; under 1024px 8 lines until Expand), closed except on the first
-    card the visitor triggers per browser session. Turns already there at
+    wrapped, following its newest line while the card streams and showing
+    its start once final), closed except on the first card the visitor
+    triggers per browser session. It is clipped, never its own scroll
+    container, so a wheel over it scrolls the conversation: under 1024px to 8
+    lines, from 1024px beside the card to the card's height; Expand shows the
+    whole spec and the pane grows. Turns already there at
     mount (the prerendered exchange) neither animate in nor open a peek. A
     card whose spec root is a `card` widget gets a bare frame.
     Scrolling: the log (with the optional `top` snippet above it, the
@@ -40,7 +46,8 @@
     scrolls the page (no scrollIntoView anywhere). It follows new content only
     while the visitor is at its bottom; a visitor's own message (chip, typed
     or sent by a card) always jumps there; scrolled up, growth while a turn
-    streams shows a "New" pill instead. At mount it stays at its top. Below
+    streams shows a "New" pill instead; a reader at the bottom stays there when
+    the chat itself resizes (a keyboard). At mount it stays at its top. Below
     it the dock: the panel, the composer with the `more` snippet to its
     right, and a foot row (the `foot` snippet, then the hint, which hides
     when narrow but stays as the textarea's description). The log is role="log"
@@ -49,6 +56,11 @@
     DOM ids are positional, never Card.id: that counter can differ between the
     prerender and hydration. Reduced motion lives in CSS, plus the label
     rotation, which stays on "Thinking".
+    The playground hosts it with two optional props, both off on the landing:
+    `chips` renders each card as a compact chip (title, status, size) that
+    picks it into the playground's own preview, and `onspec` swaps the peek's
+    Expand for an Open button that hands the card to a fuller JSON view.
+    `ask` and `focus` are exported for its prompt cards and the `/` key.
 -->
 <script lang="ts">
 	import { tick, untrack, type Snippet } from 'svelte';
@@ -64,6 +76,12 @@
 	import PayCard from './PayCard.svelte';
 	import { PAWOS_URL, type Card, type ChatSession, type Notice } from './session.svelte.js';
 	import { hideSpecText } from './sse.js';
+
+	interface Chips {
+		/** The card the playground's panes are showing. */
+		viewing: string | null;
+		pick: (card: Card) => void;
+	}
 
 	interface Suggestion {
 		id: string;
@@ -86,7 +104,9 @@
 		open,
 		top,
 		more,
-		foot
+		foot,
+		chips = null,
+		onspec
 	}: {
 		session: ChatSession;
 		suggestions?: Suggestion[];
@@ -103,6 +123,10 @@
 		more?: Snippet;
 		/** Rendered at the left of the dock's foot row, before the hint (the landing's install strip). */
 		foot?: Snippet;
+		/** Cards show as chips that pick them into the host's own preview (the playground). */
+		chips?: Chips | null;
+		/** The peek's Open button: hands the card to the host's fuller JSON view. */
+		onspec?: (card: Card) => void;
 	} = $props();
 
 	// Chip rows in the order their groups first appear.
@@ -121,6 +145,14 @@
 	});
 	let showAll = $state(false);
 	const expanded = $derived(showAll || suggestions.length <= ROW);
+	let toggle = $state<HTMLButtonElement>();
+	/** Folds the open panel; focus that was inside it goes to the toggle, not to the page. */
+	function closePanel() {
+		if (!showAll) return;
+		const inside = document.activeElement?.closest('#ripple-suggestions');
+		showAll = false;
+		if (inside) void tick().then(() => toggle?.focus());
+	}
 
 	let draft = $state('');
 	let field = $state<HTMLTextAreaElement>();
@@ -189,6 +221,8 @@
 			else if (session.busy) unseen = true;
 		});
 		ro.observe(inner);
+		// The chat itself resizing (a keyboard, the suggestion panel) keeps a reader at the bottom there.
+		ro.observe(scroller);
 		return () => ro.disconnect();
 	});
 
@@ -218,9 +252,13 @@
 		}
 	});
 
-	async function ask(text: string) {
+	export async function ask(text: string) {
 		if (session.busy || !text.trim()) return;
 		await session.send(text);
+	}
+
+	export function focus() {
+		field?.focus();
 	}
 
 	/** The composer: Paw OS opens synchronously in this gesture, or the popup is blocked. */
@@ -266,10 +304,10 @@
 		return n < 1024 ? `${n} B` : `${(n / 1024).toFixed(1)} KB`;
 	};
 
-	/** Keeps a streaming spec scrolled to its newest line. */
+	/** Keeps a streaming spec scrolled to its newest line; a finished one shows from its start. */
 	const follow = (card: Card) => (el: HTMLElement) => {
 		void card.text;
-		if (card.status === 'streaming') el.scrollTop = el.scrollHeight;
+		el.scrollTop = card.status === 'streaming' ? el.scrollHeight : 0;
 	};
 
 	/** The spec root is itself a card widget, so our frame would draw a card in a card. */
@@ -319,6 +357,15 @@
 		return typeof v === 'string' && v.trim() ? v.trim().slice(0, 60) : undefined;
 	};
 
+	const chipStatus = (c: Card) =>
+		c.status === 'streaming'
+			? `Building · ${bytes(c.text)}`
+			: c.status === 'final'
+				? `Ready · ${bytes(c.text)}`
+				: c.reason === 'truncated' || c.reason === 'server:truncated'
+					? 'Left out: cut off'
+					: 'Left out: failed its checks';
+
 	const rejectedNote = (c: Card) =>
 		c.reason === 'truncated' || c.reason === 'server:truncated'
 			? 'The card was cut off before it finished, so it is left out.'
@@ -352,6 +399,21 @@
 	</svg>
 {/snippet}
 
+{#snippet cardChip(card: Card, pick: Chips)}
+	{@const viewing = pick.viewing === card.id}
+	<button type="button" class="ui-chip" data-status={card.status} aria-pressed={viewing} onclick={() => pick.pick(card)}>
+		<svg class="ui-chip-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+			<rect x="2" y="2.5" width="12" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="1.3" />
+			<path d="M2 6h12M6 6v7.5" stroke="currentColor" stroke-width="1.3" />
+		</svg>
+		<span class="ui-chip-text">
+			<span class="ui-chip-title">{card.title || 'Card'}</span>
+			<span class="ui-chip-meta">{chipStatus(card)}</span>
+		</span>
+		{#if viewing}<span class="ui-chip-viewing">Viewing</span>{/if}
+	</button>
+{/snippet}
+
 {#snippet cardView(card: Card, pid: string)}
 	{#if card.status === 'rejected'}
 		<p class="card-note">{rejectedNote(card)}</p>
@@ -378,13 +440,17 @@
 					<div class="peek-inner" data-full={peekFull[card.id] || undefined}>
 						<p class="peek-meta">
 							<span>JSON spec</span><span class="bytes">{bytes(card.text)}</span>
-							<button
-								type="button"
-								class="expand"
-								aria-expanded={peekFull[card.id] ?? false}
-								aria-controls="{pid}-code"
-								onclick={() => (peekFull[card.id] = !peekFull[card.id])}>{peekFull[card.id] ? 'Collapse' : 'Expand'}</button
-							>
+							{#if onspec}
+								<button type="button" class="expand" aria-haspopup="dialog" onclick={() => onspec(card)}>Open</button>
+							{:else}
+								<button
+									type="button"
+									class="expand"
+									aria-expanded={peekFull[card.id] ?? false}
+									aria-controls="{pid}-code"
+									onclick={() => (peekFull[card.id] = !peekFull[card.id])}>{peekFull[card.id] ? 'Collapse' : 'Expand'}</button
+								>
+							{/if}
 						</p>
 						<pre id="{pid}-code" {@attach follow(card)}><JsonLines text={card.text} highlight /></pre>
 					</div>
@@ -415,6 +481,8 @@
 	{/if}
 {/snippet}
 
+<svelte:window onkeydown={(e) => e.key === 'Escape' && closePanel()} />
+
 <div class="chat">
 	<p class="sr-only" aria-live="polite">{announce}</p>
 	<div class="scroll-wrap">
@@ -443,6 +511,8 @@
 											{#if shown.hidden && !turn.parts.some((p) => p.kind === 'card' && p.card.status !== 'rejected')}
 												<p class="card-note">Card hidden.</p>
 											{/if}
+										{:else if chips}
+											{@render cardChip(part.card, chips)}
 										{:else}
 											{@render cardView(part.card, `ripple-spec-${t}-${i}`)}
 										{/if}
@@ -494,7 +564,7 @@
 					disabled={session.busy}
 					title={s.prompt}
 					onclick={() => {
-						showAll = false;
+						closePanel();
 						void ask(s.prompt);
 					}}
 					>{#if Icon}<Icon class="chip-icon" size={15} aria-hidden="true" />{/if}{s.title}{#if s.steps}{' '}<span class="chip-steps"
@@ -504,7 +574,7 @@
 			</li>
 		{/snippet}
 		{#if suggestions.length}
-			<div id="ripple-suggestions" class="chip-groups" data-expanded={expanded}>
+			<div id="ripple-suggestions" class="chip-groups" data-expanded={expanded} data-overlay={showAll || undefined}>
 				{#if expanded}
 					{#each groups as [name, chips] (name)}
 						<div class="chip-group">
@@ -524,6 +594,7 @@
 				<button
 					type="button"
 					class="chips-toggle"
+					bind:this={toggle}
 					aria-expanded={showAll}
 					aria-controls="ripple-suggestions"
 					aria-label={showAll ? 'Show fewer' : 'Show all suggestions'}
@@ -581,9 +652,11 @@
 	}
 	/* The chat's own scroll container. min-height 0 lets it shrink inside a
 	   fixed-height parent instead of growing the page. Default overscroll, so
-	   a scroll that hits its bottom chains on into the page. */
+	   a scroll that hits its bottom chains on into the page. Isolated, so
+	   nothing in a card (map panes) rises over the open suggestion panel. */
 	.scroll-wrap {
 		position: relative;
+		isolation: isolate;
 		flex: 1;
 		min-height: 0;
 		display: flex;
@@ -923,7 +996,9 @@
 		font-variant-numeric: tabular-nums;
 	}
 	/* JsonLines soft wraps with a hanging indent, so a deep line stays in the
-	   pane: no sideways scroll to read a 1900px line in a 340px pane. */
+	   pane: no sideways scroll to read a 1900px line in a 340px pane. The pre
+	   is never user-scrollable (overflow hidden still lets `follow` set its
+	   scrollTop), so a wheel or swipe over it moves the conversation. */
 	.peek pre {
 		margin: 0;
 		padding: 0 16px 14px;
@@ -935,9 +1010,9 @@
 		line-height: 1.55;
 		color: var(--code-ink);
 	}
+	/* Expanded: the whole spec, the pane grows with it. */
 	.peek-inner[data-full] pre {
-		max-height: 60vh;
-		overflow: auto;
+		max-height: none;
 	}
 	.expand {
 		margin-left: auto;
@@ -968,21 +1043,19 @@
 		.peek {
 			position: relative;
 		}
-		/* The peek takes the card's height and scrolls inside it. */
+		/* The peek takes the card's height, clipped; Expand lets it grow the card. */
 		.peek-inner {
 			position: absolute;
 			inset: 0;
 			border-top: 0;
 			border-left: 1px solid var(--site-line);
 		}
-		.peek pre,
-		.peek-inner[data-full] pre {
+		.peek-inner[data-full] {
+			position: static;
+		}
+		.peek pre {
 			flex: 1;
 			max-height: none;
-			overflow: auto;
-		}
-		.expand {
-			display: none;
 		}
 		.card[data-bare] .peek-inner {
 			margin: 2px 0 0 12px;
@@ -992,6 +1065,79 @@
 		display: flex;
 		flex-direction: column;
 		gap: 10px;
+	}
+
+	/* The playground's card chip: a quiet row, the accent only on the one being viewed. */
+	.ui-chip {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		width: 100%;
+		max-width: 360px;
+		min-height: 56px;
+		padding: 8px 12px;
+		border: 1px solid var(--site-line);
+		border-radius: var(--radius-card);
+		background: var(--site-card);
+		color: var(--site-ink);
+		font: inherit;
+		text-align: left;
+		cursor: pointer;
+		transition:
+			background 0.15s,
+			border-color 0.15s;
+	}
+	.ui-chip:hover {
+		background: var(--site-hover);
+	}
+	.ui-chip[aria-pressed='true'] {
+		border-color: var(--primary);
+	}
+	.ui-chip:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: 2px;
+	}
+	.ui-chip-icon {
+		flex: none;
+		color: var(--site-soft);
+	}
+	.ui-chip[aria-pressed='true'] .ui-chip-icon {
+		color: var(--primary-ink);
+	}
+	.ui-chip-text {
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+		flex: 1;
+	}
+	.ui-chip-title {
+		font-size: 14px;
+		font-weight: 600;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.ui-chip-meta {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 12.5px;
+		color: var(--site-soft);
+		font-variant-numeric: tabular-nums;
+	}
+	.ui-chip[data-status='streaming'] .ui-chip-meta::before {
+		content: '';
+		width: 6px;
+		height: 6px;
+		border-radius: 50%;
+		background: var(--primary);
+		animation: blink 1.4s ease-in-out infinite;
+	}
+	.ui-chip-viewing {
+		flex: none;
+		font-size: 12px;
+		font-weight: 600;
+		color: var(--primary-ink);
 	}
 
 	.card-note,
@@ -1265,6 +1411,26 @@
 		mask-image: none;
 		animation: rise 0.2s ease-out;
 	}
+	/* Opened by the toggle, the grid floats over the bottom of the
+	   conversation, just above the toggle, instead of taking its height.
+	   Out of flow, it leaves the row's space to the log; the dock is
+	   bottom-anchored, so the toggle and composer stay put. */
+	.dock {
+		position: relative;
+	}
+	.chip-groups[data-overlay] {
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: 100%;
+		z-index: var(--z-sticky);
+		margin: 0;
+		padding: 12px;
+		border: 1px solid var(--site-line);
+		border-radius: 12px;
+		background: var(--site-panel);
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+	}
 	.chip-groups:not([data-expanded='true']) .chips {
 		display: contents;
 	}
@@ -1445,6 +1611,7 @@
 		.shimmer,
 		.placeholder > span,
 		.spinner,
+		.ui-chip-meta::before,
 		.caret {
 			animation: none;
 		}

@@ -1,6 +1,8 @@
 import { render, screen } from '@testing-library/svelte';
 import { expect, test } from 'vitest';
 import Stat from '$lib/widgets/display/Stat.svelte';
+import Ripple from '$lib/Ripple.svelte';
+import { healthSummary } from '../__fixtures__/live-chip-specs.js';
 
 test('renders label and value', () => {
   render(Stat, { props: { label: 'Revenue', value: 1234 } });
@@ -167,4 +169,28 @@ test('renders down arrow icon when direction=down', () => {
 test('renders minus icon when direction=neutral', () => {
   const { container } = render(Stat, { props: { value: 100, delta: 0, direction: 'auto' } });
   expect(container.querySelector('.lucide-minus')).not.toBeNull();
+});
+
+// --- Display rounding: a model writes `{sum / length}` and never rounds ---
+// Live chip audit (health summary): tiles read "8,971.429", "7.243", "61.571".
+
+test('health-summary spec: averages render rounded by magnitude', () => {
+  const { container } = render(Ripple, { props: { spec: healthSummary } });
+  const values = [...container.querySelectorAll('[data-size] .font-mono')].map((n) => n.textContent);
+  expect(values).toEqual(['8,971', '7.24', '61.6']);
+});
+
+test('decimals prop overrides the default rounding', () => {
+  render(Stat, { props: { value: 7.243, decimals: 1 } });
+  expect(screen.getByText('7.2')).toBeInTheDocument();
+});
+
+test('decimals: 0 rounds a small number to an integer', () => {
+  render(Stat, { props: { value: 7.6, decimals: 0 } });
+  expect(screen.getByText('8')).toBeInTheDocument();
+});
+
+test('precision still pads to fixed digits', () => {
+  render(Stat, { props: { value: 1234, precision: 2 } });
+  expect(screen.getByText('1,234.00')).toBeInTheDocument();
 });

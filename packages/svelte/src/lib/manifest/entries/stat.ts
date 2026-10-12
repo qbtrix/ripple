@@ -8,6 +8,7 @@ export const statEntry: WidgetManifestEntry = {
     label: { type: 'string', required: false, description: 'Stat label.' },
     value: { type: 'number | string', required: true, description: 'Main value.' },
     format: { type: '"number" | "currency" | "percent" | "compact"', required: false, description: 'Number format.' },
+    decimals: { type: 'number', required: false, description: 'Max decimals shown. Default rounds by size: whole numbers from 100, 1 decimal from 10, else 2.' },
     currency: { type: 'string', required: false, description: 'Currency code (default USD).' },
     delta: { type: 'number', required: false, description: 'Absolute change.' },
     deltaPercent: { type: 'number', required: false, description: 'Percent change.' },
