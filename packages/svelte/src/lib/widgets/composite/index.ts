@@ -33,6 +33,7 @@ export { default as PlaceResults } from './PlaceResults.svelte';
 export { default as ProductGrid } from './ProductGrid.svelte';
 export { default as MediaGrid } from './MediaGrid.svelte';
 export { default as MusicPlayer } from './MusicPlayer.svelte';
+export { default as Figure } from './Figure.svelte';
 export { default as FlashcardDeck } from './FlashcardDeck.svelte';
 export { default as WordGuess } from './WordGuess.svelte';
 export { default as Quiz } from './Quiz.svelte';

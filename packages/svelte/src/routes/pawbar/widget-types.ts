@@ -17,7 +17,7 @@ export const CHAT_WIDGET_TYPES: ReadonlySet<string> = new Set([
 	'comment-thread', 'comparison-layout', 'comparison-table', 'confirm-dialog', 'container',
 	'context-menu', 'copy', 'cta', 'dashboard', 'dashboard-slot', 'data-grid', 'date-picker',
 	'definition-list', 'diff', 'discover-card', 'drawing-canvas', 'dropdown-menu', 'each',
-	'empty-state', 'entity-detail', 'error-state', 'exec-dashboard', 'faq', 'feature-grid',
+	'empty-state', 'entity-detail', 'error-state', 'exec-dashboard', 'faq', 'feature-grid', 'figure',
 	'file-upload', 'fill-grid', 'filter-bar', 'flashcard', 'flashcard-deck', 'flex', 'focus-timer',
 	'follow-up', 'footer', 'form', 'form-layout', 'funnel', 'gantt', 'gauge', 'glass-card',
 	'glyph-grid', 'grid', 'growth-projection', 'habit-tracker', 'heading', 'heatmap', 'hero',
