@@ -15,6 +15,9 @@
 // game's on_complete may never ask. fixtures/headphones-comparison-card.json is a live
 // model card (2026-10-10, "Shop headphones") whose comparison Choose click asks.
 // A `model-viewer` names a built-in asset and its anchors, never a file or a point.
+// fixtures/map-route-card.json is a live model card (2026-10-12, Haiku, a walking
+// route in Lisbon) once refused as widget:map; a model-made map keeps OSM tiles,
+// plain-text pins, ask-only clicks and capped sizes.
 
 import { describe, expect, test } from 'vitest';
 import { HOST_EVENTS, MAX_CARD_NODES, MAX_DEPTH, PATH_TARGET_ACTIONS, decodeEntities, refuseCard } from './card-policy.js';
@@ -26,6 +29,7 @@ import { pickScenario } from './recorded.js';
 import { CHAT_WIDGET_TYPES } from './widget-types.js';
 import liveHeadphonesCard from './fixtures/headphones-comparison-card.json';
 import liveTripCard from './fixtures/trip-flow-card.json';
+import liveMapCard from './fixtures/map-route-card.json';
 import { scenarios } from '../live/scenarios.js';
 import manifest from '../../../static/manifest.json';
 
@@ -301,7 +305,7 @@ describe('follow-up', () => {
 });
 
 describe('widgets', () => {
-	test.each(['embed', 'ripple-frame', 'richtext', 'rich-text', 'map', 'company-header', 'iframe', 'frame', 'nested-spec', 'md', 'Embed', 'not-a-widget'])(
+	test.each(['embed', 'ripple-frame', 'richtext', 'rich-text', 'company-header', 'iframe', 'frame', 'nested-spec', 'md', 'Embed', 'not-a-widget'])(
 		'refuses the %s widget node',
 		(type) => {
 			expect(refuseCard({ ui: { type: 'flex', children: [{ type, props: {} }] } })).toBe(`widget:${type}`);
@@ -322,15 +326,15 @@ describe('widgets', () => {
 		expect(refuseCard({ ui: { type: 'ifr' } }, { partial: true })).toBe('widget:ifr');
 	});
 
-	test('rich-text, map and company-header are refused at the root and as nested widgets', () => {
+	test('rich-text and company-header are refused at the root and as nested widgets', () => {
 		expect(refuseCard({ ui: { type: 'rich-text', props: { value: '<p>hi</p>' } } })).toBe('widget:rich-text');
-		expect(refuseCard({ ui: { type: 'tabs', props: { items: [{ label: 'a', content: { type: 'map' } }] } } })).toBe('widget:map');
+		expect(refuseCard({ ui: { type: 'tabs', props: { items: [{ label: 'a', content: { type: 'company-header' } }] } } })).toBe('widget:company-header');
 		expect(refuseCard({ ui: { type: 'company-header', props: { name: 'Acme' } } }, { partial: true })).toBe('widget:company-header');
 		expect(refuseCard({ ui: { type: 'ma' } }, { partial: true })).toBeNull();
 	});
 
 	test('the allowlist is the vendored manifest minus the blocked widgets', () => {
-		const blocked = new Set(['embed', 'ripple-frame', 'richtext', 'rich-text', 'map', 'company-header']);
+		const blocked = new Set(['embed', 'ripple-frame', 'richtext', 'rich-text', 'company-header']);
 		const expected = manifest.widgets.map((w) => w.type).filter((t) => !blocked.has(t));
 		expect([...CHAT_WIDGET_TYPES].toSorted()).toEqual(expected.toSorted());
 	});
@@ -941,5 +945,45 @@ describe('play cards', () => {
 			expect(s.fixture.model).toBe('hand-written');
 			expect(JSON.parse(s.fixture.chunks.map((c) => c.text).join(''))).toEqual({ version: '1.0', ...cards[i] });
 		}
+	});
+});
+
+describe('map', () => {
+	const pin = (extra: Record<string, unknown> = {}) => ({ lat: 38.71, lng: -9.13, label: 'Rossio', ...extra });
+	const map = (props: Record<string, unknown>) => ({ ui: { type: 'card', children: [{ type: 'map', props: { center: [38.71, -9.13], zoom: 15, ...props } }] } });
+
+	test('the live Lisbon route card passes', () => {
+		expect(refuseCard(liveMapCard)).toBeNull();
+	});
+
+	test('documented shape, osm tiles, a popup and an asking marker pass', () => {
+		const paths = [{ id: 'r', points: [[38.71, -9.13], [38.72, -9.12]] }];
+		expect(refuseCard(map({ tiles: 'osm', paths, markers: [pin({ id: 'a', popup: 'The station', actions: ask({ text: 'Tell me about Rossio.' }) })] }))).toBeNull();
+		expect(refuseCard(map({ markers: [pin({ actions: [ask({ text: 'More' })] })] }))).toBeNull();
+	});
+
+	test.each([
+		['a carto tile preset', { tiles: 'carto-voyager' }, 'map:tiles'],
+		['custom tiles', { tiles: 'custom' }, 'map:tiles'],
+		['a tile url', { tileUrl: 'https://tiles.example/{z}/{x}/{y}.png' }, 'map:tiles'],
+		['a tile attribution', { tileAttribution: 'Tiles' }, 'map:tiles'],
+		['an html label', { markers: [pin({ label: '<b>Rossio</b>' })] }, 'map:marker'],
+		['an expression label', { markers: [pin({ label: '{state.x}' })] }, 'map:marker'],
+		['an html popup', { markers: [pin({ popup: '<i>hi</i>' })] }, 'map:marker'],
+		['a marker icon', { markers: [pin({ icon: 'building' })] }, 'map:marker'],
+		['a marker set action', { markers: [pin({ actions: { action: 'set', target: 'x', value: 1 } })] }, 'map:marker'],
+		['a marker emitting checkout', { markers: [pin({ actions: { action: 'emit', target: 'checkout', value: {} } })] }, 'map:marker'],
+		['a marker that is not an object', { markers: ['Rossio'] }, 'map:marker'],
+		['31 markers', { markers: Array.from({ length: 31 }, () => pin()) }, 'map:size'],
+		['501 route points', { route: Array.from({ length: 501 }, () => ({ lat: 1, lng: 2 })) }, 'map:size'],
+		['501 points across paths', { paths: [{ id: 'a', points: Array.from({ length: 300 }, () => [1, 2]) }, { id: 'b', points: Array.from({ length: 201 }, () => [1, 2]) }] }, 'map:size']
+	])('refuses %s', (_name, props, why) => {
+		expect(refuseCard(map(props))).toBe(why);
+	});
+
+	test('streaming: tile overrides are refused early, a tiles prefix of osm waits', () => {
+		expect(refuseCard(map({ tileUrl: 'https://x' }), { partial: true })).toBe('map:tiles');
+		expect(refuseCard(map({ tiles: 'os' }), { partial: true })).toBeNull();
+		expect(refuseCard(map({ tiles: 'carto' }), { partial: true })).toBe('map:tiles');
 	});
 });
