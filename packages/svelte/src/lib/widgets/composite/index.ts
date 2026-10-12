@@ -26,6 +26,7 @@ export { default as IntervalWorkout } from './IntervalWorkout.svelte';
 export { default as HabitTracker } from './HabitTracker.svelte';
 export { default as FocusTimer } from './FocusTimer.svelte';
 export { default as Notes } from './Notes.svelte';
+export { default as WeatherForecast } from './WeatherForecast.svelte';
 export { default as MusicPlayer } from './MusicPlayer.svelte';
 export { default as FlashcardDeck } from './FlashcardDeck.svelte';
 export { default as WordGuess } from './WordGuess.svelte';
