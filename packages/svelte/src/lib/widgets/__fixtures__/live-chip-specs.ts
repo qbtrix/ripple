@@ -1,4 +1,4 @@
-// widgets/__fixtures__/live-chip-specs.ts — real card specs the concierge model
+// widgets/__fixtures__/live-chip-specs.ts: real card specs the concierge model
 // wrote for landing chips (live chip audit, 2026-10-12), kept verbatim so widget
 // tests pin how the widgets render what a model actually sends, not a tidy
 // hand-written example. Do not clean them up: the mess is the point.
