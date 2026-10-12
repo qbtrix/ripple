@@ -15,10 +15,27 @@
   unmount and when a tracker disappears. Click events route through the ripple
   EventDispatcher so chat-spec authors can wire `chat.send` round-trips.
 
-  Tile providers default to OpenStreetMap-derived presets (no API key). All
-  Leaflet imports are dynamic so the widget is SSR-safe and only pulls the
+  Model-made props are read leniently: any [lat, lng] pair (center, bounds
+  corners, path and polygon points) may be a {lat, lng} object, `route` is a
+  single path, and a marker without an id gets its index. All of it is
+  $derived, so streamed props never go stale.
+
+  Tile providers default to OpenStreetMap-derived presets (no API key). The
+  default is `carto-voyager`; a page whose CSP only allows OSM calls
+  setMapDefaultTiles('osm') once at startup. All Leaflet imports are dynamic so the widget is SSR-safe and only pulls the
   ~42 KB library in when the widget actually mounts.
 -->
+<script lang="ts" module>
+  export type TilePreset = 'osm' | 'carto-voyager' | 'carto-light' | 'carto-dark' | 'osm-hot' | 'custom';
+
+  let defaultTiles: TilePreset = 'carto-voyager';
+
+  /** The preset a map uses when its `tiles` prop is absent. Set once, before maps mount. */
+  export function setMapDefaultTiles(preset: TilePreset): void {
+    defaultTiles = preset;
+  }
+</script>
+
 <script lang="ts">
   import { safeStyle } from '@ripple-ui/core';
   import { sanitizeHtml } from '$lib/utils/sanitize-html.js';
@@ -29,9 +46,11 @@
   import type { StateManager } from '$lib/core/state-manager.svelte.js';
 
   type LatLng = [number, number];
+  /** A pair as the docs say, or as a model often sends it. */
+  type LatLngIn = LatLng | { lat: number; lng: number };
 
   interface Marker {
-    id: string;
+    id?: string;
     lat: number;
     lng: number;
     label?: string;
@@ -43,7 +62,7 @@
 
   interface Path {
     id: string;
-    points: LatLng[];
+    points: LatLngIn[];
     color?: string;
     weight?: number;
     dashed?: boolean;
@@ -53,7 +72,7 @@
 
   interface Polygon {
     id: string;
-    points: LatLng[];
+    points: LatLngIn[];
     color?: string;
     fillColor?: string;
     fillOpacity?: number;
@@ -73,17 +92,15 @@
     follow?: boolean;
   }
 
-  type TilePreset = 'osm' | 'carto-voyager' | 'carto-light' | 'carto-dark' | 'osm-hot' | 'custom';
-
   interface Props {
     id?: string;
     class?: string;
     style?: Record<string, string>;
-    center?: LatLng;
+    center?: LatLngIn;
     zoom?: number;
     minZoom?: number;
     maxZoom?: number;
-    bounds?: [LatLng, LatLng];
+    bounds?: [LatLngIn, LatLngIn];
     /** Pixel padding around `bounds` when fitting. Default 0. */
     boundsPadding?: number;
     tiles?: TilePreset;
@@ -91,6 +108,8 @@
     tileAttribution?: string;
     markers?: Marker[];
     paths?: Path[];
+    /** One path as a bare point list; drawn after `paths`. */
+    route?: LatLngIn[];
     polygons?: Polygon[];
     trackers?: Tracker[];
     interactive?: boolean;
@@ -105,18 +124,19 @@
     id,
     class: className,
     style,
-    center = [0, 0],
+    center: centerIn = [0, 0],
     zoom = 2,
     minZoom,
     maxZoom,
-    bounds,
+    bounds: boundsIn,
     boundsPadding = 0,
-    tiles = 'carto-voyager',
+    tiles: tilesIn,
     tileUrl,
     tileAttribution,
-    markers = [],
-    paths = [],
-    polygons = [],
+    markers: markersIn = [],
+    paths: pathsIn = [],
+    route,
+    polygons: polygonsIn = [],
     trackers = [],
     interactive = true,
     showControls = true,
@@ -125,6 +145,16 @@
     onmarkerclick,
     onmapclick
   }: Props = $props();
+
+  const toLatLng = (p: LatLngIn): LatLng => (Array.isArray(p) ? p : [p?.lat, p?.lng]);
+  const tiles = $derived(tilesIn ?? defaultTiles);
+  const center = $derived(toLatLng(centerIn));
+  const bounds = $derived(boundsIn ? ([toLatLng(boundsIn[0]), toLatLng(boundsIn[1])] as [LatLng, LatLng]) : undefined);
+  const markers = $derived(markersIn.map((m, i) => (m.id == null ? { ...m, id: String(i) } : m)));
+  const paths = $derived(
+    [...pathsIn, ...(route?.length ? [{ id: 'route', points: route }] : [])].map((p) => ({ ...p, points: p.points.map(toLatLng) }))
+  );
+  const polygons = $derived(polygonsIn.map((g) => ({ ...g, points: g.points.map(toLatLng) })));
 
   const styleString = $derived(
     style ? Object.entries(style).map(([k, v]) => `${k}:${v}`).join(';') : undefined
@@ -391,7 +421,7 @@
       if (m.popup) lm.bindPopup(escapeHtml(String(m.popup)));
       lm.on('click', () => {
         const dispatched = dispatch(m.actions, m);
-        if (!dispatched) onmarkerclick?.(m.id);
+        if (!dispatched) onmarkerclick?.(m.id!);
       });
       markerLayer.addLayer(lm);
     }

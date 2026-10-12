@@ -19,7 +19,8 @@
     Labs and dev routes stay reachable by URL, unlinked. The bar says "Try Paw
     OS" (the pill's accessible name carries "by PocketPaw"), and the footer
     links "Paw OS by PocketPaw". It points the model-viewer library at the
-    site's own /models/ so 3D cards load same-origin.
+    site's own /models/ so 3D cards load same-origin, and defaults maps to OSM
+    tiles, the one tile host the CSP allows.
 -->
 <script lang="ts">
 	import { onMount } from 'svelte';
@@ -35,9 +36,12 @@
 	import Search from '$lib/site/docs/Search.svelte';
 	import { pawosBase } from './pawbar/session.svelte.js';
 	import { setModelAssetBase } from '$lib/widgets/media/model-asset-types.js';
+	import { setMapDefaultTiles } from '$lib/widgets/data/Map.svelte';
 
 	// 3D cards load the built-in models from this site (static/models), so the CSP stays same-origin.
 	setModelAssetBase('/models/');
+	// Map cards use OSM tiles, the only tile host the CSP's img-src allows.
+	setMapDefaultTiles('osm');
 
 	let { children } = $props();
 
