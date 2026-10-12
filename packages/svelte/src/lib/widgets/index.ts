@@ -19,7 +19,7 @@ import {
   EntityDetail, FormLayout, WizardLayout, ChecklistLayout, ReportLayout, InvoiceLayout, OrderStatus, MenuOrder,
   ExecDashboard, OpsDashboard, AnalyticsDashboard, PipelineDashboard, ProjectDashboard,
   WordGuess,
-  AskUserQuestions, Itinerary, Booking, GrowthProjection, BillSplit, Recipe, MealPlan, IntervalWorkout, FlashcardDeck, Quiz, MemoryMatch, HabitTracker, FocusTimer, BoardGame,
+  AskUserQuestions, Itinerary, Booking, GrowthProjection, BillSplit, Recipe, MealPlan, IntervalWorkout, FlashcardDeck, Quiz, MemoryMatch, HabitTracker, FocusTimer, Notes, BoardGame,
 } from './composite/index.js';
 import { ConfirmDialog, Alert, DropdownMenu, Toast, Tooltip, Popover, HoverCard, CommandPalette, ContextMenu, NotificationCenter, ErrorState, Coachmark } from './overlay/index.js';
 import {
@@ -307,6 +307,9 @@ const defaultRegistry: WidgetMap = {
   'focus-timer': FocusTimer,
   pomodoro: FocusTimer,
   'pomodoro-timer': FocusTimer,
+  notes: Notes,
+  notepad: Notes,
+  'sticky-notes': Notes,
   'flashcard-deck': FlashcardDeck,
   flashcards: FlashcardDeck,
   'study-deck': FlashcardDeck,
@@ -501,7 +504,7 @@ export {
   Navbar, Footer, Cta, Testimonial, FeatureGrid, Newsletter, LogoCloud, Faq, MarketingHero,
   Marquee, BorderBeam, Shimmer, AnimatedBeam, Aurora, Spotlight, BentoGrid, TextEffect,
   TodoList, DrawingCanvas, Timer, Flashcard,
-  AskUserQuestions, Booking, Recipe, MealPlan, IntervalWorkout, FlashcardDeck, MemoryMatch, HabitTracker, FocusTimer, BoardGame,
+  AskUserQuestions, Booking, Recipe, MealPlan, IntervalWorkout, FlashcardDeck, MemoryMatch, HabitTracker, FocusTimer, Notes, BoardGame,
   WordGuess,
   // Console telemetry pack (feat/console-telemetry-widgets, 2026-06-13)
   LedClock, GlyphGrid, FillGrid, StreakBars, Seismograph,

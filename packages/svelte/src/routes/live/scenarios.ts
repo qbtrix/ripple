@@ -90,7 +90,7 @@ export const chatPrompts: ChatPrompt[] = [
 	{ id: 'project-timeline', title: 'Project timeline', prompt: 'Show a timeline for a 6-week website redesign with milestones and owners (sample project)' },
 	{ id: 'task-checklist', title: 'Task checklist', prompt: 'Make me a checklist for moving apartments that I can tick off as I go' },
 	{ id: 'weekly-schedule', title: 'Weekly schedule', prompt: 'Lay out my weekly schedule: work blocks on weekdays, the gym three times and family dinner on Sunday' },
-	{ id: 'take-notes', title: 'Take notes', prompt: 'Give me a notes card where I can jot down ideas and tag them' },
+	{ id: 'take-notes', title: 'Take notes', prompt: 'Give me a notepad for ideas with tags, start with two sample notes' },
 	{ id: 'view-calendar', title: 'View calendar', prompt: 'Show me a month calendar with a few sample events on it' },
 	{ id: 'take-quiz', title: 'Take a quiz', prompt: 'Quiz me with 5 world geography questions and show my score at the end' },
 	{ id: 'explain-concept', title: 'Explain concept', prompt: 'Explain how compound interest works in a few lines, with a simple chart' },

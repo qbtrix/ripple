@@ -130,6 +130,7 @@ import { growthProjectionEntry } from './entries/growth-projection.js';
 import { billSplitEntry } from './entries/bill-split.js';
 import { intervalWorkoutEntry } from './entries/interval-workout.js';
 import { habitTrackerEntry } from './entries/habit-tracker.js';
+import { notesEntry } from './entries/notes.js';
 import { focusTimerEntry } from './entries/focus-timer.js';
 import { flashcardDeckEntry } from './entries/flashcard-deck.js';
 import { wordGuessEntry } from './entries/word-guess.js';
@@ -462,6 +463,7 @@ export const manifestEntries: WidgetManifestEntry[] = [
   menuOrderEntry,
   intervalWorkoutEntry,
   habitTrackerEntry,
+  notesEntry,
   focusTimerEntry,
   flashcardDeckEntry,
   wordGuessEntry,

@@ -43,7 +43,7 @@ const CATEGORIES = new Set(['layout', 'display', 'input', 'data', 'control', 'ov
 // the data widgets and the summary pieces the SYSTEM rules point at.
 const DATA_WIDGETS = new Set([
 	'itinerary', 'booking', 'menu-order', 'growth-projection', 'bill-split', 'recipe', 'meal-plan', 'interval-workout', 'flashcard-deck',
-	'word-guess', 'quiz', 'memory-match', 'habit-tracker', 'focus-timer', 'board-game',
+	'word-guess', 'quiz', 'memory-match', 'habit-tracker', 'focus-timer', 'notes', 'board-game',
 	'comparison-layout', 'exec-dashboard', 'entity-detail', 'timeline', 'kv-table', 'model-viewer'
 ]);
 // model-viewer names a built-in model by id and labels it by anchor name; the
@@ -116,6 +116,7 @@ CARD SHAPE (pick this first)
   - an interval, circuit or HIIT workout: interval-workout
   - tracking habits or streaks through the week: habit-tracker
   - a pomodoro or focus session with breaks and rounds: focus-timer
+  - jotting down notes or ideas with tags: notes (seed a couple of notes; never build a form)
   - a study or flip-card deck: flashcard-deck
   - a word guessing game: word-guess
   - a trivia quiz or multiple-choice test: quiz

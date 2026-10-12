@@ -25,7 +25,7 @@ export const CHAT_WIDGET_TYPES: ReadonlySet<string> = new Set([
 	'link-preview', 'loading', 'location-picker', 'logo-cloud', 'markdown', 'marketing-hero',
 	'marquee', 'master-detail', 'meal-plan', 'memory-match', 'mention', 'menu-order', 'metric',
 	'modal', 'model-viewer', 'multi-select', 'navbar', 'news-card', 'newsletter',
-	'notification-center', 'number-input', 'ops-dashboard', 'order-status', 'org-chart', 'otp-input',
+	'notes', 'notification-center', 'number-input', 'ops-dashboard', 'order-status', 'org-chart', 'otp-input',
 	'page-header', 'parallax', 'people-picker', 'permission-matrix', 'pipeline-dashboard', 'popover',
 	'pricing-table', 'progress', 'progress-ring', 'project-dashboard', 'pros-cons', 'qr', 'quiz',
 	'quote', 'radio-group', 'range-bar', 'rating', 'reasoning-trace', 'recipe', 'report-layout',
