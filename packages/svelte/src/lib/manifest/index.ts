@@ -138,6 +138,7 @@ import { wordGuessEntry } from './entries/word-guess.js';
 import { quizEntry } from './entries/quiz.js';
 import { memoryMatchEntry } from './entries/memory-match.js';
 import { boardGameEntry } from './entries/board-game.js';
+import { agendaEntry } from './entries/agenda.js';
 import { weekScheduleEntry } from './entries/week-schedule.js';
 import { weatherForecastEntry } from './entries/weather-forecast.js';
 import { kanbanEntry } from './entries/kanban.js';
@@ -474,6 +475,7 @@ export const manifestEntries: WidgetManifestEntry[] = [
   quizEntry,
   memoryMatchEntry,
   boardGameEntry,
+  agendaEntry,
   weekScheduleEntry,
   weatherForecastEntry,
   orgChartEntry,
