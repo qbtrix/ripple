@@ -1,15 +1,28 @@
 <!--
   @file routes/docs/widgets/[type]/+page.svelte
   @description One generated widget reference page: type, category, description,
-    the manifest example live in a SpecExample (or its first pocket when the
-    bare example renders nothing, see EMPTY_EXAMPLES), any other pockets, then Props / Events / Node fields tables, each only when it has
-    rows. All copy comes from the manifest entry. Tables scroll inside their own
-    box so a phone never scrolls sideways. Indexed by Pagefind (data-pagefind-body).
+    then the Example: a props configurator over the spec the page previews (the
+    manifest example, or its first pocket when the bare example renders nothing,
+    see EMPTY_EXAMPLES; the controls then edit the widget's node inside the
+    pocket), or a plain SpecExample when no prop can be modelled or the widget's
+    node is not in that spec. The header's Copy spec button only shows in the
+    plain case; the configurator carries its own, which copies the edited spec.
+    Then one row of live previews per variant-like prop, the other pocket specs,
+    and the Props / Events / Node fields tables, each only when it has rows. All
+    copy comes from the manifest entry. Tables scroll inside their own box so a
+    phone never scrolls sideways. Indexed by Pagefind (data-pagefind-body).
 -->
 <script lang="ts">
 	import SpecExample from '$lib/site/SpecExample.svelte';
+	import PropsConfigurator from '$lib/site/docs/PropsConfigurator.svelte';
+	import VariantRow from '$lib/site/docs/VariantRow.svelte';
+	import { configurableProps } from '$lib/site/docs/props.js';
 
 	let { data } = $props();
+
+	// Categories whose widgets are page or panel sized and need the full column to read.
+	const WIDE = new Set(['composite', 'data', 'layout', 'marketing', 'research', 'vertical']);
+	const configurable = $derived(data.target !== null && configurableProps(data.props).length > 0);
 
 	let copied = $state(false);
 
@@ -59,7 +72,9 @@
 			<p class="badge">Renders without JS</p>
 		{/if}
 		<div class="actions" data-pagefind-ignore>
-			<button type="button" onclick={copySpec}>{copied ? 'Copied' : 'Copy spec'}</button>
+			{#if !configurable}
+				<button type="button" onclick={copySpec}>{copied ? 'Copied' : 'Copy spec'}</button>
+			{/if}
 			<a href="/docs/widgets/{data.type}.md">View as Markdown</a>
 			<a href={data.source} rel="noopener">Source on GitHub</a>
 		</div>
@@ -67,7 +82,18 @@
 	</header>
 
 	<h2 id="example">Example</h2>
-	<SpecExample spec={data.example} />
+	{#if configurable}
+		<PropsConfigurator spec={data.example} rows={data.props} path={data.target ?? []} wide={WIDE.has(data.category.id)} />
+	{:else}
+		<SpecExample spec={data.example} />
+	{/if}
+
+	{#each data.axes as axis (axis.name)}
+		{@const title = data.headings.find((h) => h.id === `axis-${axis.name}`)?.text}
+		<h2 id="axis-{axis.name}">{title}</h2>
+		<p class="note">The example with only <code>{axis.name}</code> changed.</p>
+		<VariantRow spec={data.example} {axis} />
+	{/each}
 
 	{#each data.interactive as s, i (s.name)}
 		<h2 id="interactive-{i}">{s.name}</h2>
@@ -244,6 +270,16 @@
 	.next {
 		margin-left: auto;
 		align-items: flex-end !important;
+	}
+	.note {
+		margin: 0;
+		max-width: 70ch;
+		color: var(--site-soft);
+	}
+	.note code {
+		padding: 0;
+		border: 0;
+		background: none;
 	}
 	.sr-only {
 		position: absolute;
