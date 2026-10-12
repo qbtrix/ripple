@@ -236,7 +236,7 @@
 								</div>
 							{/if}
 							{#if on}
-								<p class={['mt-1 text-footnote font-semibold tabular-nums', left < 0 ? 'text-ripple-error' : 'text-ripple-accent']} data-slot="countdown" aria-live="off">
+								<p class={['mt-1 text-footnote font-semibold tabular-nums', left < 0 ? 'text-ripple-error-text' : 'text-ripple-accent']} data-slot="countdown" aria-live="off">
 									{left >= 0 ? `${mmss(left)} left` : `${mmss(-left)} over`}
 								</p>
 							{/if}
