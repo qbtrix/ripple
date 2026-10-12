@@ -6,7 +6,7 @@ export const invoiceLinesEntry: WidgetManifestEntry = {
   description: 'Invoice line-item table with qty, unit price, totals. Auto-computes subtotal; supports tax/discount summary rows.',
   props: {
     lines: { type: 'Array<{ id?: string | number; description: string; quantity?: number; unitPrice?: number; total?: number; note?: string }>', required: true, description: 'Line items.' },
-    currency: { type: 'string', required: false, description: 'Currency symbol. Default "$".' },
+    currency: { type: 'string', required: false, description: 'Currency symbol ("$") or ISO code ("USD"). Default "$".' },
     summary: { type: 'Array<{ label: string; value: number; isNegative?: boolean }>', required: false, description: 'Tax/discount/shipping rows.' },
     subtotal: { type: 'number', required: false, description: 'Override auto-computed subtotal.' },
     total: { type: 'number', required: false, description: 'Override auto-computed grand total.' },
