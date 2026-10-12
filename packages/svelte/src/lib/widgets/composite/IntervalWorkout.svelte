@@ -18,10 +18,15 @@
     never adds time. It pauses when the tab is hidden and never auto-resumes.
   - Reduced motion swaps the ring for plain digits in CSS (motion-reduce),
     not JS, so the prerendered page hydrates the same everywhere.
+  - Each exercise shows a figure from exercise-figures.ts, picked by its
+    `figure` id or its name; no match keeps the kind icon. Only library
+    strings reach {@html}. The current one animates; rows and reduced motion
+    get the still key pose, swapped in CSS like the ring.
 -->
 <script module lang="ts">
 	import type { ExerciseKind } from '../data-kit/icons.js';
 	import { clampSec, clock, finite } from '../data-kit/format.js';
+	import { EXERCISE_FIGURES, matchFigure } from './exercise-figures.js';
 
 	// Shared with focus-timer; re-exported for this widget's callers and tests.
 	export { clampSec, clock };
@@ -31,6 +36,8 @@
 		name: string;
 		cue?: string;
 		kind?: ExerciseKind;
+		/** An exercise-figures id; omitted, the name picks one. */
+		figure?: string;
 	}
 	/** One timed block. On an automatic rest, `ex` is the exercise coming up. */
 	export interface WorkoutInterval {
@@ -132,7 +139,9 @@
 			const e = typeof raw === 'string' ? { name: raw } : rec(raw);
 			const name = plain(e.name);
 			if (!name) return [];
-			return [{ key: `${e.id ?? ''}:${i}`, name, cue: plain(e.cue), kind: typeof e.kind === 'string' ? e.kind : undefined }];
+			const kind = typeof e.kind === 'string' ? e.kind : undefined;
+			const fig = matchFigure(name, typeof e.figure === 'string' ? e.figure : undefined) ?? (kind === 'rest' ? 'rest' : null);
+			return [{ key: `${e.id ?? ''}:${i}`, name, cue: plain(e.cue), kind, fig: fig ? EXERCISE_FIGURES[fig] : undefined }];
 		})
 	);
 	const work = $derived(clampSec(workSec, WORK));
@@ -258,6 +267,8 @@
 	const heroName = $derived(isRest && !manualRest ? 'Rest' : (curEx?.name ?? ''));
 	const heroCue = $derived(isRest && !manualRest ? '' : (curEx?.cue ?? ''));
 	const HeroIcon = $derived(isRest ? EXERCISE_ICONS.rest : kindIcon(EXERCISE_ICONS, curEx?.kind));
+	/** Library markup only (exercise-figures.ts), never a prop string. */
+	const heroFig = $derived(isRest && !manualRest ? EXERCISE_FIGURES.rest : curEx?.fig);
 	const started = $derived(leftMs !== null);
 	const phaseWord = $derived(
 		running ? (isRest ? 'Rest' : 'Work') : started ? 'Paused' : at === 0 ? 'Ready' : isRest ? 'Rest' : 'Work'
@@ -428,7 +439,21 @@
 							<p class="text-caption-1 font-medium tracking-[0.04em] text-ripple-muted-foreground uppercase tabular-nums">
 								Exercise {(cur?.ex ?? 0) + 1} of {list.length}{roundCount > 1 ? ` · Round ${(cur?.round ?? 0) + 1} of ${roundCount}` : ''}
 							</p>
+							{#if heroFig}
+								<span
+									class={[
+										'grid size-24 shrink-0 place-items-center rounded-ripple p-1.5 @min-[720px]:size-28',
+										isRest ? 'bg-ripple-success/12 text-ripple-success-text' : 'bg-ripple-muted text-ripple-surface-foreground'
+									]}
+									data-slot="figure"
+									data-figure={heroFig.id}
+								>
+									<span class="block size-full motion-reduce:hidden">{@html heroFig.svg}</span>
+									<span class="hidden size-full motion-reduce:block">{@html heroFig.still}</span>
+								</span>
+							{/if}
 							<div class="flex min-w-0 items-center gap-2.5">
+								{#if !heroFig}
 								<span
 									class={[
 										'grid size-10 shrink-0 place-items-center rounded-md',
@@ -437,6 +462,7 @@
 								>
 									<HeroIcon size={20} strokeWidth={1.75} aria-hidden="true" />
 								</span>
+								{/if}
 								<h3 class="min-w-0 text-title-2 font-semibold text-balance" data-slot="current">{heroName}</h3>
 							</div>
 							{#if heroCue}<p class="max-w-prose text-callout text-pretty text-ripple-muted-foreground">{heroCue}</p>{/if}
@@ -541,7 +567,8 @@
 							>
 								<span
 									class={[
-										'grid size-8 shrink-0 place-items-center rounded-md',
+										'grid shrink-0 place-items-center rounded-md',
+										e.fig ? 'size-10' : 'size-8',
 										isDone
 											? 'bg-ripple-success text-ripple-success-foreground'
 											: isNow
@@ -551,6 +578,8 @@
 								>
 									{#if isDone}
 										<Check size={16} strokeWidth={2.25} aria-hidden="true" />
+									{:else if e.fig}
+										<span class="block size-9" data-figure={e.fig.id}>{@html e.fig.still}</span>
 									{:else}
 										<KindIcon size={16} strokeWidth={1.75} aria-hidden="true" />
 									{/if}

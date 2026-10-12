@@ -1,6 +1,7 @@
 // manifest/entries/interval-workout.ts — the LLM-facing entry for the
 // interval-workout data widget (design doc 2026-10-09 §3.8). The model writes
-// the exercises and the timings; the widget runs the timer. Rows use `kind`
+// the exercises and the timings; the widget runs the timer and draws each
+// exercise's figure from its own library, matched by name. Rows use `kind`
 // from a closed enum, never `type`; `workSec` is the bound field; no events.
 import type { WidgetManifestEntry } from '../index.js';
 
@@ -16,9 +17,9 @@ export const intervalWorkoutEntry: WidgetManifestEntry = {
     subtitle: { type: 'string', required: false, description: 'One line under the title (level, equipment).' },
     verdict: { type: '{ text: string; status?: "good" | "warn" | "bad" | "info" | "neutral" }', required: false, description: 'The answer up front, at most 140 chars. Omit it and the total time leads.' },
     exercises: {
-      type: `Array<{ id?: string; name: string; cue?: string; kind?: ${EXERCISE_KINDS} }>`,
+      type: `Array<{ id?: string; name: string; cue?: string; kind?: ${EXERCISE_KINDS}; figure?: string }>`,
       required: true,
-      description: 'In order, one round. `cue` is a one-line form tip. A "rest" kind is a rest block (restSec long) with no extra rest beside it.',
+      description: 'In order, one round. `cue` is a one-line form tip. A "rest" kind is a rest block (restSec long) with no extra rest beside it. Each row shows an animated figure matched from `name`; `figure` (an id like "cat-cow") overrides the match.',
     },
     workSec: { type: 'number', required: true, description: 'Seconds of work per exercise (5 to 600). Two-way bind with `bind: "{state.workSec}"`; a change applies from the next interval.' },
     restSec: { type: 'number', required: true, description: 'Seconds of rest between exercises (0 to 300; 0 skips rests).' },

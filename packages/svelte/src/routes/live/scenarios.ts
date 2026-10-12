@@ -81,7 +81,7 @@ export const chatPrompts: ChatPrompt[] = [
 	{ id: 'find-deals', title: 'Find deals', prompt: 'Show me the best deals on kitchen gadgets this week, sorted by biggest discount (sample prices)' },
 	{ id: 'restaurant-search', title: 'Restaurant search', prompt: 'Find Italian restaurants near me with ratings, price range and distance (sample places)' },
 	{ id: 'coffee-shops', title: 'Find coffee shops', prompt: 'Show me coffee shops downtown with wifi, opening hours and distance (sample places)' },
-	{ id: 'directions', title: 'Get directions', prompt: 'Give me walking directions from the train station to the city museum as a short list of turns (sample route)' },
+	{ id: 'directions', title: 'Get directions', prompt: 'Show me on a map a walking route from Rossio station to São Jorge Castle in Lisbon, with the turns (approximate)' },
 	{ id: 'weather', title: 'Weather forecast', prompt: 'Show me a 7-day weather forecast for Lisbon with highs, lows and chance of rain (sample data)' },
 	{ id: 'draft-announcement', title: 'Draft announcement', prompt: 'Draft a short team announcement about our new office opening, with a title and a few lines I can edit' },
 	{ id: 'create-survey', title: 'Create survey', prompt: 'Make me a 5-question customer feedback survey with star ratings and a comment box' },
@@ -110,7 +110,7 @@ export const chatPrompts: ChatPrompt[] = [
 	{ id: 'yoga', title: 'Yoga session', prompt: 'Guide me through a 15-minute morning yoga session, one pose at a time with a timer' },
 	{ id: 'track-progress', title: 'Track progress', prompt: 'Track my running over the last 8 weeks: distance and pace in a chart (sample data)' },
 	{ id: 'documentaries', title: 'Find documentaries', prompt: 'Recommend 6 nature documentaries with ratings and running time (sample titles)' },
-	{ id: 'play-music', title: 'Play music', prompt: 'Make me a music player with a short focus playlist (sample tracks)' },
+	{ id: 'play-music', title: 'Play music', prompt: 'Make me a focus music player with a few calm tracks' },
 	{ id: 'podcasts', title: 'Podcast discovery', prompt: 'Suggest science podcasts I might like, with topics and episode lengths (sample shows)' },
 	{ id: 'appointment', title: 'Book appointment', prompt: 'Help me pick a time for a dentist appointment next week from the open slots (sample calendar)' },
 	{ id: 'weekend-getaway', title: 'Weekend getaway', prompt: 'Plan a weekend getaway to the mountains: where to stay, what to do and a rough budget (sample places)' }

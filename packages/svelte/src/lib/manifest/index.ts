@@ -132,6 +132,7 @@ import { intervalWorkoutEntry } from './entries/interval-workout.js';
 import { habitTrackerEntry } from './entries/habit-tracker.js';
 import { notesEntry } from './entries/notes.js';
 import { focusTimerEntry } from './entries/focus-timer.js';
+import { musicPlayerEntry } from './entries/music-player.js';
 import { flashcardDeckEntry } from './entries/flashcard-deck.js';
 import { wordGuessEntry } from './entries/word-guess.js';
 import { quizEntry } from './entries/quiz.js';
@@ -465,6 +466,7 @@ export const manifestEntries: WidgetManifestEntry[] = [
   habitTrackerEntry,
   notesEntry,
   focusTimerEntry,
+  musicPlayerEntry,
   flashcardDeckEntry,
   wordGuessEntry,
   quizEntry,
