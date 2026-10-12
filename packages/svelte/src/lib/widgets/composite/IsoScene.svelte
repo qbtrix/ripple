@@ -181,7 +181,7 @@
 		if (typeof IntersectionObserver === 'function' && root) {
 			io = new IntersectionObserver((entries) => (onScreen = entries.some((e) => e.isIntersecting)));
 			io.observe(root);
-		} else onScreen = true;
+		}
 		return () => {
 			mq?.removeEventListener?.('change', onMq);
 			document.removeEventListener('visibilitychange', onVis);

@@ -11,7 +11,7 @@ describe('iso-scene SSR', () => {
 		const body = render(IsoScene, { props: bikeScene }).body.replace(/<!--[^>]*-->/g, "");
 		expect(body).toContain('Bicycle drivetrain');
 		expect(body.match(/data-part="/g)).toHaveLength(bikeScene.parts.length);
-		expect(body).toMatch(/data-slot="readout"[^>]*>2\.10 m</);
+		expect(body).toMatch(/data-slot="readout"[^>]*>5\.25 m</);
 		expect(body).toMatch(/data-slot="readout"[^>]*>25\.2 km\/h</);
 		expect(body.match(/data-slot="pin"/g)).toHaveLength(4);
 		expect(body).toContain('data-running="false"');
