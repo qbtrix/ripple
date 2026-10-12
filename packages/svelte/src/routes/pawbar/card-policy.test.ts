@@ -301,6 +301,19 @@ describe('follow-up', () => {
 });
 
 describe('widgets', () => {
+	test('passes a music-player card: its sounds are generated, it has no URL props', () => {
+		expect(
+			refuseCard({
+				state: { music: null },
+				ui: {
+					type: 'music-player',
+					bind: '{state.music}',
+					props: { title: 'Focus mix', autoplay: true, volume: 0.6, tracks: [{ title: 'Soft rain', sound: 'rain', minutes: 10, color: 'blue' }, { title: 'Late keys', sound: 'lofi' }] }
+				}
+			})
+		).toBeNull();
+	});
+
 	test.each(['embed', 'ripple-frame', 'richtext', 'rich-text', 'map', 'company-header', 'iframe', 'frame', 'nested-spec', 'md', 'Embed', 'not-a-widget'])(
 		'refuses the %s widget node',
 		(type) => {
