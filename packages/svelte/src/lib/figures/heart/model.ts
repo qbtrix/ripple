@@ -58,8 +58,8 @@ const fin = (v: unknown, fallback: number) => (typeof v === 'number' && Number.i
 export function clampParams(p: Partial<Record<string, unknown>> = {}): HeartParams {
 	const [bpm, stroke] = PARAMS;
 	return {
-		bpm: clamp(Math.round(fin(p.bpm, bpm!.value)), bpm!.min, bpm!.max),
-		stroke: clamp(Math.round(fin(p.stroke, stroke!.value)), stroke!.min, stroke!.max)
+		bpm: clamp(Math.round(fin(p.bpm, bpm.value)), bpm.min, bpm.max),
+		stroke: clamp(Math.round(fin(p.stroke, stroke.value)), stroke.min, stroke.max)
 	};
 }
 

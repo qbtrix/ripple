@@ -5,7 +5,7 @@
 // Vessels are tubes on axis frames with ball elbows: the pulmonary artery and
 // the aorta leave low through valve bodies with hand wheels, the pulmonary
 // veins bridge over the top into the left atrium, the vena cava runs behind
-// into the right atrium.
+// and turns once into the right atrium's back face.
 //
 // `heartSvg()` is pure (strings only) and paints back to front in one fixed
 // order; `mount()` puts it in a host element and runs the loop: chambers are
@@ -34,7 +34,7 @@ const SEPT = 4; // half thickness of the septum plate
 const OUT_Z = 30; // artery outlet height
 const LUNGS = { x: -146, y: -38, w: 44, d: 76, r: 14 };
 const BODY = { x: 102, y: -38, w: 44, d: 76, r: 14 };
-const TANK_TOP = 98;
+const TANK_TOP = 84;
 const TUBE_R = 5.2;
 const VC_Y = -30;
 const VC_Z = 80;
@@ -105,7 +105,7 @@ function pipe(route: Point3[], r: number, className: string, flowId?: string, fl
 			const n = k.len3(off) > 1e-6 ? k.unit3(off) : ([0, 0, 1] as Point3);
 			return at(k.add3(p, k.mul3(n, r * 0.62)));
 		});
-		flow = `<path class="iso-line heart-flow" data-tone="${flowTone}" data-flow-id="${flowId}" d="${k.pathOf(pts)}"/>`;
+		flow = `<path class="iso-line heart-flow" data-free="" data-tone="${flowTone}" data-flow-id="${flowId}" d="${k.pathOf(pts)}"/>`;
 	}
 	return pieces.map((p) => p.svg).join('') + flow;
 }
@@ -138,7 +138,7 @@ function bench(): string {
 	// Label plate, front left: three rule lines and two screws.
 	const label = { x: -140, y: PLATE.y + PLATE.d - 20, w: 34, d: 12, r: 1.2 };
 	out.push(S(k.slabOf(label, 0, 1, P, 3, 0.3), { tone: 'mid' }));
-	for (const [i, yy] of [3.6, 6, 8.4].entries()) out.push(L(k.lineOnTop([label.x + 6, label.y + yy], [label.x + label.w - (i === 2 ? 14 : 6), label.y + yy], 1, P), { tone: 'faint' }));
+	for (const [i, yy] of [3.2, 6, 8.8].entries()) out.push(L(k.lineOnTop([label.x + 0.4, label.y + yy], [label.x + label.w - 0.4, label.y + yy], 1, P), { tone: i === 0 ? 'lo' : 'faint' }));
 	out.push(D([at([label.x + 2.6, label.y + 6, 1]), at([label.x + label.w - 2.6, label.y + 6, 1])], { size: 0.45 }));
 	return out.join('');
 }
@@ -152,7 +152,7 @@ function tank(plan: typeof LUNGS, ribTone: 'blue' | 'red', className: string): s
 	out.push(S(k.slabOf(plan, 4, TANK_TOP - 4, P, 10, 1), { tone: 'hi', crease: 'lo', className, inner: seams }));
 	// Vertical ribs on the front (+y) face, seam to seam.
 	const ribs: string[] = [];
-	for (let x = plan.x + plan.r + 3; x <= plan.x + plan.w - plan.r - 3 + 0.01; x += 4) ribs.push(k.segment([x, plan.y + plan.d, 20], [x, plan.y + plan.d, TANK_TOP - 18], P));
+	for (let x = plan.x + plan.r + 3; x <= plan.x + plan.w - plan.r - 3 + 0.01; x += 4) ribs.push(k.segment([x, plan.y + plan.d, 16], [x, plan.y + plan.d, TANK_TOP - 14], P));
 	out.push(L(ribs.join(''), { tone: ribTone }));
 	// Lid with a bolt circle.
 	const lid = k.insetPlan(plan, 5);
@@ -230,12 +230,11 @@ function avLever(side: Side, open: number): string {
 	const cx = centreX(side, A_W);
 	const a = (open * Math.PI) / 2;
 	const y = AV_WHEEL_Y + 2;
-	return k.segment([cx - Math.cos(a) * 3.8, y, AV_WHEEL_Z - Math.sin(a) * 3.8], [cx + Math.cos(a) * 3.8, y, AV_WHEEL_Z + Math.sin(a) * 3.8], P);
+	return k.segment([cx - Math.cos(a) * 4.6, y, AV_WHEEL_Z - Math.sin(a) * 4.6], [cx + Math.cos(a) * 4.6, y, AV_WHEEL_Z + Math.sin(a) * 4.6], P);
 }
 
 /** Outlet valve on an artery: flange, body, flange, with a stem and a knurled wheel on top. */
 const OUT_X = { start: V_W + SEPT, f1: 58, b0: 62, b1: 72, f2: 76 };
-const outX = (side: Side, v: number) => sideX(side) * v;
 
 function outletValve(side: Side, id: string, className: string): string {
 	const s = sideX(side);
@@ -264,16 +263,16 @@ function outletValve(side: Side, id: string, className: string): string {
 function outletLever(side: Side, open: number): string {
 	const bx = sideX(side) * ((OUT_X.b0 + OUT_X.b1) / 2);
 	const a = (open * Math.PI) / 2;
-	return k.lineOnTop([bx - Math.cos(a) * 4.4, -Math.sin(a) * 4.4], [bx + Math.cos(a) * 4.4, Math.sin(a) * 4.4], OUT_Z + 16, P);
+	return k.lineOnTop([bx - Math.cos(a) * 5.2, -Math.sin(a) * 5.2], [bx + Math.cos(a) * 5.2, Math.sin(a) * 5.2], OUT_Z + 16, P);
 }
 
 // ---- assembly ------------------------------------------------------------
 
 function heartBody(): string {
 	const out: string[] = [bench()];
-	// Vena cava: body tank -> behind the heart -> into the right atrium's outer face.
-	const raX = -(SEPT + A_W);
-	out.push(pipe([[BODY.x, VC_Y, VC_Z], [-58, VC_Y, VC_Z], [-58, 0, VC_Z], [raX, 0, VC_Z]], TUBE_R, 'heart-blue', 'vena-cava', 'blue'));
+	// Vena cava: body tank -> behind the heart -> one elbow into the right atrium's back face.
+	const raCx = centreX('right', A_W);
+	out.push(pipe([[BODY.x, VC_Y, VC_Z], [raCx, VC_Y, VC_Z], [raCx, -A_D / 2, VC_Z]], TUBE_R, 'heart-blue', 'vena-cava', 'blue'));
 	// Lungs tank, then the pulmonary artery from the right ventricle into its inner face.
 	out.push(tank(LUNGS, 'blue', 'heart-lung'));
 	const lungFace = LUNGS.x + LUNGS.w;
@@ -326,7 +325,7 @@ const ANCHOR_POINTS: Array<[string, string, Point3]> = [
 	['pulmonary-valve', 'Pulmonary valve', [-(OUT_X.b0 + OUT_X.b1) / 2, 0, OUT_Z + 16]],
 	['aortic-valve', 'Aortic valve', [(OUT_X.b0 + OUT_X.b1) / 2, 0, OUT_Z + 16]],
 	['aorta', 'Aorta', [90, 0, OUT_Z + TUBE_R]],
-	['vena-cava', 'Vena cava', [-58, -14, VC_Z + TUBE_R]],
+	['vena-cava', 'Vena cava', [60, VC_Y, VC_Z + TUBE_R]],
 	['pulmonary-artery', 'Pulmonary artery', [-90, 0, OUT_Z + TUBE_R]],
 	['pulmonary-veins', 'Pulmonary veins', [-50, 0, PV_Z + TUBE_R]],
 	['lungs', 'Lungs', [LUNGS.x + LUNGS.w / 2, LUNGS.y + LUNGS.d, 60]],
@@ -510,10 +509,10 @@ export function mount(el: HTMLElement, { theme = 'dark', params: initial, onRead
 		setTheme(next) {
 			el.dataset.theme = next;
 		},
-		seek(at) {
+		seek(time) {
 			parked = true;
 			stop();
-			t = at;
+			t = time;
 			draw(stateAt(params, t), 0);
 		},
 		destroy() {

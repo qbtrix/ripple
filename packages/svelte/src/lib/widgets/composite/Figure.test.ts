@@ -62,7 +62,7 @@ describe('figure', () => {
 		const shape = (c: HTMLElement) => {
 			const clone = c.cloneNode(true) as HTMLElement;
 			clone.querySelectorAll('[data-slot="figure-stage"]').forEach((s) => s.replaceChildren());
-			clone.querySelectorAll('[data-slot="readout"], [data-slot="readout-phase"]').forEach((r) => (r.textContent = ''));
+			clone.querySelectorAll('[data-slot="readout"]').forEach((r) => (r.textContent = ''));
 			return domShape(clone);
 		};
 		expect(shape(streamed.container)).toBe(shape(whole.container));

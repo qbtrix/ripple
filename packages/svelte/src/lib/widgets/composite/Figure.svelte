@@ -140,7 +140,6 @@
 	{:else}
 		<header class="flex items-baseline justify-between gap-2">
 			<h3 class="m-0 text-headline font-semibold" data-slot="title">{meta?.title ?? entry.title}</h3>
-			{#if meta}<span class="text-footnote text-ripple-muted-foreground" data-slot="readout-phase" aria-live="polite">{readouts.phase ?? ''}</span>{/if}
 		</header>
 		<div class="relative overflow-hidden rounded-ripple">
 			<div bind:this={stage} class="ripple-figure-stage relative min-h-48" data-slot="figure-stage"></div>
