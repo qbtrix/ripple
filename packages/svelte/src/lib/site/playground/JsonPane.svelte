@@ -1,24 +1,32 @@
 <!--
   @file lib/site/playground/JsonPane.svelte
-  @description The playground's JSON spec pane for one version. The text is
-    JsonLines with its `highlight` token colours (prefix-stable: a finished
-    line is tokenised once) and its `caret` while streaming, line numbers from
-    a CSS counter (never copied), and a short tint on each newly arrived
-    line. It follows the tail through Tail: scroll up and it stops, and a Live
-    button brings it back. The header says size, line count and status; Copy
-    takes the whole spec, Share copies a ?s= link (shareLink in
-    lib/site/specFromUrl, which reads it back) once the spec is final.
-    `onedit` adds Edit (also exported as edit()): the text becomes a textarea seeded with the shown
-    spec (or `seed` when nothing is shown, which renders at once), and every
-    input goes to onedit, which renders it and returns why not when it is not
-    a spec; that reason shows under the box and the last good render stays.
-    Editing ends on Done, or when the pane moves to a version that is not the
-    visitor's own (OWN), such as a new answer. `onhide` adds a Hide button
-    (the column collapses); `sheet` drops the outer border for the phone
-    bottom sheet.
+  @description The playground's JSON spec pane for one version, in one of
+    three modes. Code: JsonLines with its `highlight` token colours
+    (prefix-stable: a finished line is tokenised once) and its `caret` while
+    streaming, line numbers from a CSS counter (never copied), and a short
+    tint on each newly arrived line; it follows the tail through Tail (scroll
+    up and it stops, a Live button brings it back). Tree: a collapsible
+    JsonView (@humanspeak/svelte-json-view-lite) of the parsed spec, coloured
+    through its --sjv-* vars with the same code tokens; the top levels open
+    and nested `children` past the first level of widgets start collapsed
+    (expandNode). The Code/Tree switch only applies once a spec is complete:
+    a stream always shows Code, and the visitor's last choice holds for the
+    next spec. Edit (with `onedit`, also exported as edit()): JsonEditor
+    (CodeMirror, loaded on demand) seeded with the shown spec, or `seed` when
+    nothing is shown, which renders at once; every change goes to onedit,
+    which renders it and returns why not when it is not a spec; that reason
+    shows under the editor and the last good render stays. Editing ends on
+    Done, or when the pane moves to a version that is not the visitor's own
+    (OWN), such as a new answer.
+    The header says size, line count and status; Copy takes the whole spec,
+    Share copies a ?s= link (shareLink in lib/site/specFromUrl, which reads it
+    back) once the spec is final. `onhide` adds a Hide button (the column
+    collapses); `sheet` drops the outer border for the phone bottom sheet.
 -->
 <script lang="ts">
+	import { JsonView, defaultStyles } from '@humanspeak/svelte-json-view-lite';
 	import JsonLines from '../JsonLines.svelte';
+	import JsonEditor from './JsonEditor.svelte';
 	import { prettyPrefix } from '../prettyPrefix.js';
 	import { shareLink } from '../specFromUrl.js';
 	import { Tail } from './tail.svelte.js';
@@ -44,6 +52,8 @@
 	let editing = $state(false);
 	let draft = $state('');
 	let editError = $state<string | null>(null);
+	/** The visitor's pick for a complete spec; a stream always shows code. */
+	let view = $state<'code' | 'tree'>('code');
 
 	const tail = new Tail();
 	let pre = $state<HTMLPreElement>();
@@ -52,8 +62,9 @@
 
 	const text = $derived(editing ? draft : (version?.text ?? ''));
 	const pretty = $derived(prettyPrefix(text));
-	const lineCount = $derived(text ? pretty.split('\n').length : 0);
+	const lineCount = $derived(!text ? 0 : (editing ? draft : pretty).split('\n').length);
 	const streaming = $derived(version?.status === 'streaming');
+	const mode = $derived(editing ? 'edit' : view === 'tree' && version?.spec && !streaming ? 'tree' : 'code');
 	const status = $derived(
 		!version ? '' : version.status === 'streaming' ? 'Streaming' : version.status === 'final' ? 'Complete' : 'Left out'
 	);
@@ -90,10 +101,13 @@
 		if (!version && draft) editError = onedit?.(draft) ?? null;
 	}
 
-	function input(e: Event & { currentTarget: HTMLTextAreaElement }) {
-		draft = e.currentTarget.value;
+	function change(next: string) {
+		draft = next;
 		editError = onedit?.(draft) ?? null;
 	}
+
+	/** Open: the root, ui, its props and children, and each first-level widget; collapsed below that. */
+	const expandNode = (level: number, _value: unknown, field?: string) => (field === 'children' ? level <= 2 : level <= 3);
 
 	function say(what: string, ok = true) {
 		clearTimeout(flashTimer);
@@ -128,10 +142,16 @@
 	<header class="head">
 		<h2 class="title" data-streaming={streaming || undefined}>JSON spec{#if status}<span class="sr-only">, {status}</span>{/if}</h2>
 		{#if version}
-			<span class="meta" title={status}>{formatBytes(byteLength(text))} · {lineCount} lines</span>
+			<span class="meta" title="{formatBytes(byteLength(text))} · {lineCount} lines, {status}">{formatBytes(byteLength(text))} · {lineCount} lines</span>
 		{/if}
 		<span class="tools">
 			{#if flash}<span class="flash" data-ok={flash.ok} role="status">{flash.what}</span>{/if}
+			{#if !editing && version?.spec && !streaming}
+				<span class="seg" role="group" aria-label="JSON view">
+					<button type="button" aria-pressed={mode === 'code'} onclick={() => (view = 'code')}>Code</button>
+					<button type="button" aria-pressed={mode === 'tree'} onclick={() => (view = 'tree')}>Tree</button>
+				</span>
+			{/if}
 			{#if onedit}
 				{#if editing}
 					<button type="button" class="tool" onclick={() => (editing = false)}>Done</button>
@@ -148,18 +168,13 @@
 	</header>
 	<div class="body">
 		{#if editing}
-			<textarea
-				class="code edit"
-				aria-label="Edit the JSON spec"
-				aria-invalid={editError ? true : undefined}
-				aria-describedby={editError ? `${uid}-error` : undefined}
-				placeholder="Paste a Ripple spec"
-				spellcheck="false"
-				autocomplete="off"
-				value={draft}
-				oninput={input}
-			></textarea>
+			<JsonEditor value={draft} onchange={change} invalid={!!editError} describedby={editError ? `${uid}-error` : undefined} />
 			{#if editError}<p class="edit-error" id="{uid}-error">{editError} The preview keeps the last spec that worked.</p>{/if}
+		{:else if mode === 'tree' && version?.spec}
+			<!-- svelte-ignore a11y_no_noninteractive_tabindex (a scrolling region must be reachable by keyboard) -->
+			<div class="tree" tabindex="0" aria-label="JSON spec tree">
+				{#key version}<JsonView data={version.spec} style={defaultStyles} shouldExpandNode={expandNode} />{/key}
+			</div>
 		{:else if version && text}
 			<!-- svelte-ignore a11y_no_noninteractive_tabindex (a scrolling region must be reachable by keyboard) -->
 			<pre
@@ -325,15 +340,69 @@
 	.code[data-streaming] :global(.ln) {
 		animation: arrive 450ms var(--ease-out-quart);
 	}
-	.edit {
-		resize: none;
-		border: 0;
-		border-radius: 0;
-		padding-left: 14px;
-		background: transparent;
-	}
-	.body:has(.edit) {
+	.body:has(.edit-error),
+	.body:has(:global(.cm-editor)) {
 		flex-direction: column;
+	}
+	.seg {
+		display: flex;
+		flex: none;
+		padding: 2px;
+		margin-right: 4px;
+		border: 1px solid var(--site-line);
+		border-radius: var(--radius-control);
+	}
+	.seg button {
+		min-height: 26px;
+		padding: 0 8px;
+		border: 0;
+		border-radius: 6px;
+		background: transparent;
+		color: var(--site-soft);
+		font: inherit;
+		font-size: 12.5px;
+		cursor: pointer;
+	}
+	.seg button[aria-pressed='true'] {
+		background: var(--site-pressed);
+		color: var(--site-ink);
+	}
+	.seg button:hover {
+		color: var(--site-ink);
+	}
+	.seg button:focus-visible,
+	.tree:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: -2px;
+	}
+	/* The tree in the pane's type and the site's code tokens; its own vars live on its root, so set them there. */
+	.tree {
+		flex: 1;
+		min-width: 0;
+		overflow: auto;
+		overscroll-behavior: contain;
+		padding: 12px 14px 24px 4px;
+		font-family: var(--font-mono);
+		font-size: 12.5px;
+		line-height: 1.6;
+		color: var(--code-ink);
+	}
+	.tree :global([role='tree']) {
+		--sjv-background: transparent;
+		--sjv-label: var(--code-key);
+		--sjv-punctuation: var(--code-punct);
+		--sjv-string: var(--code-str);
+		--sjv-number: var(--code-lit);
+		--sjv-boolean: var(--code-lit);
+		--sjv-null: var(--code-lit);
+		--sjv-undefined: var(--code-lit);
+		--sjv-other: var(--code-ink);
+		--sjv-expander: var(--site-soft);
+		line-height: inherit;
+	}
+	.tree :global([role='tree'] button) {
+		font: inherit;
+		color: inherit;
 	}
 	.edit-error {
 		margin: 0;

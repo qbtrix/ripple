@@ -146,6 +146,9 @@
     "@ripple-ui/core": "file:../core"
   },
   "devDependencies": {
+    "@codemirror/language": "6.12.3",
+    "@humanspeak/svelte-json-view-lite": "0.2.5",
+    "@lezer/highlight": "1.2.3",
     "@playwright/test": "1.60.0",
     "@sveltejs/adapter-static": "3.0.10",
     "@sveltejs/kit": "^2.50.2",

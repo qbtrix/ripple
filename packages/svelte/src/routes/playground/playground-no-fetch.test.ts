@@ -4,10 +4,12 @@
 // no recording covers, and fails if anything reached fetch. Also checks the
 // page says plainly that it is replaying recordings, and that the page-level
 // shortcuts reach the composer and the session (/ and Esc), and that a
-// visitor's own JSON renders as they type and a broken edit keeps the last
-// good render.
+// visitor's own JSON renders as they type in the CodeMirror editor (driven
+// through its EditorView, as jsdom cannot type into it) and a broken edit
+// keeps the last good render.
 
 import { fireEvent, render } from '@testing-library/svelte';
+import { EditorView } from '@codemirror/view';
 import { afterEach, expect, test, vi } from 'vitest';
 import Playground from './+page.svelte';
 
@@ -56,15 +58,18 @@ test('Paste or edit a spec renders the JSON as it is typed and keeps the last go
 	const view = render(Playground);
 
 	await fireEvent.click(view.getByRole('button', { name: 'Paste or edit a spec' }));
-	const box = await waitFor(() => view.getByLabelText('Edit the JSON spec') as HTMLTextAreaElement);
-	expect(box.value).toContain('Hello, Ripple!');
+	const box = await waitFor(() => view.getByLabelText('Edit the JSON spec'));
+	const cm = EditorView.findFromDOM(box)!;
+	expect(cm.state.doc.toString()).toContain('Hello, Ripple!');
 	await waitFor(() => expect(view.getByRole('heading', { name: 'Hello, Ripple!' })).toBeTruthy());
+	const type = (text: string) => cm.dispatch({ changes: { from: 0, to: cm.state.doc.length, insert: text } });
 
-	await fireEvent.input(box, { target: { value: '{"ui":{"type":"heading","props":{"text":"Edited by hand","level":2}}}' } });
+	type('{"ui":{"type":"heading","props":{"text":"Edited by hand","level":2}}}');
 	await waitFor(() => expect(view.getByRole('heading', { name: 'Edited by hand' })).toBeTruthy());
 
-	await fireEvent.input(box, { target: { value: '{"ui":{"type":' } });
+	type('{"ui":{"type":');
 	await waitFor(() => expect(view.getByText(/This is not valid JSON/)).toBeTruthy());
+	expect(box.getAttribute('aria-invalid')).toBe('true');
 	expect(view.getByRole('heading', { name: 'Edited by hand' })).toBeTruthy();
 	expect(fetchSpy).not.toHaveBeenCalled();
 });
