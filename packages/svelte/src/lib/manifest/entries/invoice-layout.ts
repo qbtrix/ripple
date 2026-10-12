@@ -16,7 +16,7 @@ export const invoiceLayoutEntry: WidgetManifestEntry = {
     status: { type: '"draft" | "sent" | "paid" | "overdue" | "void"', required: false, description: 'Status badge.' },
     currency: { type: 'string', required: false, description: 'Currency symbol prepended to numeric amounts. Default "$".' },
     lines: { type: 'Array<{ id?: string | number; description: string; quantity?: number; unitPrice?: number; total?: number; note?: string }>', required: true, description: 'Line items.' },
-    summary: { type: 'Array<{ label: string; value: number; isNegative?: boolean }>', required: false, description: 'Tax / discount / shipping rows shown after subtotal.' },
+    summary: { type: 'Array<{ label: string; value: number; isNegative?: boolean }>', required: false, description: 'Tax / discount / shipping rows shown after subtotal. `amount` is accepted for `value`; a non-number shows a dash.' },
     subtotal: { type: 'number', required: false, description: 'Override the auto-computed subtotal.' },
     total: { type: 'number', required: false, description: 'Override the auto-computed grand total.' },
     notes: { type: 'string', required: false, description: 'Notes shown at the bottom (free-form text).' },
