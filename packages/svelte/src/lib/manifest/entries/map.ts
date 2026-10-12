@@ -6,25 +6,26 @@ export const mapEntry: WidgetManifestEntry = {
   description:
     'Leaflet-backed interactive map. Renders markers, polyline paths, polygon geofences, and live trackers (smoothly interpolated moving markers with optional trails). No API key needed for default tiles.',
   props: {
-    center: { type: '[number, number]', required: false, description: 'Initial map center as [lat, lng]. Default [0, 0].' },
+    center: { type: '[number, number]', required: false, description: 'Initial map center as [lat, lng] (a {lat, lng} object also works, as does any point below). Default [0, 0].' },
     zoom: { type: 'number', required: false, description: 'Initial zoom level (0 to 20). Default 2.' },
     minZoom: { type: 'number', required: false, description: 'Minimum allowed zoom.' },
     maxZoom: { type: 'number', required: false, description: 'Maximum allowed zoom.' },
     bounds: { type: '[[number, number], [number, number]]', required: false, description: 'Fit-to-bounds rectangle [[swLat, swLng], [neLat, neLng]]. Overrides center+zoom when supplied. Refits only when the rectangle changes.' },
     boundsPadding: { type: 'number', required: false, description: 'Pixel padding around `bounds` when fitting. Default 0.' },
-    tiles: { type: '"osm" | "carto-voyager" | "carto-light" | "carto-dark" | "osm-hot" | "custom"', required: false, description: 'Tile provider preset. Default "carto-voyager". All presets are key-free OpenStreetMap-derived tiles. Use "custom" with `tileUrl`.' },
+    tiles: { type: '"osm" | "carto-voyager" | "carto-light" | "carto-dark" | "osm-hot" | "custom"', required: false, description: 'Tile provider preset. Default "carto-voyager", or what the page set with setMapDefaultTiles. All presets are key-free OpenStreetMap-derived tiles. Use "custom" with `tileUrl`.' },
     tileUrl: { type: 'string', required: false, description: 'Custom XYZ tile URL template (used when `tiles` is "custom"). Supports {z}/{x}/{y} and {s} subdomain placeholders.' },
     tileAttribution: { type: 'string', required: false, description: 'Attribution HTML for custom tiles. Required by most tile providers.' },
     markers: {
       type: 'Array<{ id: string; lat: number; lng: number; label?: string; popup?: string; icon?: string; color?: string; actions?: EventAction | EventAction[] }>',
       required: false,
-      description: 'Static markers. `actions` runs on click (route through ripple emit/api/navigate).',
+      description: 'Static markers. A marker without `id` gets its index. `actions` runs on click (route through ripple emit/api/navigate).',
     },
     paths: {
       type: 'Array<{ id: string; points: [number, number][]; color?: string; weight?: number; dashed?: boolean; animate?: boolean; label?: string }>',
       required: false,
       description: 'Polyline paths. Set `animate: true` for a flowing dashed-route effect (great for itineraries).',
     },
+    route: { type: '[number, number][]', required: false, description: 'One path as a bare point list, drawn after `paths`.' },
     polygons: {
       type: 'Array<{ id: string; points: [number, number][]; color?: string; fillColor?: string; fillOpacity?: number; weight?: number; label?: string }>',
       required: false,

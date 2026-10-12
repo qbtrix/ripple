@@ -93,6 +93,9 @@ export {
   type ResolvedModelAsset
 } from './widgets/media/model-asset-types.js';
 
+// The `map` widget's tile preset when a map sets none (a CSP that only allows OSM sets 'osm').
+export { setMapDefaultTiles, type TilePreset as MapTilePreset } from './widgets/data/Map.svelte';
+
 // Widget registry
 export {
   getWidget,

@@ -1,10 +1,12 @@
 // widgets/data/Map.test.ts: live tracker motion on the map widget. Leaflet is
 // replaced by a small fake (markers keep their icon DOM until setIcon swaps
 // it), Date is faked, and requestAnimationFrame is a manual frame queue, so the
-// tween can be stepped and read exactly.
+// tween can be stepped and read exactly. It also covers the shapes a model
+// sends ({lat,lng} objects, a `route` list, id-less markers) and the
+// page-level default tile preset.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from '@testing-library/svelte';
-import MapWidget from './Map.svelte';
+import MapWidget, { setMapDefaultTiles } from './Map.svelte';
 
 type Pos = { lat: number; lng: number };
 
@@ -40,11 +42,13 @@ const fake = vi.hoisted(() => {
 		}
 	}
 	const markers: FakeMarker[] = [];
+	const lines: unknown[] = [];
+	const views: { center?: unknown; bounds?: unknown; tiles?: string } = {};
 	const layer = () => ({ addTo: () => layer(), addLayer() {}, removeLayer() {}, clearLayers() {} });
 	const path = () => ({ bindTooltip() {}, setLatLngs() {}, setStyle() {} });
 	const L = {
-		map: () => ({ setView() {}, fitBounds() {}, on() {}, remove() {}, panTo() {} }),
-		tileLayer: () => ({ addTo() {} }),
+		map: () => ({ setView: (c: unknown) => (views.center = c), fitBounds: (b: unknown) => (views.bounds = b), on() {}, remove() {}, panTo() {} }),
+		tileLayer: (url: string) => ((views.tiles = url), { addTo() {} }),
 		layerGroup: layer,
 		divIcon: (o: { html: string }) => o,
 		marker: (p: [number, number], o: { icon: { html: string } }) => {
@@ -52,10 +56,10 @@ const fake = vi.hoisted(() => {
 			markers.push(m);
 			return m;
 		},
-		polyline: path,
+		polyline: (pts: unknown) => (lines.push(pts), path()),
 		polygon: path
 	};
-	return { markers, L };
+	return { markers, lines, views, L };
 });
 
 vi.mock('leaflet', () => ({ default: fake.L }));
@@ -98,6 +102,8 @@ function pos(m: { getLatLng(): Pos }): [number, number] {
 
 beforeEach(() => {
 	fake.markers.length = 0;
+	fake.lines.length = 0;
+	for (const k of Object.keys(fake.views)) delete fake.views[k as keyof typeof fake.views];
 	frames = new Map();
 	raf.mockClear();
 	caf.mockClear();
@@ -191,5 +197,48 @@ describe('map tracker motion', () => {
 		unmount();
 		expect(caf).toHaveBeenCalledWith(pending);
 		expect(frames.size).toBe(0);
+	});
+});
+
+describe('model-shaped props', () => {
+	const ll = (lat: number, lng: number) => ({ lat, lng });
+
+	it('reads {lat,lng} centers, a route alias and id-less markers', async () => {
+		render(MapWidget, {
+			props: {
+				center: ll(38.71, -9.13),
+				zoom: 15,
+				markers: [{ lat: 38.714, lng: -9.139, label: 'Rossio' }, { lat: 38.713, lng: -9.133, label: 'Castle' }],
+				route: [ll(38.714, -9.139), ll(38.715, -9.137), ll(38.713, -9.133)]
+			} as never
+		});
+		await vi.waitFor(() => expect(fake.markers).toHaveLength(2));
+		expect(fake.views.center).toEqual([38.71, -9.13]);
+		expect(fake.lines).toEqual([[[38.714, -9.139], [38.715, -9.137], [38.713, -9.133]]]);
+		expect(fake.markers.map((m) => m.pos)).toEqual([ll(38.714, -9.139), ll(38.713, -9.133)]);
+	});
+
+	it('reads {lat,lng} bounds corners and path points, and keeps the documented shape', async () => {
+		render(MapWidget, {
+			props: {
+				bounds: [ll(1, 2), ll(3, 4)],
+				paths: [{ id: 'a', points: [ll(1, 2), [3, 4]] }],
+				markers: [{ id: 'm', lat: 1, lng: 2 }]
+			} as never
+		});
+		await vi.waitFor(() => expect(fake.markers).toHaveLength(1));
+		expect(fake.views.bounds).toEqual([[1, 2], [3, 4]]);
+		expect(fake.lines).toEqual([[[1, 2], [3, 4]]]);
+	});
+
+	it('uses the page default tiles when none are passed', async () => {
+		setMapDefaultTiles('osm');
+		try {
+			render(MapWidget, { props: { markers: [{ id: 'm', lat: 1, lng: 2 }] } });
+			await vi.waitFor(() => expect(fake.markers).toHaveLength(1));
+			expect(fake.views.tiles).toBe('https://tile.openstreetmap.org/{z}/{x}/{y}.png');
+		} finally {
+			setMapDefaultTiles('carto-voyager');
+		}
 	});
 });
