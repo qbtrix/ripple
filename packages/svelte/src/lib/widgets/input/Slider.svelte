@@ -7,7 +7,7 @@
      bound state (250 -> 100). The thumb shows the clamped value instead, and
      re-derives when min/max change.
      Layout: bits-ui positions the thumb absolutely, so the ui Slider gets
-     min-h-4 to keep the 12px thumb inside this widget's box; without it the
+     min-h-5 to keep the 12px thumb inside this widget's box; without it the
      thumb hangs over whatever widget is stacked below. -->
 <script lang="ts">
   import { cn } from '$lib/utils.js';
@@ -79,7 +79,7 @@
     </div>
   {/if}
   <Slider
-    class="min-h-4"
+    class="min-h-5"
     type="single"
     value={displayValue}
     {min}

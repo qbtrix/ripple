@@ -14,7 +14,7 @@ test('watch-savings-grow spec: each slider root is at least as tall as its thumb
   const { container } = render(Ripple, { props: { spec: watchSavingsGrow } });
   const roots = [...container.querySelectorAll('[data-slot="slider"]')];
   expect(roots.length).toBe(2);
-  for (const r of roots) expect(r.className).toMatch(/(^|\s)min-h-4(\s|$)/);
+  for (const r of roots) expect(r.className).toMatch(/(^|\s)min-h-5(\s|$)/);
 });
 
 test('watch-savings-grow spec: growth-projection controls stay labelled', () => {
