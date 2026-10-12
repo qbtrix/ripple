@@ -452,7 +452,7 @@
 								>
 							{/if}
 						</p>
-						<pre id="{pid}-code" {@attach follow(card)}><JsonLines text={card.text} /></pre>
+						<pre id="{pid}-code" {@attach follow(card)}><JsonLines text={card.text} highlight /></pre>
 					</div>
 				</div>
 			</div>

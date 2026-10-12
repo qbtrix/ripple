@@ -3,7 +3,8 @@
 // or a live Ripple spec from a ```ripple fence), and the h2/h3 outline for the
 // "On this page" rail. Runs on the server at prerender time.
 // - Headings get slug ids (deduped with -2, -3) and a trailing # anchor link.
-// - ```json blocks are tokenized (highlight.ts); other languages are escaped
+// - Fenced code is highlighted by highlightCode (highlight-code.ts: ts, tsx,
+//   js, svelte, css, json, jsonc, bash, ...); an unknown language is escaped
 //   plain text. Every block gets a Copy button the page wires by delegation.
 // - A ```ripple fence must parse as JSON and pass validateCatalog (the
 //   svelte-bound one, so the full widget registry counts). Anything else
@@ -12,7 +13,8 @@
 
 import { Marked, type Token, type Tokens } from 'marked';
 import { validateCatalog } from '$lib/widgets/validate-catalog-bound.js';
-import { escapeHtml, highlightJson } from './highlight.js';
+import { escapeHtml } from './highlight.js';
+import { highlightCode } from './highlight-code.js';
 
 export interface DocMeta {
 	title: string;
@@ -105,13 +107,16 @@ export function renderDoc(raw: string, file: string): RenderedDoc {
 				const n = (used.get(base) ?? 0) + 1;
 				used.set(base, n);
 				const id = n === 1 ? base : `${base}-${n}`;
-				const text = inner.replace(/<[^>]+>/g, '');
+				// Plain text for the outline: Svelte escapes it, so undo marked's entities.
+				const text = inner
+					.replace(/<[^>]+>/g, '')
+					.replace(/&(#39|quot|lt|gt|amp);/g, (_, e: string) => ({ '#39': "'", quot: '"', lt: '<', gt: '>', amp: '&' })[e]!);
 				if (depth === 2 || depth === 3) headings.push({ id, text, depth });
 				return `<h${depth} id="${id}">${inner}<a class="anchor" href="#${id}" aria-label="Link to this section" data-pagefind-ignore>#</a></h${depth}>\n`;
 			},
 			code({ text, lang }: Tokens.Code) {
 				const language = (lang ?? '').split(/\s/)[0];
-				const html = language === 'json' ? highlightJson(text) : escapeHtml(text);
+				const html = highlightCode(text, language);
 				const cls = language ? ` class="language-${escapeHtml(language)}"` : '';
 				return `<div class="code-block"><pre><code${cls}>${html}</code></pre>${COPY}</div>\n`;
 			}

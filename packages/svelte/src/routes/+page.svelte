@@ -66,6 +66,9 @@
 	const PAWOS_URL = pawosBase(import.meta.env.PUBLIC_PAWOS_URL ?? '');
 	const TYPED_LOCAL = typedStaysLocal(ENDPOINT, import.meta.env.PUBLIC_TYPED_LOCAL ?? '');
 
+	// The streaming code sample, highlighted at prerender (+page.server.ts).
+	let { data } = $props();
+
 	const GITHUB_URL = 'https://github.com/qbtrix/ripple-iui';
 	const INSTALL = 'bun add @ripple-ui/svelte';
 
@@ -125,22 +128,6 @@
 	};
 	// Pretty-printed the way the spec peek shows a card (JsonLines).
 	const specSnippet = JSON.stringify({ state: demoSpec.state, ui: demoSpec.ui });
-
-	const codeSample = `<script>
-  import { Ripple } from '@ripple-ui/svelte';
-  import { streamSpec } from '@ripple-ui/svelte/streaming';
-  import '@ripple-ui/svelte/theme.css';
-
-  let store = $state(null);
-
-  async function generate(prompt) {
-    // your endpoint asks the model for a spec and streams the JSON back
-    const res = await fetch('/api/ui', { method: 'POST', body: prompt });
-    store = streamSpec(res.body);
-  }
-\u003C/script>
-
-{#if store}<Ripple streaming={store} skeleton="card" />{/if}`;
 
 	// The hero chip, the dock's strip and the band each copy the install command; only the one tapped says so.
 	let copied = $state<'hero' | 'code' | 'strip' | null>(null);
@@ -244,7 +231,7 @@
 			<li class="step">
 				<h3>The model writes a spec</h3>
 				<p>Plain JSON: widgets, state and actions.</p>
-				<pre class="snippet" aria-label="Example spec"><JsonLines text={specSnippet} /></pre>
+				<pre class="snippet" aria-label="Example spec"><JsonLines text={specSnippet} highlight /></pre>
 			</li>
 			<li class="step">
 				<h3>The engine runs it</h3>
@@ -264,7 +251,7 @@
 				<h2 id="code-title">Stream a spec in a dozen lines</h2>
 				<p><code>streamSpec</code> parses partial JSON as it lands.</p>
 			</div>
-			<pre class="sample"><code>{codeSample}</code></pre>
+			<pre class="sample"><code>{@html data.codeSample}</code></pre>
 		</div>
 		<!-- The site's one Paw-blue band. -->
 		<div class="band">

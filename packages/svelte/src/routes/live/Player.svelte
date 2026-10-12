@@ -190,7 +190,7 @@
 				{handWritten ? 'card spec' : 'model output'}
 				<span>{handWritten ? 'hand-written' : scenario.fixture.model}, {total} bytes</span>
 			</summary>
-			<pre bind:this={pre}><JsonLines text={typed} /></pre>
+			<pre bind:this={pre}><JsonLines text={typed} highlight /></pre>
 		</details>
 	</div>
 </section>

@@ -188,18 +188,40 @@ body {
 	-webkit-font-smoothing: antialiased;
 }
 
-/* JSON syntax tokens (docs code blocks, SpecExample). Ink ladder only: blue
-   means interactive, and --site-faint fails AA for text. */
-:root,
-.dark {
-	--code-key: var(--site-ink);
-	--code-str: var(--site-soft);
-	--code-lit: var(--site-ink);
-	--code-punct: var(--site-soft);
+/* Syntax tokens: the tok-* classes from lib/site/docs/highlight.ts (JSON) and
+   highlight-code.ts (every other language), in docs fences, SpecExample, the
+   landing samples and the JSON panes. Muted hues from the warm palette, one
+   per role, each at least 4.5:1 on --code-bg (--site-inset) in its theme.
+   Comments are the quietest and the only italic. */
+:root {
+	--code-kw: #7b3bb0;
+	--code-fn: #1a5cc4;
+	--code-str: #2c6b39;
+	--code-lit: #9a4c00;
+	--code-comment: #66645b;
+	--code-type: #0b6a70;
+	--code-key: #2f4466;
+	--code-tag: #a2361f;
+	--code-attr: #8a5000;
+	--code-punct: #5f5e58;
 }
-.tok-key {
-	color: var(--code-key);
-	font-weight: 550;
+.dark {
+	--code-kw: #c6a3f2;
+	--code-fn: #86b0f7;
+	--code-str: #a5c98c;
+	--code-lit: #e2a96b;
+	--code-comment: #8e8c83;
+	--code-type: #78c6c4;
+	--code-key: #b9c9e3;
+	--code-tag: #ef9a84;
+	--code-attr: #ddb071;
+	--code-punct: #9a9991;
+}
+.tok-kw {
+	color: var(--code-kw);
+}
+.tok-fn {
+	color: var(--code-fn);
 }
 .tok-str {
 	color: var(--code-str);
@@ -207,7 +229,22 @@ body {
 .tok-num,
 .tok-lit {
 	color: var(--code-lit);
+}
+.tok-comment {
+	color: var(--code-comment);
 	font-style: italic;
+}
+.tok-type {
+	color: var(--code-type);
+}
+.tok-key {
+	color: var(--code-key);
+}
+.tok-tag {
+	color: var(--code-tag);
+}
+.tok-attr {
+	color: var(--code-attr);
 }
 .tok-punct {
 	color: var(--code-punct);
