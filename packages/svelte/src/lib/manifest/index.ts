@@ -131,6 +131,9 @@ import { billSplitEntry } from './entries/bill-split.js';
 import { intervalWorkoutEntry } from './entries/interval-workout.js';
 import { habitTrackerEntry } from './entries/habit-tracker.js';
 import { notesEntry } from './entries/notes.js';
+import { placeResultsEntry } from './entries/place-results.js';
+import { productGridEntry } from './entries/product-grid.js';
+import { mediaGridEntry } from './entries/media-grid.js';
 import { focusTimerEntry } from './entries/focus-timer.js';
 import { musicPlayerEntry } from './entries/music-player.js';
 import { flashcardDeckEntry } from './entries/flashcard-deck.js';
@@ -468,6 +471,9 @@ export const manifestEntries: WidgetManifestEntry[] = [
   intervalWorkoutEntry,
   habitTrackerEntry,
   notesEntry,
+  placeResultsEntry,
+  productGridEntry,
+  mediaGridEntry,
   focusTimerEntry,
   musicPlayerEntry,
   flashcardDeckEntry,
