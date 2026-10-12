@@ -120,6 +120,36 @@
 		"h": 600
 	},
 	{
+		"id": "live-iso-bike",
+		"title": "Bike drivetrain",
+		"caption": "Show how a bike's chain drive works as a live drawing, with a cadence slider and how far one pedal turn takes you",
+		"group": "Learn",
+		"tag": "Hand-written",
+		"href": "/live?s=iso-bike",
+		"w": 800,
+		"h": 600
+	},
+	{
+		"id": "live-iso-heart",
+		"title": "The heart as two pumps",
+		"caption": "Draw the heart as two pumps I can watch beating, with a heart rate slider and labels on the chambers",
+		"group": "Learn",
+		"tag": "Hand-written",
+		"href": "/live?s=iso-heart",
+		"w": 800,
+		"h": 600
+	},
+	{
+		"id": "live-iso-engine",
+		"title": "Inside a piston engine",
+		"caption": "Show me how a one-cylinder piston engine moves, with an engine speed slider",
+		"group": "Learn",
+		"tag": "Hand-written",
+		"href": "/live?s=iso-engine",
+		"w": 800,
+		"h": 600
+	},
+	{
 		"id": "live-memory-match",
 		"title": "Memory match",
 		"caption": "Make me a memory match game pairing Spanish animal words with their emoji",
