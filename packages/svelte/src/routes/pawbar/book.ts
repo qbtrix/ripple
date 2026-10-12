@@ -18,7 +18,7 @@
 // "Add to calendar" file, built from the store's answer, in UTC.
 //
 // A booking the store does not back (no `on_book`) gets the host's BOOK_CHAT
-// wiring instead (wireSlotToChat), and slotMessage() turns its request into the
+// wiring and `contact: false` instead (wireSlotToChat), and slotMessage() turns its request into the
 // visitor's chat message. The text comes only from the card's own service and
 // open slot that the request names (plus party within the service's bounds and
 // the visitor's note), stripped to plain text and capped at SLOT_MESSAGE_MAX.
@@ -171,11 +171,21 @@ export function patchBooking(spec: Record<string, unknown>, serviceId: string, p
 	return next;
 }
 
-/** A copy of the spec whose booking nodes without `on_book` emit BOOK_CHAT; the spec itself when all are wired. */
+/**
+ * A copy of the spec whose booking nodes without `on_book` emit BOOK_CHAT and ask for
+ * no contact details (`contact: false`); a wired node keeps its contact step whatever
+ * the model wrote. The spec itself when it holds no booking.
+ */
 export function wireSlotToChat<T extends Record<string, unknown>>(spec: T): T {
-	if (!bookingNodes(spec.ui).some((n) => !('on_book' in n))) return spec;
+	if (!bookingNodes(spec.ui).length) return spec;
 	const next = structuredClone(spec);
-	for (const n of bookingNodes(next.ui)) if (!('on_book' in n)) n.on_book = { action: 'emit', target: BOOK_CHAT };
+	for (const n of bookingNodes(next.ui)) {
+		if ('on_book' in n) delete n.props.contact;
+		else {
+			n.on_book = { action: 'emit', target: BOOK_CHAT };
+			n.props.contact = false;
+		}
+	}
 	return next;
 }
 

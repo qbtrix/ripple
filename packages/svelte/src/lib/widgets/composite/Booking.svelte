@@ -2,7 +2,9 @@
   widgets/composite/Booking.svelte — `booking`: a table or service booking
   inside a chat card, in four stages on StageRail: what (service, party size),
   when (a 7-day strip, then that day's slots), details (name, email or phone,
-  notes), review. One main button per stage; Book emits `onbook` with the
+  notes), review. `contact: false` drops the details stage: review takes the
+  optional note, the main button reads "Send to chat", and the request carries
+  no customer. One main button per stage; Book emits `onbook` with the
   request, and the host answers through props: `confirmed` swaps in the
   confirmation (no more actions), `notice` shows the host's message, `sent`
   ({ text }: the request went to a chat as a message, nothing is booked) a calm
@@ -71,6 +73,7 @@
 		notice?: unknown;
 		confirmed?: unknown;
 		sent?: unknown;
+		contact?: boolean;
 		selection?: Selection;
 		onselectionchange?: (next: Selection) => void;
 		onbook?: (request: BookingRequest) => void;
@@ -91,6 +94,7 @@
 		notice,
 		confirmed,
 		sent,
+		contact = true,
 		selection = $bindable(),
 		onselectionchange,
 		onbook
@@ -154,18 +158,23 @@
 		customer: sel.customer,
 		notes: sel.notes
 	});
-	const errors = $derived(checkDetails(current));
-	const request = $derived(toRequest(current, service));
+	const asks = $derived(contact !== false);
+	const errors = $derived(checkDetails(current, asks));
+	const request = $derived(toRequest(current, service, asks));
 	const busy = $derived(sending !== undefined && !done);
 
 	// The furthest stage the data allows: a stage whose inputs vanished (a
 	// slot taken, a streamed prop replaced) falls back to the first gap.
-	const reachable = $derived(!service ? WHAT : !start ? WHEN : Object.keys(errors).length ? DETAILS : REVIEW);
+	const reachable = $derived(!service ? WHAT : !start ? WHEN : asks && Object.keys(errors).length ? DETAILS : REVIEW);
 	const at = $derived(Math.min(stage, reachable));
 
 	const isTable = $derived((service ?? svc[0])?.kind === 'table');
 	const heading = $derived(plain(title) || (isTable ? 'Book a table' : 'Book an appointment'));
-	const stages = $derived([svc.length > 1 ? 'Service' : bounds ? 'Guests' : 'Service', 'Time', 'Details', 'Review']);
+	// The stages shown, in order: without contact details there is no Details stage.
+	const order = $derived(asks ? [WHAT, WHEN, DETAILS, REVIEW] : [WHAT, WHEN, REVIEW]);
+	const labels = $derived([svc.length > 1 ? 'Service' : bounds ? 'Guests' : 'Service', 'Time', 'Details', 'Review']);
+	const stages = $derived(order.map((i) => labels[i]));
+	const step = $derived(Math.max(order.indexOf(at), 0));
 	const tzName = $derived(plain(tz).split('/').pop()?.replace(/_/g, ' ') ?? '');
 
 	// The host answers a booking through `notice`. Any new notice ends the
@@ -203,7 +212,7 @@
 			tried = true;
 			return;
 		}
-		go(at + 1);
+		go(order[step + 1] ?? REVIEW);
 	}
 
 	function pickDay(date: string) {
@@ -246,7 +255,15 @@
 		].filter(Boolean).join(' · ')
 	);
 	const primary = $derived(
-		at === WHAT ? 'Choose a time' : at === WHEN ? 'Add your details' : at === DETAILS ? 'Review' : busy ? 'Booking…' : isTable ? 'Book table' : 'Confirm booking'
+		at === WHAT
+			? 'Choose a time'
+			: at === WHEN
+				? asks ? 'Add your details' : 'Review'
+				: at === DETAILS
+					? 'Review'
+					: !asks
+						? busy ? 'Sending…' : 'Send to chat'
+						: busy ? 'Booking…' : isTable ? 'Book table' : 'Confirm booking'
 	);
 	const primaryOff = $derived(at === WHAT ? !service : at === WHEN ? !start : at === REVIEW ? !request || busy || !onbook : false);
 	const showNotice = $derived(
@@ -270,6 +287,22 @@
 	{/if}
 {/snippet}
 
+{#snippet notesField()}
+	<label class="flex flex-col gap-1">
+		<span class="flex justify-between text-footnote text-ripple-muted-foreground">
+			<span>Notes (optional)</span>
+			<span class="tabular-nums">{sel.notes?.length ?? 0}/{LIMITS.notes}</span>
+		</span>
+		<textarea
+			class="min-h-20 rounded-md border border-ripple-border bg-ripple-input px-3 py-2 text-body text-ripple-input-foreground focus-visible:outline-2 focus-visible:outline-ripple-ring"
+			maxlength={LIMITS.notes}
+			rows="3"
+			value={sel.notes ?? ''}
+			oninput={(e) => write({ notes: e.currentTarget.value })}
+		></textarea>
+	</label>
+{/snippet}
+
 {#snippet when()}
 	{@render row(Calendar, 'Date', chosenDay?.date_label)}
 	{@render row(Clock, 'Time', [chosenSlot?.label, minutes(service?.duration_min)].filter(Boolean).join(' · '))}
@@ -277,7 +310,7 @@
 	{#if svc.length > 1 || !isTable}{@render row(kindIcon(SERVICE_ICONS, service?.kind), 'Service', service?.name)}{/if}
 {/snippet}
 
-<div {id} class={['@container flex min-w-0 flex-col gap-3 text-ripple-surface-foreground', className]} data-stage={done ? 'confirmed' : sentText !== undefined ? 'sent' : stages[at]?.toLowerCase()}>
+<div {id} class={['@container flex min-w-0 flex-col gap-3 text-ripple-surface-foreground', className]} data-stage={done ? 'confirmed' : sentText !== undefined ? 'sent' : labels[at]?.toLowerCase()}>
 	<header class="flex min-w-0 flex-col gap-1">
 		<h2 class="text-title-3 font-semibold text-pretty">{heading}</h2>
 		{#if subtitle}<p class="text-footnote text-ripple-muted-foreground">{plain(subtitle)}</p>{/if}
@@ -314,7 +347,7 @@
 			</div>
 		</section>
 	{:else}
-		<StageRail {stages} current={at} onselect={(i) => go(i)} />
+		<StageRail {stages} current={step} onselect={(i) => go(order[i])} />
 
 		{#if showNotice && note}
 			{@const s = note.kind === 'info' ? 'info' : 'bad'}
@@ -553,19 +586,7 @@
 							{:else}
 								<span class="text-footnote text-ripple-muted-foreground">Email or phone, so they can reach you.</span>
 							{/if}
-							<label class="flex flex-col gap-1">
-								<span class="flex justify-between text-footnote text-ripple-muted-foreground">
-									<span>Notes (optional)</span>
-									<span class="tabular-nums">{sel.notes?.length ?? 0}/{LIMITS.notes}</span>
-								</span>
-								<textarea
-									class="min-h-20 rounded-md border border-ripple-border bg-ripple-input px-3 py-2 text-body text-ripple-input-foreground focus-visible:outline-2 focus-visible:outline-ripple-ring"
-									maxlength={LIMITS.notes}
-									rows="3"
-									value={sel.notes ?? ''}
-									oninput={(e) => write({ notes: e.currentTarget.value })}
-								></textarea>
-							</label>
+							{@render notesField()}
 						</div>
 						<aside class="hidden flex-col gap-3 rounded-ripple bg-ripple-muted/60 p-3 @min-[720px]:flex" aria-label="Your booking">
 							{@render when()}
@@ -574,12 +595,16 @@
 				{:else}
 					<div class="grid gap-3 rounded-ripple border border-ripple-border bg-ripple-surface p-3 @min-[560px]:grid-cols-2">
 						{@render when()}
-						{@render row(User, 'Name', sel.customer?.name?.trim())}
-						{@render row(Mail, 'Email', sel.customer?.email?.trim())}
-						{@render row(Phone, 'Phone', sel.customer?.phone?.trim())}
+						{#if asks}
+							{@render row(User, 'Name', sel.customer?.name?.trim())}
+							{@render row(Mail, 'Email', sel.customer?.email?.trim())}
+							{@render row(Phone, 'Phone', sel.customer?.phone?.trim())}
+						{/if}
 						{#if service?.price !== undefined}{@render row(kindIcon(SERVICE_ICONS, service.kind), 'Price', money(service.price, currency))}{/if}
 					</div>
-					{#if sel.notes?.trim()}
+					{#if !asks}
+						{@render notesField()}
+					{:else if sel.notes?.trim()}
 						<div class="flex gap-2.5 text-callout">
 							<StickyNote size={16} strokeWidth={1.75} aria-hidden="true" class="mt-px shrink-0 text-ripple-muted-foreground" />
 							<p class="min-w-0 break-words whitespace-pre-line">{sel.notes.trim()}</p>
@@ -591,7 +616,7 @@
 
 		<div class="sticky bottom-0 flex items-center gap-2 rounded-ripple border border-ripple-border bg-ripple-surface py-1.5 pr-1.5 pl-3">
 			{#if at > WHAT}
-				<button type="button" class="h-11 shrink-0 rounded-md px-3 text-callout text-ripple-muted-foreground hover:bg-ripple-muted" onclick={() => go(at - 1)}>
+				<button type="button" class="h-11 shrink-0 rounded-md px-3 text-callout text-ripple-muted-foreground hover:bg-ripple-muted" onclick={() => go(order[step - 1])}>
 					Back
 				</button>
 			{/if}

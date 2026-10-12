@@ -440,6 +440,7 @@ describe('a booking with no store wiring sends the chosen slot to the chat', () 
 		const { session, card } = await chatCard(bookingSpec, { storeUrl: STORE, fetch: vi.fn() });
 		render(Ripple, { props: { spec: card.spec, onEvent: (e: RippleEvent) => session.hostEvent(card, e) } });
 		await fireEvent.click(screen.getByRole('button', { name: 'Choose a time' }));
+		await fireEvent.click(screen.getByRole('button', { name: /^7:00 PM/ }));
 		await fireEvent.click(screen.getByRole('button', { name: 'Add your details' }));
 		expect(screen.getByLabelText('Name')).toBeTruthy();
 		expect(screen.getByLabelText('Email')).toBeTruthy();
