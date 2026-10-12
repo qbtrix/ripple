@@ -19,12 +19,17 @@
  * a function that touches `document` when a browser host calls it is
  * fine; an import-time reference is what breaks Node.
  *
+ * A second suite holds the whole package to the framework-free claim:
+ * the same crawl, run from every `exports` entry in package.json (so a new
+ * entry is guarded the day it is added), must reach no UI framework, and
+ * package.json itself may declare none. The manifest is where the last
+ * leak sat: an optional `svelte` peer with no import behind it. The DOM
+ * rule stays headless-only, since `./motion` drives the Web Animations API
+ * by design.
+ *
  * Sources are read through Vite's `import.meta.glob(..., '?raw')` rather
  * than `node:fs` — this repo has no `@types/node`, and the glob keeps the
  * gate runnable in any vitest environment.
- *
- * @changes
- *   - 2026-08-25: created (headless core, wave 1).
  */
 
 import { describe, it, expect } from 'vitest';
@@ -37,6 +42,20 @@ const SOURCES = import.meta.glob('../**/*.ts', {
 }) as Record<string, string>;
 
 const ENTRY = './index.ts';
+
+interface PackageJson {
+	exports: Record<string, { source: string }>;
+	dependencies?: Record<string, string>;
+	peerDependencies?: Record<string, string>;
+	devDependencies?: Record<string, string>;
+}
+
+const PKG = Object.values(
+	import.meta.glob('../../package.json', { import: 'default', eager: true })
+)[0] as PackageJson;
+
+/** UI frameworks the engine must never reach, as bare package names. */
+const FRAMEWORK_RE = /^(svelte|react|react-dom|preact|vue|solid-js)(\/|$)/;
 
 /**
  * Static import/export sources: `from '...'` plus bare `import '...'`.
@@ -76,10 +95,24 @@ function normalize(path: string): string {
 	return parts.join('/');
 }
 
-/** Directory of a glob key, relative to this file. */
-function dirOf(key: string): string {
-	const idx = key.lastIndexOf('/');
-	return idx === -1 ? '' : key.slice(0, idx);
+/** Directory part of a path. */
+function dirOf(path: string): string {
+	const idx = path.lastIndexOf('/');
+	return idx === -1 ? '' : path.slice(0, idx);
+}
+
+/**
+ * Glob keys arrive relative to this file's directory (`./index.ts` for a
+ * sibling, `../core/x.ts` for a cousin). Resolution works on paths relative
+ * to `src/` instead, so `headless/types.ts` and `src/types.ts` can never be
+ * mistaken for each other.
+ */
+function toSrc(key: string): string {
+	return key.startsWith('./') ? `headless/${key.slice(2)}` : key.slice(3);
+}
+
+function toKey(path: string): string {
+	return path.startsWith('headless/') ? `./${path.slice('headless/'.length)}` : `../${path}`;
 }
 
 /**
@@ -88,7 +121,7 @@ function dirOf(key: string): string {
  */
 function resolveLocal(fromKey: string, spec: string): string | null {
 	if (!spec.startsWith('.')) return null;
-	const joined = normalize(`${dirOf(fromKey)}/${spec}`);
+	const joined = normalize(`${dirOf(toSrc(fromKey))}/${spec}`);
 	const candidates = [
 		joined.replace(/\.js$/, '.ts'),
 		joined.replace(/\.js$/, '.svelte.ts'),
@@ -97,27 +130,23 @@ function resolveLocal(fromKey: string, spec: string): string | null {
 		`${joined}/index.ts`
 	];
 	for (const candidate of candidates) {
-		for (const prefix of ['../', './']) {
-			const key = prefix === './' ? `./${candidate}` : `../${candidate}`;
-			if (key in SOURCES) return key;
-		}
+		const key = toKey(candidate);
+		if (key in SOURCES) return key;
 	}
 	return null;
 }
 
-/**
- * Glob keys arrive relative to this file's directory (`./index.ts` for a
- * sibling, `../core/x.ts` for a cousin). Build one lookup that accepts either.
- */
 function sourceOf(key: string): string | undefined {
 	return SOURCES[key];
 }
 
-/** Walk the transitive import graph from the headless entry point. */
-function crawl(): { files: string[]; svelteImports: Array<{ file: string; spec: string }> } {
+/** Walk the transitive import graph from an entry point (a SOURCES key). */
+function crawl(
+	entry: string = ENTRY
+): { files: string[]; svelteImports: Array<{ file: string; spec: string }> } {
 	const seen = new Set<string>();
 	const svelteImports: Array<{ file: string; spec: string }> = [];
-	const queue = [ENTRY];
+	const queue = [entry];
 
 	while (queue.length > 0) {
 		const key = queue.pop()!;
@@ -132,7 +161,7 @@ function crawl(): { files: string[]; svelteImports: Array<{ file: string; spec: 
 				svelteImports.push({ file: key, spec });
 				continue;
 			}
-			if (spec === 'svelte' || spec.startsWith('svelte/')) {
+			if (FRAMEWORK_RE.test(spec) || /\.(vue|jsx|tsx)$/.test(spec)) {
 				svelteImports.push({ file: key, spec });
 				continue;
 			}
@@ -210,5 +239,33 @@ describe('headless purity', () => {
 		expect(typeof mod.createHeadlessRuntime).toBe('function');
 		expect(typeof mod.resolveTree).toBe('function');
 		expect(typeof mod.HeadlessStateManager).toBe('function');
+	});
+});
+
+describe('package purity', () => {
+	const entries = Object.entries(PKG.exports).map(([name, e]) => ({
+		name,
+		key: toKey(e.source.replace(/^\.\/src\//, ''))
+	}));
+
+	it('maps every package export to a source file', () => {
+		expect(entries.length).toBeGreaterThan(1);
+		expect(entries.filter((e) => !(e.key in SOURCES))).toEqual([]);
+	});
+
+	it('imports no UI framework from any export, transitively', () => {
+		const offenders = entries.flatMap((e) =>
+			crawl(e.key).svelteImports.map((hit) => ({ entry: e.name, ...hit }))
+		);
+		expect(offenders).toEqual([]);
+	});
+
+	it('declares no UI framework dependency', () => {
+		const declared = [
+			...Object.keys(PKG.dependencies ?? {}),
+			...Object.keys(PKG.peerDependencies ?? {}),
+			...Object.keys(PKG.devDependencies ?? {})
+		];
+		expect(declared.filter((name) => FRAMEWORK_RE.test(name))).toEqual([]);
 	});
 });
