@@ -33,6 +33,11 @@ describe('headings', () => {
 			{ id: 'set-up-tailwind-2', text: 'Set up Tailwind', depth: 2 }
 		]);
 	});
+
+	it('gives the outline plain text, not HTML entities (Svelte escapes it once)', () => {
+		const doc = renderDoc(FM + "## What it's for\n\n## Tom & `<Jerry>`\n", 'x.md');
+		expect(doc.headings.map((h) => h.text)).toEqual(["What it's for", 'Tom & <Jerry>']);
+	});
 });
 
 describe('code blocks', () => {

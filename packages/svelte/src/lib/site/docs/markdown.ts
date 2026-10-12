@@ -107,7 +107,10 @@ export function renderDoc(raw: string, file: string): RenderedDoc {
 				const n = (used.get(base) ?? 0) + 1;
 				used.set(base, n);
 				const id = n === 1 ? base : `${base}-${n}`;
-				const text = inner.replace(/<[^>]+>/g, '');
+				// Plain text for the outline: Svelte escapes it, so undo marked's entities.
+				const text = inner
+					.replace(/<[^>]+>/g, '')
+					.replace(/&(#39|quot|lt|gt|amp);/g, (_, e: string) => ({ '#39': "'", quot: '"', lt: '<', gt: '>', amp: '&' })[e]!);
 				if (depth === 2 || depth === 3) headings.push({ id, text, depth });
 				return `<h${depth} id="${id}">${inner}<a class="anchor" href="#${id}" aria-label="Link to this section" data-pagefind-ignore>#</a></h${depth}>\n`;
 			},
