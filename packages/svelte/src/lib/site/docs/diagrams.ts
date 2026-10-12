@@ -154,8 +154,8 @@ export function attachDiagrams(root: HTMLElement): () => void {
 	const io = new IntersectionObserver(
 		(entries) => {
 			for (const entry of entries) {
-				if (!entry.isIntersecting) continue;
-				const canvas = entry.target as HTMLElement;
+				const canvas = entry.target;
+				if (!entry.isIntersecting || !(canvas instanceof HTMLElement)) continue;
 				io.unobserve(canvas);
 				drawn.add(canvas);
 				void redraw(canvas);
