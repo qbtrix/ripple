@@ -4,7 +4,9 @@
   when (a 7-day strip, then that day's slots), details (name, email or phone,
   notes), review. One main button per stage; Book emits `onbook` with the
   request, and the host answers through props: `confirmed` swaps in the
-  confirmation (no more actions), `notice` shows the host's message. A
+  confirmation (no more actions), `notice` shows the host's message, `sent`
+  ({ text }: the request went to a chat as a message, nothing is booked) a calm
+  "Sent to chat" state with that text and no more actions. A
   slot-taken notice (`code: 'slot_taken'`, or text saying "taken") sends the
   visitor back to the time stage with that slot marked Full.
   Data rules live in ./booking.ts. Services and days are store data filled by
@@ -32,6 +34,7 @@
 	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import CalendarCheck from '@lucide/svelte/icons/calendar-check';
+	import MessageCircle from '@lucide/svelte/icons/message-circle';
 	import type { LucideIcon } from '@lucide/svelte';
 	import { PhotoTile, StageRail, VerdictLine, SERVICE_ICONS, STATUS_CLASS, STATUS_ICONS, finite, kindIcon, money, plain, slide } from '../data-kit/index.js';
 	import type { Verdict } from '../data-kit/types.js';
@@ -67,6 +70,7 @@
 		preferred?: { date?: string; after?: string };
 		notice?: unknown;
 		confirmed?: unknown;
+		sent?: unknown;
 		selection?: Selection;
 		onselectionchange?: (next: Selection) => void;
 		onbook?: (request: BookingRequest) => void;
@@ -86,6 +90,7 @@
 		preferred,
 		notice,
 		confirmed,
+		sent,
 		selection = $bindable(),
 		onselectionchange,
 		onbook
@@ -107,6 +112,9 @@
 	const sel = $derived(readSelection(onselectionchange && selection != null ? selection : (draft ?? selection)));
 	const done = $derived(readConfirmed(confirmed));
 	const note = $derived(readNotice(notice));
+	const sentText = $derived(
+		done || sent == null || sent === false ? undefined : plain(sent !== null && typeof sent === 'object' ? (sent as { text?: unknown }).text : '')
+	);
 	const ask = $derived(finite(party !== null && typeof party === 'object' ? (party as { value?: unknown }).value : party));
 
 	// ── The visitor's state ───────────────────────────────────────────────
@@ -269,7 +277,7 @@
 	{#if svc.length > 1 || !isTable}{@render row(kindIcon(SERVICE_ICONS, service?.kind), 'Service', service?.name)}{/if}
 {/snippet}
 
-<div {id} class={['@container flex min-w-0 flex-col gap-3 text-ripple-surface-foreground', className]} data-stage={done ? 'confirmed' : stages[at]?.toLowerCase()}>
+<div {id} class={['@container flex min-w-0 flex-col gap-3 text-ripple-surface-foreground', className]} data-stage={done ? 'confirmed' : sentText !== undefined ? 'sent' : stages[at]?.toLowerCase()}>
 	<header class="flex min-w-0 flex-col gap-1">
 		<h2 class="text-title-3 font-semibold text-pretty">{heading}</h2>
 		{#if subtitle}<p class="text-footnote text-ripple-muted-foreground">{plain(subtitle)}</p>{/if}
@@ -292,6 +300,17 @@
 				{@render row(Clock, 'Time', done.label)}
 				{#if done.party}{@render row(Users, 'Party', guestWord(done.party))}{/if}
 				{@render row(Hash, 'Booking reference', done.booking_id, true)}
+			</div>
+		</section>
+	{:else if sentText !== undefined}
+		<section class="flex items-start gap-3 rounded-ripple border border-ripple-border bg-ripple-surface p-4" role="status" data-slot="sent">
+			<span class={['grid size-10 shrink-0 place-items-center rounded-full', STATUS_CLASS.info.tint, STATUS_CLASS.info.text]}>
+				<MessageCircle size={20} strokeWidth={1.75} aria-hidden="true" />
+			</span>
+			<div class="min-w-0">
+				<p class="text-headline">Sent to chat</p>
+				{#if sentText}<p class="text-callout break-words">{sentText}</p>{/if}
+				<p class="text-footnote text-ripple-muted-foreground">Nothing is booked yet. The reply comes in the chat.</p>
 			</div>
 		</section>
 	{:else}

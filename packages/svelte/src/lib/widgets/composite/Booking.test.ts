@@ -1,7 +1,7 @@
 // widgets/composite/Booking.test.ts — the `booking` widget: its data rules
 // (./booking.ts: nearest slot, store data readers, details checks, the emitted
 // request), registry and bind wiring, the stage flow end to end (pre-selected
-// slot, Full slots, details, Book, the host's slot-taken and confirmed
+// slot, Full slots, details, Book, the host's slot-taken, confirmed and sent
 // answers), a streamed mount, and junk props.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
@@ -277,6 +277,17 @@ describe('booking flow', () => {
 		await tick();
 		expect(screen.getByRole('alert').textContent).toContain('Too many tries');
 		expect(btn('Book table')).toBeEnabled();
+	});
+
+	it('a sent answer shows Sent to chat with the message, never a confirmation, and no actions', async () => {
+		const { rerender } = await toReview();
+		await fireEvent.click(btn('Book table'));
+		await rerender({ sent: { text: "I'd like to book Dinner table on Fri 16 Oct at 7:30 PM (4 people)." } });
+		expect(screen.getByRole('status').textContent).toContain('Sent to chat');
+		expect(screen.getByText(/Fri 16 Oct at 7:30 PM/)).toBeTruthy();
+		expect(screen.getByText(/Nothing is booked yet/)).toBeTruthy();
+		expect(screen.queryByText("You're booked")).toBeNull();
+		expect(screen.queryAllByRole('button')).toEqual([]);
 	});
 
 	it('keeps Book off without a host handler', async () => {

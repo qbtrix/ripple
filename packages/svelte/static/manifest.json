@@ -1,7 +1,7 @@
 {
   "schema": "ripple.manifest/v1",
   "version": "0.8.0",
-  "generatedAt": "2026-10-12T06:08:42.797Z",
+  "generatedAt": "2026-10-12T09:11:07.660Z",
   "spec": {
     "uiField": "ui",
     "stateField": "state",
@@ -6980,7 +6980,7 @@
         "currency": {
           "type": "string",
           "required": false,
-          "description": "Currency symbol prepended to numeric amounts. Default \"$\"."
+          "description": "Currency symbol prepended to amounts, or an ISO code (\"USD\") formatted as money. Default \"$\"."
         },
         "lines": {
           "type": "Array<{ id?: string | number; description: string; quantity?: number; unitPrice?: number; total?: number; note?: string }>",
@@ -6990,7 +6990,7 @@
         "summary": {
           "type": "Array<{ label: string; value: number; isNegative?: boolean }>",
           "required": false,
-          "description": "Tax / discount / shipping rows shown after subtotal."
+          "description": "Tax / discount / shipping rows shown after subtotal. `amount` is accepted for `value`; a non-number shows a dash."
         },
         "subtotal": {
           "type": "number",
@@ -7111,7 +7111,7 @@
         "currency": {
           "type": "string",
           "required": false,
-          "description": "Currency symbol. Default \"$\"."
+          "description": "Currency symbol (\"$\") or ISO code (\"USD\"). Default \"$\"."
         },
         "summary": {
           "type": "Array<{ label: string; value: number; isNegative?: boolean }>",
@@ -10173,6 +10173,11 @@
           "type": "{ booking_id: string; label: string; date_label: string; service_name: string; party?: number }",
           "required": false,
           "description": "Host: the confirmed booking. Shows the confirmation and no more actions."
+        },
+        "sent": {
+          "type": "{ text: string }",
+          "required": false,
+          "description": "Host: the request went to the chat as a message instead of a store (nothing is booked). Shows \"Sent to chat\" with the text and no more actions."
         },
         "selection": {
           "type": "{ service_id?: string; start?: string; party?: number; customer?: { name?: string; email?: string; phone?: string }; notes?: string }",
@@ -15034,6 +15039,11 @@
           "type": "\"number\" | \"currency\" | \"percent\" | \"compact\"",
           "required": false,
           "description": "Number format."
+        },
+        "decimals": {
+          "type": "number",
+          "required": false,
+          "description": "Max decimals shown. Default rounds by size: whole numbers from 100, 1 decimal from 10, else 2."
         },
         "currency": {
           "type": "string",

@@ -25,7 +25,10 @@
 // is kept in sessionStorage (pay/resume.ts) and resume() brings it back as
 // `resumed`, for a pay link that navigated this tab away. `emit book` (booking's request) goes to
 // book.ts, and the answer is patched into the booking node's props (`notice`,
-// `confirmed`, fresh `days`) with a BookingReceipt under the card on 201. One
+// `confirmed`, fresh `days`) with a BookingReceipt under the card on 201. A
+// booking the store does not back (no `on_book`) is wired to BOOK_CHAT at final:
+// its request becomes the visitor's next message (slotMessage, the card's own
+// labels only) and the node gets `sent`, once per booking node. One
 // checkout or booking in flight per session. A final card's `emit ask` ({text})
 // and a finished flow (flowComplete: a `chat` onComplete, plus the visitor's
 // answers as plain sentences, see flowMessage) become the visitor's next message,
@@ -46,8 +49,8 @@ import { streamSpec, type StreamSpecStore } from '$lib/streaming/index.js';
 import { checkout, LOCAL_HOSTS, type Pay } from '../live/checkout.js';
 import { clearOrder, loadOrder, saveOrder, type Saved } from '../pay/resume.js';
 import type { Phase } from '../pay/watch.svelte.js';
-import { book, bookingProps, patchBooking, reloadDays, toBookingRequest, type Booked } from './book.js';
-import { ASK_MAX, refuseCard, textRefusal } from './card-policy.js';
+import { book, bookingProps, patchBooking, reloadDays, slotMessage, toBookingRequest, wireSlotToChat, type Booked } from './book.js';
+import { ASK_MAX, BOOK_CHAT, refuseCard, textRefusal } from './card-policy.js';
 import { parseSSE, readText, segments, type SSEFrame } from './sse.js';
 
 export const BYOK_URL = 'https://os.pocketpaw.xyz/?ref=ripple';
@@ -305,7 +308,7 @@ export class Card {
 		if (!isRecord(card) || !isRecord(card.ui)) return this.reject('invalid');
 		const why = refuseCard(card);
 		if (why) return this.reject(why);
-		this.spec = { version: '1.0', ui: card.ui, ...(card.state === undefined ? {} : { state: card.state }) };
+		this.spec = wireSlotToChat({ version: '1.0', ui: card.ui, ...(card.state === undefined ? {} : { state: card.state }) });
 		this.status = 'final';
 		this.#close();
 	}
@@ -497,6 +500,7 @@ export class ChatSession {
 			if (isRecord(p) && typeof p.text === 'string' && p.text.length <= ASK_MAX) this.#say(p.text);
 			return undefined;
 		}
+		if (name === BOOK_CHAT) return void this.#slotToChat(card, event.payload);
 		if (this.store && name === 'checkout') return this.#checkout(card, this.store, event.payload);
 		if (this.store && name === 'book') return this.#book(card, this.store, event.payload);
 		const e: Record<string, unknown> = { ...event };
@@ -521,6 +525,16 @@ export class ChatSession {
 		setTimeout(() => (this.#said = false));
 		if (this.busy) this.#queued = text;
 		else void this.send(text);
+	}
+
+	/** A booking the store does not back: the chosen slot goes out as the visitor's message, once per booking node. */
+	#slotToChat(card: Card, payload: unknown) {
+		const text = slotMessage(card.spec, payload);
+		const serviceId = isRecord(payload) ? String(payload.service_id) : '';
+		if (!text || !card.spec || bookingProps(card.spec, serviceId)?.sent) return;
+		const next = patchBooking(card.spec, serviceId, { sent: { text } });
+		if (next) card.spec = next;
+		this.#say(text);
 	}
 
 	/** Brings back the order a same-tab payment left in sessionStorage, if it still validates. */

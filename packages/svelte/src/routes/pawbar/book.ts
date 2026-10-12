@@ -16,8 +16,15 @@
 // booking node's props get `notice` or `confirmed` (and fresh `days`), and the
 // widget keeps the visitor's draft across the re-sent spec. bookingIcs() is the
 // "Add to calendar" file, built from the store's answer, in UTC.
+//
+// A booking the store does not back (no `on_book`) gets the host's BOOK_CHAT
+// wiring instead (wireSlotToChat), and slotMessage() turns its request into the
+// visitor's chat message. The text comes only from the card's own service and
+// open slot that the request names (plus party within the service's bounds and
+// the visitor's note), stripped to plain text and capped at SLOT_MESSAGE_MAX.
 
 import type { BookingRequest, Confirmed, Day, Notice } from '$lib/widgets/composite/booking.js';
+import { BOOK_CHAT } from './card-policy.js';
 
 export const BOOKINGS_PATH = '/api/bookings';
 export const SLOT_TAKEN = 'That time was just taken. Pick another.';
@@ -162,6 +169,43 @@ export function patchBooking(spec: Record<string, unknown>, serviceId: string, p
 	if (!props) return null;
 	Object.assign(props, patch);
 	return next;
+}
+
+/** A copy of the spec whose booking nodes without `on_book` emit BOOK_CHAT; the spec itself when all are wired. */
+export function wireSlotToChat<T extends Record<string, unknown>>(spec: T): T {
+	if (!bookingNodes(spec.ui).some((n) => !('on_book' in n))) return spec;
+	const next = structuredClone(spec);
+	for (const n of bookingNodes(next.ui)) if (!('on_book' in n)) n.on_book = { action: 'emit', target: BOOK_CHAT };
+	return next;
+}
+
+export const SLOT_MESSAGE_MAX = 200;
+const plainLine = (v: unknown) =>
+	// eslint-disable-next-line no-control-regex
+	typeof v === 'string' ? v.replace(/[{}<>\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim() : '';
+
+/** The visitor's chat message for a booking request: the card's own labels only; '' when the request names no open slot of it. */
+export function slotMessage(spec: unknown, payload: unknown): string {
+	if (!isRecord(payload) || typeof payload.service_id !== 'string' || typeof payload.start !== 'string') return '';
+	const { service_id, start } = payload;
+	const props = bookingProps(spec, service_id);
+	const service = (Array.isArray(props?.services) ? props.services : []).find((s) => isRecord(s) && s.id === service_id);
+	const days = Array.isArray(props?.days) ? props.days.filter(isRecord) : [];
+	let slot: Record<string, unknown> | undefined;
+	const day = days.find((d) => (slot = (Array.isArray(d.slots) ? d.slots : []).find((s) => isRecord(s) && s.start === start)));
+	const name = plainLine(service?.name);
+	const time = plainLine(slot?.label);
+	if (!name || !time || slot?.available === false) return '';
+	const date = plainLine(day?.date_label);
+	const bounds = isRecord(service?.party) ? service.party : undefined;
+	const n = payload.party;
+	const party =
+		bounds && Number.isInteger(n) && (n as number) >= Number(bounds.min ?? 1) && (n as number) <= Number(bounds.max ?? 50)
+			? ` (${n} ${n === 1 ? 'person' : 'people'})`
+			: '';
+	const note = plainLine(payload.notes);
+	const text = `I'd like to book ${name}${date ? ` on ${date}` : ''} at ${time}${party}.${note ? ` Note: ${note}` : ''}`;
+	return text.length > SLOT_MESSAGE_MAX ? `${text.slice(0, SLOT_MESSAGE_MAX - 1).trimEnd()}…` : text;
 }
 
 const icsText = (v: string) => v.replace(/[\\;,]/g, (m) => `\\${m}`).replace(/\r?\n/g, '\\n');
