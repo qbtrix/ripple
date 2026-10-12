@@ -10,7 +10,9 @@
 // `heartSvg()` is pure (strings only) and paints back to front in one fixed
 // order; `mount()` puts it in a host element and runs the loop: chambers are
 // rebuilt each frame from the model, wheel levers turn with the valves and the
-// flow dashes move with the flow. No DOM at module top level.
+// flow dashes move with the flow. Look: Anatomy's neutral four-tone ramp
+// (ISO_CSS, same tokens as its kit/iso.css), thin low-opacity edges, colour
+// only as faint tints (blue oxygen-poor, red oxygen-rich). No DOM at module top level.
 
 import * as k from '@ripple-ui/core/iso';
 import type { Flat, Point3, SolidPaths } from '@ripple-ui/core/iso';
@@ -153,7 +155,7 @@ function tank(plan: typeof LUNGS, ribTone: 'blue' | 'red', className: string): s
 	// Vertical ribs on the front (+y) face, seam to seam.
 	const ribs: string[] = [];
 	for (let x = plan.x + plan.r + 3; x <= plan.x + plan.w - plan.r - 3 + 0.01; x += 4) ribs.push(k.segment([x, plan.y + plan.d, 16], [x, plan.y + plan.d, TANK_TOP - 14], P));
-	out.push(L(ribs.join(''), { tone: ribTone }));
+	out.push(L(ribs.join(''), { tone: ribTone, className: 'heart-rib' }));
 	// Lid with a bolt circle.
 	const lid = k.insetPlan(plan, 5);
 	out.push(S(k.slabOf(lid, TANK_TOP, 3, P, 10, 0.6), { tone: 'mid' }));
@@ -338,15 +340,17 @@ export const ANCHORS: Anchor[] = ANCHOR_POINTS.map(([id, label, p]) => {
 });
 
 export const HEART_CSS = `
-.heart-blue>.iso-edge{stroke:color-mix(in srgb,var(--anatomy-blue) 80%,var(--anatomy-hi))}
-.heart-red>.iso-edge{stroke:color-mix(in srgb,var(--anatomy-red) 80%,var(--anatomy-hi))}
-.heart-blue>.iso-top{fill:color-mix(in srgb,var(--anatomy-blue) 20%,var(--anatomy-top))}
-.heart-red>.iso-top{fill:color-mix(in srgb,var(--anatomy-red) 20%,var(--anatomy-top))}
-.heart-blue>.iso-shade[data-shade="3"],.heart-blue>.iso-shade[data-shade="2"]{fill:color-mix(in srgb,var(--anatomy-blue) 14%,var(--anatomy-shade-2))}
-.heart-red>.iso-shade[data-shade="3"],.heart-red>.iso-shade[data-shade="2"]{fill:color-mix(in srgb,var(--anatomy-red) 14%,var(--anatomy-shade-2))}
-.heart-blue>.iso-shade[data-shade="0"],.heart-blue>.iso-shade[data-shade="1"]{fill:color-mix(in srgb,var(--anatomy-blue) 10%,var(--anatomy-shade-0))}
-.heart-red>.iso-shade[data-shade="0"],.heart-red>.iso-shade[data-shade="1"]{fill:color-mix(in srgb,var(--anatomy-red) 10%,var(--anatomy-shade-0))}
-.heart-flow{stroke-dasharray:2 5;stroke-width:1.1}
+.heart-blue>.iso-edge,.heart-red>.iso-edge{stroke-opacity:.75}
+.heart-blue>.iso-edge{stroke:color-mix(in srgb,var(--anatomy-blue) 35%,var(--anatomy-hi))}
+.heart-red>.iso-edge{stroke:color-mix(in srgb,var(--anatomy-red) 35%,var(--anatomy-hi))}
+.heart-blue>.iso-top{fill:color-mix(in srgb,var(--anatomy-blue) 7%,var(--anatomy-top))}
+.heart-red>.iso-top{fill:color-mix(in srgb,var(--anatomy-red) 7%,var(--anatomy-top))}
+.heart-blue>.iso-shade[data-shade="2"],.heart-blue>.iso-shade[data-shade="3"]{fill:color-mix(in srgb,var(--anatomy-blue) 6%,var(--anatomy-shade-2))}
+.heart-red>.iso-shade[data-shade="2"],.heart-red>.iso-shade[data-shade="3"]{fill:color-mix(in srgb,var(--anatomy-red) 6%,var(--anatomy-shade-2))}
+.heart-blue>.iso-shade[data-shade="0"],.heart-blue>.iso-shade[data-shade="1"]{fill:color-mix(in srgb,var(--anatomy-blue) 5%,var(--anatomy-shade-0))}
+.heart-red>.iso-shade[data-shade="0"],.heart-red>.iso-shade[data-shade="1"]{fill:color-mix(in srgb,var(--anatomy-red) 5%,var(--anatomy-shade-0))}
+.heart-flow{stroke-dasharray:2 5;stroke-width:1;stroke-opacity:.7}
+.heart-rib{stroke-opacity:.45}
 `;
 
 export const LABEL = 'A heart drawn as two pumps on a bench: blue right side to the lungs, red left side to the body.';
