@@ -110,7 +110,7 @@ export const chatPrompts: ChatPrompt[] = [
 	{ id: 'yoga', title: 'Yoga session', prompt: 'Guide me through a 15-minute morning yoga session, one pose at a time with a timer' },
 	{ id: 'track-progress', title: 'Track progress', prompt: 'Track my running over the last 8 weeks: distance and pace in a chart (sample data)' },
 	{ id: 'documentaries', title: 'Find documentaries', prompt: 'Recommend 6 nature documentaries with ratings and running time (sample titles)' },
-	{ id: 'play-music', title: 'Play music', prompt: 'Make me a music player with a short focus playlist (sample tracks)' },
+	{ id: 'play-music', title: 'Play music', prompt: 'Make me a focus music player with a few calm tracks' },
 	{ id: 'podcasts', title: 'Podcast discovery', prompt: 'Suggest science podcasts I might like, with topics and episode lengths (sample shows)' },
 	{ id: 'appointment', title: 'Book appointment', prompt: 'Help me pick a time for a dentist appointment next week from the open slots (sample calendar)' },
 	{ id: 'weekend-getaway', title: 'Weekend getaway', prompt: 'Plan a weekend getaway to the mountains: where to stay, what to do and a rough budget (sample places)' }
