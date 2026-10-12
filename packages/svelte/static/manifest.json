@@ -1,7 +1,7 @@
 {
   "schema": "ripple.manifest/v1",
   "version": "0.8.0",
-  "generatedAt": "2026-10-12T08:56:06.238Z",
+  "generatedAt": "2026-10-12T09:23:50.620Z",
   "spec": {
     "uiField": "ui",
     "stateField": "state",
@@ -10249,6 +10249,16 @@
           "type": "{ booking_id: string; label: string; date_label: string; service_name: string; party?: number }",
           "required": false,
           "description": "Host: the confirmed booking. Shows the confirmation and no more actions."
+        },
+        "contact": {
+          "type": "boolean",
+          "required": false,
+          "description": "Host: false skips the contact details stage (no name, email or phone); review takes the optional note and the button reads \"Send to chat\". Default true."
+        },
+        "sent": {
+          "type": "{ text: string }",
+          "required": false,
+          "description": "Host: the request went to the chat as a message instead of a store (nothing is booked). Shows \"Sent to chat\" with the text and no more actions."
         },
         "selection": {
           "type": "{ service_id?: string; start?: string; party?: number; customer?: { name?: string; email?: string; phone?: string }; notes?: string }",

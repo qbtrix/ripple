@@ -32,7 +32,8 @@ export type BookingRequest = {
 	service_id: string;
 	start: string;
 	party?: number;
-	customer: Customer;
+	/** Left out when the widget asks for no contact details (`contact: false`). */
+	customer?: Customer;
 	notes?: string;
 };
 /** The request in progress, as the bound `selection` holds it. */
@@ -208,24 +209,26 @@ const PHONE = /^\+?[\d\s().-]+$/;
 export type Errors = Partial<Record<'name' | 'contact' | 'email' | 'phone' | 'notes', string>>;
 
 /** The visitor's details, checked the way the host re-checks them. */
-export function checkDetails(sel: Selection): Errors {
+/** `contact` false: only the notes are checked (a booking that asks for no contact details). */
+export function checkDetails(sel: Selection, contact = true): Errors {
 	const name = sel.customer?.name?.trim() ?? '';
 	const email = sel.customer?.email?.trim() ?? '';
 	const phone = sel.customer?.phone?.trim() ?? '';
 	const digits = phone.replace(/\D/g, '').length;
 	const e: Errors = {};
+	if ((sel.notes?.length ?? 0) > LIMITS.notes) e.notes = `Notes can be up to ${LIMITS.notes} characters.`;
+	if (!contact) return e;
 	if (!name) e.name = 'Add the name for the booking.';
 	else if (name.length > LIMITS.name) e.name = `Keep the name under ${LIMITS.name} characters.`;
 	if (!email && !phone) e.contact = 'Add an email or a phone number.';
 	if (email && (email.length > LIMITS.email || !EMAIL.test(email))) e.email = 'That email looks incomplete.';
 	if (phone && (!PHONE.test(phone) || digits < 7 || digits > 15)) e.phone = 'That phone number looks incomplete.';
-	if ((sel.notes?.length ?? 0) > LIMITS.notes) e.notes = `Notes can be up to ${LIMITS.notes} characters.`;
 	return e;
 }
 
 /** The request to emit, or undefined while anything is missing or invalid. */
-export function toRequest(sel: Selection, service: Service | undefined): BookingRequest | undefined {
-	if (!service?.id || !sel.start || Object.keys(checkDetails(sel)).length > 0) return undefined;
+export function toRequest(sel: Selection, service: Service | undefined, contact = true): BookingRequest | undefined {
+	if (!service?.id || !sel.start || Object.keys(checkDetails(sel, contact)).length > 0) return undefined;
 	const b = service.party;
 	if (b && (sel.party === undefined || sel.party < b.min || sel.party > b.max)) return undefined;
 	const c = sel.customer ?? {};
@@ -236,7 +239,7 @@ export function toRequest(sel: Selection, service: Service | undefined): Booking
 		service_id: service.id,
 		start: sel.start,
 		...(b && { party: sel.party }),
-		customer: { name: c.name?.trim() ?? '', ...(email && { email }), ...(phone && { phone }) },
+		...(contact && { customer: { name: c.name?.trim() ?? '', ...(email && { email }), ...(phone && { phone }) } }),
 		...(notes && { notes })
 	};
 }

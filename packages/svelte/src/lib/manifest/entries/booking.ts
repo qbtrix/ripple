@@ -1,8 +1,8 @@
 // manifest/entries/booking.ts — manifest entry for `booking`: a table or
 // service booking in stages inside a chat card. The server fills `services`,
 // `days` and `tz` from the store and attaches `on_book`; the model writes
-// `party` and `preferred` only. The host answers a booking through `notice`
-// and `confirmed`. The example carries no handler on purpose: a model-written
+// `party` and `preferred` only. The host answers a booking through `notice`,
+// `confirmed` or `sent` (the request went to the chat instead). The example carries no handler on purpose: a model-written
 // `on_book` is refused by the host.
 import type { WidgetManifestEntry } from '../index.js';
 
@@ -41,6 +41,8 @@ export const bookingEntry: WidgetManifestEntry = {
     preferred: { type: '{ date?: string; after?: string }', required: false, description: 'Model: the visitor\'s ask, e.g. "Friday evening" is { date: "2026-10-16", after: "18:00" }. Pre-selects the nearest open slot.' },
     notice: { type: '{ kind: "error" | "info"; text: string; code?: "slot_taken"; start?: string }', required: false, description: 'Host: the answer to a booking. code "slot_taken" (with the slot\'s start) returns to the times with it marked Full.' },
     confirmed: { type: '{ booking_id: string; label: string; date_label: string; service_name: string; party?: number }', required: false, description: 'Host: the confirmed booking. Shows the confirmation and no more actions.' },
+    contact: { type: 'boolean', required: false, description: 'Host: false skips the contact details stage (no name, email or phone); review takes the optional note and the button reads "Send to chat". Default true.' },
+    sent: { type: '{ text: string }', required: false, description: 'Host: the request went to the chat as a message instead of a store (nothing is booked). Shows "Sent to chat" with the text and no more actions.' },
     selection: { type: '{ service_id?: string; start?: string; party?: number; customer?: { name?: string; email?: string; phone?: string }; notes?: string }', required: false, description: 'Bindable: the request in progress.' },
   },
   events: {

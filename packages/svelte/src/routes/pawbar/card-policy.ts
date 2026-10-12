@@ -30,7 +30,8 @@
 //  10. `emit ask` (value exactly `{text}`, plain, at most ASK_MAX) and `emit
 //      flow.submit` fire only under an ASK_HANDLERS key when that is the outermost
 //      handler key; never in state or from a node inside a handler. A comparison's
-//      `on_choose` is one: it fires only on a Choose click.
+//      `on_choose` is one: it fires only on a Choose click. No card emits BOOK_CHAT:
+//      only the host wires it, after this check.
 //  11. An `illustration` node takes no `bind` and one handler only: a node-level
 //      `on_select` (fired when a note opens; it may `emit ask` under rule 10). Its `svg`
 //      skips rule 5 and is held to the widget contract instead: a string with no `{`
@@ -74,6 +75,8 @@ const CARD_KEYS = ['version', 'ui', 'state'];
 export const PATH_TARGET_ACTIONS: readonly string[] = ['set', 'toggle', 'push', 'remove', 'open', 'emit', 'flow', 'branch', 'validate', 'toast'];
 /** Host events the landing knows. `ask` sends its `{text}` as the visitor's next message. */
 export const HOST_EVENTS: readonly string[] = ['checkout', 'add_to_cart', 'book', 'ask'];
+/** The event the host wires onto a booking the store does not back (session.svelte.ts). A card never emits it itself. */
+export const BOOK_CHAT = 'book.chat';
 /** What a `follow-up` may emit: its own default name or a store event. Never `ask` (the server refuses it too). */
 const FOLLOW_UP_EVENTS = ['follow-up', 'checkout', 'add_to_cart', 'book'];
 /** A card whose `ui` holds one of these is a flow (core's isFlowSpec reads the same four). */
@@ -269,6 +272,7 @@ function mapRefusal(props: Record<string, unknown>, partial: boolean): string | 
 function emitRefusal(node: Record<string, unknown>, flow: boolean, ask: boolean | null, partial: boolean): string | null {
 	const t = node.target;
 	if (typeof t !== 'string') return null;
+	if (t === BOOK_CHAT) return 'host_event';
 	if (FLOW_EVENTS.includes(t) && !flow && !partial) return 'flow_event';
 	if ((t === 'ask' || t === 'flow.submit') && ask !== true) return 'ask_handler';
 	if (t === 'ask' && !partial) {
