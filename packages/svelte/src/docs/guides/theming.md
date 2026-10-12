@@ -47,6 +47,34 @@ A spec can carry a `theme` that applies to that render only. Ripple writes it as
 }
 ```
 
+Here is a theme block in a live spec. It sets the primary colour, so the button, the switch and the progress bar turn teal while the rest of this page keeps its blue:
+
+```ripple
+{
+  "version": "1.0",
+  "theme": {
+    "colors": { "primary": "#0f766e", "primary-foreground": "#f0fdfa", "ring": "#0f766e" }
+  },
+  "state": { "booked": false, "reminder": true },
+  "ui": {
+    "type": "card",
+    "children": [
+      { "type": "heading", "slot": "header", "props": { "text": "Pottery for beginners", "level": 3 } },
+      { "type": "text", "props": { "text": "Saturday mornings, six weeks, clay and kiln time included." } },
+      { "type": "text", "props": { "text": "{state.booked ? 9 : 8} of 12 places taken" } },
+      { "type": "progress", "props": { "value": "{state.booked ? 9 : 8}", "max": 12 } },
+      { "type": "switch", "bind": "reminder", "props": { "label": "Remind me the day before" } },
+      {
+        "type": "button",
+        "slot": "footer",
+        "props": { "label": "{state.booked ? 'Cancel booking' : 'Book a place'}" },
+        "on_click": { "action": "toggle", "target": "booked" }
+      }
+    ]
+  }
+}
+```
+
 - **`colors`** keys are the shadcn token names, written without the leading dashes. Each becomes `--<name>` on the root. Values can be any CSS colour: hex, `oklch(...)`, `rgb(...)`.
 - **`radius`** becomes `--radius`, the base for every corner.
 - **`fonts`** becomes `--ripple-font-sans`, `--ripple-font-serif`, `--ripple-font-mono` and `--ripple-font-heading`.

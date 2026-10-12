@@ -208,3 +208,20 @@ Validate two fields, confirm, submit, and handle both outcomes:
   ]
 }
 ```
+
+The same flow, step by step:
+
+```mermaid
+%% caption: The order flow. A failed validate stops it; the request's own on_success or on_error decides how it ends.
+flowchart TD
+  click(["Place order clicked"]) --> v1{"validate<br/>state.name"}
+  v1 -->|"empty"| stop["error toast, flow stops<br/>(flow on_error runs, if set)"]
+  v1 -->|"ok"| v2{"validate<br/>state.email"}
+  v2 -->|"empty"| stop
+  v2 -->|"ok"| c{"confirm<br/>Place order?"}
+  c -->|"cancel"| done(["nothing more"])
+  c -->|"confirm"| set["set submitting = true"]
+  set --> api["api POST /api/orders<br/>goes to your onEvent"]
+  api -->|"ok: true"| ok["data to state.lastOrder<br/>on_success: toast Order placed"]
+  api -->|"ok: false or throws"| err["error to state._flow_error<br/>on_error: toast Order failed"]
+```

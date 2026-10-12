@@ -6,6 +6,31 @@ order: 3
 
 A spec never calls your code. It attaches actions to widget events, and each action either changes the spec's own state or asks your app to do something through the `onEvent` callback. Your handler decides what actually happens.
 
+```mermaid
+%% caption: Where an action goes. State actions stay inside the render; everything else is a request to your onEvent handler.
+flowchart TD
+  ev["widget event"] --> d{"action"}
+  d --> local
+  d --> fire
+  d --> req
+  d --> flow
+  subgraph base["BaseDispatcher, in every runtime"]
+    local["set, toggle,<br/>push, remove, open"]
+    fire["navigate, toast,<br/>emit, pin, unpin"]
+  end
+  subgraph full["EventDispatcher adds"]
+    req["api, run_source,<br/>call_binding, invoke_tool"]
+    flow["flow, branch, confirm,<br/>validate, delay, invoke"]
+  end
+  local --> st[("state")]
+  fire --> on["your onEvent"]
+  req --> on
+  on -. "result" .-> follow["on_success or on_error"]
+  flow -. "runs its steps" .-> d
+```
+
+The slim headless runtime has only `BaseDispatcher`, so it skips the second group. The Svelte renderer and `createHeadlessRuntime` use `EventDispatcher`, which runs all of them.
+
 ## Events
 
 Put a handler on a node under one of these keys:
