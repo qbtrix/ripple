@@ -473,23 +473,31 @@
 		--a-amber: #d9930d;
 	}
 	:global(.dark) .iso-scene[data-look='soft'] {
-		--a-paper: #131313;
-		--a-top: #1c1c1c;
-		--a-s0: #0f0f0f;
-		--a-s1: #121212;
-		--a-s2: #151515;
-		--a-s3: #181818;
-		--a-hi: #d4d4d4;
-		--a-mid: #6a6a6a;
-		--a-lo: #3e3e3e;
-		--a-faint: #2a2a2a;
-		--a-rim: #2e2e2e;
-		--a-halo: #050505;
-		--a-halo-o: 0.9;
+		/* Lifted from Anatomy's near-black ramp so faces separate on a dark card. */
+		--a-paper: #1d1d1a;
+		--a-face: #2c2c28;
+		--a-top: #4a4a44;
+		--a-s0: #2c2c28;
+		--a-s1: #33332f;
+		--a-s2: #3a3a35;
+		--a-s3: #42423d;
+		--a-hi: #ecece6;
+		--a-mid: rgb(236 236 230 / 0.55);
+		--a-lo: rgb(236 236 230 / 0.35);
+		--a-faint: rgb(236 236 230 / 0.14);
+		--a-rim: #77776e;
+		--a-halo: #000;
+		--a-halo-o: 0.55;
 		--a-red: #ff6b6b;
 		--a-green: #6be0a0;
 		--a-blue: #6b9bff;
 		--a-amber: #f0b24a;
+	}
+	:global(.dark) [data-look='soft'] path[data-cls='edge'] {
+		opacity: 0.4;
+	}
+	:global(.dark) [data-look='soft'] g[data-role]:not([data-role='neutral']) {
+		--k: 22%;
 	}
 	[data-look='soft'] .iso-svg {
 		background: var(--a-paper);
@@ -499,7 +507,7 @@
 	[data-look='soft'] g[data-role] {
 		--tint: var(--a-s2);
 		--k: 0%;
-		--tf: color-mix(in oklab, var(--a-paper), var(--tint) var(--k));
+		--tf: color-mix(in oklab, var(--a-face, var(--a-paper)), var(--tint) var(--k));
 		--t0: color-mix(in oklab, var(--a-s0), var(--tint) var(--k));
 		--t1: color-mix(in oklab, var(--a-s1), var(--tint) var(--k));
 		--t2: color-mix(in oklab, var(--a-s2), var(--tint) var(--k));
