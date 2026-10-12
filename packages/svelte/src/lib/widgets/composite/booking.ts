@@ -1,6 +1,6 @@
 // widgets/composite/booking.ts — the booking widget's data rules, free of
 // Svelte so they test directly: reading store data as the store sends it
-// (services, days of slots), the slot nearest the visitor's ask, and the
+// (services, days of slots, a service's own days), the slot nearest the visitor's ask, and the
 // request the widget emits, validated the way the host re-validates it.
 //
 // Every reader takes model or server output and never throws: a missing
@@ -22,6 +22,8 @@ export type Service = {
 	price?: number;
 	image?: string;
 	party?: Bounds;
+	/** The service's own open days, when the data puts them there; they win over the top-level `days`. */
+	days?: Day[];
 };
 export type Bounds = { min: number; max: number };
 export type Slot = { start: string; label: string; available: boolean };
@@ -83,7 +85,8 @@ export function readServices(v: unknown): Service[] {
 				duration_min: finite(s.duration_min),
 				price: finite(s.price),
 				image: str(s.image) || undefined,
-				party: readBounds(s.party)
+				party: readBounds(s.party),
+				days: Array.isArray(s.days) ? readDays(s.days) : undefined
 			}
 		];
 	});

@@ -2,7 +2,8 @@
 // (./booking.ts: nearest slot, store data readers, details checks, the emitted
 // request), registry and bind wiring, the stage flow end to end (pre-selected
 // slot, Full slots, details, Book, the host's slot-taken, confirmed and sent
-// answers), a streamed mount, and junk props.
+// answers), a streamed mount, and junk props. Open days may come per service
+// (a live model card, routes/pawbar/fixtures/dentist-service-days-card.json).
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
 import { tick } from 'svelte';
@@ -11,6 +12,7 @@ import Ripple from '$lib/Ripple.svelte';
 import { expectStreamParity } from '$lib/streaming/__fixtures__/stream-parity.js';
 import { getWidget } from '../index.js';
 import Booking from './Booking.svelte';
+import serviceDaysCard from '../../../routes/pawbar/fixtures/dentist-service-days-card.json' with { type: 'json' };
 import { checkDetails, clock, isSlotTaken, nearest, partsOfDay, readDays, toRequest, type Service } from './booking.js';
 
 afterEach(cleanup);
@@ -375,5 +377,46 @@ describe('booking streamed and junk', () => {
 		expect(container.querySelector('[data-slot="skeleton"]')).not.toBeNull();
 		await rerender({ services: [] });
 		expect(screen.getByText('Nothing to book here right now.')).toBeTruthy();
+	});
+});
+
+describe('booking with open days inside each service', () => {
+	const live = serviceDaysCard.ui.props;
+	const checkup = live.services[0];
+
+	it('shows the service\'s own slots and lets the visitor reach Review', async () => {
+		render(Booking, { props: { ...live, contact: false } });
+		await fireEvent.click(btn('Choose a time'));
+		expect(btn(/^Mon, Oct 19/).getAttribute('aria-pressed')).toBe('true');
+		expect(btn('9:00 AM, closest to your ask').getAttribute('aria-pressed')).toBe('true');
+		expect(btn('10:00 AM, full')).toBeDisabled();
+		await fireEvent.click(btn('2:00 PM'));
+		expect(btn('Review')).toBeEnabled();
+		await fireEvent.click(btn(/^Wed, Oct 21/));
+		expect(btn('Review')).toBeDisabled();
+		await fireEvent.click(btn('9:30 AM'));
+		expect(btn('Review')).toBeEnabled();
+	});
+
+	it('the service\'s days win over the top-level days', async () => {
+		render(Booking, { props: { ...live, days: DAYS, contact: false } });
+		await fireEvent.click(btn('Choose a time'));
+		expect(btn(/^Mon, Oct 19/)).toBeTruthy();
+		expect(screen.queryByRole('button', { name: /Fri 16 Oct/ })).toBeNull();
+	});
+
+	it.each([
+		['no days at all', { ...checkup, days: [] }],
+		['only full slots', { ...checkup, days: [{ date: '2026-10-19', date_label: 'Mon, Oct 19', slots: [{ start: '2026-10-19T09:00', label: '9:00 AM', available: false }] }] }]
+	])('says there are no open times when the service has %s', async (_, service) => {
+		render(Booking, { props: { ...live, services: [service], contact: false } });
+		await fireEvent.click(btn('Choose a time'));
+		expect(screen.getByText('No open times for this service. Ask in the chat for another day.')).toBeTruthy();
+		expect(screen.queryByText(/^Closed on/)).toBeNull();
+		expect(btn('Review')).toBeDisabled();
+	});
+
+	it('streams to the same render as a whole mount', async () => {
+		await expectStreamParity(serviceDaysCard);
 	});
 });
