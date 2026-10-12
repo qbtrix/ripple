@@ -1,7 +1,7 @@
 {
   "schema": "ripple.manifest/v1",
   "version": "0.8.0",
-  "generatedAt": "2026-10-12T06:08:42.797Z",
+  "generatedAt": "2026-10-12T08:55:45.543Z",
   "spec": {
     "uiField": "ui",
     "stateField": "state",
@@ -2248,7 +2248,7 @@
     {
       "type": "code-block",
       "category": "display",
-      "description": "Fenced code block with line numbers, light syntax highlighting, a language label and a copy button. Long lines wrap rather than scrolling.",
+      "description": "Fenced code block with line numbers, light syntax highlighting, a file title, a language label and a copy button. Long lines wrap rather than scrolling.",
       "props": {
         "code": {
           "type": "string",
@@ -2263,7 +2263,12 @@
         "language": {
           "type": "string",
           "required": false,
-          "description": "Language slug (ts, js, py, sh, etc.)."
+          "description": "Language slug (ts, js, py, sh, etc.). Without one the code is left uncoloured."
+        },
+        "title": {
+          "type": "string",
+          "required": false,
+          "description": "File name in the header, with the language label beside it."
         },
         "hideLanguage": {
           "type": "boolean",
@@ -2274,13 +2279,39 @@
           "type": "boolean",
           "required": false,
           "description": "Hide copy button."
+        },
+        "startLine": {
+          "type": "number",
+          "required": false,
+          "description": "Number of the first line, for an excerpt of a longer file. Default 1."
+        },
+        "highlight": {
+          "type": "[number, number]",
+          "required": false,
+          "description": "Inclusive [first, last] line numbers to tint."
+        },
+        "highlightTone": {
+          "type": "\"accent\" | \"added\" | \"removed\"",
+          "required": false,
+          "description": "Tint of the highlighted range. Default accent."
+        },
+        "compact": {
+          "type": "boolean",
+          "required": false,
+          "description": "Tighter header, padding and leading, for a side panel."
         }
       },
       "example": {
         "type": "code-block",
         "props": {
           "code": "const x = 42;\nconsole.log(x);",
-          "language": "ts"
+          "language": "ts",
+          "title": "answer.ts",
+          "startLine": 12,
+          "highlight": [
+            13,
+            13
+          ]
         }
       }
     },
@@ -4464,6 +4495,16 @@
           "type": "string",
           "required": false,
           "description": "Header title."
+        },
+        "oldStart": {
+          "type": "number",
+          "required": false,
+          "description": "File line number of the first \"before\" line, for an excerpt. Default 1."
+        },
+        "newStart": {
+          "type": "number",
+          "required": false,
+          "description": "File line number of the first \"after\" line, for an excerpt. Default 1."
         }
       },
       "example": {
@@ -6980,7 +7021,7 @@
         "currency": {
           "type": "string",
           "required": false,
-          "description": "Currency symbol prepended to numeric amounts. Default \"$\"."
+          "description": "Currency symbol prepended to amounts, or an ISO code (\"USD\") formatted as money. Default \"$\"."
         },
         "lines": {
           "type": "Array<{ id?: string | number; description: string; quantity?: number; unitPrice?: number; total?: number; note?: string }>",
@@ -6990,7 +7031,7 @@
         "summary": {
           "type": "Array<{ label: string; value: number; isNegative?: boolean }>",
           "required": false,
-          "description": "Tax / discount / shipping rows shown after subtotal."
+          "description": "Tax / discount / shipping rows shown after subtotal. `amount` is accepted for `value`; a non-number shows a dash."
         },
         "subtotal": {
           "type": "number",
@@ -7111,7 +7152,7 @@
         "currency": {
           "type": "string",
           "required": false,
-          "description": "Currency symbol. Default \"$\"."
+          "description": "Currency symbol (\"$\") or ISO code (\"USD\"). Default \"$\"."
         },
         "summary": {
           "type": "Array<{ label: string; value: number; isNegative?: boolean }>",
@@ -14447,6 +14488,11 @@
           "required": false,
           "description": "Slide direction. Default \"right\"."
         },
+        "size": {
+          "type": "\"sm\" | \"md\" | \"lg\" | \"xl\" | \"2xl\" | \"3xl\" | \"4xl\"",
+          "required": false,
+          "description": "Max width of a left/right sheet on wider screens. Default \"sm\"; \"2xl\"-\"4xl\" fit a review or a diff."
+        },
         "title": {
           "type": "string",
           "required": false,
@@ -15035,6 +15081,11 @@
           "required": false,
           "description": "Number format."
         },
+        "decimals": {
+          "type": "number",
+          "required": false,
+          "description": "Max decimals shown. Default rounds by size: whole numbers from 100, 1 decimal from 10, else 2."
+        },
         "currency": {
           "type": "string",
           "required": false,
@@ -15121,12 +15172,12 @@
     {
       "type": "steps",
       "category": "display",
-      "description": "Numbered process steps, vertical (default) or horizontal, with optional descriptions.",
+      "description": "Numbered process steps, vertical (default) or horizontal, with optional descriptions and a per-step status (done, current, upcoming, failed).",
       "props": {
         "steps": {
-          "type": "Array<{ title: string; description?: string; number?: number | string }>",
+          "type": "Array<{ title: string; description?: string; number?: number | string; status?: 'done' | 'current' | 'upcoming' | 'failed' }>",
           "required": true,
-          "description": "Step items."
+          "description": "Step items. `status` marks progress: done and failed pips show a check or cross, the current step is announced as current. Omit it for a plain numbered list."
         },
         "orientation": {
           "type": "\"vertical\" | \"horizontal\"",
@@ -15141,15 +15192,18 @@
           "steps": [
             {
               "title": "Install dependencies",
-              "description": "Run `npm install`."
+              "description": "Run `npm install`.",
+              "status": "done"
             },
             {
               "title": "Configure settings",
-              "description": "Update `config.json`."
+              "description": "Update `config.json`.",
+              "status": "current"
             },
             {
               "title": "Deploy",
-              "description": "Push to production."
+              "description": "Push to production.",
+              "status": "upcoming"
             }
           ]
         }
@@ -17275,7 +17329,7 @@
     {
       "type": "approval-gate",
       "category": "ai",
-      "description": "Human-in-the-loop approval card: shows a proposed agent action with a risk badge, an optional diff and tool-call list, and Approve/Deny/Edit controls that resolve and persist the decision.",
+      "description": "Human-in-the-loop approval card: a proposed agent action with an optional risk badge, diff and tool-call list, and Approve/Deny/Edit controls that resolve and persist the decision.",
       "props": {
         "title": {
           "type": "string",
@@ -17290,7 +17344,7 @@
         "risk": {
           "type": "string",
           "required": false,
-          "description": "Risk level: 'low' | 'medium' | 'high'. Drives the badge + tone."
+          "description": "Risk level: 'low' | 'medium' | 'high'. Drives the badge + tone; omitted, no badge."
         },
         "decision": {
           "type": "string",
@@ -17336,6 +17390,16 @@
           "type": "boolean",
           "required": false,
           "description": "Deny first asks for an optional reason, passed to the host as ondeny({ actionId, reason }). Default false."
+        },
+        "requireDenyReason": {
+          "type": "boolean",
+          "required": false,
+          "description": "Deny first asks for a reason and Confirm stays disabled until one is typed; ⌘↩ confirms, Return is a newline. Default false."
+        },
+        "denyReasonHint": {
+          "type": "string",
+          "required": false,
+          "description": "The line shown while a required reason is missing. Default: \"A reason is needed to <deny label>.\""
         }
       },
       "example": {
