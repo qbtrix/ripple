@@ -1,5 +1,5 @@
 // markdown.test.ts — The docs markdown pipeline: frontmatter, heading ids and
-// the outline, the JSON tokenizer, and ```ripple fences (live segments, and
+// the outline, the JSON tokenizer, code fences, and ```ripple fences (live segments, and
 // build-failing errors that name the file and line).
 import { describe, expect, it } from 'vitest';
 import { highlightJson } from './highlight.js';
@@ -47,10 +47,14 @@ describe('code blocks', () => {
 	it('highlights json fences', () => {
 		expect(html(renderDoc(FM + '```json\n{"a": 1}\n```\n', 'x.md'))).toContain('<span class="tok-key">');
 	});
-	it('escapes other languages as plain text and adds a copy button', () => {
+	it('highlights other known languages and adds a copy button', () => {
 		const out = html(renderDoc(FM + '```svelte\n<Ripple {spec} />\n```\n', 'x.md'));
-		expect(out).toContain('<code class="language-svelte">&lt;Ripple {spec} /&gt;</code>');
+		expect(out).toContain('<code class="language-svelte"><span class="tok-punct">&lt;</span><span class="tok-tag">Ripple</span>');
 		expect(out).toContain('data-copy');
+	});
+	it('escapes an unknown language as plain text', () => {
+		const out = html(renderDoc(FM + '```text\n<b>a & b</b>\n```\n', 'x.md'));
+		expect(out).toContain('<code class="language-text">&lt;b&gt;a &amp; b&lt;/b&gt;</code>');
 		expect(out).not.toContain('tok-');
 	});
 });

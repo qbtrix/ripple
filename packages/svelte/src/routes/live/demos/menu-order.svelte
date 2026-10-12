@@ -12,6 +12,7 @@
 -->
 <script lang="ts">
 	import DetailHeader from './DetailHeader.svelte';
+	import { highlightJson } from '$lib/site/docs/highlight.js';
 	import { onMount } from 'svelte';
 	import MenuOrder from '$lib/widgets/composite/MenuOrder.svelte';
 	import type { Cart, CartDraft, MenuItem } from '$lib/widgets/composite/menu-order.js';
@@ -134,11 +135,11 @@
 		<div class="pane out">
 			<div>
 				<h3>Bound cart</h3>
-				<pre>{cart ? JSON.stringify(cart, null, 2) : '(untouched: the preset shows until the first edit)'}</pre>
+				<pre>{#if cart}{@html highlightJson(JSON.stringify(cart, null, 2))}{:else}(untouched: the preset shows until the first edit){/if}</pre>
 			</div>
 			<div>
 				<h3>on_checkout payload</h3>
-				<pre>{checkedOut ? JSON.stringify(checkedOut, null, 2) : '(continue to payment to see it)'}</pre>
+				<pre>{#if checkedOut}{@html highlightJson(JSON.stringify(checkedOut, null, 2))}{:else}(continue to payment to see it){/if}</pre>
 			</div>
 		</div>
 	</section>

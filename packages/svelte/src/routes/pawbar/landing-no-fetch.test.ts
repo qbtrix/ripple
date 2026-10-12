@@ -8,6 +8,9 @@ import { fireEvent, render } from '@testing-library/svelte';
 import { afterEach, expect, test, vi } from 'vitest';
 import Landing from '../+page.svelte';
 
+// The landing's server load output (+page.server.ts); the sample's markup is not under test here.
+const props = { data: { codeSample: '' } };
+
 vi.setConfig({ testTimeout: 30_000 });
 const waitFor = <T>(fn: () => T | Promise<T>) => vi.waitFor(fn, { timeout: 15_000, interval: 50 });
 
@@ -16,7 +19,7 @@ afterEach(() => vi.restoreAllMocks());
 test('a chip tap and a typed prompt never call fetch without the opt-in flag', async () => {
 	const fetchSpy = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('no network in this test'));
 	const open = vi.spyOn(window, 'open').mockReturnValue(null);
-	const view = render(Landing);
+	const view = render(Landing, { props });
 	const send = () => view.getByRole('button', { name: 'Send' });
 
 	// The prerendered bill splitter exchange is already there.
@@ -39,7 +42,7 @@ test('a chip tap and a typed prompt never call fetch without the opt-in flag', a
 });
 
 test('offline, the panel shows only chips with an answer behind them, and hides empty groups', async () => {
-	const view = render(Landing);
+	const view = render(Landing, { props });
 	const toggle = view.getByRole('button', { name: 'Show all suggestions' });
 	expect(toggle.getAttribute('aria-expanded')).toBe('false');
 	await fireEvent.click(toggle);
