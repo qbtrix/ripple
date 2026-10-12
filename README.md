@@ -136,3 +136,9 @@ and the headless runtime. Start at [`docs/README.md`](docs/README.md).
 ## License
 
 MIT
+
+## Credits
+
+The isometric drawing kit in `packages/core/src/iso/` is ported from
+[Anatomy](https://github.com/wheresryan22/anatomy) by Ryan, MIT License,
+Copyright (c) 2026 Ryan. The notice is kept at the top of each ported file.
