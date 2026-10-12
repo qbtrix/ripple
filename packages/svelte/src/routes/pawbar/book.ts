@@ -198,11 +198,8 @@ export function slotMessage(spec: unknown, payload: unknown): string {
 	if (!name || !time || slot?.available === false) return '';
 	const date = plainLine(day?.date_label);
 	const bounds = isRecord(service?.party) ? service.party : undefined;
-	const n = payload.party;
-	const party =
-		bounds && Number.isInteger(n) && (n as number) >= Number(bounds.min ?? 1) && (n as number) <= Number(bounds.max ?? 50)
-			? ` (${n} ${n === 1 ? 'person' : 'people'})`
-			: '';
+	const n = typeof payload.party === 'number' && Number.isInteger(payload.party) ? payload.party : 0;
+	const party = bounds && n >= Number(bounds.min ?? 1) && n <= Number(bounds.max ?? 50) ? ` (${n} ${n === 1 ? 'person' : 'people'})` : '';
 	const note = plainLine(payload.notes);
 	const text = `I'd like to book ${name}${date ? ` on ${date}` : ''} at ${time}${party}.${note ? ` Note: ${note}` : ''}`;
 	return text.length > SLOT_MESSAGE_MAX ? `${text.slice(0, SLOT_MESSAGE_MAX - 1).trimEnd()}…` : text;

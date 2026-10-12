@@ -500,7 +500,10 @@ export class ChatSession {
 			if (isRecord(p) && typeof p.text === 'string' && p.text.length <= ASK_MAX) this.#say(p.text);
 			return undefined;
 		}
-		if (name === BOOK_CHAT) return void this.#slotToChat(card, event.payload);
+		if (name === BOOK_CHAT) {
+			this.#slotToChat(card, event.payload);
+			return undefined;
+		}
 		if (this.store && name === 'checkout') return this.#checkout(card, this.store, event.payload);
 		if (this.store && name === 'book') return this.#book(card, this.store, event.payload);
 		const e: Record<string, unknown> = { ...event };
