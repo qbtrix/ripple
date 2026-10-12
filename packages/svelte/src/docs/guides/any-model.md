@@ -6,6 +6,8 @@ order: 8
 
 Many providers and local servers speak the OpenAI chat completions protocol: a `POST` to `/v1/chat/completions` that, with `stream: true`, answers with server-sent events. This endpoint works with any of them using `fetch` alone. Point it at a different base URL and model to switch providers.
 
+It drops into the same page as the other model guides; the whole round trip is drawn in [SvelteKit end to end](/docs/guides/sveltekit#the-round-trip).
+
 ## Configure
 
 Set these in your server environment:

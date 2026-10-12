@@ -16,6 +16,27 @@ Everything lives in the `@ripple-ui/svelte/streaming` entry point, kept apart fr
 - `<Ripple streaming={store} />` renders `store.current` and ignores `spec`. Until the first parse, it shows the `skeleton` placeholder (`card`, `dashboard`, `text`, or `none` to draw your own).
 - `parsePartialSpec(text)` is the same parser without the stream, for when you already hold the text.
 
+```mermaid
+%% caption: What draws when. Ripple shows a skeleton, then redraws from the whole buffer at most once per throttle window.
+sequenceDiagram
+  participant M as Model
+  participant H as Your endpoint
+  participant S as streamSpec
+  participant R as Ripple
+  R->>R: skeleton until the first parse
+  loop while text arrives
+    M-->>H: tokens
+    H-->>S: chunks
+    Note over S: wait out throttleMs (50 ms)
+    S->>S: parse the whole buffer, hold back a half-written type
+    S->>R: store.current
+    R->>R: draw the tree so far
+  end
+  H-->>S: stream ends
+  S->>R: done = true
+  R->>R: last draw, error cards for widgets that still fail
+```
+
 ## What happens to a half-written value
 
 A partial parser turns `{"type": "fl` into `{ type: "fl" }`, and `fl` is not a widget. Ripple holds back a value that is still being written for the keys that name things: `type`, `intent`, `version`, `action` and `variant`. The node appears once its closing quote arrives, so a stream never flashes an "unknown widget" box.

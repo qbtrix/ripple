@@ -17,11 +17,57 @@ A manifest is a JSON description of the catalog, built from the same declaration
 
 The full manifest is large. Send it to a model when you want the whole catalog available. The slim one is small enough for any prompt and is what the [slim headless runtime](/docs/concepts/headless#a-smaller-runtime) runs. To give a model a middle ground, build your own list from the full manifest's `widgets` array, keeping only the types your app needs. The [prompting guide](/docs/guides/prompting) shows how.
 
+This spec stays inside the slim manifest, five standard widgets and core actions only, so `validateCatalog` accepts it and a slim headless host can run it too:
+
+```ripple
+{
+  "version": "1.0",
+  "state": { "votes": 3, "voted": false },
+  "ui": {
+    "type": "flex",
+    "props": { "direction": "column", "gap": "10px" },
+    "children": [
+      {
+        "type": "flex",
+        "props": { "gap": "8px", "align": "center" },
+        "children": [
+          { "type": "heading", "props": { "text": "Dark mode for the mobile app", "level": 4 } },
+          { "type": "badge", "props": { "text": "{state.votes} votes", "variant": "secondary" } }
+        ]
+      },
+      { "type": "text", "props": { "text": "{state.voted ? 'Thanks, your vote is in.' : 'Requested by the support team.'}" } },
+      {
+        "type": "button",
+        "show": "!state.voted",
+        "props": { "label": "Vote for it" },
+        "on_click": [
+          { "action": "set", "target": "votes", "value": "{state.votes + 1}" },
+          { "action": "set", "target": "voted", "value": true }
+        ]
+      }
+    ]
+  }
+}
+```
+
 Every manifest starts with a `spec` block, the envelope contract: the tree lives under `ui` (never `root`, `tree`, `view`, `body` or `content`), `state` seeds the data, and `version` is `1.0`.
 
 ## Three checks, from cheap to strict
 
 Model output can be wrong in three ways: it isn't JSON, it is JSON in the wrong shape, or it is the right shape with a widget type that doesn't exist. Check in that order.
+
+```mermaid
+%% caption: Three checks, cheapest first. Any failure is a message you can send straight back to the model.
+flowchart LR
+  text["model text"] --> json{"JSON.parse"}
+  json -->|"throws"| fix["error message<br/>back to the model"]
+  json -->|"ok"| shape{"safeParseUISpec"}
+  shape -->|"Zod issues"| fix
+  shape -->|"ok"| cat{"validateCatalog"}
+  cat -->|"unknown types"| fix
+  cat -->|"empty"| render["render it"]
+  fix -.->|"next turn"| text
+```
 
 ```ts
 import { safeParseUISpec, validateCatalog, type UISpec } from '@ripple-ui/svelte';

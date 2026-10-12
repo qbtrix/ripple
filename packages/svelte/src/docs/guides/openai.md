@@ -6,6 +6,8 @@ order: 7
 
 This endpoint calls the OpenAI Responses API with the Ripple system prompt and streams the text back as it is written. The page feeds the stream to `streamSpec`, as in [SvelteKit end to end](/docs/guides/sveltekit).
 
+The whole round trip is drawn in [SvelteKit end to end](/docs/guides/sveltekit#the-round-trip).
+
 ## Install and configure
 
 ```bash

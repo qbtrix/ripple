@@ -6,6 +6,32 @@ order: 4
 
 This guide puts the pieces together: a server endpoint that streams a model's spec, a page that renders it while it streams, an `onEvent` handler for what the spec asks your app to do, and error states. It builds on [Stream a spec](/docs/getting-started/stream-a-spec), which explains the streaming store itself.
 
+## The round trip
+
+```mermaid
+%% caption: One request from the prompt box to a finished UI, then an event the spec hands back to your page.
+sequenceDiagram
+  participant P as Page (browser)
+  participant E as /api/ui (+server.ts)
+  participant M as Model API
+  P->>E: POST { prompt }
+  E->>E: check the body, read the key from env
+  E->>M: system prompt (manifest) + prompt, streaming
+  loop as the model writes
+    M-->>E: text delta
+    E-->>P: chunk of the response body
+    P->>P: streamSpec parses, Ripple grows
+  end
+  M-->>E: done
+  E-->>P: body closes
+  P->>P: store.done, validateCatalog
+  Note over P: later, the user submits the form
+  P->>P: onEvent({ type: 'emit', name: 'signup' })
+  P->>E: your own request, e.g. POST /api/signup
+```
+
+If the browser goes away mid-stream, the endpoint cancels the model call, so nobody pays for tokens no one will read.
+
 ## Files
 
 ```

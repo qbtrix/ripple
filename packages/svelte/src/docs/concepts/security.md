@@ -12,6 +12,22 @@ A spec is model output, and model output can be steered by whatever the model re
 - **Render arbitrary markup.** Every node is a registered widget. An unknown `type` renders as a visible error box, not as HTML.
 - **Make requests or navigate.** `api`, `navigate`, `run_source`, `call_binding` and `invoke_tool` only send an event to your `onEvent` handler. Nothing happens unless your code does it.
 
+```mermaid
+%% caption: Where the checks sit. Each one runs on the resolved value, right where it would be used.
+flowchart TD
+  spec["spec (untrusted)"] --> resolve["expressions resolve"]
+  resolve --> type{"node type"}
+  resolve --> req["api, navigate, call_binding..."]
+  req --> host["your onEvent decides"]
+  type -->|"not in the catalog"| box["error box, no markup"]
+  type -->|"known widget"| url["href, src"]
+  type -->|"known widget"| css["style"]
+  url --> safeUrl["safeUrl"]
+  css --> safeStyle["safeStyle"]
+  safeUrl -->|"refused"| drop["attribute dropped"]
+  safeStyle -->|"unsafe"| dropcss["declaration dropped"]
+```
+
 ## URLs
 
 An expression can assemble a dangerous URL while the spec renders, for example `"{'java' + 'script:alert(1)'}"` or `"{state.a}:alert(1)"`. So Ripple checks URLs on the final, resolved value, at the place it is used, with one function: `safeUrl` from `@ripple-ui/core`.

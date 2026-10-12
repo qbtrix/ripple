@@ -46,6 +46,20 @@ Any other intent, including `custom`, `action` and `workspace`, renders the spec
 
 The layout reads the data's shape through those roles. Items with an `image` lean toward a card grid; items with only text lean toward a list; a long form splits into sections. Set `display.layout` to override the choice, and `display.density` (`compact`, `comfortable`, `spacious`) to tighten or loosen it. The composite layouts `comparison`, `checklist`, `invoice`, `report`, `timeline`, `table` and `article` are reached the same way, through `display.layout`.
 
+```mermaid
+%% caption: How a layout is chosen. An explicit display.layout wins; otherwise the intent and the shape of the data decide.
+flowchart LR
+  spec["UniversalSpec"] --> hint{"display.layout set?"}
+  hint -->|"yes"| named["that layout<br/>grid, list, table, comparison..."]
+  hint -->|"no"| intent{"intent"}
+  intent -->|"browse, select"| data{"items have<br/>an image?"}
+  data -->|"yes"| grid["card grid"]
+  data -->|"no"| list["list"]
+  intent -->|"form"| form["form, in sections<br/>or steps when long"]
+  intent -->|"confirm"| summary["summary card"]
+  intent -->|"custom"| tree["the ui tree as written"]
+```
+
 ## Multi-step flows
 
 A flow ships every step in one spec. Each step is a UniversalSpec, and its next step is nested inside it, so moving forward and back needs no round trip to the model.
@@ -168,6 +182,17 @@ flow.back();                      // { spec, state } of the previous step, or nu
 flow.forward();
 flow.canGoBack;                   // also canGoForward, hasNextChain, isTerminal
 flow.terminalAction();            // { action, payload } at the last step
+```
+
+```mermaid
+%% caption: ChainExecutor as a state machine. advance follows chain_map first, then chain, and stops on an empty required field.
+stateDiagram-v2
+  [*] --> Step: new ChainExecutor(rootSpec)
+  Step --> Step: advance(), back(), forward()
+  Step --> Blocked: advance() with a required field empty
+  Blocked --> Step: field filled in
+  Step --> Last: no chain or chain_map left
+  Last --> [*]: terminalAction() to onComplete
 ```
 
 `advance` refuses to move past a form step with an empty required field. It returns `null` and fills `flow.validationErrors`.

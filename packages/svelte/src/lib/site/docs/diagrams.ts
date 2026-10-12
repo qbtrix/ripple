@@ -11,7 +11,8 @@
 //   drawn figure from the source kept here.
 // - securityLevel 'strict'. A diagram that fails to render keeps its source
 //   on screen; diagrams.test.ts parses every fence so that cannot ship.
-// - Phones: the SVG never shrinks below 70% of its natural width; the canvas
+// - Size: the SVG shrinks to fit its column. On phones the page CSS stops it
+//   at --diagram-min (70% of its natural width, set here) and the canvas
 //   scrolls sideways instead of the page.
 
 type Mermaid = (typeof import('mermaid'))['default'];
@@ -136,7 +137,7 @@ async function draw(canvas: HTMLElement, source: string, alive: () => boolean) {
 	canvas.innerHTML = svg;
 	const el = canvas.querySelector('svg');
 	const natural = el?.viewBox.baseVal?.width;
-	if (el && natural) el.style.minWidth = `${Math.round(natural * 0.7)}px`;
+	if (el && natural) el.style.setProperty('--diagram-min', `${Math.round(natural * 0.7)}px`);
 	canvas.dataset.drawn = '';
 }
 

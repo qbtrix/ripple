@@ -297,6 +297,12 @@
 			animation: none;
 		}
 	}
+	/* Small text stays readable: past 70% of natural size the figure scrolls. */
+	@media (max-width: 640px) {
+		.prose :global(.diagram-canvas svg) {
+			min-width: var(--diagram-min);
+		}
+	}
 
 	.pager {
 		display: flex;

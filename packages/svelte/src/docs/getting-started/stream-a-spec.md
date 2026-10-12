@@ -8,6 +8,19 @@ A model takes seconds to write a full spec. `streamSpec` parses the JSON as it a
 
 There are two halves: an endpoint that streams the model's output as text, and a page that feeds that stream to `streamSpec`.
 
+```mermaid
+%% caption: The two halves. The endpoint passes the model's text through; the page parses it as it lands.
+sequenceDiagram
+  participant P as Page
+  participant E as /api/ui
+  participant M as Model
+  P->>E: POST { prompt }
+  E->>M: generateSpec(prompt)
+  M-->>E: text, token by token
+  E-->>P: streaming body
+  P->>P: streamSpec, then Ripple draws as it grows
+```
+
 ## The endpoint
 
 The endpoint returns the model's text as a streaming response body. The model call depends on your provider, so `generateSpec` below stands in for it. It should return a `ReadableStream<string>` of the text the model writes, and that text should be the spec JSON and nothing else.
@@ -59,6 +72,45 @@ To teach the model the widget catalog, put a manifest in its system prompt. The 
 {#if store}
   <Ripple streaming={store} onEvent={(e) => console.log(e.type)} />
 {/if}
+```
+
+The button asks for "a signup form with name and email". A finished reply might look like this one, and it works as soon as it lands. Try signing up with a field left empty:
+
+```ripple
+{
+  "version": "1.0",
+  "state": { "name": "", "email": "", "joined": false, "missing": false },
+  "ui": {
+    "type": "card",
+    "children": [
+      { "type": "heading", "slot": "header", "props": { "text": "Join the beta", "level": 3 } },
+      {
+        "type": "flex",
+        "show": "!state.joined",
+        "props": { "direction": "column", "gap": "10px" },
+        "children": [
+          { "type": "input", "bind": "name", "props": { "label": "Name", "placeholder": "Ada Lovelace" } },
+          { "type": "input", "bind": "email", "props": { "label": "Email", "placeholder": "ada@example.com" } },
+          {
+            "type": "button",
+            "props": { "label": "Sign up" },
+            "on_click": {
+              "action": "flow",
+              "steps": [
+                { "action": "validate", "condition": "state.name", "message": "Add your name first." },
+                { "action": "validate", "condition": "state.email", "message": "Add your email first." },
+                { "action": "set", "target": "joined", "value": true }
+              ],
+              "on_error": [{ "action": "set", "target": "missing", "value": true }]
+            }
+          },
+          { "type": "text", "show": "state.missing", "props": { "text": "Add your name and email first." } }
+        ]
+      },
+      { "type": "text", "show": "state.joined", "props": { "text": "Thanks, {state.name}. We'll write to {state.email}." } }
+    ]
+  }
+}
 ```
 
 Hold the store in `$state.raw`. The store is already reactive, and a deep `$state` would wrap it in a proxy for nothing.
