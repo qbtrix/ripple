@@ -181,12 +181,39 @@ export function toCanonicalOption(raw: unknown): CanonicalOption | null {
 
 /**
  * Map an unknown options array into canonical `{value, label}` shape,
- * dropping any item that can't be coerced. Use in choice widgets:
+ * dropping any item that can't be coerced, and any later option whose value
+ * repeats an earlier one (compared as strings, so 1 and '1' collapse too).
+ * Choice widgets key their {#each} by value, and a repeated value from the
+ * model would throw `each_key_duplicate`; two options with one value were one
+ * choice anyway. Use in choice widgets:
  *
  *     const normalized = $derived(canonicalOptions(options, { widget: 'select', key: 'options' }));
  */
 export function canonicalOptions(v: unknown, ctx?: Ctx): CanonicalOption[] {
+  const seen = new Set<string>();
   return safeArray(v, ctx)
     .map((item) => toCanonicalOption(item))
-    .filter((o): o is CanonicalOption => o !== null);
+    .filter((o): o is CanonicalOption => {
+      if (o === null || seen.has(String(o.value))) return false;
+      seen.add(String(o.value));
+      return true;
+    });
+}
+
+/**
+ * One each-key per item, unique even when the model repeats an id: the first
+ * `a` keys as `a`, later ones as `a#1`, `a#2` (skipping any key already taken).
+ * Use as `{#each items as item, i (keys[i])}` with `keys` derived alongside
+ * the list, so a repeated id renders both items instead of throwing
+ * `each_key_duplicate`. Unlike canonicalOptions, nothing is dropped.
+ */
+export function uniqueKeys<T>(items: readonly T[], getId: (item: T, i: number) => unknown): string[] {
+  const seen = new Set<string>();
+  return items.map((item, i) => {
+    const id = String(getId(item, i));
+    let key = id;
+    for (let n = 1; seen.has(key); n++) key = `${id}#${n}`;
+    seen.add(key);
+    return key;
+  });
 }

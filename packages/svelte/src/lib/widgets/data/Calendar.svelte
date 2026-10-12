@@ -5,7 +5,7 @@
 <script lang="ts">
   import { safeStyle } from '@ripple-ui/core';
   import { cn } from '$lib/utils.js';
-  import { safeArray } from '$lib/utils/safe-props.js';
+  import { safeArray, uniqueKeys } from '$lib/utils/safe-props.js';
   import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
   import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 
@@ -196,6 +196,8 @@
 
   <div class={cn('grid grid-cols-7', view === 'month' ? 'grid-rows-6' : 'grid-rows-1')}>
     {#each (view === 'month' ? monthCells : weekCells) as cell, i (i)}
+      {@const shownEvents = cell.events.slice(0, 3)}
+      {@const eventKeys = uniqueKeys(shownEvents, (e) => e.id)}
       {@const isToday = isSameDay(today, cell.date)}
       {@const isSelected = !!parseISO(value) && isSameDay(parseISO(value)!, cell.date)}
       <button
@@ -216,7 +218,7 @@
           {cell.date.getDate()}
         </span>
         <div class="flex-1 mt-1 flex flex-col gap-0.5 overflow-hidden">
-          {#each cell.events.slice(0, 3) as ev (ev.id)}
+          {#each shownEvents as ev, ei (eventKeys[ei])}
             <span
               role="button"
               tabindex="0"

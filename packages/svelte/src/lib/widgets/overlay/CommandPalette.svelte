@@ -33,6 +33,7 @@
   import type { WidgetRegistry } from '@ripple-ui/core';
   import Kbd from '../display/Kbd.svelte';
   import { isEditableTarget } from '../craft/types.js';
+  import { uniqueKeys } from '$lib/utils/safe-props.js';
   import { preparePalette, searchPalette, type PaletteItem } from './palette-search.js';
 
   interface Props {
@@ -208,6 +209,7 @@
   });
 
   const rows = $derived(view.sections.flatMap((s) => s.items));
+  const sectionKeys = $derived(uniqueKeys(view.sections, (s) => s.label));
   /** Some row has a thumbnail or icon: rows without one keep a blank slot so labels align. */
   const anyMedia = $derived(rows.some((r) => r.thumb || r.icon));
 
@@ -303,7 +305,8 @@
         <div class="px-3 py-10 text-center text-sm text-ripple-muted-foreground">{emptyText}</div>
       {:else}
         {@const offsets = view.sections.map((_, si) => view.sections.slice(0, si).reduce((a, s) => a + s.items.length, 0))}
-        {#each view.sections as section, si (section.label)}
+        {#each view.sections as section, si (sectionKeys[si])}
+          {@const itemKeys = uniqueKeys(section.items, (it) => it.id)}
           <div role="group" aria-labelledby={section.label ? `${base}-g-${si}` : undefined} aria-label={section.label ? undefined : 'Results'}>
             {#if section.label}
               <div id="{base}-g-{si}" class="flex items-baseline gap-2 px-2.5 pt-3 pb-1 text-[12px] font-medium text-ripple-muted-foreground">
@@ -311,7 +314,7 @@
                 {#if section.more}<span class="text-[11px] opacity-75">+{fmt(section.more)} more, type to search</span>{/if}
               </div>
             {/if}
-            {#each section.items as item, ii (item.id)}
+            {#each section.items as item, ii (itemKeys[ii])}
               {@const idx = offsets[si] + ii}
               {@const Icon = item.thumb ? null : getIcon(item.icon)}
               {@const secondary = item.description ?? item.menu}

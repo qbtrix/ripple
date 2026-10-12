@@ -52,7 +52,7 @@
       value={Array.isArray(value) ? value : value ? [value] : []}
       onValueChange={handleChange}
     >
-      {#each normalized as it (it.value)}
+      {#each normalized as it, i (`${it.value}:${i}`)}
         <Accordion.Item value={it.value}>
           <Accordion.Trigger>{it.title}</Accordion.Trigger>
           <Accordion.Content>{it.content}</Accordion.Content>
@@ -65,7 +65,7 @@
       value={typeof value === 'string' ? value : ''}
       onValueChange={handleChange}
     >
-      {#each normalized as it (it.value)}
+      {#each normalized as it, i (`${it.value}:${i}`)}
         <Accordion.Item value={it.value}>
           <Accordion.Trigger>{it.title}</Accordion.Trigger>
           <Accordion.Content>{it.content}</Accordion.Content>

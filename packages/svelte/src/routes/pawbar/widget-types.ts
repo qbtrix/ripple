@@ -8,7 +8,7 @@
 // drifts from the manifest; regenerate it from there.
 
 export const CHAT_WIDGET_TYPES: ReadonlySet<string> = new Set([
-	'accordion', 'alert', 'analyst-bar', 'analytics-dashboard', 'animated-beam', 'api-key',
+	'accordion', 'agenda', 'alert', 'analyst-bar', 'analytics-dashboard', 'animated-beam', 'api-key',
 	'app-shell', 'approval-gate', 'article-meta', 'ask-user-questions', 'audio', 'audit-log',
 	'aurora', 'avatar', 'avatar-group', 'badge', 'bento-grid', 'bill-split', 'board-game', 'booking',
 	'border-beam', 'breadcrumb', 'bulk-action-bar', 'button', 'c4', 'calendar', 'callout', 'card',
@@ -36,5 +36,5 @@ export const CHAT_WIDGET_TYPES: ReadonlySet<string> = new Set([
 	'streak-bars', 'stream-text', 'switch', 'table', 'tabs', 'terminal', 'testimonial', 'text',
 	'text-effect', 'textarea', 'ticker', 'time-picker', 'timeline', 'timer', 'toast', 'todo-list',
 	'tool-call', 'tooltip', 'tree', 'tree-table', 'treemap', 'trend', 'video', 'virtual-list',
-	'wizard-layout', 'word-guess', 'workflow'
+	'weather-forecast', 'week-schedule', 'wizard-layout', 'word-guess', 'workflow'
 ]);
