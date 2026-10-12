@@ -1,5 +1,5 @@
 <!--
-  @file lib/site/docs/OpenIn.svelte
+  @file routes/docs/OpenIn.svelte
   @description The docs page's "Open in" dropdown, next to Copy page / Copy for
     your model / View as Markdown: a disclosure button and a list of links that
     open a new chat in Claude, ChatGPT or PocketPaw, already asked to read this

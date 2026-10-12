@@ -1,10 +1,11 @@
-// site/docs/open-in.ts — The docs pages' "Open in" links: a new chat in
+// routes/docs/open-in.ts — The docs pages' "Open in" links: a new chat in
 // Claude, ChatGPT or PocketPaw (Paw OS) that already asks the assistant to read
 // the page's markdown. Claude and ChatGPT take the prompt in `q`; Paw OS gets it
 // through the landing's handoff (in the URL fragment, so it never reaches a
-// server, cut to HANDOFF_MAX). Hrefs still go through safeUrl where rendered.
+// server, cut to HANDOFF_MAX). Hrefs still go through safeUrl where rendered. Lives under routes, not lib:
+// lib must never import a route (the package build would follow it).
 
-import { pawosHandoffUrl } from '../../../routes/pawbar/session.svelte.js';
+import { pawosHandoffUrl } from '../pawbar/session.svelte.js';
 
 export interface OpenInLink {
 	name: 'Claude' | 'ChatGPT' | 'PocketPaw';

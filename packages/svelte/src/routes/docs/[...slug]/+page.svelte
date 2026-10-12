@@ -10,7 +10,7 @@
 <script lang="ts">
 	import SpecExample from '$lib/site/SpecExample.svelte';
 	import { forYourModel, SITE_URL } from '$lib/site/docs/model.js';
-	import OpenIn from '$lib/site/docs/OpenIn.svelte';
+	import OpenIn from '../OpenIn.svelte';
 
 	let { data } = $props();
 
