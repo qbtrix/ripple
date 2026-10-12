@@ -290,6 +290,20 @@ describe('booking flow', () => {
 		expect(screen.queryAllByRole('button')).toEqual([]);
 	});
 
+	it('contact off: no details stage, an optional note on review, and Send to chat emits no customer', async () => {
+		const onbook = vi.fn();
+		render(Booking, { props: { ...PROPS, contact: false, onbook } });
+		expect(screen.queryByText('Details')).toBeNull();
+		await fireEvent.click(btn('Choose a time'));
+		await fireEvent.click(btn('Review'));
+		for (const field of ['Name', 'Email', 'Phone']) expect(screen.queryByLabelText(field)).toBeNull();
+		await fireEvent.input(screen.getByLabelText(/Note/), { target: { value: ' window seat ' } });
+		await fireEvent.click(btn('Send to chat'));
+		expect(onbook).toHaveBeenCalledWith({ service_id: 'table', start: FRI('19:30'), party: 4, notes: 'window seat' });
+		await fireEvent.click(btn('Back'));
+		expect(btn('7:30 PM, closest to your ask')).toBeTruthy();
+	});
+
 	it('keeps Book off without a host handler', async () => {
 		render(Booking, { props: { ...PROPS, selection: { customer: { name: 'Ana', phone: '+1 202 555 0143' } } } });
 		await fireEvent.click(btn('Choose a time'));

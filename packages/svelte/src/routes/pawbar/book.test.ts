@@ -7,14 +7,16 @@
 // booking the store does not back (no `on_book`) sends the chosen slot to the
 // chat as the visitor's message instead, once, and shows "Sent to chat".
 
-import { describe, expect, test, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/svelte';
+import { afterEach, describe, expect, test, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
 import type { RippleEvent } from '$lib/index.js';
 import Ripple from '$lib/Ripple.svelte';
 import { book, bookingIcs, patchBooking, reloadDays, SLOT_MESSAGE_MAX, SLOT_TAKEN, slotMessage, toBookingRequest } from './book.js';
 import { BOOK_CHAT, refuseCard } from './card-policy.js';
 import { ChatSession, type Card, type Transport } from './session.svelte.js';
 import { ORDER_KEY } from '../pay/resume.js';
+
+afterEach(cleanup);
 
 const STORE = 'http://store.test/test-store';
 const START = '2026-10-16T19:00:00-04:00';
@@ -393,8 +395,13 @@ describe('a booking with no store wiring sends the chosen slot to the chat', () 
 	test('the host wires only the unwired booking, to its own event', async () => {
 		const { card } = await chatCard(dentistSpec());
 		expect((card.spec!.ui as Record<string, unknown>).on_book).toEqual({ action: 'emit', target: BOOK_CHAT });
+		expect(bookingNode(card).contact).toBe(false);
 		const table = await chatCard(bookingSpec);
 		expect((table.card.spec!.ui as Record<string, unknown>).on_book).toEqual({ action: 'emit', target: 'book' });
+		expect(bookingNode(table.card).contact).toBeUndefined();
+		// A model can't switch the contact step off on a store booking.
+		const forced = await chatCard({ ui: { ...bookingSpec.ui, props: { ...bookingSpec.ui.props, contact: false } } });
+		expect(bookingNode(forced.card).contact).toBeUndefined();
 	});
 
 	test('confirming a dentist slot sends exactly one visitor message and never books at the store', async () => {
@@ -416,18 +423,50 @@ describe('a booking with no store wiring sends the chosen slot to the chat', () 
 		const view = render(Ripple, { props: { spec: card.spec, onEvent: (e: RippleEvent) => session.hostEvent(card, e) } });
 		await fireEvent.click(screen.getByRole('button', { name: 'Choose a time' }));
 		await fireEvent.click(screen.getByRole('button', { name: /^10:30/ }));
-		await fireEvent.click(screen.getByRole('button', { name: 'Add your details' }));
-		await fireEvent.input(screen.getByLabelText('Name'), { target: { value: 'Sam' } });
-		await fireEvent.input(screen.getByLabelText('Email'), { target: { value: 'sam@example.com' } });
+		expect(screen.queryByText('Details')).toBeNull();
 		await fireEvent.click(screen.getByRole('button', { name: 'Review' }));
-		await fireEvent.click(screen.getByRole('button', { name: 'Confirm booking' }));
+		for (const field of ['Name', 'Email', 'Phone']) expect(screen.queryByLabelText(field)).toBeNull();
+		await fireEvent.input(screen.getByLabelText(/Note/), { target: { value: ' first visit ' } });
+		await fireEvent.click(screen.getByRole('button', { name: 'Send to chat' }));
 		await settle(session);
-		expect(said.slice(1)).toEqual(["I'd like to book Teeth cleaning on Tue 14 Oct at 10:30."]);
+		expect(said.slice(1)).toEqual(["I'd like to book Teeth cleaning on Tue 14 Oct at 10:30. Note: first visit"]);
 		await view.rerender({ spec: card.spec });
 		expect(screen.getByText('Sent to chat')).toBeTruthy();
 		expect(screen.queryByText("You're booked")).toBeNull();
 		expect(screen.queryByRole('button', { name: 'Confirm booking' })).toBeNull();
-		view.unmount();
+	});
+
+	test('a store-backed table booking still asks for contact details', async () => {
+		const { session, card } = await chatCard(bookingSpec, { storeUrl: STORE, fetch: vi.fn() });
+		render(Ripple, { props: { spec: card.spec, onEvent: (e: RippleEvent) => session.hostEvent(card, e) } });
+		await fireEvent.click(screen.getByRole('button', { name: 'Choose a time' }));
+		await fireEvent.click(screen.getByRole('button', { name: 'Add your details' }));
+		expect(screen.getByLabelText('Name')).toBeTruthy();
+		expect(screen.getByLabelText('Email')).toBeTruthy();
+	});
+
+	test('a slot message sent while an answer streams is not replaced by a newer card message', async () => {
+		const said: string[] = [];
+		let release!: () => void;
+		const gate = new Promise<void>((r) => (release = r));
+		const session = new ChatSession(async function* (message) {
+			said.push(message);
+			yield { event: 'card.start', data: { card_id: 'c' } };
+			yield { event: 'card.final', data: { card_id: 'c', card: dentistSpec() } };
+			if (said.length === 1) await gate;
+		});
+		const first = session.send('Book a dentist appointment');
+		await vi.waitFor(() => expect(session.turns[1]?.parts[0]?.kind).toBe('card'));
+		const part = session.turns[1].parts[0];
+		if (part.kind !== 'card') throw new Error('no card');
+		expect(session.busy).toBe(true);
+		await session.hostEvent(part.card, emit(BOOK_CHAT, slot));
+		await new Promise((r) => setTimeout(r));
+		await session.hostEvent(part.card, emit('ask', { text: 'Something else' }));
+		release();
+		await first;
+		await settle(session);
+		expect(said).toEqual(['Book a dentist appointment', "I'd like to book Teeth cleaning on Tue 14 Oct at 10:30."]);
 	});
 
 	test('party only when the service takes one, and the visitor note, trimmed', () => {
