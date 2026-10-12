@@ -1,7 +1,7 @@
 {
   "schema": "ripple.manifest/v1",
   "version": "0.8.0",
-  "generatedAt": "2026-10-11T18:48:57.273Z",
+  "generatedAt": "2026-10-12T04:44:17.335Z",
   "spec": {
     "uiField": "ui",
     "stateField": "state",
@@ -10446,9 +10446,9 @@
           "description": "The answer up front, at most 140 chars. Omit it and the total time leads."
         },
         "exercises": {
-          "type": "Array<{ id?: string; name: string; cue?: string; kind?: \"cardio\" | \"strength\" | \"core\" | \"mobility\" | \"rest\" }>",
+          "type": "Array<{ id?: string; name: string; cue?: string; kind?: \"cardio\" | \"strength\" | \"core\" | \"mobility\" | \"rest\"; figure?: string }>",
           "required": true,
-          "description": "In order, one round. `cue` is a one-line form tip. A \"rest\" kind is a rest block (restSec long) with no extra rest beside it."
+          "description": "In order, one round. `cue` is a one-line form tip. A \"rest\" kind is a rest block (restSec long) with no extra rest beside it. Each row shows an animated figure matched from `name`; `figure` (an id like \"cat-cow\") overrides the match."
         },
         "workSec": {
           "type": "number",
