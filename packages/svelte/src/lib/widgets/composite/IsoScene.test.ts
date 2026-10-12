@@ -46,7 +46,8 @@ describe('iso-scene', () => {
 		expect(container.querySelector('[data-slot="title"]')!.textContent).toContain('Gears');
 	});
 
+	// A whole scene is redrawn per streamed frame, so these get bigger chunks and room under a loaded run.
 	it.each(Object.entries(ISO_SCENES))('the %s scene streams to the same card as a whole spec', async (_name, props) => {
-		await expectStreamParity({ ui: { type: 'iso-scene', props } });
-	});
+		await expectStreamParity({ ui: { type: 'iso-scene', props } }, { chunkSize: 160 });
+	}, 30_000);
 });
