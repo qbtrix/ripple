@@ -124,7 +124,8 @@
 		if (to < 0 || to >= current.length) return;
 		commit(move(current, i, to));
 		announce = `${current[i].title} moved to position ${to + 1} of ${current.length}`;
-		requestAnimationFrame(() => document.querySelector<HTMLElement>(`[data-agenda-move="${current[to]?.id}:${by}"]`)?.focus());
+		const key = `${current[to]?.id}:${by}`;
+		requestAnimationFrame(() => [...document.querySelectorAll<HTMLElement>('[data-agenda-move]')].find((el) => el.dataset.agendaMove === key)?.focus());
 	}
 
 	// ── Drag to reorder ─────────────────────────────────────────────────────
@@ -152,7 +153,7 @@
 	const ghost = ['grid size-7 place-items-center rounded-md text-ripple-muted-foreground hover:bg-ripple-muted hover:text-ripple-surface-foreground disabled:opacity-30 disabled:hover:bg-transparent', focusRing];
 </script>
 
-<div {id} class={['@container text-ripple-surface-foreground', className]} style={rootStyle} data-widget="agenda">
+<div {id} class={['@container text-ripple-surface-foreground', className]} style={safeStyle(rootStyle)} data-widget="agenda">
 	<section class="flex flex-col gap-3 rounded-ripple border border-ripple-border bg-ripple-surface p-4" aria-label={heading || 'Agenda'}>
 		<header class="flex flex-wrap items-start justify-between gap-3">
 			<div class="min-w-0">
@@ -187,7 +188,7 @@
 				{#each current as it, i (it.id)}
 					<span
 						class={['ag-seg h-full transition-opacity', it.done && 'opacity-30', i === activeIdx && 'ag-seg-on']}
-						style="flex-grow:{it.minutes};background:{tone(i)}"
+						style={safeStyle(`flex-grow:${it.minutes};background:${tone(i)}`)}
 						title="{it.title}: {it.minutes} min"
 					></span>
 				{/each}
@@ -215,7 +216,7 @@
 						<button
 							type="button"
 							class={['grid size-6 place-items-center rounded-full border-2 transition-colors', focusRing, it.done ? 'border-transparent text-white' : 'border-ripple-border hover:border-ripple-muted-foreground']}
-							style={it.done ? `background:${tone(i)}` : `border-color:${on ? tone(i) : ''}`}
+							style={safeStyle(it.done ? `background:${tone(i)}` : `border-color:${on ? tone(i) : ''}`)}
 							aria-pressed={it.done}
 							aria-label="{it.title}, {it.done ? 'done' : 'not done'}"
 							onclick={() => setDone(it.id, !it.done)}
@@ -228,7 +229,7 @@
 								<div class="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
 									{#if it.owner}
 										<span class="inline-flex items-center gap-1.5 text-footnote text-ripple-muted-foreground">
-											<span class="grid size-5 place-items-center rounded-full text-[0.625rem] font-semibold text-white" style="background:{tone(i)}" aria-hidden="true">{initials(it.owner)}</span>{it.owner}
+											<span class="grid size-5 place-items-center rounded-full text-[0.625rem] font-semibold text-white" style={safeStyle(`background:${tone(i)}`)} aria-hidden="true">{initials(it.owner)}</span>{it.owner}
 										</span>
 									{/if}
 									{#if it.notes}<span class="line-clamp-2 text-footnote text-ripple-muted-foreground">{it.notes}</span>{/if}
@@ -285,7 +286,7 @@
 						</div>
 						{#if on && active}
 							<span class="absolute inset-x-1.5 bottom-0 h-0.5 overflow-hidden rounded-full bg-ripple-border" aria-hidden="true">
-								<span class="block h-full transition-[width] duration-1000 ease-linear" style="width:{Math.min((elapsed / (active.minutes * 60)) * 100, 100)}%;background:{tone(i)}"></span>
+								<span class="block h-full transition-[width] duration-1000 ease-linear" style={safeStyle(`width:${Math.min((elapsed / (active.minutes * 60)) * 100, 100)}%;background:${tone(i)}`)}></span>
 							</span>
 						{/if}
 					</li>

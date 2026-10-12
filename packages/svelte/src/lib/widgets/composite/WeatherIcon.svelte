@@ -7,6 +7,7 @@
   Colours are fixed weather hues that read on light and dark grounds.
 -->
 <script lang="ts">
+	import { safeStyle } from '@ripple-ui/core';
 	import type { Kind } from './weather-forecast.js';
 
 	interface Props {
@@ -36,7 +37,7 @@
 	data-kind={kind}
 >
 	{#if sunny}
-		<g class="wx-rays" style="transform-origin: {sun.cx}px {sun.cy}px">
+		<g class="wx-rays" style={safeStyle(`transform-origin: ${sun.cx}px ${sun.cy}px`)}>
 			{#each RAYS as a (a)}
 				<line
 					x1={sun.cx}

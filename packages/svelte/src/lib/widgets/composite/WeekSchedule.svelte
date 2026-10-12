@@ -99,7 +99,7 @@
 
 <svelte:window onkeydown={(e) => e.key === 'Escape' && sel && pick(null)} />
 
-<div {id} class={['@container text-ripple-surface-foreground', className]} style={rootStyle} data-widget="week-schedule">
+<div {id} class={['@container text-ripple-surface-foreground', className]} style={safeStyle(rootStyle)} data-widget="week-schedule">
 	<section class="flex flex-col gap-3 rounded-ripple border border-ripple-border bg-ripple-surface p-4" aria-label={heading || 'Week schedule'}>
 		<header class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
 			{#if heading}<h2 class="text-title-3 font-semibold text-pretty">{heading}</h2>{/if}
@@ -110,7 +110,7 @@
 
 		<!-- Wide: the week grid. -->
 		<div class="ws-wide hidden max-h-[34rem] overflow-auto rounded-md border border-ripple-border @min-[560px]:block" data-slot="grid">
-			<div class="ws-grid" style="--cols:{cols.length};--rows:{hours.length}">
+			<div class="ws-grid" style={safeStyle(`--cols:${cols.length};--rows:${hours.length}`)}>
 				<div class="ws-corner"></div>
 				{#each cols as name, d (d)}
 					<div class={['ws-head text-footnote font-medium', d === today ? 'text-ripple-accent' : 'text-ripple-muted-foreground']}>
@@ -119,7 +119,7 @@
 				{/each}
 				<div class="ws-gutter" aria-hidden="true">
 					{#each hours as h, i (h)}
-						{#if i}<span class="text-caption-2 text-ripple-muted-foreground tabular-nums" style="top:{(i / hours.length) * 100}%">{hourLabel(h)}</span>{/if}
+						{#if i}<span class="text-caption-2 text-ripple-muted-foreground tabular-nums" style={safeStyle(`top:${(i / hours.length) * 100}%`)}>{hourLabel(h)}</span>{/if}
 					{/each}
 				</div>
 				{#each cols as name, d (d)}
@@ -128,7 +128,7 @@
 							<button
 								type="button"
 								class={['ws-ev', focusRing, b.end - b.start < 45 && 'ws-short', selId === b.id && 'ws-on']}
-								style={place(b, d)}
+								style={safeStyle(place(b, d))}
 								aria-pressed={selId === b.id}
 								aria-label="{b.title}, {name} {span(b)}{b.place ? `, ${b.place}` : ''}"
 								data-event={b.id}
@@ -139,7 +139,7 @@
 							</button>
 						{/each}
 						{#if showNow && d === today}
-							<span class="ws-now" style="top:{pctTop(nowMin)}%" data-slot="now-line" aria-hidden="true"></span>
+							<span class="ws-now" style={safeStyle(`top:${pctTop(nowMin)}%`)} data-slot="now-line" aria-hidden="true"></span>
 						{/if}
 					</div>
 				{/each}
@@ -158,7 +158,7 @@
 									<button
 										type="button"
 										class={['ws-row flex w-full items-center gap-3 rounded-md px-2 py-2 text-left hover:bg-ripple-muted', focusRing, selId === b.id && 'bg-ripple-muted']}
-										style="--ev:{b.color}"
+										style={safeStyle(`--ev:${b.color}`)}
 										aria-pressed={selId === b.id}
 										aria-label="{b.title}, {name} {span(b)}{b.place ? `, ${b.place}` : ''}"
 										data-event={b.id}
@@ -184,7 +184,7 @@
 		{/if}
 
 		{#if sel}
-			<div class="ws-detail flex items-start gap-3 rounded-md border border-ripple-border p-3" style="--ev:{sel.color}" data-slot="detail" aria-live="polite">
+			<div class="ws-detail flex items-start gap-3 rounded-md border border-ripple-border p-3" style={safeStyle(`--ev:${sel.color}`)} data-slot="detail" aria-live="polite">
 				<span class="ws-bar mt-1 h-10 w-1 shrink-0 rounded-full"></span>
 				<div class="min-w-0 flex-1">
 					<p class="text-body-emph">{sel.title}</p>

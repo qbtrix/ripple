@@ -74,7 +74,7 @@
 	const focusRing = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ripple-ring';
 </script>
 
-<div {id} class={['@container text-ripple-surface-foreground', className]} style={rootStyle} data-widget="weather-forecast">
+<div {id} class={['@container text-ripple-surface-foreground', className]} style={safeStyle(rootStyle)} data-widget="weather-forecast">
 	<section class="wf flex flex-col gap-4 rounded-ripple border border-ripple-border bg-ripple-surface p-4" aria-label={where ? `Weather for ${where}` : 'Weather forecast'}>
 		<header class="flex items-start gap-3">
 			<div class="min-w-0 flex-1">
@@ -143,9 +143,9 @@
 							<span class="wf-icon"><WeatherIcon kind={d.kind} size={30} /></span>
 							<span class="wf-rain wf-pct text-caption-1 font-medium tabular-nums">{d.rain && d.rain >= 10 ? `${d.rain}%` : ''}</span>
 							<span class="wf-lo text-callout text-ripple-muted-foreground tabular-nums">{t(d.low)}</span>
-							<span class="wf-track" style={bar(d)} aria-hidden="true">
+							<span class="wf-track" style={safeStyle(bar(d))} aria-hidden="true">
 								<span class="wf-fill"></span>
-								{#if i === 0 && nowDot}<span class="wf-now" style={nowDot}></span>{/if}
+								{#if i === 0 && nowDot}<span class="wf-now" style={safeStyle(nowDot)}></span>{/if}
 							</span>
 							<span class="wf-hi text-callout font-semibold tabular-nums">{t(d.high)}</span>
 						</button>

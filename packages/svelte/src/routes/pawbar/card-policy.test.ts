@@ -27,6 +27,9 @@ import { checkIllustrationAnnotations, checkIllustrationSvg } from '$lib/securit
 import { parsePartialSpec } from '$lib/streaming/json-parse.js';
 import { pickScenario } from './recorded.js';
 import { CHAT_WIDGET_TYPES } from './widget-types.js';
+import { weatherForecastEntry } from '$lib/manifest/entries/weather-forecast.js';
+import { weekScheduleEntry } from '$lib/manifest/entries/week-schedule.js';
+import { agendaEntry } from '$lib/manifest/entries/agenda.js';
 import liveHeadphonesCard from './fixtures/headphones-comparison-card.json';
 import liveTripCard from './fixtures/trip-flow-card.json';
 import liveMapCard from './fixtures/map-route-card.json';
@@ -1022,6 +1025,23 @@ describe('notes card', () => {
 		expect(refuseCard(notesCard)).toBeNull();
 		const wire = JSON.stringify(notesCard);
 		for (let i = 1; i < wire.length; i += 37) {
+			const { value } = parsePartialSpec(wire.slice(0, i));
+			if (value) expect(refuseCard(value, { partial: true }), wire.slice(0, i)).toBeNull();
+		}
+	});
+});
+
+describe('app-like data cards', () => {
+	test.each([
+		['weather forecast', weatherForecastEntry],
+		['week schedule', weekScheduleEntry],
+		['meeting agenda', agendaEntry]
+	])('a realistic %s card passes, at final and at every streamed prefix', (_name, entry) => {
+		const card = { state: {}, ui: entry.example };
+		expect(CHAT_WIDGET_TYPES.has(entry.type)).toBe(true);
+		expect(refuseCard(card)).toBeNull();
+		const wire = JSON.stringify(card);
+		for (let i = 1; i < wire.length; i += 61) {
 			const { value } = parsePartialSpec(wire.slice(0, i));
 			if (value) expect(refuseCard(value, { partial: true }), wire.slice(0, i)).toBeNull();
 		}
