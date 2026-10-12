@@ -110,6 +110,16 @@
 		"h": 600
 	},
 	{
+		"id": "live-heart-pump",
+		"title": "The heart as a pump",
+		"caption": "How does the heart pump blood? Show me the two sides and the valves, and let me change the heart rate.",
+		"group": "Learn",
+		"tag": "Hand-written",
+		"href": "/live?s=heart-pump",
+		"w": 800,
+		"h": 600
+	},
+	{
 		"id": "live-iso-bike",
 		"title": "Bike drivetrain",
 		"caption": "Show how a bike's chain drive works as a live drawing, with a cadence slider and how far one pedal turn takes you",

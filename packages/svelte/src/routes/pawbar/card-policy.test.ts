@@ -310,6 +310,19 @@ describe('follow-up', () => {
 });
 
 describe('widgets', () => {
+	test('passes a figure card: an id, numbers and plain-text labels, no markup or URL', () => {
+		expect(
+			refuseCard({
+				state: { figure: null },
+				ui: {
+					type: 'figure',
+					bind: '{state.figure}',
+					props: { figure: 'heart', params: { bpm: 110 }, labels: [{ anchor: 'mitral', note: 'Opens while the left ventricle fills.' }, { anchor: 'aorta', label: 'Aorta' }], caption: 'Two pumps in one.' }
+				}
+			})
+		).toBeNull();
+	});
+
 	test('passes a music-player card: its sounds are generated, it has no URL props', () => {
 		expect(
 			refuseCard({
