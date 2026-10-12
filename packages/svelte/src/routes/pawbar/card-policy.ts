@@ -9,7 +9,7 @@
 //      HOST_EVENTS from a final card (session.svelte.ts).
 //   3. Widget nodes (the ui root, `children`, any object but a node's `props` whose
 //      `type` the renderer resolves) use CHAT_WIDGET_TYPES: the manifest minus
-//      embed, ripple-frame, richtext, rich-text, map, company-header; no aliases.
+//      embed, ripple-frame, richtext, rich-text, company-header; no aliases.
 //   4. URL-ish keys: no `{`, so no expression assembles a URL; else https or
 //      relative. The `target` of a PATH_TARGET_ACTIONS action is a state path or
 //      event name and takes rule 5 (`navigate` must never join that list).
@@ -50,6 +50,13 @@
 //      plain text (no `{`) of at most MODEL_LABEL_MAX, `note` of at most MODEL_NOTE_MAX;
 //      `focus`, when set, is one of its anchors. Its node-level `on_select` (a click on
 //      a label) is an ASK_HANDLERS key under rule 10.
+//  14. A `map` node loads only OSM tiles: `tiles` absent or "osm", no `tileUrl` or
+//      `tileAttribution` (both refused while streaming too). At most MAP_MAX_PINS
+//      markers plus trackers and MAP_MAX_POINTS points across `route`, `paths`,
+//      `polygons` and tracker trails (counted while streaming too). At final each
+//      marker is an object with no `icon` (the widget has no icon set), a `label`
+//      and `popup` of plain text (no `<`, no `{`, at most ASK_MAX), and `actions`
+//      absent or only `emit ask` (rule 10 checks its `{text}`).
 // Rules 4 and 5 read strings after one pass of HTML character-reference decoding.
 // `partial` is for specs still streaming: a prefix of an allowed name is not
 // refused yet, flow verbs wait for the flow fields, and shapes are checked at final.
@@ -85,6 +92,11 @@ export const MODEL_NOTE_MAX = 280;
 /** model-viewer props that load a file: a chat card names a built-in `asset` instead (rule 13). */
 const MODEL_FILE_PROPS = ['src', 'poster', 'environmentImage'];
 const MODEL_NOTE_KEYS = ['anchor', 'label', 'note'];
+export const MAP_MAX_PINS = 30;
+export const MAP_MAX_POINTS = 500;
+/** map props that would load tiles from a host the model picks (rule 14). */
+const MAP_TILE_PROPS = ['tileUrl', 'tileAttribution'];
+const ASK_KEYS = ['action', 'target', 'value'];
 /** Keys whose value a widget or NodeRenderer hands to the dispatcher. Case-exact, as the widgets read them. */
 const HANDLER_KEY = /^on_|^(actions|[a-z]+Actions|learn_more|onRowClick)$/;
 const URL_KEY = /(href|url|uri|src|srcset|link|image|img|avatar|icon|favicon|poster|cover|background|action|target)$/i;
@@ -233,6 +245,27 @@ function modelViewerRefusal(props: Record<string, unknown>, partial: boolean): s
 	return null;
 }
 
+const list = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
+const pinText = (v: unknown) => v === undefined || (typeof v === 'string' && v.length <= ASK_MAX && !/[<{]/.test(v));
+const askOnly = (a: unknown) => isRecord(a) && a.action === 'emit' && a.target === 'ask' && Object.keys(a).every((k) => ASK_KEYS.includes(k));
+
+/** Rule 14 on a `map` node's props: why it is refused, or null. */
+function mapRefusal(props: Record<string, unknown>, partial: boolean): string | null {
+	if (MAP_TILE_PROPS.some((k) => k in props)) return 'map:tiles';
+	const { tiles, markers } = props;
+	if (tiles !== undefined && !(typeof tiles === 'string' && allowed(['osm'], tiles, partial))) return 'map:tiles';
+	const trackers = list(props.trackers);
+	const lines = [props.route, ...[...list(props.paths), ...list(props.polygons)].map((p) => (isRecord(p) ? p.points : null)), ...trackers.map((t) => (isRecord(t) ? t.trail : null))];
+	if (list(markers).length + trackers.length > MAP_MAX_PINS || lines.reduce<number>((n, l) => n + list(l).length, 0) > MAP_MAX_POINTS) return 'map:size';
+	if (partial) return null;
+	if (markers !== undefined && !Array.isArray(markers)) return 'map:marker';
+	for (const m of list(markers)) {
+		if (!isRecord(m) || 'icon' in m || !pinText(m.label) || !pinText(m.popup)) return 'map:marker';
+		if (m.actions !== undefined && !(Array.isArray(m.actions) ? m.actions : [m.actions]).every(askOnly)) return 'map:marker';
+	}
+	return null;
+}
+
 function emitRefusal(node: Record<string, unknown>, flow: boolean, ask: boolean | null, partial: boolean): string | null {
 	const t = node.target;
 	if (typeof t !== 'string') return null;
@@ -334,6 +367,10 @@ export function refuseCard(card: unknown, { partial = false } = {}): string | nu
 		}
 		if (widget && type === 'model-viewer') {
 			const why = modelViewerRefusal(isRecord(nodeProps) ? nodeProps : {}, partial);
+			if (why) return why;
+		}
+		if (widget && type === 'map') {
+			const why = mapRefusal(isRecord(nodeProps) ? nodeProps : {}, partial);
 			if (why) return why;
 		}
 		if (typeof type === 'string' && isRecord(nodeProps) && NODE_SLOTS.get(type)?.some((path) => slotExpression(nodeProps, path))) return 'node_expression';

@@ -19,7 +19,8 @@
     Svelte nodes, never {@html}, and never a card's raw spec (hideSpecText;
     "Card hidden." when no card shows). A card renders through <Ripple
     streaming> while it arrives and swaps to <Ripple spec> on final (a remount, so the validated
-    spec is what the visitor keeps using). Host events go to session.hostEvent,
+    spec is what the visitor keeps using). A map card's OSM tiles take TrackCard's
+    dark-theme filter. Host events go to session.hostEvent,
     which ignores them until the card is final; a checkout's progress or
     failure shows as the card's note, an opened one as a PayCard under the card
     (keyed by session, so a retry starts fresh), and a confirmed booking as a
@@ -891,6 +892,10 @@
 		padding: 16px;
 		/* A card can be wider than a phone: it scrolls inside itself, never clips. */
 		overflow-x: auto;
+	}
+	/* Map cards: OSM tiles darkened on the dark theme, as TrackCard does; markers and paths keep their color. */
+	:global(.dark) .card-ui :global(.leaflet-tile-pane) {
+		filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9);
 	}
 	.peek {
 		min-height: 0;

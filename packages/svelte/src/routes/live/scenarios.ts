@@ -81,7 +81,7 @@ export const chatPrompts: ChatPrompt[] = [
 	{ id: 'find-deals', title: 'Find deals', prompt: 'Show me the best deals on kitchen gadgets this week, sorted by biggest discount (sample prices)' },
 	{ id: 'restaurant-search', title: 'Restaurant search', prompt: 'Find Italian restaurants near me with ratings, price range and distance (sample places)' },
 	{ id: 'coffee-shops', title: 'Find coffee shops', prompt: 'Show me coffee shops downtown with wifi, opening hours and distance (sample places)' },
-	{ id: 'directions', title: 'Get directions', prompt: 'Give me walking directions from the train station to the city museum as a short list of turns (sample route)' },
+	{ id: 'directions', title: 'Get directions', prompt: 'Show me on a map a walking route from Rossio station to São Jorge Castle in Lisbon, with the turns (approximate)' },
 	{ id: 'weather', title: 'Weather forecast', prompt: 'Show me a 7-day weather forecast for Lisbon with highs, lows and chance of rain (sample data)' },
 	{ id: 'draft-announcement', title: 'Draft announcement', prompt: 'Draft a short team announcement about our new office opening, with a title and a few lines I can edit' },
 	{ id: 'create-survey', title: 'Create survey', prompt: 'Make me a 5-question customer feedback survey with star ratings and a comment box' },
