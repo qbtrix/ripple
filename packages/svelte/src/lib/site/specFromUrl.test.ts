@@ -1,8 +1,8 @@
-// lib/site/specFromUrl.test.ts — The playground's ?spec= / ?s= decoder: good
-// links load, bad ones give an error string, oversize ones never get decoded.
+// lib/site/specFromUrl.test.ts — The playground link codec: good ?spec= / ?s= links load,
+// bad ones give an error string, oversize ones never get decoded, shareLink reads back.
 
 import { expect, test } from 'vitest';
-import { SPEC_URL_MAX, specFromUrl } from './specFromUrl.js';
+import { parseSpec, shareLink, SPEC_URL_MAX, specFromUrl } from './specFromUrl.js';
 
 const spec = { version: '1.0', ui: { type: 'text', props: { text: 'Héllo, {state.n}' } } };
 const b64url = (s: string) =>
@@ -48,4 +48,18 @@ test('an oversize value is refused before it is decoded', () => {
 	const big = 'A'.repeat(SPEC_URL_MAX + 1);
 	expect(specFromUrl(`?s=${big}`)).toEqual({ error: expect.stringMatching(/over 64 KB/) });
 	expect(specFromUrl(`?spec=${big}`)).toEqual({ error: expect.stringMatching(/over 64 KB/) });
+});
+
+test('shareLink round-trips through specFromUrl and refuses what it could not read back', () => {
+	const link = shareLink(spec, 'https://ripple.example/playground?x=1#top');
+	expect(link).toMatch(/^https:\/\/ripple\.example\/playground\?s=[\w-]+$/);
+	expect(specFromUrl(new URL(link!).search)).toEqual({ text: JSON.stringify(spec, null, 2) });
+	const huge = { ui: { type: 'text', props: { text: 'x'.repeat(SPEC_URL_MAX) } } };
+	expect(shareLink(huge, 'https://ripple.example/playground')).toBeNull();
+});
+
+test('parseSpec says why text is not a spec', () => {
+	expect(parseSpec('{"ui":{"type":"text"}}')).toEqual({ spec: { ui: { type: 'text' } } });
+	expect(parseSpec('{"ui"')).toMatchObject({ error: expect.stringMatching(/^not valid JSON/), json: false });
+	expect(parseSpec('[]')).toMatchObject({ error: expect.stringMatching(/^not a Ripple spec/), json: true });
 });

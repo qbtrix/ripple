@@ -48,6 +48,11 @@
     DOM ids are positional, never Card.id: that counter can differ between the
     prerender and hydration. Reduced motion lives in CSS, plus the label
     rotation, which stays on "Thinking".
+    The playground hosts it with two optional props, both off on the landing:
+    `chips` renders each card as a compact chip (title, status, size) that
+    picks it into the playground's own preview, and `onspec` swaps the peek's
+    Expand for an Open button that hands the card to a fuller JSON view.
+    `ask` and `focus` are exported for its prompt cards and the `/` key.
 -->
 <script lang="ts">
 	import { tick, untrack, type Snippet } from 'svelte';
@@ -63,6 +68,12 @@
 	import PayCard from './PayCard.svelte';
 	import { PAWOS_URL, type Card, type ChatSession, type Notice } from './session.svelte.js';
 	import { hideSpecText } from './sse.js';
+
+	interface Chips {
+		/** The card the playground's panes are showing. */
+		viewing: string | null;
+		pick: (card: Card) => void;
+	}
 
 	interface Suggestion {
 		id: string;
@@ -85,7 +96,9 @@
 		open,
 		top,
 		more,
-		foot
+		foot,
+		chips = null,
+		onspec
 	}: {
 		session: ChatSession;
 		suggestions?: Suggestion[];
@@ -102,6 +115,10 @@
 		more?: Snippet;
 		/** Rendered at the left of the dock's foot row, before the hint (the landing's install strip). */
 		foot?: Snippet;
+		/** Cards show as chips that pick them into the host's own preview (the playground). */
+		chips?: Chips | null;
+		/** The peek's Open button: hands the card to the host's fuller JSON view. */
+		onspec?: (card: Card) => void;
 	} = $props();
 
 	// Chip rows in the order their groups first appear.
@@ -217,9 +234,13 @@
 		}
 	});
 
-	async function ask(text: string) {
+	export async function ask(text: string) {
 		if (session.busy || !text.trim()) return;
 		await session.send(text);
+	}
+
+	export function focus() {
+		field?.focus();
 	}
 
 	/** The composer: Paw OS opens synchronously in this gesture, or the popup is blocked. */
@@ -318,6 +339,15 @@
 		return typeof v === 'string' && v.trim() ? v.trim().slice(0, 60) : undefined;
 	};
 
+	const chipStatus = (c: Card) =>
+		c.status === 'streaming'
+			? `Building · ${bytes(c.text)}`
+			: c.status === 'final'
+				? `Ready · ${bytes(c.text)}`
+				: c.reason === 'truncated' || c.reason === 'server:truncated'
+					? 'Left out: cut off'
+					: 'Left out: failed its checks';
+
 	const rejectedNote = (c: Card) =>
 		c.reason === 'truncated' || c.reason === 'server:truncated'
 			? 'The card was cut off before it finished, so it is left out.'
@@ -351,6 +381,21 @@
 	</svg>
 {/snippet}
 
+{#snippet cardChip(card: Card, pick: Chips)}
+	{@const viewing = pick.viewing === card.id}
+	<button type="button" class="ui-chip" data-status={card.status} aria-pressed={viewing} onclick={() => pick.pick(card)}>
+		<svg class="ui-chip-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+			<rect x="2" y="2.5" width="12" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="1.3" />
+			<path d="M2 6h12M6 6v7.5" stroke="currentColor" stroke-width="1.3" />
+		</svg>
+		<span class="ui-chip-text">
+			<span class="ui-chip-title">{card.title || 'Card'}</span>
+			<span class="ui-chip-meta">{chipStatus(card)}</span>
+		</span>
+		{#if viewing}<span class="ui-chip-viewing">Viewing</span>{/if}
+	</button>
+{/snippet}
+
 {#snippet cardView(card: Card, pid: string)}
 	{#if card.status === 'rejected'}
 		<p class="card-note">{rejectedNote(card)}</p>
@@ -377,13 +422,17 @@
 					<div class="peek-inner" data-full={peekFull[card.id] || undefined}>
 						<p class="peek-meta">
 							<span>JSON spec</span><span class="bytes">{bytes(card.text)}</span>
-							<button
-								type="button"
-								class="expand"
-								aria-expanded={peekFull[card.id] ?? false}
-								aria-controls="{pid}-code"
-								onclick={() => (peekFull[card.id] = !peekFull[card.id])}>{peekFull[card.id] ? 'Collapse' : 'Expand'}</button
-							>
+							{#if onspec}
+								<button type="button" class="expand" aria-haspopup="dialog" onclick={() => onspec(card)}>Open</button>
+							{:else}
+								<button
+									type="button"
+									class="expand"
+									aria-expanded={peekFull[card.id] ?? false}
+									aria-controls="{pid}-code"
+									onclick={() => (peekFull[card.id] = !peekFull[card.id])}>{peekFull[card.id] ? 'Collapse' : 'Expand'}</button
+								>
+							{/if}
 						</p>
 						<pre id="{pid}-code" {@attach follow(card)}><JsonLines text={card.text} /></pre>
 					</div>
@@ -442,6 +491,8 @@
 											{#if shown.hidden && !turn.parts.some((p) => p.kind === 'card' && p.card.status !== 'rejected')}
 												<p class="card-note">Card hidden.</p>
 											{/if}
+										{:else if chips}
+											{@render cardChip(part.card, chips)}
 										{:else}
 											{@render cardView(part.card, `ripple-spec-${t}-${i}`)}
 										{/if}
@@ -989,6 +1040,79 @@
 		gap: 10px;
 	}
 
+	/* The playground's card chip: a quiet row, the accent only on the one being viewed. */
+	.ui-chip {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		width: 100%;
+		max-width: 360px;
+		min-height: 56px;
+		padding: 8px 12px;
+		border: 1px solid var(--site-line);
+		border-radius: var(--radius-card);
+		background: var(--site-card);
+		color: var(--site-ink);
+		font: inherit;
+		text-align: left;
+		cursor: pointer;
+		transition:
+			background 0.15s,
+			border-color 0.15s;
+	}
+	.ui-chip:hover {
+		background: var(--site-hover);
+	}
+	.ui-chip[aria-pressed='true'] {
+		border-color: var(--primary);
+	}
+	.ui-chip:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: 2px;
+	}
+	.ui-chip-icon {
+		flex: none;
+		color: var(--site-soft);
+	}
+	.ui-chip[aria-pressed='true'] .ui-chip-icon {
+		color: var(--primary-ink);
+	}
+	.ui-chip-text {
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+		flex: 1;
+	}
+	.ui-chip-title {
+		font-size: 14px;
+		font-weight: 600;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.ui-chip-meta {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 12.5px;
+		color: var(--site-soft);
+		font-variant-numeric: tabular-nums;
+	}
+	.ui-chip[data-status='streaming'] .ui-chip-meta::before {
+		content: '';
+		width: 6px;
+		height: 6px;
+		border-radius: 50%;
+		background: var(--primary);
+		animation: blink 1.4s ease-in-out infinite;
+	}
+	.ui-chip-viewing {
+		flex: none;
+		font-size: 12px;
+		font-weight: 600;
+		color: var(--primary-ink);
+	}
+
 	.card-note,
 	.chat-note {
 		margin: 0;
@@ -1440,6 +1564,7 @@
 		.shimmer,
 		.placeholder > span,
 		.spinner,
+		.ui-chip-meta::before,
 		.caret {
 			animation: none;
 		}
