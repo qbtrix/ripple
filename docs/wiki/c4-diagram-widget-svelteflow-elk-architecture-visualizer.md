@@ -1,22 +1,21 @@
 ---
 {
   "title": "C4 Diagram Widget — SvelteFlow + ELK Architecture Visualizer",
-  "summary": "The top-level C4 Model diagram widget that uses SvelteFlow for rendering and ELK.js for automatic layout. It supports all four C4 levels (Context, Container, Component, Code) with drill-down navigation, pan/zoom, and a minimap.",
+  "summary": "C4Diagram is the C4 model widget: SvelteFlow renders it, ELK.js lays it out. It draws all four C4 levels with drill-down, pan/zoom and a minimap, and adds an optional live layer (status rings, crew markers, a following camera) and an optional semantic zoom that opens elements in place down to code.",
   "concepts": [
     "C4 model",
+    "C4Diagram",
     "SvelteFlow",
     "ELK layout",
     "drill-down",
-    "C4Diagram",
-    "layoutReady",
-    "cancellation",
-    "race condition",
-    "node types",
-    "minimap",
-    "pan/zoom",
-    "architecture diagram",
-    "Svelte 5 runes",
-    "$effect"
+    "live status",
+    "planned status",
+    "markers",
+    "follow camera",
+    "semantic zoom",
+    "code panel",
+    "ripple tokens",
+    "legend"
   ],
   "categories": [
     "widget",
@@ -27,8 +26,8 @@
     "dca4824057c9d36d"
   ],
   "backlinks": null,
-  "word_count": 503,
-  "compiled_at": "2026-04-23T18:36:05Z",
+  "word_count": 881,
+  "compiled_at": "2026-10-06T08:10:24Z",
   "compiled_with": "agent",
   "version": 1,
   "audience": "human",
@@ -39,72 +38,74 @@
 
 ## Overview
 
-`C4Diagram.svelte` is the primary entry point for the C4 widget subsystem. It was rewritten from an SVG-based approach to SvelteFlow + ELK on 2026-04-07 to gain professional layout, interactive pan/zoom, group node nesting, and a minimap. A follow-up on 2026-04-10 added cancellation to the layout `$effect` to prevent stale results from concurrent renders.
+`C4Diagram.svelte` is the entry point of the C4 widget. It takes a `diagram` (level, elements, relationships), lays it out with ELK's layered algorithm, and renders it in SvelteFlow with pan, zoom, a minimap and zoom controls. Every option beyond `diagram` is optional; without them the widget is a plain C4 diagram with drill-down. It is registered as the `c4` spec widget and exported from `@ripple-ui/svelte/widgets` for hosts that mount it directly.
 
 ## Props
 
 | Prop | Type | Purpose |
 |------|------|---------|
-| `diagram` | `C4Diagram` | Full diagram data including level, elements, relationships |
-| `class` | `string` | Extra CSS class for the root wrapper |
-| `onclick` | `(elementId: string) => void` | Called when a non-drillable node is clicked |
-| `ondrilldown` | `(elementId: string, level: string) => void` | Called when a drillable node is clicked to zoom in |
+| `diagram` | `C4DiagramData` | Level, title, elements, relationships |
+| `class` | `string` | Extra class on the root |
+| `onclick` | `(id) => void` | A node was clicked (or activated by keyboard) |
+| `ondrilldown` | `(id, level) => void` | A drillable node was clicked; the host swaps in the next diagram |
+| `status` | `Record<id, C4Status>` | Live state per element, drawn as a ring |
+| `markers` | `Record<id, C4Marker[]>` | Dots on a node: who is working there |
+| `focusId` / `follow` | `string` / `boolean` | Keep the camera on one element |
+| `selectedId` | `string` | Controlled selection; unset, clicks select |
+| `onmanualcamera` | `() => void` | The user panned or zoomed (zoom buttons and minimap included) |
+| `expanded` | `string[]` | Turns on semantic zoom: these ids are drawn open |
+| `scopeId` | `string` | Semantic zoom: the element being looked inside |
 
-## Architecture
+## Layout and edges
 
-The component registers all seven C4 node types with SvelteFlow:
+ELK lays out every element, with an element's non-empty `containers` nested inside a dashed boundary (with `kind` set, `containers` can hold any lower level: a container's components, a component's code). `children` is read only by semantic zoom. Every card is fixed to its ELK box, and edges follow ELK's orthogonal routes with rounded corners (`C4Edge`), labels in the space ELK reserved. If ELK returns no route the edge falls back to a smoothstep. `async` relationships are dashed and animated, `event` relationships dashed in the warning tone (`edgeLook` in `live.ts`, used by both the plain and the semantic graph). Layer spacing is 56px.
 
-```typescript
-const nodeTypes: NodeTypes = {
-  person: C4PersonNode as any,
-  system: C4SystemNode as any,
-  container: C4ContainerNode as any,
-  database: C4DatabaseNode as any,
-  queue: C4QueueNode as any,
-  component: C4ComponentNode as any,
-  group: C4GroupNode as any,
-};
-```
+## Canvas, header and legend
 
-Layout state is held in reactive `$state` variables (`flowNodes`, `flowEdges`, `layoutReady`, `layoutError`) rather than `$derived`, because ELK layout is async — it cannot complete inside a synchronous derived computation.
+The canvas is styled only with `--ripple-*` tokens, every xyflow colour variable included, so it follows the host's light or dark theme; cards sit on an opaque ground derived from the ink so translucent hosts do not show edges through them. The canvas fills a parent that gives it a height and falls back to 480px. An empty `title` hides the header, for hosts that draw their own chrome. The legend lists the statuses present when `status` is passed, otherwise the C4 shapes. Connection handles are hidden: nothing is connectable.
 
-## Layout Lifecycle
+SvelteFlow stays mounted across diagram swaps. Only the first layout shows the loading state; a stale layout (the diagram changed before ELK finished) is discarded; a failed layout shows an error message.
 
-A `$effect` watches the `diagram` prop and calls `computeElkLayout`. The critical addition from 2026-04-10 is a **cancellation flag**: if the `diagram` prop changes before a previous ELK call resolves, the stale result is discarded. Without this, a slow layout computation started with diagram A could overwrite the results for diagram B if diagram B's layout finished first — a classic async race condition in reactive systems.
+## Live layer
 
-```
-diagram changes
-  → cancel any pending layout
-  → set layoutReady = false
-  → call computeElkLayout(diagram)
-  → on resolve: set flowNodes, flowEdges, layoutReady = true
-  → on reject: set layoutError
-```
+`status` sets `data-c4-status` on the node wrapper (written straight to the DOM, so a status change never re-renders the graph) and one CSS ring covers every node shape:
 
-## C4 Level Support
+| Status | Treatment |
+|--------|-----------|
+| `failed` | Error ring with a halo |
+| `changing` | Accent ring that breathes (static under reduced motion) |
+| `drift` | Dashed warning ring |
+| `changed` | Soft accent ring |
+| `landed` | Success ring |
+| `planned` | Dashed muted outline, no card fill, content dimmed: a blueprint for something not in code yet |
 
-The component supports all four C4 levels, displayed via a level badge:
+`planned` is distinct from the scope ghost (the whole node faded, outline unchanged) and the two compose. Markers are drawn in screen space (`C4LiveLayer`), so dots keep their size at every zoom. With `follow`, the camera eases to `focusId`; a user gesture calls `onmanualcamera` so the host can drop follow mode. Enter or Space on a focused node runs exactly what a click on it runs (`activateNode` in `activate.ts`): cards drill when drillable, boundaries, databases, queues and code panels only click.
 
-| `diagram.level` | Badge label |
-|-----------------|-------------|
-| `context` | System Context |
-| `container` | Container |
-| `component` | Component |
-| `code` | Code |
+## Legibility at any zoom
 
-Drill-down is triggered by clicking nodes with `drillable: true` in their data. The `ondrilldown` callback receives the element ID and the next level, allowing the parent to swap in a new `diagram` prop for the deeper view.
+`C4LiveLayer` writes the zoom into `--c4-zoom`; names and edge labels counter-scale below 1x. Below 0.9x (`data-c4-far`) cards keep only name and technology. Fits never zoom past 1x. The variable is inherited by every node, so it is written only when the value the cards read changes (clamped to 0.5–1, two decimals), and not while a camera move the layer started is flying; the final zoom lands with the move.
 
-## Minimap Color Coding
+## Semantic zoom
 
-A `NODE_TYPE_COLORS` map provides distinct minimap colors per node type, making it easy to spot system boundaries vs. databases vs. queues at a glance:
+Passing `expanded` (even `[]`) switches to one canvas for the whole tree. An expanded element opens in place as a boundary around its children; an expanded code element with a `code` excerpt opens as a code panel (`C4CodeNode`) with the file's own line numbers, the change tinted and a Before/After switch. `scopeId` ghosts what lies outside it. Relationships lift onto the drawn siblings with counts, and an edge keeps its dash when every relationship behind it shares a style; where an edge meets an expanded boundary it carries a port badge, and crossings drawn further out become chips on the scope boundary. Markers on hidden elements roll up to their drawn ancestor. Between layouts nodes glide and resize on the ripple ease, leaving nodes fade, and the camera eases to ELK's final box; all instant under reduced motion. The pure logic lives in `semantic.ts` and `semantic-flow.ts`.
 
-- `person` → blue (`#0A84FF`)
-- `system` → medium blue (`#2563EB`)
-- `database` → purple (`#7C3AED`)
-- `queue` → amber (`#F59E0B`)
-- `group` → translucent blue
+## Redrawing a live map
 
-## Known Gaps
+A live host (a run streaming files in) re-lays the map often, so the widget keeps each change to one layout and one render:
 
-- The `as any` casts on node type registrations are Svelte 5 compatibility shims — SvelteFlow has not yet updated its TypeScript signatures for Svelte 5 component types.
-- Error state (`layoutError`) is captured but the source does not show a visible error UI fallback — consumers should handle this prop or check whether an error boundary is applied upstream.
+- ELK runs in a module worker (`elk-worker.js`, one per page). Where no worker can start (SSR, jsdom) or it dies, layouts run on the main thread; an ELK error from the worker rejects as before. A host bundling with Vite gets the worker from `new Worker(new URL('./elk-worker.js', import.meta.url))`; `elk-layout.ts` also imports the worker module so a dev server serving a linked (`file:`) copy of the package lets the worker URL load.
+- In semantic zoom the camera holds while a layout computes and moves once when it lands. "Computing" is derived from the props (the diagram, `expanded` and `scopeId` differ from the last layout that landed), so a focus that changes together with the diagram never aims at the old layout first.
+- Every semantic node has one SvelteFlow type, `c4` (`C4ViewNode`, which draws `data.view` with that view's component), and the class that view's own type would give the wrapper (`svelte-flow__node-group` and so on). An element opening from a card into a boundary or code panel changes its view, not its type: SvelteFlow answers a type change by re-measuring that node and rewriting the whole nodes array, once per changed node.
+- SvelteFlow's `nodes` prop is bound (to a writable derived of the decorated nodes). SvelteFlow writes nodes back after a re-measure, a `fitView` or a click selection; into an unbound bindable prop Svelte keeps that write as a deep `$state` proxy, so every node read back as a new object and SvelteFlow rebuilt every node and edge.
+- Every node is handed to SvelteFlow with its size and handles (`presized`), which the ELK box already fixes. Without them SvelteFlow forgets a node's handles on every new nodes array and remounts every edge, label and port badge.
+- A node whose box changes size takes the new size at once; its card and status ring grow from the old size (`markResized`). Animating the wrapper itself made SvelteFlow re-measure it and re-lay every edge on each frame.
+- Nodes leaving the map fade where they were and stay, hidden from assistive tech and the minimap, until the next layout replaces them, so a move costs one render, not two.
+
+On the Belt's 200-component harness this holds the map at 58-59 fps with a 16.8 ms p95 frame while files stream in (dev build). What remains per layout is the layout itself: ELK re-layers the map when an element opens, so nearly every node and edge moves, and applying, restyling and painting that costs about 70 ms on the main thread in a dev build.
+
+## Known gaps
+
+- No arrow-key traversal between nodes; only Enter/Space activation.
+- SvelteFlow logs a "$state.raw for nodes" warning because node data carries the click callbacks.
+- The opaque card ground uses `oklch(from ...)` relative colour (Safari 16.4+).
+- A code panel's height is an estimate from line count and wrap; overflow scrolls inside the panel.
