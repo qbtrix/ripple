@@ -55,6 +55,17 @@ const L = (d: string, style: k.LineStyle = {}) => k.lineSvg(d, style);
 const D = (points: Flat[], style: { size?: number; tone?: k.Tone } = {}) => k.dotsSvg(points, style);
 const depth = (p: Point3) => k.depthOf(p, P);
 const V = k.viewOf(P);
+// Contact shadows fall away from the light: a world offset on the floor plane.
+const LIGHT = k.lightOf(P);
+const AWAY: [number, number] = (() => {
+	const n = Math.hypot(LIGHT[0], LIGHT[1]) || 1;
+	return [-LIGHT[0] / n, -LIGHT[1] / n];
+})();
+/** A soft contact shadow of `plan` on the surface at height `z`, drawn just above that surface. */
+function shadow(plan: k.Plan, z: number, by = 2.5, spread = 1, far = false): string {
+	const p = { x: plan.x + AWAY[0] * by - spread, y: plan.y + AWAY[1] * by - spread, w: plan.w + spread * 2, d: plan.d + spread * 2, r: plan.r + spread };
+	return `<path class="iso-halo heart-shadow"${far ? ' data-far=""' : ''} d="${k.haloOf(p, z, 0.1, P)}"/>`;
+}
 
 type Side = 'right' | 'left';
 const sideX = (side: Side) => (side === 'right' ? -1 : 1);
@@ -146,16 +157,18 @@ function bench(): string {
 }
 
 /** A tank (lungs or body) on a pad, with seams, ribs on its front, a lid and ports. */
-function tank(plan: typeof LUNGS, ribTone: 'blue' | 'red', className: string): string {
+function tank(plan: typeof LUNGS, ribTone: 'blue' | 'red', className: string, gauge: GaugeSpec): string {
 	const out: string[] = [];
 	const pad = { x: plan.x - 4, y: plan.y - 4, w: plan.w + 8, d: plan.d + 8, r: plan.r + 2 };
 	out.push(S(k.slabOf(pad, 0, 4, P, 8, 0.6), { tone: 'mid' }));
-	const seams = L(k.sideSeam(plan, 16, P, 10) + k.sideSeam(plan, TANK_TOP - 14, P, 10), { tone: 'lo' });
+	out.push(shadow(plan, 4));
+	const seams = L(k.sideSeam(plan, 16, P, 10) + k.sideSeam(plan, RIB_TOP, P, 10) + k.sideSeam(plan, TANK_TOP - 14, P, 10), { tone: 'lo' });
 	out.push(S(k.slabOf(plan, 4, TANK_TOP - 4, P, 10, 1), { tone: 'hi', crease: 'lo', className, inner: seams }));
 	// Vertical ribs on the front (+y) face, seam to seam.
 	const ribs: string[] = [];
-	for (let x = plan.x + plan.r + 3; x <= plan.x + plan.w - plan.r - 3 + 0.01; x += 4) ribs.push(k.segment([x, plan.y + plan.d, 16], [x, plan.y + plan.d, TANK_TOP - 14], P));
+	for (let x = plan.x + plan.r + 3; x <= plan.x + plan.w - plan.r - 3 + 0.01; x += 4) ribs.push(k.segment([x, plan.y + plan.d, 16], [x, plan.y + plan.d, RIB_TOP], P));
 	out.push(L(ribs.join(''), { tone: ribTone, className: 'heart-rib' }));
+	out.push(gaugeSvg(plan.x + plan.w / 2, plan.y + plan.d, gauge));
 	// Lid with a bolt circle.
 	const lid = k.insetPlan(plan, 5);
 	out.push(S(k.slabOf(lid, TANK_TOP, 3, P, 10, 0.6), { tone: 'mid' }));
@@ -168,6 +181,66 @@ function tank(plan: typeof LUNGS, ribTone: 'blue' | 'red', className: string): s
 	}
 	out.push(D(bolts, { size: 0.5, tone: 'mid' }));
 	return out.join('');
+}
+
+// ---- gauges --------------------------------------------------------------
+
+interface GaugeSpec {
+	id: string;
+	min: number;
+	max: number;
+	numerals: number[];
+}
+const RIB_TOP = 34;
+const GAUGE_Z = (RIB_TOP + TANK_TOP - 14) / 2;
+const GAUGE_R = 11;
+const SWEEP = (135 * Math.PI) / 180;
+export const GAUGES: Record<'lungs' | 'body', GaugeSpec> = {
+	lungs: { id: 'lungs', min: 0, max: 40, numerals: [0, 20, 40] },
+	body: { id: 'body', min: 60, max: 140, numerals: [60, 100, 140] }
+};
+const gaugeAngle = (g: GaugeSpec, v: number) => -SWEEP + ((Math.min(g.max, Math.max(g.min, v)) - g.min) / (g.max - g.min)) * SWEEP * 2;
+/** A point on a dial face that faces +y: angle 0 points up, positive turns clockwise as seen. */
+const onDial = (cx: number, y: number, r: number, a: number): Point3 => [cx + Math.sin(a) * r, y, GAUGE_Z + Math.cos(a) * r];
+const gaugeCx = new Map<string, number>();
+
+/** A round pressure dial on a tank face, like Anatomy's dial indicator: bezel, face, ticks on a ring, numerals, a needle. */
+function gaugeSvg(cx: number, faceY: number, g: GaugeSpec): string {
+	gaugeCx.set(g.id, cx);
+	const out: string[] = [];
+	const F = k.axisFrame([cx, faceY, GAUGE_Z], 'y');
+	out.push(S(k.prismOf(F, k.circlePolygon(GAUGE_R, 48), 0, 2.4, P), { tone: 'mid' }));
+	out.push(S(k.prismOf(F, k.circlePolygon(GAUGE_R - 1.6, 48), 2.4, 2.8, P), { tone: 'hi', crease: 'none' }));
+	const y = faceY + 2.8;
+	const ringR = GAUGE_R - 3;
+	const ring = Array.from({ length: 49 }, (_, i) => at(onDial(cx, y, ringR, -SWEEP + (i / 48) * SWEEP * 2)));
+	out.push(L(k.pathOf(ring), { tone: 'lo' }));
+	const minor: string[] = [];
+	const major: string[] = [];
+	const steps = 16;
+	for (let i = 0; i <= steps; i++) {
+		const a = -SWEEP + (i / steps) * SWEEP * 2;
+		const long = i % 4 === 0;
+		(long ? major : minor).push(k.segment(onDial(cx, y, ringR, a), onDial(cx, y, ringR - (long ? 2.2 : 1.2), a), P));
+	}
+	out.push(L(minor.join(''), { tone: 'lo' }), L(major.join(''), { tone: 'mid' }));
+	for (const n of g.numerals) {
+		const [ox, oy] = at(onDial(cx, y, ringR - 4.2, gaugeAngle(g, n)));
+		const [ux, uy] = k.sub3([...at([1, 0, 0]), 0] as Point3, [...at([0, 0, 0]), 0] as Point3);
+		const [vx, vy] = k.sub3([...at([0, 0, -1]), 0] as Point3, [...at([0, 0, 0]), 0] as Point3);
+		out.push(k.faceTextSvg(`matrix(${ux.toFixed(4)} ${uy.toFixed(4)} ${vx.toFixed(4)} ${vy.toFixed(4)} ${ox.toFixed(2)} ${(oy + vy * 0.7).toFixed(2)})`, String(n), { size: 1.9, tone: 'lo', anchor: 'middle' }));
+	}
+	out.push(`<path class="iso-line heart-needle" data-tone="hi" data-free="end" data-needle="${g.id}" style="stroke-width:1"/>`);
+	out.push(D([at([cx, y, GAUGE_Z])], { size: 0.9, tone: 'hi' }));
+	out.push(D([at(onDial(cx, faceY + 2.4, GAUGE_R - 0.8, 0)), at(onDial(cx, faceY + 2.4, GAUGE_R - 0.8, Math.PI))], { size: 0.4, tone: 'mid' }));
+	return out.join('');
+}
+
+function needlePath(g: GaugeSpec, v: number): string {
+	const cx = gaugeCx.get(g.id) ?? 0;
+	const faceY = (g.id === 'lungs' ? LUNGS : BODY).y + (g.id === 'lungs' ? LUNGS : BODY).d + 2.8;
+	const a = gaugeAngle(g, v);
+	return k.segment(onDial(cx, faceY, 1.2, a + Math.PI), onDial(cx, faceY, GAUGE_R - 3.6, a), P);
 }
 
 // ---- chambers (live) -----------------------------------------------------
@@ -272,11 +345,17 @@ function outletLever(side: Side, open: number): string {
 
 function heartBody(): string {
 	const out: string[] = [bench()];
+	// Shadows on the plate: pump pads, septum, valve housings (tank shadows sit on their own pads).
+	for (const side of ['right', 'left'] as Side[]) {
+		out.push(shadow({ x: side === 'right' ? -SEPT - V_W - 3 : SEPT - 1, y: -V_D / 2 - 3, w: V_W + 4, d: V_D + 6, r: 4 }, 0));
+		out.push(shadow({ x: sideX(side) > 0 ? OUT_X.f1 : -OUT_X.f2, y: -6, w: OUT_X.f2 - OUT_X.f1, d: 12, r: 5 }, 0, 4, 0, true));
+	}
+	out.push(shadow({ x: -SEPT, y: -A_D / 2 - 2, w: SEPT * 2, d: A_D + 4, r: 1 }, 0));
 	// Vena cava: body tank -> behind the heart -> one elbow into the right atrium's back face.
 	const raCx = centreX('right', A_W);
 	out.push(pipe([[BODY.x, VC_Y, VC_Z], [raCx, VC_Y, VC_Z], [raCx, -A_D / 2, VC_Z]], TUBE_R, 'heart-blue', 'vena-cava', 'blue'));
 	// Lungs tank, then the pulmonary artery from the right ventricle into its inner face.
-	out.push(tank(LUNGS, 'blue', 'heart-lung'));
+	out.push(tank(LUNGS, 'blue', 'heart-lung', GAUGES.lungs));
 	const lungFace = LUNGS.x + LUNGS.w;
 	out.push(collar([lungFace, 0, OUT_Z], [1, 0, 0], 7.2, 3));
 	out.push(pipe([[lungFace + 3, 0, OUT_Z], [-OUT_X.f2, 0, OUT_Z]], TUBE_R, 'heart-blue', 'pulmonary-artery', 'blue'));
@@ -287,7 +366,9 @@ function heartBody(): string {
 		const pad = { x: side === 'right' ? -SEPT - V_W - 3 : SEPT - 1, y: -V_D / 2 - 3, w: V_W + 4, d: V_D + 6, r: 4 };
 		if (side === 'left') out.push(S(k.slabOf({ x: -SEPT, y: -A_D / 2 - 2, w: SEPT * 2, d: A_D + 4, r: 1 }, 0, A_TOP + 2, P, 3, 0.4), { tone: 'mid' }));
 		out.push(S(k.slabOf(pad, 0, 4, P, 6, 0.5), { tone: 'mid' }));
+		out.push(shadow(chamberPlan(side, V_W, V_D, 0), 4, 2));
 		out.push(liveSolid(`${side}-ventricle`, colour(side)));
+		out.push(shadow(chamberPlan(side, A_W, A_D, 0.5), V_TOP, 2));
 		out.push(avValve(side));
 		out.push(liveSolid(`${side}-atrium`, colour(side)));
 		if (side === 'left') {
@@ -298,7 +379,7 @@ function heartBody(): string {
 			out.push(collar([BODY.x - 3, 0, OUT_Z], [1, 0, 0], 7.2, 3));
 		}
 	}
-	out.push(tank(BODY, 'red', 'heart-body'));
+	out.push(tank(BODY, 'red', 'heart-body', GAUGES.body));
 	out.push(avWheel('right', 'tricuspid'), avWheel('left', 'mitral'));
 	// Pulmonary veins: up out of the lungs lid, over the top, down into the left atrium.
 	const lungX = LUNGS.x + LUNGS.w / 2;
@@ -330,8 +411,8 @@ const ANCHOR_POINTS: Array<[string, string, Point3]> = [
 	['vena-cava', 'Vena cava', [60, VC_Y, VC_Z + TUBE_R]],
 	['pulmonary-artery', 'Pulmonary artery', [-90, 0, OUT_Z + TUBE_R]],
 	['pulmonary-veins', 'Pulmonary veins', [-50, 0, PV_Z + TUBE_R]],
-	['lungs', 'Lungs', [LUNGS.x + LUNGS.w / 2, LUNGS.y + LUNGS.d, 60]],
-	['body', 'Body', [BODY.x + BODY.w / 2, BODY.y + BODY.d, 60]]
+	['lungs', 'Lungs', [LUNGS.x + LUNGS.w / 2, LUNGS.y + LUNGS.d, 25]],
+	['body', 'Body', [BODY.x + BODY.w / 2, BODY.y + BODY.d, 25]]
 ];
 
 export const ANCHORS: Anchor[] = ANCHOR_POINTS.map(([id, label, p]) => {
@@ -351,6 +432,8 @@ export const HEART_CSS = `
 .heart-red>.iso-shade[data-shade="0"],.heart-red>.iso-shade[data-shade="1"]{fill:color-mix(in srgb,var(--anatomy-red) 5%,var(--anatomy-shade-0))}
 .heart-flow{stroke-dasharray:2 5;stroke-width:1;stroke-opacity:.7}
 .heart-rib{stroke-opacity:.45}
+.iso-halo.heart-shadow{filter:blur(2.5px);opacity:calc(var(--anatomy-halo-opacity) * .5);transform:none}
+.iso-halo.heart-shadow[data-far]{filter:blur(4px);opacity:calc(var(--anatomy-halo-opacity) * .22)}
 `;
 
 export const LABEL = 'A heart drawn as two pumps on a bench: blue right side to the lungs, red left side to the body.';
@@ -372,6 +455,8 @@ function fillLive(svg: string, s: HeartState): string {
 		}
 	}
 	for (const [id, d] of leverPaths(s)) out = out.replace(`data-lever="${id}"`, `data-lever="${id}" d="${d}"`);
+	out = out.replace('data-needle="lungs"', `data-needle="lungs" d="${needlePath(GAUGES.lungs, s.pressure.pulmonary)}"`);
+	out = out.replace('data-needle="body"', `data-needle="body" d="${needlePath(GAUGES.body, s.pressure.aortic)}"`);
 	return out;
 }
 
@@ -427,6 +512,8 @@ export function mount(el: HTMLElement, { theme = 'dark', params: initial, onRead
 	const levers = new Map<string, SVGPathElement>();
 	for (const p of svg.querySelectorAll<SVGPathElement>('[data-lever]')) levers.set(p.dataset.lever!, p);
 	const flows = [...svg.querySelectorAll<SVGPathElement>('[data-flow-id]')];
+	const needles = { lungs: svg.querySelector<SVGPathElement>('[data-needle="lungs"]'), body: svg.querySelector<SVGPathElement>('[data-needle="body"]') };
+	const shown = { lungs: NaN, body: NaN };
 	const offsets = new Map<SVGPathElement, number>();
 
 	const win = doc.defaultView;
@@ -451,6 +538,12 @@ export function mount(el: HTMLElement, { theme = 'dark', params: initial, onRead
 			lever.setAttribute('d', d);
 			const open = state.valves[id === 'pulmonary' ? 'pulmonary' : id === 'aortic' ? 'aortic' : id === 'mitral' ? 'mitral' : 'tricuspid'];
 			lever.dataset.tone = open > 0.5 ? 'lit' : 'mid';
+		}
+		// Needles follow their pressure with a short eased lag, like a real dial's damping.
+		const follow = dt > 0 ? 1 - Math.exp(-dt / 0.05) : 1;
+		for (const [id, target] of [['lungs', state.pressure.pulmonary], ['body', state.pressure.aortic]] as const) {
+			shown[id] = Number.isNaN(shown[id]) ? target : shown[id] + (target - shown[id]) * follow;
+			needles[id]?.setAttribute('d', needlePath(GAUGES[id], shown[id]));
 		}
 		for (const path of flows) {
 			const artery = path.dataset.flowId === 'aorta' || path.dataset.flowId === 'pulmonary-artery';

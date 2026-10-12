@@ -14,7 +14,11 @@
     parameter values, written when a slider moves. Nothing is seeded from props
     into $state, so a streamed card ends equal to a whole one.
   - Pins sit in percent of the stage, which has no padding, so they stay on
-    their anchors at any width. Labels are capped at 10.
+    their anchors at any width. Labels are capped at 10. Sliders and
+    readouts lay out by the card's own width (container queries): on a phone a
+    slider sits under its label and value.
+  - The stage keeps the `iso` class in its own class list (mount adds it
+    too), so a class re-render never drops the figure CSS scope.
   - The stage element carries the mounted handle as `rippleFigure` (seek for
     captures and tests).
 -->
@@ -134,7 +138,7 @@
 	};
 </script>
 
-<figure {id} class={['ripple-figure m-0 flex flex-col gap-3 rounded-ripple border border-ripple-border bg-ripple-surface p-3 text-ripple-surface-foreground', className]} data-figure={figure}>
+<figure {id} class={['ripple-figure @container m-0 flex flex-col gap-3 rounded-ripple border border-ripple-border bg-ripple-surface p-3 text-ripple-surface-foreground', className]} data-figure={figure}>
 	{#if !entry}
 		<div class="flex h-48 items-center justify-center rounded-ripple text-callout text-ripple-muted-foreground" data-slot="placeholder">This figure is not available.</div>
 	{:else}
@@ -142,7 +146,7 @@
 			<h3 class="m-0 text-headline font-semibold" data-slot="title">{meta?.title ?? entry.title}</h3>
 		</header>
 		<div class="relative overflow-hidden rounded-ripple">
-			<div bind:this={stage} class="ripple-figure-stage relative min-h-48" data-slot="figure-stage"></div>
+			<div bind:this={stage} class={['ripple-figure-stage iso relative', !meta && 'min-h-48']} data-slot="figure-stage"></div>
 			{#each notes as n, i (n.key)}
 				{#if n.anchor}
 					<button
@@ -164,7 +168,7 @@
 			{/each}
 		</div>
 		{#if meta}
-			<dl class="m-0 grid grid-cols-2 gap-2 sm:grid-cols-3" data-slot="readouts">
+			<dl class="m-0 grid grid-cols-2 gap-2 @lg:grid-cols-4" data-slot="readouts">
 				{#each meta.readouts as r (r.key)}
 					<div class="rounded-ripple border border-ripple-border px-2 py-1">
 						<dt class="text-footnote text-ripple-muted-foreground">{r.label}</dt>
@@ -174,11 +178,11 @@
 			</dl>
 			<div class="grid gap-2" data-slot="params">
 				{#each meta.params as p (p.key)}
-					<label class="grid grid-cols-[8rem_1fr_4rem] items-center gap-2 text-callout">
+					<label class="grid grid-cols-[1fr_auto] items-center gap-x-2 gap-y-1 text-callout @md:grid-cols-[8rem_1fr_4.5rem]">
 						<span>{p.label}</span>
 						<input
 							type="range"
-							class="accent-ripple-accent"
+							class="col-span-2 row-start-2 w-full accent-ripple-accent @md:col-span-1 @md:col-start-2 @md:row-start-1"
 							min={p.min}
 							max={p.max}
 							step={p.step}
@@ -187,7 +191,7 @@
 							data-key={p.key}
 							oninput={(e) => slide(p.key, e)}
 						/>
-						<span class="text-right tabular-nums text-ripple-muted-foreground">{values[p.key]}{p.unit ? ` ${p.unit}` : ''}</span>
+						<span class="col-start-2 row-start-1 text-right tabular-nums text-ripple-muted-foreground @md:col-start-3">{values[p.key]}{p.unit ? ` ${p.unit}` : ''}</span>
 					</label>
 				{/each}
 			</div>

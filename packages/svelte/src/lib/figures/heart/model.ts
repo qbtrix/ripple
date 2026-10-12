@@ -96,6 +96,8 @@ export interface HeartState {
 	valves: { tricuspid: number; mitral: number; pulmonary: number; aortic: number };
 	/** Flow, ml/s: out through the arteries, in through the veins. */
 	flow: { artery: number; vein: number };
+	/** Pressure, mmHg: in the aorta and in the pulmonary artery. */
+	pressure: { aortic: number; pulmonary: number };
 }
 
 const ease = (s: number) => 0.5 - 0.5 * Math.cos(Math.PI * clamp(s, 0, 1));
@@ -158,8 +160,33 @@ export function stateAt(params: HeartParams, t: number): HeartState {
 		ventricleSqueeze,
 		atriumSqueeze,
 		valves: { tricuspid: av, mitral: av, pulmonary: sl, aortic: sl },
-		flow: { artery, vein: sv / T.period }
+		flow: { artery, vein: sv / T.period },
+		pressure: pressuresAt(params, t)
 	};
+}
+
+/**
+ * Arterial pressure through the beat. Diastolic 80 mmHg in the aorta; the pulse
+ * (40 mmHg at 70 ml, scaled by stroke volume) rises fast in early ejection, sags a
+ * little before the valve shuts, then runs off exponentially until the next
+ * ejection. The pulmonary artery follows the same shape at 9 to 25 mmHg.
+ */
+export function pressuresAt(params: HeartParams, t: number): { aortic: number; pulmonary: number } {
+	const T = timingOf(params);
+	const u = mod(t, T.period);
+	const ejectAt = T.atrial + T.contraction;
+	const relaxAt = T.atrial + T.systole;
+	const sag = 0.25;
+	let f: number;
+	if (u >= ejectAt && u < relaxAt) {
+		const s = (u - ejectAt) / T.ejection;
+		f = Math.sin((Math.PI / 2) * Math.min(1, s / 0.45)) - sag * Math.max(0, (s - 0.45) / 0.55);
+	} else {
+		const x = mod(u - relaxAt, T.period) / (T.period - T.ejection);
+		f = (1 - sag) * ((Math.exp(-3 * x) - Math.exp(-3)) / (1 - Math.exp(-3)));
+	}
+	const scale = params.stroke / 70;
+	return { aortic: 80 + 40 * scale * f, pulmonary: 9 + 16 * scale * f };
 }
 
 /** A calm still frame for reduced motion: mid-ejection, valves visibly at work. */
@@ -175,7 +202,8 @@ export function readoutsOf(params: HeartParams, state?: HeartState): Record<stri
 	return {
 		bpm: String(params.bpm),
 		output: outputOf(params).toFixed(1),
-		phase: state ? PHASE_NAME[state.phase] : PHASE_NAME['ventricular-systole']
+		phase: state ? PHASE_NAME[state.phase] : PHASE_NAME['ventricular-systole'],
+		pressure: state ? String(Math.round(state.pressure.aortic)) : String(80 + Math.round((40 * params.stroke) / 70))
 	};
 }
 
@@ -194,6 +222,6 @@ export function describe(params: HeartParams, state: HeartState): string {
 		`A heart drawn as two pumps on a bench. The right side (blue) takes oxygen-poor blood from the body and sends it to the lungs; ` +
 		`the left side (red) takes oxygen-rich blood from the lungs and sends it to the body. ` +
 		`At ${params.bpm} beats a minute and ${params.stroke} ml a beat it moves ${outputOf(params).toFixed(1)} litres a minute; ` +
-		`ventricular systole takes ${share}% of each beat. Now: ${PHASE_NAME[state.phase].toLowerCase()}, ${OPEN_TEXT[state.stage]}.`
+		`ventricular systole takes ${share}% of each beat and aortic pressure swings between 80 and ${Math.round(80 + (40 * params.stroke) / 70)} mmHg. Now: ${PHASE_NAME[state.phase].toLowerCase()}, ${OPEN_TEXT[state.stage]}.`
 	);
 }

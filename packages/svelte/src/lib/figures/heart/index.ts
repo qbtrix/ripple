@@ -12,6 +12,7 @@ export const meta: FigureMeta = {
 	readouts: [
 		{ key: 'bpm', label: 'Heart rate', unit: 'bpm' },
 		{ key: 'output', label: 'Cardiac output', unit: 'L/min' },
+		{ key: 'pressure', label: 'Aortic pressure', unit: 'mmHg' },
 		{ key: 'phase', label: 'Phase' }
 	],
 	anchors: ANCHORS
