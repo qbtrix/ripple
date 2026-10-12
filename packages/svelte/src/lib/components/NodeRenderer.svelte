@@ -44,6 +44,7 @@
 -->
 <script lang="ts">
 	import { safeStyle } from '@ripple-ui/core';
+	import { uniqueKeys } from '$lib/utils/safe-props.js';
 	import { getContext, untrack } from 'svelte';
 	import {
 		resolveValue,
@@ -357,6 +358,11 @@
 	/**
 	 * Handle 'each' widget - get items array.
 	 */
+	// Sibling each-keys: the node id, else its index; a repeated id still gets
+	// its own key, so both siblings render.
+	const kidKeys = (kids: UINode[]) => uniqueKeys(kids, (c, i) => c.id ?? i);
+	const childKeys = $derived(kidKeys(node.children ?? []));
+	const elseKeys = $derived(kidKeys(node.else_children ?? []));
 	const eachItems = $derived.by(() => {
 		if (node.type !== 'each' || !node.items) return [];
 
@@ -467,12 +473,12 @@
 		<!-- Conditional rendering -->
 		{#if ifCondition}
 			{#if node.children}
-				{#each node.children as child, i (child.id ?? i)}
+				{#each node.children as child, i (childKeys[i])}
 					<Self node={child} {loopContext} />
 				{/each}
 			{/if}
 		{:else if node.else_children}
-			{#each node.else_children as child, i (child.id ?? i)}
+			{#each node.else_children as child, i (elseKeys[i])}
 				<Self node={child} {loopContext} />
 			{/each}
 		{/if}
@@ -487,7 +493,7 @@
 				[node.index_as ?? 'index']: index
 			}}
 			{#if node.children}
-				{#each node.children as child, i (child.id ?? i)}
+				{#each node.children as child, i (childKeys[i])}
 					<Self node={child} loopContext={itemContext} />
 				{/each}
 			{/if}
@@ -509,11 +515,17 @@
 	{:else if WidgetComponent}
 		<!-- Regular widget rendering -->
 		{@const defaultKids = childBuckets.default ?? []}
+		{@const defaultKeys = kidKeys(defaultKids)}
 		{@const headerKids = childBuckets.header ?? []}
+		{@const headerKeys = kidKeys(headerKids)}
 		{@const footerKids = childBuckets.footer ?? []}
+		{@const footerKeys = kidKeys(footerKids)}
 		{@const sidebarKids = childBuckets.sidebar ?? []}
+		{@const sidebarKeys = kidKeys(sidebarKids)}
 		{@const topbarKids = childBuckets.topbar ?? []}
+		{@const topbarKeys = kidKeys(topbarKids)}
 		{@const actionsKids = childBuckets.actions ?? []}
+		{@const actionsKeys = kidKeys(actionsKids)}
 		{@const widgetProps = {
 			id: node.id,
 			...(resolvedClass !== undefined && { class: resolvedClass }),
@@ -551,32 +563,32 @@
 		     why `hasChildren` had to exist. Matching header/footer/sidebar/topbar/
 		     actions makes `children` a truthful signal for both callers. -->
 		{#snippet defaultSnippet()}
-			{#each defaultKids as child, i (child.id ?? i)}
+			{#each defaultKids as child, i (defaultKeys[i])}
 				<Self node={child} {loopContext} />
 			{/each}
 		{/snippet}
 		{#snippet headerSnippet()}
-			{#each headerKids as child, i (child.id ?? i)}
+			{#each headerKids as child, i (headerKeys[i])}
 				<Self node={child} {loopContext} />
 			{/each}
 		{/snippet}
 		{#snippet footerSnippet()}
-			{#each footerKids as child, i (child.id ?? i)}
+			{#each footerKids as child, i (footerKeys[i])}
 				<Self node={child} {loopContext} />
 			{/each}
 		{/snippet}
 		{#snippet sidebarSnippet()}
-			{#each sidebarKids as child, i (child.id ?? i)}
+			{#each sidebarKids as child, i (sidebarKeys[i])}
 				<Self node={child} {loopContext} />
 			{/each}
 		{/snippet}
 		{#snippet topbarSnippet()}
-			{#each topbarKids as child, i (child.id ?? i)}
+			{#each topbarKids as child, i (topbarKeys[i])}
 				<Self node={child} {loopContext} />
 			{/each}
 		{/snippet}
 		{#snippet actionsSnippet()}
-			{#each actionsKids as child, i (child.id ?? i)}
+			{#each actionsKids as child, i (actionsKeys[i])}
 				<Self node={child} {loopContext} />
 			{/each}
 		{/snippet}

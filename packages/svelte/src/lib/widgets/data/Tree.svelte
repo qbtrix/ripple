@@ -39,7 +39,7 @@
 <script lang="ts">
   import { safeStyle } from '@ripple-ui/core';
   import { cn } from '$lib/utils.js';
-  import { safeArray } from '$lib/utils/safe-props.js';
+  import { safeArray, uniqueKeys } from '$lib/utils/safe-props.js';
   import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
   import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
   import * as icons from '@lucide/svelte';
@@ -137,6 +137,7 @@
   }
 
   const nodes = $derived(safeArray<TreeNode>(rawNodes, { widget: 'tree', key: 'nodes' }));
+  const nodeKeys = $derived(uniqueKeys(nodes, (n) => n.id));
 
   const styleString = $derived(
     style ? Object.entries(style).map(([k, v]) => `${k}:${v}`).join(';') : undefined
@@ -205,7 +206,7 @@
   )}
   style={styleString}
 >
-  {#each nodes as node, i (node.id)}
+  {#each nodes as node, i (nodeKeys[i])}
     {@const hasKids = !!node.children && node.children.length > 0 && !node.isLeaf}
     {@const isOpen = hasKids && expanded.has(node.id)}
     {@const isSelected = value === node.id}

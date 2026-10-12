@@ -105,7 +105,7 @@
   class={cn('grid gap-2', className)}
   style:grid-template-columns={columns ? `repeat(${columns}, minmax(0, 1fr))` : `repeat(auto-fill, minmax(${minCardWidth}, 1fr))`}
 >
-  {#each options as o, i (o.value)}
+  {#each options as o, i (`${o.value}:${i}`)}
     {@const selected = o.value === value}
     <button
       type="button"

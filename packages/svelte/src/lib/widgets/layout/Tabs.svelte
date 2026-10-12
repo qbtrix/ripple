@@ -74,11 +74,11 @@
   class={cn('w-full', className)}
 >
   <Tabs.List class="grid w-full" style={safeStyle(`grid-template-columns: repeat(${tabs.length || 1}, 1fr)`)}>
-    {#each tabs as tab (tab.value)}
+    {#each tabs as tab, i (`${tab.value}:${i}`)}
       <Tabs.Trigger value={tab.value}>{tab.label}</Tabs.Trigger>
     {/each}
   </Tabs.List>
-  {#each tabs as tab, i (tab.value)}
+  {#each tabs as tab, i (`${tab.value}:${i}`)}
     <Tabs.Content value={tab.value}>
       {#if panels && panels[i]}
         <NodeRenderer node={panels[i]} loopContext={panelLoopContext ?? {}} />

@@ -48,6 +48,7 @@
   import * as Table from '$lib/components/ui/table/index.js';
   import Button from '$lib/widgets/input/Button.svelte';
   import CheckIcon from '@lucide/svelte/icons/check';
+  import { uniqueKeys } from '$lib/utils/safe-props.js';
 
   interface DiffTableColumn {
     key: string;
@@ -99,6 +100,8 @@
 
   const isIncluded = (row: DiffTableRow) => toggled[row.key] ?? row.included ?? true;
   const changes = $derived(rows.filter((r) => r.change));
+  const columnKeys = $derived(uniqueKeys(columns, (c) => c.key));
+  const rowKeys = $derived(uniqueKeys(rows, (r) => r.key));
   const chosen = $derived(changes.filter(isIncluded));
   const removals = $derived(chosen.filter((r) => r.change === 'removed').length);
   const additions = $derived(chosen.length - removals);
@@ -193,7 +196,7 @@
   <Table.Root class="table-fixed border-collapse text-left">
     <Table.Header>
       <Table.Row class="border-ripple-border hover:bg-transparent">
-        {#each columns as column (column.key)}
+        {#each columns as column, ci (columnKeys[ci])}
           <Table.Head class="h-auto px-3 py-2.5 text-[12px] font-medium text-ripple-muted-foreground">
             {column.label}
           </Table.Head>
@@ -202,10 +205,10 @@
       </Table.Row>
     </Table.Header>
     <Table.Body>
-      {#each rows as row (row.key)}
+      {#each rows as row, ri (rowKeys[ri])}
         {@const added = row.change === 'added'}
         <Table.Row class={rowClass(row)} data-change={row.change} data-included={row.change ? isIncluded(row) : undefined}>
-          {#each columns as column, ci (column.key)}
+          {#each columns as column, ci (columnKeys[ci])}
             <Table.Cell class="p-0">
               {#if added}
                 <!-- Additions open like the source's expanding row: 0fr → 1fr. -->
