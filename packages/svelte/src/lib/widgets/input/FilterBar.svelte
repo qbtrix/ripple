@@ -2,7 +2,7 @@
 <script lang="ts">
   import { DropdownMenu as DM } from 'bits-ui';
   import { cn } from '$lib/utils.js';
-  import { safeArray } from '$lib/utils/safe-props.js';
+  import { safeArray, uniqueKeys } from '$lib/utils/safe-props.js';
   import XIcon from '@lucide/svelte/icons/x';
   import PlusIcon from '@lucide/svelte/icons/plus';
 
@@ -58,6 +58,8 @@
   const active = $derived(Array.isArray(value) ? value : []);
   const activeKeys = $derived(new Set(active.map((f) => f.key)));
   const inactiveOptions = $derived(options.filter((o) => !activeKeys.has(o.key)));
+  const activeEachKeys = $derived(uniqueKeys(active, (f) => f.key));
+  const optionKeys = $derived(uniqueKeys(inactiveOptions, (o) => o.key));
 
   function emit(next: ActiveFilter[]) {
     onchange?.(next);
@@ -99,7 +101,7 @@
   role="group"
   aria-label="Filters"
 >
-  {#each active as filter (filter.key)}
+  {#each active as filter, fi (activeEachKeys[fi])}
     {@const label = getLabelFor(filter)}
     {@const display = formatValue(filter.value)}
     <span
@@ -134,7 +136,7 @@
           sideOffset={4}
           class="z-50 min-w-[160px] rounded-md border border-border bg-popover text-popover-foreground p-1 shadow-md"
         >
-          {#each inactiveOptions as opt (opt.key)}
+          {#each inactiveOptions as opt, oi (optionKeys[oi])}
             <DM.Item
               onSelect={() => addFilter(opt)}
               class="cursor-pointer select-none rounded-sm px-2 py-1.5 text-sm outline-none data-[highlighted]:bg-muted"

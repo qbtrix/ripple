@@ -15,6 +15,7 @@
 -->
 <script lang="ts">
   import { cn } from '$lib/utils.js';
+  import { uniqueKeys } from '$lib/utils/safe-props.js';
 
   interface TodoItem {
     id: string;
@@ -60,6 +61,7 @@
     if (filter === 'completed') return items.filter((item) => item.done);
     return items;
   });
+  const itemKeys = $derived(uniqueKeys(filteredItems, (t) => t.id));
 
   const remainingCount = $derived(items.filter((item) => !item.done).length);
 
@@ -142,7 +144,7 @@
         {/if}
       </div>
     {:else}
-      {#each filteredItems as item (item.id)}
+      {#each filteredItems as item, i (itemKeys[i])}
         <div class="flex items-center justify-between p-3 hover:bg-muted/50 transition-colors">
           <label class="flex items-center gap-3 cursor-pointer">
             <input

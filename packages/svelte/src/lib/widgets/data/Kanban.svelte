@@ -5,7 +5,7 @@
 <script lang="ts">
   import { safeStyle } from '@ripple-ui/core';
   import { cn } from '$lib/utils.js';
-  import { safeArray } from '$lib/utils/safe-props.js';
+  import { safeArray, uniqueKeys } from '$lib/utils/safe-props.js';
   import NodeRenderer from '$lib/components/NodeRenderer.svelte';
 
   type Column = {
@@ -57,6 +57,7 @@
   }: Props = $props();
 
   const columns = $derived(safeArray<Column>(rawColumns, { widget: 'kanban', key: 'columns' }));
+  const columnKeys = $derived(uniqueKeys(columns, (c) => c.id));
 
   const styleString = $derived(
     style ? Object.entries(style).map(([k, v]) => `${k}:${v}`).join(';') : undefined
@@ -128,8 +129,9 @@
   class={cn('flex gap-3 overflow-x-auto pb-2', className)}
   style={styleString}
 >
-  {#each columns as col (col.id)}
+  {#each columns as col, ci (columnKeys[ci])}
     {@const colCards = cardsByColumn.get(col.id) ?? []}
+    {@const cardKeys = uniqueKeys(colCards, (c) => c.id)}
     <div
       role="list"
       aria-label={col.title}
@@ -154,7 +156,7 @@
       </div>
 
       <div class="flex flex-col gap-2 min-h-[24px]">
-        {#each colCards as card (card.id)}
+        {#each colCards as card, k (cardKeys[k])}
           <div
             role="listitem"
             draggable="true"

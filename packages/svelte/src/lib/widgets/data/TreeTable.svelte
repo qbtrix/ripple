@@ -2,7 +2,7 @@
 <script lang="ts">
   import { safeStyle } from '@ripple-ui/core';
   import { cn } from '$lib/utils.js';
-  import { safeArray } from '$lib/utils/safe-props.js';
+  import { safeArray, uniqueKeys } from '$lib/utils/safe-props.js';
   import NodeRenderer from '$lib/components/NodeRenderer.svelte';
   import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
   import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
@@ -53,6 +53,7 @@
   }: Props = $props();
 
   const columns = $derived(safeArray<Column>(rawColumns, { widget: 'tree-table', key: 'columns' }));
+  const columnKeys = $derived(uniqueKeys(columns, (c) => c.key));
   const rows = $derived(safeArray<Row>(rawRows, { widget: 'tree-table', key: 'rows' }));
 
   const styleString = $derived(
@@ -125,7 +126,7 @@
     <table class="w-full text-sm">
       <thead class="bg-muted/40">
         <tr>
-          {#each columns as col, ci (col.key)}
+          {#each columns as col, ci (columnKeys[ci])}
             <th
               scope="col"
               style={safeStyle(col.width ? `width: ${col.width}` : undefined)}
@@ -163,7 +164,7 @@
               onclick={() => selectRow(row)}
               aria-selected={isSelected}
             >
-              {#each columns as col, ci (col.key)}
+              {#each columns as col, ci (columnKeys[ci])}
                 {@const cellValue = row[col.key]}
                 <td
                   class={cn(

@@ -145,7 +145,7 @@
         {#if selected.length === 0}
           <span class="text-muted-foreground px-1">{placeholder}</span>
         {:else}
-          {#each visibleChips as v (v)}
+          {#each visibleChips as v, i (`${v}:${i}`)}
             <span class="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs">
               <span class="truncate max-w-[8rem]">{getOptionLabel(v)}</span>
               <button
