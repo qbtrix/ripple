@@ -1,7 +1,8 @@
 // routes/pawbar/widget-types.ts — Widget types a chat card may use: the vendored
 // static/manifest.json types minus embed, ripple-frame and richtext (they render
 // frames or raw HTML), rich-text (a Tiptap editor its value seeds as HTML), and
-// map and company-header (they fetch third-party tiles and logos the CSP blocks). Canonical
+// company-header (it fetches third-party logos the CSP blocks). `map` is in: the
+// CSP allows OSM tiles and card-policy.ts rule 14 holds a chat map to them. Canonical
 // names only, no registry aliases (iframe, frame, nested-spec, label, ...), the
 // same list the backend validates against. card-policy.test.ts fails if this
 // drifts from the manifest; regenerate it from there.
@@ -22,7 +23,7 @@ export const CHAT_WIDGET_TYPES: ReadonlySet<string> = new Set([
 	'glyph-grid', 'grid', 'growth-projection', 'habit-tracker', 'heading', 'heatmap', 'hero',
 	'highlight', 'hover-card', 'icon', 'if', 'illustration', 'image', 'input', 'interval-workout',
 	'invoice-layout', 'invoice-lines', 'itinerary', 'kanban', 'kbd', 'kv-table', 'led-clock',
-	'link-preview', 'loading', 'location-picker', 'logo-cloud', 'markdown', 'marketing-hero',
+	'link-preview', 'loading', 'location-picker', 'logo-cloud', 'map', 'markdown', 'marketing-hero',
 	'marquee', 'master-detail', 'meal-plan', 'memory-match', 'mention', 'menu-order', 'metric',
 	'modal', 'model-viewer', 'multi-select', 'navbar', 'news-card', 'newsletter',
 	'notification-center', 'number-input', 'ops-dashboard', 'order-status', 'org-chart', 'otp-input',

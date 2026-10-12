@@ -1,7 +1,7 @@
 {
   "schema": "ripple.manifest/v1",
   "version": "0.8.0",
-  "generatedAt": "2026-10-12T04:44:17.335Z",
+  "generatedAt": "2026-10-12T05:00:14.459Z",
   "spec": {
     "uiField": "ui",
     "stateField": "state",
@@ -7948,7 +7948,7 @@
         "center": {
           "type": "[number, number]",
           "required": false,
-          "description": "Initial map center as [lat, lng]. Default [0, 0]."
+          "description": "Initial map center as [lat, lng] (a {lat, lng} object also works, as does any point below). Default [0, 0]."
         },
         "zoom": {
           "type": "number",
@@ -7978,7 +7978,7 @@
         "tiles": {
           "type": "\"osm\" | \"carto-voyager\" | \"carto-light\" | \"carto-dark\" | \"osm-hot\" | \"custom\"",
           "required": false,
-          "description": "Tile provider preset. Default \"carto-voyager\". All presets are key-free OpenStreetMap-derived tiles. Use \"custom\" with `tileUrl`."
+          "description": "Tile provider preset. Default \"carto-voyager\", or what the page set with setMapDefaultTiles. All presets are key-free OpenStreetMap-derived tiles. Use \"custom\" with `tileUrl`."
         },
         "tileUrl": {
           "type": "string",
@@ -7993,12 +7993,17 @@
         "markers": {
           "type": "Array<{ id: string; lat: number; lng: number; label?: string; popup?: string; icon?: string; color?: string; actions?: EventAction | EventAction[] }>",
           "required": false,
-          "description": "Static markers. `actions` runs on click (route through ripple emit/api/navigate)."
+          "description": "Static markers. A marker without `id` gets its index. `actions` runs on click (route through ripple emit/api/navigate)."
         },
         "paths": {
           "type": "Array<{ id: string; points: [number, number][]; color?: string; weight?: number; dashed?: boolean; animate?: boolean; label?: string }>",
           "required": false,
           "description": "Polyline paths. Set `animate: true` for a flowing dashed-route effect (great for itineraries)."
+        },
+        "route": {
+          "type": "[number, number][]",
+          "required": false,
+          "description": "One path as a bare point list, drawn after `paths`."
         },
         "polygons": {
           "type": "Array<{ id: string; points: [number, number][]; color?: string; fillColor?: string; fillOpacity?: number; weight?: number; label?: string }>",
