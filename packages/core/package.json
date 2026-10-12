@@ -53,6 +53,11 @@
       "types": "./dist/schema/index.d.ts",
       "default": "./dist/schema/index.js"
     },
+    "./iso": {
+      "source": "./src/iso/index.ts",
+      "types": "./dist/iso/index.d.ts",
+      "default": "./dist/iso/index.js"
+    },
     "./motion": {
       "source": "./src/motion/engine.ts",
       "types": "./dist/motion/engine.d.ts",

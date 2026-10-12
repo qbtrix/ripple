@@ -22,7 +22,7 @@
 import { describe, expect, test } from 'vitest';
 import { HOST_EVENTS, MAX_CARD_NODES, MAX_DEPTH, PATH_TARGET_ACTIONS, decodeEntities, refuseCard } from './card-policy.js';
 import { gearsCard, gearsSvg, laptopAnswerCard, laptopFlowCard, tripFlowCard } from './flow-cards.js';
-import { connectFourCard, focusTimerCard, habitCard, heartCard, heartSvg, memoryMatchCard, playScenarios, quizCard, ticTacToeCard, wordGuessCard } from './play-cards.js';
+import { connectFourCard, focusTimerCard, habitCard, heartCard, heartSvg, memoryMatchCard, playScenarios, quizCard, ticTacToeCard, wordGuessCard, isoCard, isoScenarios } from './play-cards.js';
 import { checkIllustrationAnnotations, checkIllustrationSvg } from '$lib/security/illustration-svg.js';
 import { parsePartialSpec } from '$lib/streaming/json-parse.js';
 import { pickScenario } from './recorded.js';
@@ -30,6 +30,8 @@ import { CHAT_WIDGET_TYPES } from './widget-types.js';
 import { weatherForecastEntry } from '$lib/manifest/entries/weather-forecast.js';
 import { weekScheduleEntry } from '$lib/manifest/entries/week-schedule.js';
 import { agendaEntry } from '$lib/manifest/entries/agenda.js';
+import { isoSceneEntry } from '$lib/manifest/entries/iso-scene.js';
+import { bikeScene, engineScene, heartScene } from '$lib/widgets/composite/iso-scenes.js';
 import liveHeadphonesCard from './fixtures/headphones-comparison-card.json';
 import liveTripCard from './fixtures/trip-flow-card.json';
 import liveMapCard from './fixtures/map-route-card.json';
@@ -955,6 +957,17 @@ describe('play cards', () => {
 		expect(checkIllustrationAnnotations({ svg: heartSvg, annotations: notes })).toEqual({ ok: true });
 	});
 
+	test('every iso-scene gallery run replays to a card the policy accepts', () => {
+		const keys = ['bike', 'heart', 'engine'];
+		expect(isoScenarios.map((s) => s.id)).toEqual(['iso-bike', 'iso-heart', 'iso-engine']);
+		for (const [i, s] of isoScenarios.entries()) {
+			expect(s.fixture.model).toBe('hand-written');
+			const card = JSON.parse(s.fixture.chunks.map((c) => c.text).join(''));
+			expect(card).toEqual(JSON.parse(JSON.stringify({ version: '1.0', ...isoCard(keys[i]!, [bikeScene, heartScene, engineScene][i]!) })));
+			expect(refuseCard(card)).toBeNull();
+		}
+	});
+
 	test('every play scenario replays to its card', () => {
 		const cards = [memoryMatchCard, wordGuessCard, quizCard, ticTacToeCard, connectFourCard, habitCard, focusTimerCard, heartCard];
 		for (const [i, s] of playScenarios.entries()) {
@@ -1035,7 +1048,10 @@ describe('app-like data cards', () => {
 	test.each([
 		['weather forecast', weatherForecastEntry],
 		['week schedule', weekScheduleEntry],
-		['meeting agenda', agendaEntry]
+		['meeting agenda', agendaEntry],
+		['iso scene', isoSceneEntry],
+		['bike drivetrain', { type: 'iso-scene', example: { type: 'iso-scene', bind: '{state.bike}', props: bikeScene } }],
+		['heart machine', { type: 'iso-scene', example: { type: 'iso-scene', props: heartScene } }]
 	])('a realistic %s card passes, at final and at every streamed prefix', (_name, entry) => {
 		const card = { state: {}, ui: entry.example };
 		expect(CHAT_WIDGET_TYPES.has(entry.type)).toBe(true);
