@@ -146,6 +146,9 @@
     "@ripple-ui/core": "file:../core"
   },
   "devDependencies": {
+    "@codemirror/language": "6.12.3",
+    "@humanspeak/svelte-json-view-lite": "0.2.5",
+    "@lezer/highlight": "1.2.3",
     "@playwright/test": "1.60.0",
     "@sveltejs/adapter-static": "3.0.10",
     "@sveltejs/kit": "^2.50.2",
@@ -157,6 +160,7 @@
     "@testing-library/user-event": "^14.6.1",
     "@types/d3-scale": "^4.0.0",
     "jsdom": "^29.0.2",
+    "mermaid": "12.1.0",
     "oxlint": "^1.82.0",
     "oxlint-tsgolint": "^7.0.2001",
     "pagefind": "1.5.2",

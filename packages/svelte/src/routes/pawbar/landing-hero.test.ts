@@ -7,6 +7,9 @@ import { fireEvent, render, screen } from '@testing-library/svelte';
 import { afterEach, expect, test, vi } from 'vitest';
 import Landing from '../+page.svelte';
 
+// The landing's server load output (+page.server.ts); the sample's markup is not under test here.
+const props = { data: { codeSample: '' } };
+
 afterEach(() => {
 	vi.restoreAllMocks();
 	Reflect.deleteProperty(navigator, 'clipboard');
@@ -15,7 +18,7 @@ afterEach(() => {
 const heroCopy = () => screen.getAllByRole('button', { name: 'Copy install command' })[0];
 
 test('the hero leads the chat column, above the first message', () => {
-	const view = render(Landing);
+	const view = render(Landing, { props });
 	const h1 = view.getByRole('heading', { level: 1 });
 	expect(h1.textContent).toBe('Ask for a tool. Ripple builds it while the model is still typing.');
 	expect(view.getByText(/Ripple is the open-source generative UI engine\./)).toBeTruthy();
@@ -27,14 +30,14 @@ test('the hero leads the chat column, above the first message', () => {
 test('Copy writes the install command to the clipboard', async () => {
 	const writeText = vi.fn().mockResolvedValue(undefined);
 	Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
-	render(Landing);
+	render(Landing, { props });
 	await fireEvent.click(heroCopy());
 	expect(writeText).toHaveBeenCalledWith('bun add @ripple-ui/svelte');
 	await vi.waitFor(() => expect(heroCopy().textContent?.trim()).toBe('Copied'));
 });
 
 test('without a clipboard, Copy selects the command instead', async () => {
-	render(Landing);
+	render(Landing, { props });
 	await fireEvent.click(heroCopy());
 	await vi.waitFor(() => expect(window.getSelection()?.toString()).toContain('bun add @ripple-ui/svelte'));
 });

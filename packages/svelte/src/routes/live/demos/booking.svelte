@@ -9,6 +9,7 @@
 -->
 <script lang="ts">
 	import DetailHeader from './DetailHeader.svelte';
+	import { highlightJson } from '$lib/site/docs/highlight.js';
 	import Booking from '$lib/widgets/composite/Booking.svelte';
 	import type { BookingRequest, Confirmed, Notice, Selection } from '$lib/widgets/composite/booking.js';
 
@@ -89,7 +90,7 @@
 			<button type="button" class="btn" onclick={reset}>Start over</button>
 			<span class="caption">Next booking: {nextTaken ? 'slot taken' : 'confirmed'}</span>
 		</div>
-		{#if log}<pre class="pane log">on_book {log}</pre>{/if}
+		{#if log}<pre class="pane log">on_book {@html highlightJson(log)}</pre>{/if}
 	</section>
 
 	<section class="showcase-section">

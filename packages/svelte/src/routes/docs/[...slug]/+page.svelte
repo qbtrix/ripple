@@ -5,14 +5,23 @@
     as HTML segments (marked output from our own src/docs markdown, rendered
     with {@html}) interleaved with live SpecExample blocks, then prev/next.
     Code-block Copy buttons come in the HTML and are wired here by delegation.
+    Mermaid figures in the HTML are drawn by attachDiagrams (lazy, per page).
     Only this content area is indexed by Pagefind (data-pagefind-body).
 -->
 <script lang="ts">
 	import SpecExample from '$lib/site/SpecExample.svelte';
 	import { forYourModel, SITE_URL } from '$lib/site/docs/model.js';
+	import { attachDiagrams } from '$lib/site/docs/diagrams.js';
 	import OpenIn from '../OpenIn.svelte';
 
 	let { data } = $props();
+
+	let body: HTMLElement | undefined = $state();
+	// Re-run per page: client-side navigation swaps the figures under `body`.
+	$effect(() => {
+		void data.slug;
+		if (body) return attachDiagrams(body);
+	});
 
 	let copiedWhat = $state('');
 
@@ -55,7 +64,7 @@
 	</header>
 
 	<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions: delegation for the real <button>s inside -->
-	<div class="body" onclick={onBodyClick}>
+	<div class="body" bind:this={body} onclick={onBodyClick}>
 		{#each data.segments as segment, i (i)}
 			{#if segment.kind === 'html'}
 				<div class="prose">{@html segment.html}</div>
@@ -239,6 +248,35 @@
 		.copy:hover {
 			color: var(--site-ink);
 		}
+		> .diagram {
+			max-width: none;
+			margin: 24px 0;
+		}
+		.diagram-canvas {
+			overflow-x: auto;
+			padding: 16px;
+			border: 1px solid var(--site-line);
+			border-radius: var(--radius-card);
+			text-align: center;
+		}
+		.diagram-canvas[data-drawn] svg {
+			display: inline-block;
+			height: auto;
+			animation: diagram-in 0.2s ease-out;
+		}
+		/* The source fallback: no JS, or not drawn yet. */
+		.diagram-src {
+			border: 0;
+			padding: 0;
+			background: none;
+			text-align: left;
+		}
+		figcaption {
+			margin-top: 8px;
+			font-size: 14px;
+			color: var(--site-soft);
+			text-align: center;
+		}
 		> table {
 			display: block;
 			max-width: none;
@@ -256,6 +294,23 @@
 		}
 		th {
 			font-weight: 600;
+		}
+	}
+
+	@keyframes -global-diagram-in {
+		from {
+			opacity: 0;
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.prose :global(.diagram-canvas svg) {
+			animation: none;
+		}
+	}
+	/* Small text stays readable: past 70% of natural size the figure scrolls. */
+	@media (max-width: 640px) {
+		.prose :global(.diagram-canvas svg) {
+			min-width: var(--diagram-min);
 		}
 	}
 

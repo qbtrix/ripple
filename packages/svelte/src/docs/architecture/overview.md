@@ -13,18 +13,28 @@ Ripple turns a JSON spec into a live interface. A model (or any program) writes 
 | `@ripple-ui/core` | Schemas, expressions, state, the action dispatcher, motion compilation, the headless runtime, URL safety, manifest helpers | Zod, nothing framework-related |
 | `@ripple-ui/svelte` | The `<Ripple>` component, the widget catalog, designed layouts, flows, streaming, the editor | `@ripple-ui/core`, Svelte 5 |
 
+```mermaid
+%% caption: Your app renders with the Svelte package, which builds on core. A server or Worker can run core on its own.
+flowchart TB
+  app["Your app"] --> svelte["@ripple-ui/svelte<br/>Ripple, widgets, layouts, streaming"]
+  worker["Your server or Worker"] -->|"headless runtime"| core
+  svelte -->|"builds on, and passes in widget types,<br/>a motion player and a state store"| core["@ripple-ui/core (no Svelte, no DOM)<br/>schema, expressions, dispatchers, safeUrl"]
+```
+
 The split follows one rule: anything that needs the Svelte compiler or a DOM lives in the Svelte package, and everything else lives in core. A test walks core's real import graph and fails the build if anything in it imports Svelte or touches `document` or `window` at load time. That is why the [headless runtime](/docs/concepts/headless) runs in Node or a Worker, and why another renderer can be built on core alone.
 
 ## From spec to screen
 
-```
-spec (JSON)
-  -> normalize        UISpec becomes UniversalSpec { intent: 'custom', ui }
-  -> <Ripple>         state store, dispatcher, widget registry, context
-     -> flow?         chain / chain_map / flowId / onComplete -> FlowRunner
-     -> intent?       designed intents -> IntentRenderer -> a layout
-     -> ui tree       NodeRenderer, recursively, one node at a time
-        -> widget     a Svelte component from the registry
+```mermaid
+%% caption: One spec, three possible paths. Most specs take the bottom one, a ui tree rendered node by node.
+flowchart TD
+  spec["spec (JSON)"] --> norm["normalizeSpec<br/>UISpec becomes intent: 'custom'"]
+  norm --> ripple["Ripple<br/>state store, dispatcher, context"]
+  ripple -->|"chain, chain_map, flowId"| flow["FlowRunner<br/>one step at a time"]
+  ripple -->|"form, browse, select..."| intent["IntentRenderer<br/>a designed layout"]
+  ripple -->|"custom"| node["NodeRenderer<br/>recursive, per node"]
+  node --> widget["widget component<br/>from the registry"]
+  node -. "same walk, no DOM" .- tree["resolveTree<br/>(headless)"]
 ```
 
 **Normalize.** Every input becomes a UniversalSpec. A UISpec keeps its tree under `intent: 'custom'`. Normalizing doesn't run the Zod schema, so it is cheap enough to do on every update of a streaming spec. Call `parseUISpec` yourself when you want strict validation.

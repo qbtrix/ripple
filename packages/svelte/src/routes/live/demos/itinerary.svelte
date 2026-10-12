@@ -7,6 +7,7 @@
 -->
 <script lang="ts">
 	import DetailHeader from './DetailHeader.svelte';
+	import { highlightJson } from '$lib/site/docs/highlight.js';
 	import Itinerary from '$lib/widgets/composite/Itinerary.svelte';
 	import type { ItineraryDay, ItineraryLeg, PackingGroup } from '$lib/widgets/composite/Itinerary.svelte';
 
@@ -175,7 +176,7 @@
 		</div>
 		<details class="readout">
 			<summary>Bound <code>days</code> (Lisbon)</summary>
-			<pre>{JSON.stringify(lisbonDays, null, 2)}</pre>
+			<pre>{@html highlightJson(JSON.stringify(lisbonDays, null, 2))}</pre>
 		</details>
 	</section>
 </div>

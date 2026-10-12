@@ -3,16 +3,23 @@
 // or a live Ripple spec from a ```ripple fence), and the h2/h3 outline for the
 // "On this page" rail. Runs on the server at prerender time.
 // - Headings get slug ids (deduped with -2, -3) and a trailing # anchor link.
-// - ```json blocks are tokenized (highlight.ts); other languages are escaped
+// - Fenced code is highlighted by highlightCode (highlight-code.ts: ts, tsx,
+//   js, svelte, css, json, jsonc, bash, ...); an unknown language is escaped
 //   plain text. Every block gets a Copy button the page wires by delegation.
 // - A ```ripple fence must parse as JSON and pass validateCatalog (the
 //   svelte-bound one, so the full widget registry counts). Anything else
 //   throws `<file>:<line>: ...`, which fails the prerender and so the build.
+// - A ```mermaid fence becomes <figure class="diagram">: the escaped source in
+//   a <pre> (what no-JS readers see; diagrams.ts swaps in the SVG) and, from
+//   an optional first line `%% caption: ...`, a figcaption. Parsing is checked
+//   by diagrams.test.ts, not here: mermaid needs a DOM. toPlainMarkdown (the
+//   .md and llms outputs) keeps the fence as written.
 // The HTML is ours (files in src/docs), so it is not sanitized.
 
 import { Marked, type Token, type Tokens } from 'marked';
 import { validateCatalog } from '$lib/widgets/validate-catalog-bound.js';
-import { escapeHtml, highlightJson } from './highlight.js';
+import { escapeHtml } from './highlight.js';
+import { highlightCode } from './highlight-code.js';
 
 export interface DocMeta {
 	title: string;
@@ -89,6 +96,19 @@ export function parseRippleFence(src: string, file: string, line: number): Recor
 	return spec as Record<string, unknown>;
 }
 
+/** Split a mermaid fence's optional `%% caption: ...` first line from the diagram source. */
+export function splitDiagramCaption(text: string): { caption: string; source: string } {
+	const m = /^%%\s*caption:\s*(.*)\r?\n/.exec(text);
+	return m ? { caption: m[1].trim(), source: text.slice(m[0].length) } : { caption: '', source: text };
+}
+
+function renderDiagram(text: string): string {
+	const { caption, source } = splitDiagramCaption(text);
+	const cap = caption ? `<figcaption>${escapeHtml(caption)}</figcaption>` : '';
+	const src = `<pre class="diagram-src"><code>${escapeHtml(source.trim())}</code></pre>`;
+	return `<figure class="diagram"><div class="diagram-canvas" data-pagefind-ignore>${src}</div>${cap}</figure>\n`;
+}
+
 const COPY = '<button type="button" class="copy" data-copy data-pagefind-ignore>Copy</button>';
 
 export function renderDoc(raw: string, file: string): RenderedDoc {
@@ -105,13 +125,17 @@ export function renderDoc(raw: string, file: string): RenderedDoc {
 				const n = (used.get(base) ?? 0) + 1;
 				used.set(base, n);
 				const id = n === 1 ? base : `${base}-${n}`;
-				const text = inner.replace(/<[^>]+>/g, '');
+				// Plain text for the outline: Svelte escapes it, so undo marked's entities.
+				const text = inner
+					.replace(/<[^>]+>/g, '')
+					.replace(/&(#39|quot|lt|gt|amp);/g, (_, e: string) => ({ '#39': "'", quot: '"', lt: '<', gt: '>', amp: '&' })[e]!);
 				if (depth === 2 || depth === 3) headings.push({ id, text, depth });
 				return `<h${depth} id="${id}">${inner}<a class="anchor" href="#${id}" aria-label="Link to this section" data-pagefind-ignore>#</a></h${depth}>\n`;
 			},
 			code({ text, lang }: Tokens.Code) {
 				const language = (lang ?? '').split(/\s/)[0];
-				const html = language === 'json' ? highlightJson(text) : escapeHtml(text);
+				if (language === 'mermaid') return renderDiagram(text);
+				const html = highlightCode(text, language);
 				const cls = language ? ` class="language-${escapeHtml(language)}"` : '';
 				return `<div class="code-block"><pre><code${cls}>${html}</code></pre>${COPY}</div>\n`;
 			}

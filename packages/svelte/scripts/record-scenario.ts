@@ -1,7 +1,8 @@
 // scripts/record-scenario.ts — Record a real model stream as a /live replay fixture.
 //
 //   bun scripts/record-scenario.ts --id bill-splitter --title "Split the bill" \
-//     --prompt "Dinner for 4 came to ..." [--model sonnet] [--store <base-url>] [--out <dir>]
+//     --prompt "Dinner for 4 came to ..." [--model sonnet] [--store <base-url>] [--out <dir>] \
+//     [--widgets approval-gate,tool-call] [--context scripts/scenario-context/<id>.md]
 //
 // --out writes the fixture to <dir>/<id>.json instead of the fixtures dir
 // (scratch runs, e.g. a cheap-model comparison).
@@ -38,6 +39,11 @@ import { MODEL_ASSETS } from '../src/lib/widgets/media/model-assets.ts';
 const MAX_GAP_MS = 400;
 // Widget categories offered to the model. The full manifest is ~250 KB; these
 // cover small interactive tools without the marketing/research/vertical sets.
+// --widgets adds named widgets from outside them (approval-gate, invoice-lines)
+// for a scenario that needs one, without paying for the whole category.
+// --context appends what the model already knows when it draws (an agent's
+// tool results, a shop's opening hours) as a SCENARIO CONTEXT section, and the
+// fixture keeps that text so the page can show what the model was given.
 const CATEGORIES = new Set(['layout', 'display', 'input', 'data', 'control', 'overlay', 'interactive']);
 // Plus these by name (whole composite + research categories would add ~100 KB):
 // the data widgets and the summary pieces the SYSTEM rules point at.
@@ -60,21 +66,30 @@ const { values: args } = parseArgs({
 		prompt: { type: 'string' },
 		model: { type: 'string', default: 'sonnet' },
 		store: { type: 'string' },
-		out: { type: 'string' }
+		out: { type: 'string' },
+		widgets: { type: 'string' },
+		context: { type: 'string' }
 	}
 });
 if (!args.id || !args.title || !args.prompt || !/^[a-z0-9-]+$/.test(args.id)) {
-	console.error('usage: bun scripts/record-scenario.ts --id <kebab-id> --title "<title>" --prompt "<text>" [--model sonnet] [--store <url>] [--out <dir>]');
+	console.error('usage: bun scripts/record-scenario.ts --id <kebab-id> --title "<title>" --prompt "<text>" [--model sonnet] [--store <url>] [--out <dir>] [--widgets a,b] [--context <file>]');
 	process.exit(2);
 }
 
+const context = args.context ? readFileSync(resolve(args.context), 'utf-8').trim() : '';
 const manifest = JSON.parse(readFileSync(resolve(here, '../static/manifest.json'), 'utf-8'));
 const allTypes: string[] = manifest.widgets.map((w: { type: string }) => w.type);
+const extra = new Set((args.widgets ?? '').split(',').map((t) => t.trim()).filter(Boolean));
+const missing = [...extra].filter((t) => !allTypes.includes(t));
+if (missing.length) {
+	console.error(`--widgets: not in the manifest: ${missing.join(', ')}`);
+	process.exit(2);
+}
 const reference = {
 	spec: manifest.spec,
 	actions: manifest.actions,
 	widgets: manifest.widgets
-		.filter((w: { category: string; type: string }) => CATEGORIES.has(w.category) || DATA_WIDGETS.has(w.type))
+		.filter((w: { category: string; type: string }) => CATEGORIES.has(w.category) || DATA_WIDGETS.has(w.type) || extra.has(w.type))
 		.map(({ pocket: _pocket, ...w }: Record<string, unknown>) => w)
 };
 const referenceBytes = JSON.stringify(reference).length;
@@ -138,7 +153,10 @@ ${MODEL_LIBRARY}
 - Name the model by "asset" only; never "src", "poster" or "environmentImage". Each annotation is {"anchor","label","note"}: "anchor" is one of that asset's names above, "label" at most 40 characters, "note" one or two plain sentences under 280 characters with no braces. Never write "position" or "normal". "focus" names the anchor whose note is open at start. Give "alt" a short description.
 
 MANIFEST (spec envelope, action grammar, widgets)
-${JSON.stringify(reference)}${args.store ? await storeSection(args.store) : ''}`;
+${JSON.stringify(reference)}${args.store ? await storeSection(args.store) : ''}${context ? `
+
+SCENARIO CONTEXT (what you already know; it overrides the general rules above where they conflict)
+${context}` : ''}`;
 
 // The order demo's contract with the /live host. Keep in step with
 // src/routes/live/checkout.ts (the host validates and strips prices).
@@ -164,11 +182,14 @@ ${JSON.stringify(menu)}
 }
 
 const cwd = mkdtempSync(join(tmpdir(), 'ripple-record-'));
+// From a file, not argv: the prompt is past Windows' 32k command-line limit.
+const systemFile = join(cwd, 'system.txt');
+writeFileSync(systemFile, SYSTEM, 'utf-8');
 const cmd = [
 	'claude', '-p', args.prompt,
 	'--output-format', 'stream-json', '--include-partial-messages', '--verbose',
 	'--model', args.model!,
-	'--system-prompt', SYSTEM,
+	'--system-prompt-file', systemFile,
 	'--tools', '',
 	'--setting-sources', 'local',
 	'--strict-mcp-config',
@@ -251,6 +272,7 @@ const fixture = {
 	id: args.id,
 	title: args.title,
 	prompt: args.prompt,
+	...(context && { context }),
 	model: args.model,
 	recordedAt: new Date().toISOString(),
 	chunks

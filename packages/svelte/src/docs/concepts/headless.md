@@ -47,6 +47,27 @@ await rt.dispatch(rt.findById('inc')!, 'onclick');
 rt.findById('label')?.props.text;          // 'Count: 1'
 ```
 
+```mermaid
+%% caption: The quick start in order. The tree is rebuilt lazily, on the first read after state changes.
+sequenceDiagram
+  participant C as Your code
+  participant R as RippleHeadless
+  participant D as EventDispatcher
+  participant S as State store
+  C->>R: createHeadlessRuntime({ spec, state })
+  C->>R: findById('label')
+  R->>R: resolve the tree
+  R-->>C: props.text is 'Count: 0'
+  C->>R: dispatch(node, 'onclick')
+  R->>D: run the on_click action
+  D->>S: set count to 1
+  S-->>R: changed, tree is stale
+  C->>R: findById('label')
+  R->>R: resolve again
+  R-->>C: props.text is 'Count: 1'
+  Note over D,C: host actions (api, navigate...) go to onEvent instead
+```
+
 `spec` is a node (or a list of nodes), not the `{ version, state, ui }` wrapper. Pass `spec.ui` and `spec.state` from a full spec.
 
 ## The resolved tree

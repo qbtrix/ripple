@@ -2,7 +2,9 @@
   @file routes/+page.svelte
   @description Ripple's landing, chat-first, laid out like a Paw OS chat: under
     the site bar sits PE's thin context row (the name and a short sub-line),
-    then the chat fills exactly the first screen (100dvh less the bar), so
+    then the chat fills exactly the first screen (100dvh less the bar; while
+    an iOS keyboard shrinks the visual viewport, its height instead, so the
+    composer stays above the keyboard), so
     the page never scrolls on its own: the chat's own container scrolls, with
     the hero (the h1, a lede and the install chip with Copy) at its top,
     above the first message, and the chips and composer pinned below it.
@@ -67,6 +69,9 @@
 	const PAWOS_URL = pawosBase(import.meta.env.PUBLIC_PAWOS_URL ?? '');
 	const TYPED_LOCAL = typedStaysLocal(ENDPOINT, import.meta.env.PUBLIC_TYPED_LOCAL ?? '');
 
+	// The streaming code sample, highlighted at prerender (+page.server.ts).
+	let { data } = $props();
+
 	const GITHUB_URL = 'https://github.com/qbtrix/ripple-iui';
 	const INSTALL = 'bun add @ripple-ui/svelte';
 	const SETUP_DOC = '/docs/getting-started/install#set-up-with-a-coding-agent';
@@ -128,22 +133,6 @@
 	// Pretty-printed the way the spec peek shows a card (JsonLines).
 	const specSnippet = JSON.stringify({ state: demoSpec.state, ui: demoSpec.ui });
 
-	const codeSample = `<script>
-  import { Ripple } from '@ripple-ui/svelte';
-  import { streamSpec } from '@ripple-ui/svelte/streaming';
-  import '@ripple-ui/svelte/theme.css';
-
-  let store = $state(null);
-
-  async function generate(prompt) {
-    // your endpoint asks the model for a spec and streams the JSON back
-    const res = await fetch('/api/ui', { method: 'POST', body: prompt });
-    store = streamSpec(res.body);
-  }
-\u003C/script>
-
-{#if store}<Ripple streaming={store} skeleton="card" />{/if}`;
-
 	// The hero chip, the dock's strip and the band each copy the install command; only the one tapped says so.
 	let copied = $state<'hero' | 'code' | 'strip' | 'prompt' | null>(null);
 	let heroCmd = $state<HTMLElement>();
@@ -175,10 +164,29 @@
 		}
 	}
 
+	// iOS keeps the layout viewport under an on-screen keyboard and shrinks only
+	// the visual one, so 100dvh would put the composer under the keyboard. While
+	// the visual viewport is shorter than the layout's, the app is sized to it;
+	// otherwise (desktop, no keyboard, pinch zoom) the var is unset and 100dvh holds.
+	let visibleHeight = $state<string>();
+	function fitKeyboard() {
+		const vv = window.visualViewport;
+		const h = vv ? vv.height * vv.scale : 0;
+		visibleHeight = vv && h < document.documentElement.clientHeight - 1 ? `${h}px` : undefined;
+	}
+
 	onMount(() => {
 		// A pay link that opened in this tab comes back here: bring its order back.
 		session.resume();
-		return () => session.stop();
+		const vv = window.visualViewport;
+		vv?.addEventListener('resize', fitKeyboard);
+		vv?.addEventListener('scroll', fitKeyboard);
+		fitKeyboard();
+		return () => {
+			session.stop();
+			vv?.removeEventListener('resize', fitKeyboard);
+			vv?.removeEventListener('scroll', fitKeyboard);
+		};
 	});
 </script>
 
@@ -191,7 +199,7 @@
 </svelte:head>
 
 <main class="landing">
-	<section class="app" aria-labelledby="hero-title">
+	<section class="app" aria-labelledby="hero-title" style:--visible-height={visibleHeight}>
 		<!-- PE's chat room header: name, topic, actions on the right (none here). -->
 		<div class="context">
 			<div class="context-info">
@@ -238,7 +246,7 @@
 			<li class="step">
 				<h3>The model writes a spec</h3>
 				<p>Plain JSON: widgets, state and actions.</p>
-				<pre class="snippet" aria-label="Example spec"><JsonLines text={specSnippet} /></pre>
+				<pre class="snippet" aria-label="Example spec"><JsonLines text={specSnippet} highlight /></pre>
 			</li>
 			<li class="step">
 				<h3>The engine runs it</h3>
@@ -258,7 +266,7 @@
 				<h2 id="code-title">Stream a spec in a dozen lines</h2>
 				<p><code>streamSpec</code> parses partial JSON as it lands.</p>
 			</div>
-			<pre class="sample"><code>{codeSample}</code></pre>
+			<pre class="sample"><code>{@html data.codeSample}</code></pre>
 		</div>
 		<!-- The site's one Paw-blue band. -->
 		<div class="band">
@@ -352,14 +360,15 @@
 		color: var(--primary-ink);
 	}
 
-	/* The app view: exactly the first screen under the bar (dvh, less the
-	   top safe area), so the page itself sits still at the top. The context
-	   row, then the chat, whose own container scrolls; its dock is pinned
-	   at the bottom. Only "More" moves the page. */
+	/* The app view: exactly the first screen under the bar (dvh, or the
+	   visible height above an iOS keyboard, less the top safe area), so the
+	   page itself sits still at the top. The context row, then the chat,
+	   whose own container scrolls; its dock is pinned at the bottom. Only
+	   "More" moves the page. */
 	.app {
 		max-width: 880px !important;
 		box-sizing: border-box;
-		height: calc(100dvh - var(--site-topbar) - env(safe-area-inset-top, 0px));
+		height: calc(var(--visible-height, 100dvh) - var(--site-topbar) - env(safe-area-inset-top, 0px));
 		min-height: 420px;
 		display: flex;
 		flex-direction: column;

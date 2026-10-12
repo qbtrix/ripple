@@ -24,6 +24,17 @@ interface UISpec {
 }
 ```
 
+```mermaid
+%% caption: A UISpec at a glance. Only ui is required; every node has the same shape.
+flowchart LR
+  spec["spec"] --> version["version: '1.0'"]
+  spec --> state["state<br/>starting values"]
+  spec --> ui["ui: the root node<br/>type, props, bind, show, on_*"]
+  spec --> extra["theme, sources, meta<br/>optional"]
+  ui -->|children| child["node, same shape"]
+  child -->|children| more["..."]
+```
+
 The tree field is called `ui` exactly. A spec that names it `root`, `tree`, `view`, `body` or `content` renders nothing.
 
 ### Versioning

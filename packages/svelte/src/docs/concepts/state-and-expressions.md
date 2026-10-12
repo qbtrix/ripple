@@ -6,6 +6,16 @@ order: 2
 
 A spec carries its own state. Widgets read it through expressions in braces, inputs write to it through `bind`, and actions change it. When a value changes, only the parts of the UI that read it update.
 
+```mermaid
+%% caption: The loop. Expressions read state, widgets show it, and bind or an action writes it back.
+flowchart LR
+  state[("state")] -->|"{state.x} expressions"| props["resolved props"]
+  props --> widget["widget"]
+  widget -->|"bind: typing, toggling"| state
+  widget -->|"on_click, on_change..."| action["action<br/>set, toggle, push..."]
+  action --> state
+```
+
 ## Initial state
 
 Put the starting values in `state`. Pass `state` to the component to override some of them:

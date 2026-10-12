@@ -9,6 +9,7 @@
 -->
 <script lang="ts">
 	import DetailHeader from './DetailHeader.svelte';
+	import { highlightJson } from '$lib/site/docs/highlight.js';
 	import MealPlan from '$lib/widgets/composite/MealPlan.svelte';
 	import type { PlanDay, RecipeData } from '$lib/widgets/composite/recipe.js';
 
@@ -269,7 +270,7 @@
 		</div>
 		<details class="readout">
 			<summary>Bound <code>days</code> (three days)</summary>
-			<pre>{JSON.stringify(soloDays, null, 2)}</pre>
+			<pre>{@html highlightJson(JSON.stringify(soloDays, null, 2))}</pre>
 		</details>
 	</section>
 </div>
