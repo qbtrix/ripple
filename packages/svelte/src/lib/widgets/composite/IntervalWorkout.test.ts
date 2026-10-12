@@ -262,3 +262,43 @@ describe('interval-workout: the timer', () => {
 		expect([w.phase(), w.current()]).toEqual(['Work', 'Squats']);
 	});
 });
+
+describe('interval-workout: exercise figures', () => {
+	const yoga = (): WorkoutExercise[] => [
+		{ name: 'Cat-Cow', kind: 'mobility' },
+		{ name: 'Kettlebell swings', kind: 'strength' },
+		{ name: 'Squats', kind: 'strength', figure: 'downward-dog' }
+	];
+	const hero = (c: Element) => c.querySelector('[data-slot="figure"]');
+
+	it('the current exercise gets its animated figure, picked by name', () => {
+		const { container } = render(IntervalWorkout, { props: { exercises: yoga(), workSec: 30, restSec: 10 } });
+		expect(hero(container)?.getAttribute('data-figure')).toBe('cat-cow');
+		expect(hero(container)?.querySelector('.motion-reduce\\:hidden svg animate')).not.toBeNull();
+		expect(hero(container)?.querySelector('.motion-reduce\\:block svg animate')).toBeNull();
+	});
+
+	it('list rows get still figures; an unknown name keeps its kind icon', () => {
+		const { container } = render(IntervalWorkout, { props: { exercises: yoga(), workSec: 30, restSec: 10 } });
+		const rows = [...container.querySelectorAll('[data-slot="list"] li')];
+		expect(rows.map((r) => r.querySelector('[data-figure]')?.getAttribute('data-figure') ?? null)).toEqual(['cat-cow', null, 'downward-dog']);
+		expect(rows[1].querySelector('svg')).not.toBeNull();
+		expect(container.querySelectorAll('[data-slot="list"] animate').length).toBe(0);
+	});
+
+	it('an unknown current exercise keeps the old icon, and an automatic rest shows the rest figure', async () => {
+		const { container, rerender } = render(IntervalWorkout, { props: { exercises: yoga(), workSec: 30, restSec: 10, step: 2 } });
+		expect(screen.getByText('Kettlebell swings', { selector: '[data-slot="current"]' })).toBeTruthy();
+		expect(hero(container)).toBeNull();
+		await rerender({ step: 1 });
+		expect(hero(container)?.getAttribute('data-figure')).toBe('rest');
+	});
+
+	it('figure markup never comes from a prop', () => {
+		const { container } = render(IntervalWorkout, {
+			props: { exercises: [{ name: 'Squats', figure: '<svg onload="alert(1)"/>' }], workSec: 30, restSec: 10 }
+		});
+		expect(hero(container)?.getAttribute('data-figure')).toBe('squat');
+		expect(container.innerHTML).not.toContain('onload');
+	});
+});
