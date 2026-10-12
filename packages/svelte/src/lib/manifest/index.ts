@@ -136,6 +136,7 @@ import { productGridEntry } from './entries/product-grid.js';
 import { mediaGridEntry } from './entries/media-grid.js';
 import { focusTimerEntry } from './entries/focus-timer.js';
 import { musicPlayerEntry } from './entries/music-player.js';
+import { isoSceneEntry } from './entries/iso-scene.js';
 import { flashcardDeckEntry } from './entries/flashcard-deck.js';
 import { wordGuessEntry } from './entries/word-guess.js';
 import { quizEntry } from './entries/quiz.js';
@@ -476,6 +477,7 @@ export const manifestEntries: WidgetManifestEntry[] = [
   mediaGridEntry,
   focusTimerEntry,
   musicPlayerEntry,
+  isoSceneEntry,
   flashcardDeckEntry,
   wordGuessEntry,
   quizEntry,
