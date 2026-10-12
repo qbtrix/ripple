@@ -31,7 +31,9 @@
     instead (PUBLIC_PAWOS_URL), unless PUBLIC_TYPED_LOCAL=1 with a localhost
     endpoint keeps it on the Paw Bar. Below, one short line each: how it works
     (spec, engine, UI, with a live card), install and the streaming code
-    sample, the recorded examples linking /live, and the bring-your-own-key
+    sample, the blue band (install command, and the coding-agent setup prompt
+    from lib/site/setup-prompt.ts, which falls back to its Install docs
+    section when the clipboard is blocked), the recorded examples linking /live, and the bring-your-own-key
     closer.
 
   Creative Direction Declaration
@@ -50,6 +52,7 @@
 	import Copy from '@lucide/svelte/icons/copy';
 	import { Ripple } from '$lib/index.js';
 	import JsonLines from '$lib/site/JsonLines.svelte';
+	import { SETUP_PROMPT } from '$lib/site/setup-prompt.js';
 	import Chat from './pawbar/Chat.svelte';
 	import { BYOK_URL, ChatSession, pawbarTransport, pawosBase, typedStaysLocal, type Transport } from './pawbar/session.svelte.js';
 	import { answerPool, findScenario, pickScenario, recordedEvents, recordedExchange } from './pawbar/recorded.js';
@@ -66,6 +69,7 @@
 
 	const GITHUB_URL = 'https://github.com/qbtrix/ripple-iui';
 	const INSTALL = 'bun add @ripple-ui/svelte';
+	const SETUP_DOC = '/docs/getting-started/install#set-up-with-a-coding-agent';
 
 	// The recorded order demo checks out with an `api` action, which the chat's card
 	// policy refuses, so the recorded answers exclude it; live, its chip asks the
@@ -141,10 +145,21 @@
 {#if store}<Ripple streaming={store} skeleton="card" />{/if}`;
 
 	// The hero chip, the dock's strip and the band each copy the install command; only the one tapped says so.
-	let copied = $state<'hero' | 'code' | 'strip' | null>(null);
+	let copied = $state<'hero' | 'code' | 'strip' | 'prompt' | null>(null);
 	let heroCmd = $state<HTMLElement>();
 	let bandCmd = $state<HTMLElement>();
 	let stripCmd = $state<HTMLElement>();
+	// The band's second action: the setup prompt for a coding agent. If the
+	// clipboard is blocked, the Install page shows the same prompt to copy.
+	async function copyPrompt() {
+		try {
+			await navigator.clipboard.writeText(SETUP_PROMPT);
+			copied = 'prompt';
+			setTimeout(() => (copied = null), 1600);
+		} catch {
+			location.assign(SETUP_DOC);
+		}
+	}
 	async function copyInstall(where: 'hero' | 'code' | 'strip') {
 		try {
 			await navigator.clipboard.writeText(INSTALL);
@@ -251,6 +266,10 @@
 				<div class="install">
 					<code bind:this={bandCmd}><span aria-hidden="true">$</span> {INSTALL}</code>
 					<button type="button" onclick={() => copyInstall('code')} aria-label="Copy install command">{copied === 'code' ? 'Copied' : 'Copy'}</button>
+				</div>
+				<div class="install agent">
+					<button type="button" onclick={copyPrompt}>{copied === 'prompt' ? 'Copied' : 'Copy setup prompt'}</button>
+					<p class="small">For your coding agent: it installs, wires streaming and checks its work. <a href={SETUP_DOC}>Read it</a></p>
 				</div>
 				<p class="small">Needs Tailwind v4. <a href="{GITHUB_URL}/tree/main/packages/svelte#styling">Styling setup</a></p>
 			</div>

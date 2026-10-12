@@ -210,6 +210,11 @@
 			font: 13.5px/1.6 var(--font-mono);
 			font-variant-ligatures: none;
 		}
+		/* A ```text fence is prose (a prompt to paste): it wraps instead of scrolling. */
+		pre:has(> code.language-text) {
+			white-space: pre-wrap;
+			overflow-wrap: anywhere;
+		}
 		/* Room for the Copy button, so it never covers a one-line block's tail. */
 		.code-block pre {
 			padding-right: 72px;
