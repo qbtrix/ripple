@@ -12,6 +12,7 @@ export const isoSceneEntry: WidgetManifestEntry = {
   props: {
     title: { type: 'string', required: false, description: 'Up to 80 characters.' },
     caption: { type: 'string', required: false, description: 'One plain sentence under the drawing. Up to 200 characters.' },
+    look: { type: '"soft" | "color"', required: false, description: 'soft (default): near-white parts in four soft tones, colors as faint tints. color: saturated fills.' },
     scale: { type: 'number', required: false, description: 'Zoom, 0.4 to 2.5. Default 1 (fits the drawing).' },
     params: {
       type: 'Array<{ key: string; label: string; min: number; max: number; step?: number; unit?: string; value: number }>',
@@ -19,10 +20,10 @@ export const isoSceneEntry: WidgetManifestEntry = {
       description: 'Up to 6 sliders. `key` is an identifier that speeds and readouts can use, e.g. "cadence / 60".',
     },
     parts: {
-      type: 'Array<{ id: string; kind: "slab" | "box" | "cylinder" | "disc" | "gear" | "tube" | "sphere" | "cone" | "rod" | "arrow" | "plate"; at?: [x, y, z]; w?: number; d?: number; h?: number; r?: number; teeth?: number; axis?: "x" | "y" | "z"; path?: [x, y, z][]; from?: [x, y, z]; to?: [x, y, z]; label?: string; color?: "neutral" | "accent" | "red" | "blue" | "green" | "amber" | "metal"; on?: string }>',
+      type: 'Array<{ id: string; kind: "slab" | "box" | "cylinder" | "disc" | "gear" | "tube" | "sphere" | "cone" | "rod" | "arrow" | "plate"; at?: [x, y, z]; w?: number; d?: number; h?: number; r?: number; teeth?: number; axis?: "x" | "y" | "z"; path?: [x, y, z][]; from?: [x, y, z]; to?: [x, y, z]; label?: string; detail?: "knurl"; texture?: "guilloche" | "ribs"; color?: "neutral" | "accent" | "red" | "blue" | "green" | "amber" | "metal"; on?: string }>',
       required: true,
       description:
-        'Up to 150. Units are free (keep the scene within about 300 across); z is up. `at` is the centre. slab/box/plate: w, d, h (slab r rounds corners, plate shows `label`). cylinder/disc/gear/cone: r, h along `axis` (default z). tube: `path` points, r. rod and arrow: from, to. `on`: id of a parent part this one moves with. Unknown kinds are skipped.',
+        'Up to 150. Units are free (keep the scene within about 300 across); z is up. `at` is the centre. slab/box/plate: w, d, h (slab r rounds corners, plate shows `label`, `texture` decorates a plate or slab top). `detail: "knurl"` ribs a knob. cylinder/disc/gear/cone: r, h along `axis` (default z). tube: `path` points, r. rod and arrow: from, to. `on`: id of a parent part this one moves with. Unknown kinds are skipped.',
     },
     motions: {
       type: 'Array<{ part: string; kind: "spin" | "slide" | "swing" | "pulse" | "flow"; axis?: "x" | "y" | "z"; speed: number | string; range?: number; phase?: number }>',

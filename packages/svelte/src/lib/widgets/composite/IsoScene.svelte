@@ -2,7 +2,11 @@
   widgets/composite/IsoScene.svelte: `iso-scene` (aliases `iso`, `isometric`).
   A live isometric drawing: the model writes a parts list, motions over a few
   params, readouts and numbered labels; @ripple-ui/core/iso draws it (one
-  camera, four tones per color role, painter's order). No model SVG, no URLs.
+  camera, four tones, painter's order, bevels, screws, contact shadow). No
+  model SVG, no URLs. `look`: "soft" (default) is Anatomy's near-white ramp
+  (theme tokens ported from Anatomy's kit/iso.css, MIT, Copyright (c) 2026
+  Ryan, github.com/wheresryan22/anatomy) with roles as faint tints; "color"
+  fills each role with its Ripple token.
 
   Invariants:
   - `value` is the one bound field (default `value` / `onchange`): the param
@@ -57,6 +61,7 @@
 		drawPart,
 		fitScene,
 		flowOffsets,
+		groundParts,
 		movingParts,
 		normalizeScene,
 		pinPoint,
@@ -72,6 +77,7 @@
 		title?: string;
 		caption?: string;
 		scale?: number;
+		look?: 'soft' | 'color';
 		params?: unknown;
 		parts?: unknown;
 		motions?: unknown;
@@ -81,7 +87,7 @@
 		onchange?: (value: Record<string, number>) => void;
 	}
 
-	let { id, class: className, style, title, caption, scale, params, parts, motions, readouts, labels, value = $bindable(), onchange }: Props = $props();
+	let { id, class: className, style, title, caption, scale, look, params, parts, motions, readouts, labels, value = $bindable(), onchange }: Props = $props();
 
 	const W = 640;
 	const H = 380;
@@ -141,6 +147,7 @@
 	const moving = $derived(movingParts(scene));
 	const flowing = $derived(scene.parts.map((_, i) => scene.motions.some((m) => m.kind === 'flow' && m.part === i)));
 	const animated = $derived(moving.some(Boolean) || flowing.some(Boolean));
+	const ground = $derived(groundParts(scene));
 	const still = $derived(scene.parts.map((p, i) => (moving[i] || flowing[i] ? null : drawPart(i, p, IDENTITY, P))));
 
 	let time = $state(0);
@@ -150,6 +157,9 @@
 		const list: IsoItem[] = scene.parts.map((p, i) => still[i] ?? drawPart(i, p, tf[i]!, P, dashes[i]));
 		return { items: sortItems(list, P), tf };
 	});
+
+	// Contact shadows sit in their own layer under every part, so a part's shape list never shifts.
+	const halos = $derived(frame.items.filter((item) => ground[item.part] && item.shapes[0]?.cls === 'fill').map((item) => item.shapes[0]!.d));
 
 	const pins = $derived.by(() => {
 		const byId = new Map(scene.parts.map((p, i) => [p.id, i]));
@@ -211,14 +221,18 @@
 	class={['iso-scene @container m-0 flex flex-col gap-3 text-ripple-surface-foreground', className]}
 	style={rootStyle}
 	data-widget="iso-scene"
+	data-look={look === 'color' ? 'color' : 'soft'}
 	data-running={running ? 'true' : 'false'}
 	aria-label={heading || 'Isometric drawing'}
 >
 	{#if heading}<h3 class="text-sm font-semibold" data-slot="title">{heading}</h3>{/if}
 	<svg viewBox="0 0 {W} {H}" class="iso-svg" role="img" aria-label={heading || 'Isometric drawing'} data-slot="drawing">
+		<g data-slot="shadows">
+			{#each halos as d, i (i)}<path data-cls="halo" {d} />{/each}
+		</g>
 		{#each frame.items as item (item.part)}
 			<g data-role={item.role} data-part={scene.parts[item.part]?.id}>
-				{#each item.shapes as s, i (i)}
+				{#each item.shapes as s}
 					{#if s.cls === 'text'}
 						<text data-cls="text" transform={s.transform} font-size={s.size} text-anchor="middle">{s.text}</text>
 					{:else}
@@ -326,7 +340,7 @@
 		stroke-linecap: round;
 	}
 	path[data-cls='fill'] {
-		fill: var(--t1);
+		fill: var(--tf, var(--t1));
 	}
 	path[data-cls='shade'] {
 		fill: var(--t1);
@@ -342,8 +356,8 @@
 		stroke: var(--t2);
 	}
 	path[data-cls='shade'][data-band='3'] {
-		fill: color-mix(in oklab, var(--t2) 55%, var(--t3));
-		stroke: color-mix(in oklab, var(--t2) 55%, var(--t3));
+		fill: var(--t25, color-mix(in oklab, var(--t2) 55%, var(--t3)));
+		stroke: var(--t25, color-mix(in oklab, var(--t2) 55%, var(--t3)));
 	}
 	path[data-cls='top'] {
 		fill: var(--t3);
@@ -391,6 +405,153 @@
 	g[data-role] text {
 		fill: var(--edge);
 		font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+	}
+	/* Shared detail layers; the color look derives its ink ramp from the surface. */
+	.iso-scene {
+		--a-hi: var(--iso-ink);
+		--a-mid: color-mix(in oklab, var(--iso-ink) 55%, var(--iso-ground));
+		--a-lo: color-mix(in oklab, var(--iso-ink) 32%, var(--iso-ground));
+		--a-faint: color-mix(in oklab, var(--iso-ink) 14%, var(--iso-ground));
+		--a-s1: color-mix(in oklab, var(--iso-ground) 85%, var(--iso-ink));
+		--a-rim: rgb(255 255 255 / 0.45);
+		--a-halo: #000;
+		--a-halo-o: 0.2;
+	}
+	path[data-cls='halo'] {
+		fill: var(--a-halo);
+		opacity: var(--a-halo-o);
+		filter: blur(9px);
+		transform: translateY(3px);
+	}
+	path[data-cls='rim'] {
+		fill: none;
+		stroke: var(--a-rim);
+		stroke-width: 1.1;
+	}
+	path[data-cls='bevel'],
+	path[data-cls='detail'] {
+		fill: none;
+		stroke: var(--a-lo);
+		stroke-width: 0.6;
+	}
+	path[data-cls='screw'] {
+		fill: var(--a-s1);
+		stroke: var(--a-mid);
+		stroke-width: 0.6;
+	}
+	path[data-cls='texture'] {
+		fill: none;
+		stroke: var(--a-lo);
+		stroke-width: 0.5;
+		opacity: 0.9;
+	}
+	path[data-cls='texture'][data-band='0'] {
+		opacity: 0.35;
+	}
+	path[data-cls='texture'][data-band='1'] {
+		opacity: 0.6;
+	}
+
+	/* Soft look: Anatomy's theme tokens (kit/iso.css, MIT, (c) 2026 Ryan), light and dark. */
+	.iso-scene[data-look='soft'] {
+		--a-paper: #fbfbfa;
+		--a-top: #ffffff;
+		--a-s0: #dcdcd9;
+		--a-s1: #e5e5e2;
+		--a-s2: #ededea;
+		--a-s3: #f4f4f1;
+		--a-hi: #26262a;
+		--a-mid: #8a8a8f;
+		--a-lo: #b4b4b8;
+		--a-faint: #d4d4d6;
+		--a-rim: #ffffff;
+		--a-halo: #8a8a80;
+		--a-halo-o: 0.32;
+		--a-red: #e5484d;
+		--a-green: #30a46c;
+		--a-blue: #3e63dd;
+		--a-amber: #d9930d;
+	}
+	:global(.dark) .iso-scene[data-look='soft'] {
+		--a-paper: #131313;
+		--a-top: #1c1c1c;
+		--a-s0: #0f0f0f;
+		--a-s1: #121212;
+		--a-s2: #151515;
+		--a-s3: #181818;
+		--a-hi: #d4d4d4;
+		--a-mid: #6a6a6a;
+		--a-lo: #3e3e3e;
+		--a-faint: #2a2a2a;
+		--a-rim: #2e2e2e;
+		--a-halo: #050505;
+		--a-halo-o: 0.9;
+		--a-red: #ff6b6b;
+		--a-green: #6be0a0;
+		--a-blue: #6b9bff;
+		--a-amber: #f0b24a;
+	}
+	[data-look='soft'] .iso-svg {
+		background: var(--a-paper);
+		border-radius: 12px;
+		box-shadow: 0 0 0 1px var(--a-faint);
+	}
+	[data-look='soft'] g[data-role] {
+		--tint: var(--a-s2);
+		--k: 0%;
+		--tf: color-mix(in oklab, var(--a-paper), var(--tint) var(--k));
+		--t0: color-mix(in oklab, var(--a-s0), var(--tint) var(--k));
+		--t1: color-mix(in oklab, var(--a-s1), var(--tint) var(--k));
+		--t2: color-mix(in oklab, var(--a-s2), var(--tint) var(--k));
+		--t25: color-mix(in oklab, var(--a-s3), var(--tint) var(--k));
+		--t3: color-mix(in oklab, var(--a-top), var(--tint) var(--k));
+		--edge: var(--a-hi);
+	}
+	[data-look='soft'] g[data-role='metal'] {
+		--tint: var(--a-mid);
+		--k: 14%;
+	}
+	[data-look='soft'] g[data-role='accent'] {
+		--tint: var(--ripple-accent, #1877f2);
+		--k: 12%;
+	}
+	[data-look='soft'] g[data-role='red'] {
+		--tint: var(--a-red);
+		--k: 14%;
+	}
+	[data-look='soft'] g[data-role='blue'] {
+		--tint: var(--a-blue);
+		--k: 14%;
+	}
+	[data-look='soft'] g[data-role='green'] {
+		--tint: var(--a-green);
+		--k: 14%;
+	}
+	[data-look='soft'] g[data-role='amber'] {
+		--tint: var(--a-amber);
+		--k: 16%;
+	}
+	[data-look='soft'] path[data-cls='edge'] {
+		stroke-width: 0.7;
+		opacity: 0.8;
+	}
+	[data-look='soft'] path[data-cls='crease'] {
+		stroke: var(--a-lo);
+		stroke-width: 0.6;
+		opacity: 1;
+	}
+	[data-look='soft'] path[data-cls='tube-edge'] {
+		opacity: 0.75;
+	}
+	[data-look='soft'] path[data-cls='line'] {
+		stroke-width: 1;
+	}
+	[data-look='soft'] path[data-cls='flow'] {
+		stroke: var(--a-mid);
+		stroke-width: 1.2;
+	}
+	[data-look='soft'] g[data-role] text {
+		fill: var(--a-mid);
 	}
 	.iso-pin circle {
 		fill: var(--ripple-accent, #1877f2);

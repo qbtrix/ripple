@@ -14,7 +14,7 @@
  */
 
 import { depthOf, fitProjection, iso, pathOf, roundedPlan, topMatrix, type Flat, type Point3, type Projection, type SolidPaths } from './kit.js';
-import { add3, axisFrame, circlePolygon, coneOf, dot3, frameAlong, gearRing, len3, mul3, prismOf, sphereOf, sub3, viewOf, type Frame } from './solids.js';
+import { add3, axisFrame, pointOf, circlePolygon, coneOf, dot3, frameAlong, gearRing, len3, mul3, prismOf, sphereOf, sub3, viewOf, type Frame } from './solids.js';
 
 export const ISO_KINDS = ['slab', 'box', 'cylinder', 'disc', 'gear', 'tube', 'sphere', 'cone', 'rod', 'arrow', 'plate'] as const;
 export const ISO_ROLES = ['neutral', 'accent', 'red', 'blue', 'green', 'amber', 'metal'] as const;
@@ -41,6 +41,9 @@ export interface IsoPart {
 	to: Point3;
 	label: string;
 	color: IsoRole;
+	/** `knurl` rings a cylinder's side; plates and slabs may carry a top texture. */
+	detail: '' | 'knurl';
+	texture: '' | 'guilloche' | 'ribs';
 	/** Parent part index, or -1. */
 	on: number;
 }
@@ -61,7 +64,7 @@ export interface IsoScene {
 }
 
 export interface IsoShape {
-	cls: 'fill' | 'shade' | 'top' | 'crease' | 'edge' | 'tube-edge' | 'tube' | 'tube-hi' | 'line' | 'flow' | 'text';
+	cls: 'halo' | 'fill' | 'shade' | 'top' | 'rim' | 'bevel' | 'detail' | 'screw' | 'texture' | 'crease' | 'edge' | 'tube-edge' | 'tube' | 'tube-hi' | 'line' | 'flow' | 'text';
 	d: string;
 	band?: number;
 	width?: number;
@@ -143,6 +146,8 @@ export function normalizeScene(rawParts: unknown, rawMotions?: unknown): IsoScen
 			to: to ?? [0, 0, 0],
 			label: plainText(raw.label, 24),
 			color: (ISO_ROLES as readonly string[]).includes(raw.color as string) ? (raw.color as IsoRole) : kind === 'gear' || kind === 'rod' ? 'metal' : 'neutral',
+			detail: raw.detail === 'knurl' ? 'knurl' : '',
+			texture: raw.texture === 'guilloche' || raw.texture === 'ribs' ? raw.texture : '',
 			on: -1
 		});
 		parents.push(raw.on);
@@ -296,6 +301,97 @@ function polygonCorners(F: Frame, poly: Flat[], s0: number, s1: number): Point3[
 
 const stepsFor = (r: number) => Math.round(Math.min(56, Math.max(20, r * 2)));
 
+/** Offset a polygon inward by `by` along its corner bisectors (smooth shapes, rounded plans). */
+function insetPoly(poly: Flat[], by: number): Flat[] {
+	const n = poly.length;
+	let area = 0;
+	for (let i = 0; i < n; i++) area += poly[i]![0] * poly[(i + 1) % n]![1] - poly[(i + 1) % n]![0] * poly[i]![1];
+	const sign = area > 0 ? 1 : -1;
+	const normal = (i: number): Flat => {
+		const [ax, ay] = poly[i]!;
+		const [bx, by2] = poly[(i + 1) % n]!;
+		const l = Math.hypot(bx - ax, by2 - ay) || 1;
+		return [(sign * (by2 - ay)) / l, (-sign * (bx - ax)) / l];
+	};
+	return poly.map(([x, y], i) => {
+		const a = normal((i - 1 + n) % n);
+		const b = normal(i);
+		const l = Math.hypot(a[0] + b[0], a[1] + b[1]) || 1;
+		return [x - ((a[0] + b[0]) / l) * by, y - ((a[1] + b[1]) / l) * by] as Flat;
+	});
+}
+
+/** Parts resting on the scene's lowest level: the host draws a soft contact shadow under them (their fill, blurred). */
+export function groundParts(scene: IsoScene): boolean[] {
+	const unit: Projection = { origin: [0, 0], scale: 1 };
+	const lows = scene.parts.map((p, i) => drawPart(i, p, IDENTITY, unit).box[0][2]);
+	const floor = Math.min(...lows);
+	return lows.map((z) => z <= floor + 0.5);
+}
+
+/**
+ * Small detail that belongs to a prism part, on its visible cap: a highlight
+ * rim, a bevel line, a seam and corner screws on big slabs, knurl, textures.
+ * Capped by construction (fixed counts per part).
+ */
+function capDetail(p: IsoPart, F: Frame, poly: Flat[], s0: number, s1: number, P: Projection): IsoShape[] {
+	const V = viewOf(P);
+	const s = dot3(F.a, V) > 0 ? s1 : s0;
+	const at = (x: number, y: number) => iso(pointOf(F, s, x, y), P);
+	const ring = (pts: Flat[]) => pathOf(pts.map(([x, y]) => at(x, y)), true);
+	const out: IsoShape[] = [{ cls: 'rim', d: ring(poly) }];
+	const flat = p.kind === 'slab' || p.kind === 'plate' || p.kind === 'box';
+	const span = p.kind === 'gear' ? 0 : flat ? Math.min(p.w, p.d) : p.r * 2;
+	if (span) out.push({ cls: 'bevel', d: ring(insetPoly(poly, Math.min(1.8, Math.max(0.5, span * 0.035)))) });
+	if (flat && p.kind !== 'box' && span >= 30) out.push({ cls: 'detail', d: ring(insetPoly(poly, Math.max(3.5, span * 0.09))) });
+	if (flat && span >= 40) {
+		const sr = Math.min(2.4, Math.max(1, span * 0.022));
+		const c = Math.max(sr * 3, span * 0.06, p.kind === 'slab' ? p.r * 0.6 : 0);
+		const screws: string[] = [];
+		const slots: string[] = [];
+		for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]] as const) {
+			const x = sx * (p.w / 2 - c);
+			const y = sy * (p.d / 2 - c);
+			screws.push(ring(circlePolygon(sr, 12).map(([u, v]) => [x + u, y + v] as Flat)));
+			slots.push(pathOf([at(x - sr * 0.6, y - sr * 0.45), at(x + sr * 0.6, y + sr * 0.45)]));
+		}
+		out.push({ cls: 'screw', d: screws.join('') }, { cls: 'detail', d: slots.join('') });
+	}
+	if (flat && p.texture === 'ribs') {
+		const inset = Math.max(3, span * 0.12);
+		const count = Math.min(36, Math.max(4, Math.floor((p.d - inset * 2) / 3)));
+		const bands: string[][] = [[], [], []];
+		for (let i = 0; i <= count; i++) {
+			const y = -p.d / 2 + inset + ((p.d - inset * 2) * i) / count;
+			const t = Math.abs((i / count) * 2 - 1);
+			bands[t > 0.8 ? 0 : t > 0.5 ? 1 : 2]!.push(pathOf([at(-p.w / 2 + inset, y), at(p.w / 2 - inset, y)]));
+		}
+		bands.forEach((list, band) => list.length && out.push({ cls: 'texture', d: list.join(''), band }));
+	}
+	if (flat && p.texture === 'guilloche') {
+		const R = span * 0.2;
+		const loops = Array.from({ length: 12 }, (_, i) => {
+			const a = (i / 12) * Math.PI * 2;
+			return ring(circlePolygon(R, 32).map(([u, v]) => [u + Math.cos(a) * R * 0.55, v + Math.sin(a) * R * 0.55] as Flat));
+		});
+		out.push({ cls: 'texture', d: loops.join(''), band: 1 });
+	}
+	if (p.detail === 'knurl' && (p.kind === 'cylinder' || p.kind === 'disc')) {
+		const count = Math.round(Math.min(48, Math.max(16, p.r * 2.5)));
+		const lines: string[] = [];
+		for (let i = 0; i < count; i++) {
+			const a = (i / count) * Math.PI * 2;
+			const nrm = add3(mul3(F.u, Math.cos(a)), mul3(F.v, Math.sin(a)));
+			if (dot3(nrm, V) / (len3(nrm) || 1) < 0.12) continue;
+			const x = p.r * Math.cos(a);
+			const y = p.r * Math.sin(a);
+			lines.push(pathOf([iso(pointOf(F, s0 + 0.4, x, y), P), iso(pointOf(F, s1 - 0.4, x, y), P)]));
+		}
+		out.push({ cls: 'detail', d: lines.join('') });
+	}
+	return out;
+}
+
 /** Draw one part under its world affine. `dash` is its flow offset (NaN: no flow). */
 export function drawPart(index: number, p: IsoPart, A: Affine, P: Projection, dash = NaN): IsoItem {
 	const shapes: IsoShape[] = [];
@@ -304,7 +400,9 @@ export function drawPart(index: number, p: IsoPart, A: Affine, P: Projection, da
 	const kScreen = P.scale * Math.sqrt(1.6);
 	const prism = (F0: Frame, poly: Flat[], s0: number, s1: number) => {
 		const F = moveFrame(A, F0);
-		shapes.push(...solidShapes(prismOf(F, poly, s0, s1, P)));
+		const solid = solidShapes(prismOf(F, poly, s0, s1, P));
+		solid.splice(solid.length - 1, 0, ...capDetail(p, F, poly, s0, s1, P));
+		shapes.push(...solid);
 		points = polygonCorners(F, poly, s0, s1);
 		return F;
 	};
