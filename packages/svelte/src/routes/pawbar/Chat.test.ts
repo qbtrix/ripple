@@ -7,7 +7,8 @@
 // including a live model card the server accepted (fixtures/trip-flow-card.json).
 // Then the spec peek: a seeded card starts closed, the first card the visitor
 // triggers opens once per session.
-// Chips render in labelled groups. A card's raw spec never shows as chat text:
+// Chips render in labelled groups; Escape folds the open panel, focus back on its
+// toggle. A card's raw spec never shows as chat text:
 // not from a restarted fence, not from a leak the server let through.
 
 import { fireEvent, render } from '@testing-library/svelte';
@@ -424,4 +425,16 @@ test('past one row the panel collapses: the toggle flips aria-expanded, and a ch
 	await waitFor(() => expect(sent).toEqual(['Make Play 3']));
 	// Tapping a chip folds the panel back to its row.
 	expect(toggle.getAttribute('aria-expanded')).toBe('false');
+});
+
+test('Escape folds the open panel and hands focus from a chip back to the toggle', async () => {
+	const session = new ChatSession(async function* () {});
+	const suggestions = Array.from({ length: 12 }, (_, i) => ({ id: `s${i}`, title: `Chip ${i}`, prompt: `Make ${i}`, group: i < 6 ? 'A' : 'B' }));
+	const view = render(Chat, { session, suggestions });
+	const toggle = view.getByRole('button', { name: 'Show all suggestions' });
+	await fireEvent.click(toggle);
+	view.getByRole('button', { name: 'Chip 11' }).focus();
+	await fireEvent.keyDown(window, { key: 'Escape' });
+	expect(toggle.getAttribute('aria-expanded')).toBe('false');
+	await waitFor(() => expect(document.activeElement).toBe(toggle));
 });

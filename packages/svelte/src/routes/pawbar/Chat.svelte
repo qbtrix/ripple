@@ -7,8 +7,10 @@
     under it (aria-expanded, aria-controls the panel). Expanded, it is the
     full grid: an uppercase label per group over wrapping pill chips (lucide
     icon from chip-icons.ts, then the title, then "step by step" on steps
-    chips), scrolling inside itself past 55vh. A chip tap collapses it and runs
-    here (session.send); text the visitor types goes to Paw OS
+    chips), on its own panel that floats over the bottom of the conversation
+    above the toggle (never taking the log's height), scrolling inside itself
+    past 55vh. Escape or a chip tap collapses it (focus inside it returns to
+    the toggle); a chip runs here (session.send); text the visitor types goes to Paw OS
     (session.handoff, opened from the send gesture) unless `typedLocal` keeps
     it on the Paw Bar (mock and dev only); the hint under the composer says so.
     The look follows Paw OS: the composer is ChatPill's glass pill (a round
@@ -31,8 +33,12 @@
     that plays the closest recorded answer into the same turn
     (session.replayRecorded).
     Each card has a spec peek (its JSON, pretty-printed as it streams, soft
-    wrapped; under 1024px 8 lines until Expand), closed except on the first
-    card the visitor triggers per browser session. Turns already there at
+    wrapped, following its newest line while the card streams and showing
+    its start once final), closed except on the first card the visitor
+    triggers per browser session. It is clipped, never its own scroll
+    container, so a wheel over it scrolls the conversation: under 1024px to 8
+    lines, from 1024px beside the card to the card's height; Expand shows the
+    whole spec and the pane grows. Turns already there at
     mount (the prerendered exchange) neither animate in nor open a peek. A
     card whose spec root is a `card` widget gets a bare frame.
     Scrolling: the log (with the optional `top` snippet above it, the
@@ -40,7 +46,8 @@
     scrolls the page (no scrollIntoView anywhere). It follows new content only
     while the visitor is at its bottom; a visitor's own message (chip, typed
     or sent by a card) always jumps there; scrolled up, growth while a turn
-    streams shows a "New" pill instead. At mount it stays at its top. Below
+    streams shows a "New" pill instead; a reader at the bottom stays there when
+    the chat itself resizes (a keyboard). At mount it stays at its top. Below
     it the dock: the panel, the composer with the `more` snippet to its
     right, and a foot row (the `foot` snippet, then the hint, which hides
     when narrow but stays as the textarea's description). The log is role="log"
@@ -121,6 +128,14 @@
 	});
 	let showAll = $state(false);
 	const expanded = $derived(showAll || suggestions.length <= ROW);
+	let toggle = $state<HTMLButtonElement>();
+	/** Folds the open panel; focus that was inside it goes to the toggle, not to the page. */
+	function closePanel() {
+		if (!showAll) return;
+		const inside = document.activeElement?.closest('#ripple-suggestions');
+		showAll = false;
+		if (inside) void tick().then(() => toggle?.focus());
+	}
 
 	let draft = $state('');
 	let field = $state<HTMLTextAreaElement>();
@@ -189,6 +204,8 @@
 			else if (session.busy) unseen = true;
 		});
 		ro.observe(inner);
+		// The chat itself resizing (a keyboard, the suggestion panel) keeps a reader at the bottom there.
+		ro.observe(scroller);
 		return () => ro.disconnect();
 	});
 
@@ -266,10 +283,10 @@
 		return n < 1024 ? `${n} B` : `${(n / 1024).toFixed(1)} KB`;
 	};
 
-	/** Keeps a streaming spec scrolled to its newest line. */
+	/** Keeps a streaming spec scrolled to its newest line; a finished one shows from its start. */
 	const follow = (card: Card) => (el: HTMLElement) => {
 		void card.text;
-		if (card.status === 'streaming') el.scrollTop = el.scrollHeight;
+		el.scrollTop = card.status === 'streaming' ? el.scrollHeight : 0;
 	};
 
 	/** The spec root is itself a card widget, so our frame would draw a card in a card. */
@@ -415,6 +432,8 @@
 	{/if}
 {/snippet}
 
+<svelte:window onkeydown={(e) => e.key === 'Escape' && closePanel()} />
+
 <div class="chat">
 	<p class="sr-only" aria-live="polite">{announce}</p>
 	<div class="scroll-wrap">
@@ -494,7 +513,7 @@
 					disabled={session.busy}
 					title={s.prompt}
 					onclick={() => {
-						showAll = false;
+						closePanel();
 						void ask(s.prompt);
 					}}
 					>{#if Icon}<Icon class="chip-icon" size={15} aria-hidden="true" />{/if}{s.title}{#if s.steps}{' '}<span class="chip-steps"
@@ -504,7 +523,7 @@
 			</li>
 		{/snippet}
 		{#if suggestions.length}
-			<div id="ripple-suggestions" class="chip-groups" data-expanded={expanded}>
+			<div id="ripple-suggestions" class="chip-groups" data-expanded={expanded} data-overlay={showAll || undefined}>
 				{#if expanded}
 					{#each groups as [name, chips] (name)}
 						<div class="chip-group">
@@ -524,6 +543,7 @@
 				<button
 					type="button"
 					class="chips-toggle"
+					bind:this={toggle}
 					aria-expanded={showAll}
 					aria-controls="ripple-suggestions"
 					aria-label={showAll ? 'Show fewer' : 'Show all suggestions'}
@@ -581,9 +601,11 @@
 	}
 	/* The chat's own scroll container. min-height 0 lets it shrink inside a
 	   fixed-height parent instead of growing the page. Default overscroll, so
-	   a scroll that hits its bottom chains on into the page. */
+	   a scroll that hits its bottom chains on into the page. Isolated, so
+	   nothing in a card (map panes) rises over the open suggestion panel. */
 	.scroll-wrap {
 		position: relative;
+		isolation: isolate;
 		flex: 1;
 		min-height: 0;
 		display: flex;
@@ -923,7 +945,9 @@
 		font-variant-numeric: tabular-nums;
 	}
 	/* JsonLines soft wraps with a hanging indent, so a deep line stays in the
-	   pane: no sideways scroll to read a 1900px line in a 340px pane. */
+	   pane: no sideways scroll to read a 1900px line in a 340px pane. The pre
+	   is never user-scrollable (overflow hidden still lets `follow` set its
+	   scrollTop), so a wheel or swipe over it moves the conversation. */
 	.peek pre {
 		margin: 0;
 		padding: 0 16px 14px;
@@ -935,9 +959,9 @@
 		line-height: 1.55;
 		color: var(--code-ink);
 	}
+	/* Expanded: the whole spec, the pane grows with it. */
 	.peek-inner[data-full] pre {
-		max-height: 60vh;
-		overflow: auto;
+		max-height: none;
 	}
 	.expand {
 		margin-left: auto;
@@ -968,21 +992,19 @@
 		.peek {
 			position: relative;
 		}
-		/* The peek takes the card's height and scrolls inside it. */
+		/* The peek takes the card's height, clipped; Expand lets it grow the card. */
 		.peek-inner {
 			position: absolute;
 			inset: 0;
 			border-top: 0;
 			border-left: 1px solid var(--site-line);
 		}
-		.peek pre,
-		.peek-inner[data-full] pre {
+		.peek-inner[data-full] {
+			position: static;
+		}
+		.peek pre {
 			flex: 1;
 			max-height: none;
-			overflow: auto;
-		}
-		.expand {
-			display: none;
 		}
 		.card[data-bare] .peek-inner {
 			margin: 2px 0 0 12px;
@@ -1264,6 +1286,26 @@
 		padding: 4px;
 		mask-image: none;
 		animation: rise 0.2s ease-out;
+	}
+	/* Opened by the toggle, the grid floats over the bottom of the
+	   conversation, just above the toggle, instead of taking its height.
+	   Out of flow, it leaves the row's space to the log; the dock is
+	   bottom-anchored, so the toggle and composer stay put. */
+	.dock {
+		position: relative;
+	}
+	.chip-groups[data-overlay] {
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: 100%;
+		z-index: var(--z-sticky);
+		margin: 0;
+		padding: 12px;
+		border: 1px solid var(--site-line);
+		border-radius: 12px;
+		background: var(--site-panel);
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
 	}
 	.chip-groups:not([data-expanded='true']) .chips {
 		display: contents;
