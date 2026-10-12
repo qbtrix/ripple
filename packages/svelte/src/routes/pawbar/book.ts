@@ -20,7 +20,8 @@
 // A booking the store does not back (no `on_book`) gets the host's BOOK_CHAT
 // wiring and `contact: false` instead (wireSlotToChat), and slotMessage() turns its request into the
 // visitor's chat message. The text comes only from the card's own service and
-// open slot that the request names (plus party within the service's bounds and
+// open slot that the request names, read from the service's own `days` when it
+// carries them, else the booking's `days` (plus party within the service's bounds and
 // the visitor's note), stripped to plain text and capped at SLOT_MESSAGE_MAX.
 
 import type { BookingRequest, Confirmed, Day, Notice } from '$lib/widgets/composite/booking.js';
@@ -200,7 +201,8 @@ export function slotMessage(spec: unknown, payload: unknown): string {
 	const { service_id, start } = payload;
 	const props = bookingProps(spec, service_id);
 	const service = (Array.isArray(props?.services) ? props.services : []).find((s) => isRecord(s) && s.id === service_id);
-	const days = Array.isArray(props?.days) ? props.days.filter(isRecord) : [];
+	const own: unknown = service?.days;
+	const days = (Array.isArray(own) ? own : Array.isArray(props?.days) ? props.days : []).filter(isRecord);
 	let slot: Record<string, unknown> | undefined;
 	const day = days.find((d) => (slot = (Array.isArray(d.slots) ? d.slots : []).find((s) => isRecord(s) && s.start === start)));
 	const name = plainLine(service?.name);

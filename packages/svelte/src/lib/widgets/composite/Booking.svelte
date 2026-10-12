@@ -12,7 +12,9 @@
   slot-taken notice (`code: 'slot_taken'`, or text saying "taken") sends the
   visitor back to the time stage with that slot marked Full.
   Data rules live in ./booking.ts. Services and days are store data filled by
-  the server; the widget reads slot times from the store's own strings and
+  the server or the model; a service that carries its own `days` uses them
+  instead of the top-level `days`, and a service with no open slot says so
+  ("No open times for this service") in the time stage. The widget reads slot times from the store's own strings and
   never parses a date (design doc 2026-10-09 §3.4, §4).
   Invariants: everything shown derives from props plus the visitor's picks
   (no prop is copied into $state at mount, so a streamed card ends equal to a
@@ -108,7 +110,6 @@
 
 	// ── Data, read defensively (streamed and model-written props) ──────────
 	const svc = $derived(readServices(services));
-	const dayList = $derived(readDays(days));
 	// The visitor's edits live in `draft`. A bound value (state written back
 	// through onselectionchange) wins; otherwise the draft does, so a parent
 	// re-render that resets an unbound prop cannot wipe what they typed.
@@ -133,6 +134,8 @@
 	const service = $derived(
 		svc.find((s) => s.id && s.id === sel.service_id) ?? (svc.length === 1 && svc[0].id ? svc[0] : undefined)
 	);
+	// The selected service's own days win; otherwise the top-level ones.
+	const dayList = $derived(service?.days ?? readDays(days));
 	const bounds = $derived(service?.party ?? readBounds(party));
 	const guests = $derived(
 		bounds ? Math.min(Math.max(Math.round(sel.party ?? ask ?? Math.min(2, bounds.max)), bounds.min), bounds.max) : undefined
@@ -482,12 +485,12 @@
 						</div>
 					</div>
 
-					{#if !Array.isArray(days)}
+					{#if !service?.days && !Array.isArray(days)}
 						<div class="grid grid-cols-3 gap-1.5 @min-[720px]:grid-cols-6" data-slot="skeleton" aria-busy="true">
 							{#each [0, 1, 2] as k (k)}<div class="h-11 rounded-md bg-ripple-muted"></div>{/each}
 						</div>
-					{:else if dayList.length === 0}
-						<p class="text-callout text-ripple-muted-foreground">No open times in the next two weeks.</p>
+					{:else if !dayList.some((d) => d.slots.some((s) => isOpen(s, taken)))}
+						<p class="text-callout text-ripple-muted-foreground">No open times for this service. Ask in the chat for another day.</p>
 					{:else if shownDay && shownDay.slots.length === 0}
 						<p class="text-callout text-ripple-muted-foreground">Closed on {shownDay.date_label}. Pick another day.</p>
 					{:else if shownDay}

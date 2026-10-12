@@ -1,0 +1,92 @@
+{
+	"ui": {
+		"type": "booking",
+		"props": {
+			"title": "Dentist appointment, next week",
+			"party": 1,
+			"preferred": {
+				"date": "2026-10-19",
+				"after": "09:00"
+			},
+			"services": [
+				{
+					"id": "checkup",
+					"name": "Check-up and clean",
+					"kind": "health",
+					"duration_min": 45,
+					"days": [
+						{
+							"date": "2026-10-19",
+							"date_label": "Mon, Oct 19",
+							"slots": [
+								{
+									"start": "2026-10-19T09:00",
+									"label": "9:00 AM",
+									"available": true
+								},
+								{
+									"start": "2026-10-19T10:00",
+									"label": "10:00 AM",
+									"available": false
+								},
+								{
+									"start": "2026-10-19T11:30",
+									"label": "11:30 AM",
+									"available": true
+								},
+								{
+									"start": "2026-10-19T14:00",
+									"label": "2:00 PM",
+									"available": true
+								}
+							]
+						},
+						{
+							"date": "2026-10-21",
+							"date_label": "Wed, Oct 21",
+							"slots": [
+								{
+									"start": "2026-10-21T09:30",
+									"label": "9:30 AM",
+									"available": true
+								},
+								{
+									"start": "2026-10-21T13:00",
+									"label": "1:00 PM",
+									"available": false
+								},
+								{
+									"start": "2026-10-21T15:00",
+									"label": "3:00 PM",
+									"available": true
+								}
+							]
+						},
+						{
+							"date": "2026-10-23",
+							"date_label": "Fri, Oct 23",
+							"slots": [
+								{
+									"start": "2026-10-23T10:00",
+									"label": "10:00 AM",
+									"available": true
+								},
+								{
+									"start": "2026-10-23T11:30",
+									"label": "11:30 AM",
+									"available": true
+								},
+								{
+									"start": "2026-10-23T16:00",
+									"label": "4:00 PM",
+									"available": false
+								}
+							]
+						}
+					]
+				}
+			]
+		}
+	},
+	"state": {}
+}

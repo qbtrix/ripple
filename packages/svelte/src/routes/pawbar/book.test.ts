@@ -5,7 +5,9 @@
 // reach the store (inert while streaming or without a StoreHost), one at a time,
 // and the answer lands in the booking node's props and the card's receipt. A
 // booking the store does not back (no `on_book`) sends the chosen slot to the
-// chat as the visitor's message instead, once, and shows "Sent to chat".
+// chat as the visitor's message instead, once, and shows "Sent to chat", also
+// when the open days sit inside each service (fixtures/dentist-service-days-card.json,
+// a live Haiku card from 2026-10-12).
 
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
@@ -15,6 +17,7 @@ import { book, bookingIcs, patchBooking, reloadDays, SLOT_MESSAGE_MAX, SLOT_TAKE
 import { BOOK_CHAT, refuseCard } from './card-policy.js';
 import { ChatSession, type Card, type Transport } from './session.svelte.js';
 import { ORDER_KEY } from '../pay/resume.js';
+import serviceDaysCard from './fixtures/dentist-service-days-card.json' with { type: 'json' };
 
 afterEach(cleanup);
 
@@ -434,6 +437,22 @@ describe('a booking with no store wiring sends the chosen slot to the chat', () 
 		expect(screen.getByText('Sent to chat')).toBeTruthy();
 		expect(screen.queryByText("You're booked")).toBeNull();
 		expect(screen.queryByRole('button', { name: 'Confirm booking' })).toBeNull();
+	});
+
+	test('a live card with the open days inside its service passes the card check and sends that slot', async () => {
+		expect(refuseCard(serviceDaysCard)).toBeNull();
+		expect(refuseCard(serviceDaysCard, { partial: true })).toBeNull();
+		const text = "I'd like to book Check-up and clean on Mon, Oct 19 at 9:00 AM.";
+		expect(slotMessage(serviceDaysCard, { service_id: 'checkup', start: '2026-10-19T09:00' })).toBe(text);
+		expect(slotMessage(serviceDaysCard, { service_id: 'checkup', start: '2026-10-19T10:00' })).toBe('');
+		const { session, card, said } = await chatCard(serviceDaysCard);
+		render(Ripple, { props: { spec: card.spec, onEvent: (e: RippleEvent) => session.hostEvent(card, e) } });
+		await fireEvent.click(screen.getByRole('button', { name: 'Choose a time' }));
+		await fireEvent.click(screen.getByRole('button', { name: /^9:00 AM/ }));
+		await fireEvent.click(screen.getByRole('button', { name: 'Review' }));
+		await fireEvent.click(screen.getByRole('button', { name: 'Send to chat' }));
+		await settle(session);
+		expect(said.slice(1)).toEqual([text]);
 	});
 
 	test('a store-backed table booking still asks for contact details', async () => {
