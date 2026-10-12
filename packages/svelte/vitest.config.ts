@@ -34,6 +34,7 @@ const alias = [
   { find: /^@ripple-ui\/core\/manifest$/, replacement: `${core}/manifest/index.ts` },
   { find: /^@ripple-ui\/core\/schema$/, replacement: `${core}/schema/index.ts` },
   { find: /^@ripple-ui\/core\/motion$/, replacement: `${core}/motion/engine.ts` },
+  { find: /^@ripple-ui\/core\/iso$/, replacement: `${core}/iso/index.ts` },
 ];
 const sveltePlugin = () => svelte({ compilerOptions: { runes: true }, hot: false });
 

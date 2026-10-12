@@ -1,15 +1,11 @@
 // widgets/composite/iso-scenes.ts: three realistic `iso-scene` cards (bicycle
 // drivetrain, heart as a two-pump machine, piston engine). Used by the tests,
-// the card-policy check and the visual check; plain data, no logic.
+// the card-policy check, the /live gallery runs and the visual check. Plain
+// data, no logic: nothing runs at import time.
 
-const arc = (cx: number, y: number, cz: number, r: number, from: number, to: number, n: number) =>
-	Array.from({ length: n }, (_, i) => {
-		const a = ((from + ((to - from) * i) / (n - 1)) * Math.PI) / 180;
-		return [Math.round((cx + r * Math.cos(a)) * 10) / 10, y, Math.round((cz + r * Math.sin(a)) * 10) / 10];
-	});
-
-const chain = [...arc(0, 4, 30, 23.5, 90, 270, 12), ...arc(110, 4, 30, 10.5, -90, 90, 8)];
-chain.push(chain[0]!);
+// The chain loop: half the chainring (r 23.5 at x 0), half the cog (r 10.5 at x 110), closed.
+// Written out as data so importing this module does no work (package sideEffects).
+const chain = [[0,4,53.5], [-6.6,4,52.5], [-12.7,4,49.8], [-17.8,4,45.4], [-21.4,4,39.8], [-23.3,4,33.3], [-23.3,4,26.7], [-21.4,4,20.2], [-17.8,4,14.6], [-12.7,4,10.2], [-6.6,4,7.5], [0,4,6.5], [110,4,19.5], [114.6,4,20.5], [118.2,4,23.5], [120.2,4,27.7], [120.2,4,32.3], [118.2,4,36.5], [114.6,4,39.5], [110,4,40.5], [0,4,53.5]];
 
 export const bikeScene = {
 	title: 'Bicycle drivetrain',
