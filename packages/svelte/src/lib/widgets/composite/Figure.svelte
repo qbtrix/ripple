@@ -19,6 +19,8 @@
     slider sits under its label and value.
   - The stage keeps the `iso` class in its own class list (mount adds it
     too), so a class re-render never drops the figure CSS scope.
+  - Light or dark follows Ripple's theme (a `.dark` class or data-theme on an
+    ancestor, as the site's toggle sets it), live, never prefers-color-scheme.
   - The stage element carries the mounted handle as `rippleFigure` (seek for
     captures and tests).
 -->
@@ -81,11 +83,10 @@
 	});
 	const activeNote = $derived(notes.find((n) => n.key === active));
 
-	function themeOf(): FigureTheme {
-		const html = document.documentElement;
-		if (html.classList.contains('dark') || html.dataset.theme === 'dark') return 'dark';
-		if (html.classList.contains('light') || html.dataset.theme === 'light') return 'light';
-		return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+	/** Ripple's theme, the way the site and other widgets read it: a `.dark` class (or data-theme) on an ancestor, else light. */
+	function themeOf(host: HTMLElement): FigureTheme {
+		const marked = host.parentElement?.closest<HTMLElement>('.dark, .light, [data-theme="dark"], [data-theme="light"]');
+		return marked && (marked.classList.contains('dark') || marked.dataset.theme === 'dark') ? 'dark' : 'light';
 	}
 
 	$effect(() => {
@@ -97,21 +98,19 @@
 			if (cancelled) return;
 			meta = mod.meta;
 			handle = mod.mount(host, {
-				theme: themeOf(),
+				theme: themeOf(host),
 				params: untrack(() => values),
 				onReadout: (r) => (readouts = r)
 			});
 			(host as HTMLDivElement & { rippleFigure?: FigureHandle }).rippleFigure = handle;
 		});
-		const flip = () => handle?.setTheme(themeOf());
+		// A theme toggle flips a class on <html> (or an ancestor): follow it live.
+		const flip = () => handle?.setTheme(themeOf(host));
 		const mo = new MutationObserver(flip);
-		mo.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme'] });
-		const mq = window.matchMedia?.('(prefers-color-scheme: dark)');
-		mq?.addEventListener?.('change', flip);
+		for (let n: HTMLElement | null = host.parentElement; n; n = n.parentElement) mo.observe(n, { attributes: true, attributeFilter: ['class', 'data-theme'] });
 		return () => {
 			cancelled = true;
 			mo.disconnect();
-			mq?.removeEventListener?.('change', flip);
 			handle?.destroy();
 			handle = null;
 		};

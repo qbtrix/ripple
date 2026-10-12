@@ -12,7 +12,9 @@
 // rebuilt each frame from the model, wheel levers turn with the valves and the
 // flow dashes move with the flow. Look: Anatomy's neutral four-tone ramp
 // (ISO_CSS, same tokens as its kit/iso.css), thin low-opacity edges, colour
-// only as faint tints (blue oxygen-poor, red oxygen-rich). No DOM at module top level.
+// only as faint tints (blue oxygen-poor, red oxygen-rich). The dark ramp is lifted
+// (panel #1d1d1a, tops #4a4a44, sides #3a3a35..#2c2c28, light lines at .3-.4) so
+// the machine reads as clearly as in light. No DOM at module top level.
 
 import * as k from '@ripple-ui/core/iso';
 import type { Flat, Point3, SolidPaths } from '@ripple-ui/core/iso';
@@ -421,17 +423,26 @@ export const ANCHORS: Anchor[] = ANCHOR_POINTS.map(([id, label, p]) => {
 });
 
 export const HEART_CSS = `
-.heart-blue>.iso-edge,.heart-red>.iso-edge{stroke-opacity:.75}
-.heart-blue>.iso-edge{stroke:color-mix(in srgb,var(--anatomy-blue) 35%,var(--anatomy-hi))}
-.heart-red>.iso-edge{stroke:color-mix(in srgb,var(--anatomy-red) 35%,var(--anatomy-hi))}
-.heart-blue>.iso-top{fill:color-mix(in srgb,var(--anatomy-blue) 7%,var(--anatomy-top))}
-.heart-red>.iso-top{fill:color-mix(in srgb,var(--anatomy-red) 7%,var(--anatomy-top))}
-.heart-blue>.iso-shade[data-shade="2"],.heart-blue>.iso-shade[data-shade="3"]{fill:color-mix(in srgb,var(--anatomy-blue) 6%,var(--anatomy-shade-2))}
-.heart-red>.iso-shade[data-shade="2"],.heart-red>.iso-shade[data-shade="3"]{fill:color-mix(in srgb,var(--anatomy-red) 6%,var(--anatomy-shade-2))}
-.heart-blue>.iso-shade[data-shade="0"],.heart-blue>.iso-shade[data-shade="1"]{fill:color-mix(in srgb,var(--anatomy-blue) 5%,var(--anatomy-shade-0))}
-.heart-red>.iso-shade[data-shade="0"],.heart-red>.iso-shade[data-shade="1"]{fill:color-mix(in srgb,var(--anatomy-red) 5%,var(--anatomy-shade-0))}
-.heart-flow{stroke-dasharray:2 5;stroke-width:1;stroke-opacity:.7}
-.heart-rib{stroke-opacity:.45}
+.iso[data-figure-host]{--heart-tint:7%}
+.iso[data-theme="dark"][data-figure-host]{
+  --anatomy-page:#161614;--anatomy-card:#1d1d1a;--anatomy-paper:#1d1d1a;--anatomy-face:#3a3a35;--anatomy-top:#4a4a44;
+  --anatomy-shade-0:#2c2c28;--anatomy-shade-1:#33332e;--anatomy-shade-2:#3a3a35;--anatomy-shade-3:#42423c;
+  --anatomy-lit-top:#56564f;--anatomy-lit-shade:#46463f;
+  --anatomy-hi:#ecece6;--anatomy-mid:#e8e8e266;--anatomy-lo:#e8e8e24d;--anatomy-faint:#e8e8e229;--anatomy-lit:#ffffff;
+  --anatomy-halo:#000000;--anatomy-halo-opacity:.55;--anatomy-dot:#ecece6;
+  --heart-tint:16%
+}
+.heart-blue>.iso-edge,.heart-red>.iso-edge{stroke-opacity:.8}
+.heart-blue>.iso-edge{stroke:color-mix(in srgb,var(--anatomy-blue) 40%,var(--anatomy-hi))}
+.heart-red>.iso-edge{stroke:color-mix(in srgb,var(--anatomy-red) 40%,var(--anatomy-hi))}
+.heart-blue>.iso-top{fill:color-mix(in srgb,var(--anatomy-blue) var(--heart-tint),var(--anatomy-top))}
+.heart-red>.iso-top{fill:color-mix(in srgb,var(--anatomy-red) var(--heart-tint),var(--anatomy-top))}
+.heart-blue>.iso-shade[data-shade="2"],.heart-blue>.iso-shade[data-shade="3"]{fill:color-mix(in srgb,var(--anatomy-blue) calc(var(--heart-tint) * .85),var(--anatomy-shade-2))}
+.heart-red>.iso-shade[data-shade="2"],.heart-red>.iso-shade[data-shade="3"]{fill:color-mix(in srgb,var(--anatomy-red) calc(var(--heart-tint) * .85),var(--anatomy-shade-2))}
+.heart-blue>.iso-shade[data-shade="0"],.heart-blue>.iso-shade[data-shade="1"]{fill:color-mix(in srgb,var(--anatomy-blue) calc(var(--heart-tint) * .7),var(--anatomy-shade-0))}
+.heart-red>.iso-shade[data-shade="0"],.heart-red>.iso-shade[data-shade="1"]{fill:color-mix(in srgb,var(--anatomy-red) calc(var(--heart-tint) * .7),var(--anatomy-shade-0))}
+.heart-flow{stroke-dasharray:2 5;stroke-width:1;stroke-opacity:.75}
+.heart-rib{stroke-opacity:.5}
 .iso-halo.heart-shadow{filter:blur(2.5px);opacity:calc(var(--anatomy-halo-opacity) * .5);transform:none}
 .iso-halo.heart-shadow[data-far]{filter:blur(4px);opacity:calc(var(--anatomy-halo-opacity) * .22)}
 `;
@@ -500,6 +511,7 @@ export function mount(el: HTMLElement, { theme = 'dark', params: initial, onRead
 	const parsed = new DOMParser().parseFromString(heartSvg(params), 'image/svg+xml').documentElement;
 	const svg = doc.importNode(parsed, true) as unknown as SVGSVGElement;
 	el.classList.add('iso');
+	el.dataset.figureHost = 'heart';
 	el.dataset.theme = theme;
 	el.replaceChildren(svg);
 

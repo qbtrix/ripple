@@ -41,6 +41,22 @@ describe('figure', () => {
 		expect(container.querySelector('svg.iso-svg')).not.toBeNull();
 	});
 
+	it("follows Ripple's theme class on the root, live", async () => {
+		document.documentElement.classList.add('dark');
+		try {
+			const { container } = render(Figure, { props: { figure: 'heart' } });
+			await loaded(container);
+			const stage = container.querySelector<HTMLElement>('[data-slot="figure-stage"]')!;
+			expect(stage.dataset.theme).toBe('dark');
+			document.documentElement.classList.remove('dark');
+			await vi.waitFor(() => expect(stage.dataset.theme).toBe('light'));
+			document.documentElement.classList.add('dark');
+			await vi.waitFor(() => expect(stage.dataset.theme).toBe('dark'));
+		} finally {
+			document.documentElement.classList.remove('dark');
+		}
+	});
+
 	it('a slider writes the bound value and the readout follows', async () => {
 		const onchange = vi.fn();
 		const { container } = render(Figure, { props: { figure: 'heart', onchange } });
