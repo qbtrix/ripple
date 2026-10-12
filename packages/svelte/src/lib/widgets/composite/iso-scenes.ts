@@ -30,13 +30,13 @@ export const bikeScene = {
 		{ id: 'pedal', kind: 'box', at: [0, 13, -4], w: 9, d: 12, h: 3, color: 'neutral', on: 'crank' }
 	],
 	motions: [
-		{ part: 'ring', kind: 'spin', axis: 'y', speed: '{cadence / 60}' },
-		{ part: 'cog', kind: 'spin', axis: 'y', speed: '{cadence / 60 * 2.5}' },
-		{ part: 'chain', kind: 'flow', speed: '{cadence / 60 * 2.5}' }
+		{ part: 'ring', kind: 'spin', axis: 'y', speed: 'cadence / 60' },
+		{ part: 'cog', kind: 'spin', axis: 'y', speed: 'cadence / 60 * 2.5' },
+		{ part: 'chain', kind: 'flow', speed: 'cadence / 60 * 2.5' }
 	],
 	readouts: [
-		{ label: 'Metres per pedal turn', value: '{2.1 * 40 / 16}', unit: 'm', decimals: 2 },
-		{ label: 'Road speed', value: '{cadence * 2.1 * 2.5 * 60 / 1000}', unit: 'km/h', decimals: 1 }
+		{ label: 'Metres per pedal turn', value: '2.1 * 40 / 16', unit: 'm', decimals: 2 },
+		{ label: 'Road speed', value: 'cadence * 2.1 * 2.5 * 60 / 1000', unit: 'km/h', decimals: 1 }
 	],
 	labels: [
 		{ part: 'ring', label: 'Chainring', note: '40 teeth, turned by the cranks' },
@@ -46,7 +46,7 @@ export const bikeScene = {
 	]
 };
 
-const beat = '{rate / 60}';
+const beat = 'rate / 60';
 export const heartScene = {
 	title: 'The heart as two pumps',
 	caption: 'Right side (blue) sends blood to the lungs, left side (red) sends it to the body. Valves keep it one way.',
@@ -60,10 +60,10 @@ export const heartScene = {
 		{ id: 'ra', kind: 'cylinder', at: [-40, 0, 40], r: 17, h: 18, color: 'blue' },
 		{ id: 'la', kind: 'cylinder', at: [40, 0, 42], r: 17, h: 18, color: 'red' },
 		{ id: 'vena-cava', kind: 'tube', path: [[-96, -30, 70], [-80, -20, 60], [-62, -10, 46], [-55, -4, 44]], r: 4, color: 'blue' },
-		{ id: 'pulmonary-artery', kind: 'tube', path: [[-30, 20, 22], [-26, 34, 44], [-14, 40, 62], [-6, 42, 70]], r: 4, color: 'blue' },
-		{ id: 'lungs', kind: 'sphere', at: [0, 42, 74], r: 10, color: 'green' },
-		{ id: 'pulmonary-vein', kind: 'tube', path: [[6, 42, 70], [16, 36, 62], [28, 20, 52], [34, 10, 48]], r: 4, color: 'red' },
-		{ id: 'aorta', kind: 'tube', path: [[58, 22, 24], [76, 30, 34], [86, 28, 58], [80, 0, 72], [70, -24, 66]], r: 5, color: 'red' }
+		{ id: 'pulmonary-artery', kind: 'tube', path: [[-22, 14, 24], [-18, 4, 56], [-14, -14, 80], [-10, -26, 88]], r: 4, color: 'blue' },
+		{ id: 'lungs', kind: 'sphere', at: [0, -30, 92], r: 12, color: 'green' },
+		{ id: 'pulmonary-vein', kind: 'tube', path: [[10, -26, 88], [18, -18, 74], [24, -8, 58], [27, -4, 48]], r: 4, color: 'red' },
+		{ id: 'aorta', kind: 'tube', path: [[62, 18, 26], [74, 20, 40], [80, 10, 66], [84, -10, 74], [88, -30, 60], [90, -36, 30]], r: 5, color: 'red' },
 	],
 	motions: [
 		{ part: 'ra', kind: 'pulse', speed: beat, range: 0.08, phase: 0 },
@@ -78,8 +78,8 @@ export const heartScene = {
 		{ part: 'aorta', kind: 'flow', speed: beat }
 	],
 	readouts: [
-		{ label: 'Cardiac output', value: '{rate * 70 / 1000}', unit: 'L/min', decimals: 1 },
-		{ label: 'One beat', value: '{60 / rate}', unit: 's', decimals: 2 }
+		{ label: 'Cardiac output', value: 'rate * 70 / 1000', unit: 'L/min', decimals: 1 },
+		{ label: 'One beat', value: '60 / rate', unit: 's', decimals: 2 }
 	],
 	labels: [
 		{ part: 'ra', label: 'Right atrium', note: 'collects blood from the body' },
@@ -87,11 +87,10 @@ export const heartScene = {
 		{ part: 'lungs', label: 'Lungs', note: 'swap carbon dioxide for oxygen' },
 		{ part: 'la', label: 'Left atrium', note: 'collects blood from the lungs' },
 		{ part: 'lv', label: 'Left ventricle', note: 'pumps it out to the body' },
-		{ part: 'mitral', label: 'Valves', note: 'open one way, so blood cannot flow back' }
 	]
 };
 
-const turn = '{rpm / 60 / 20}';
+const turn = 'rpm / 60 / 20';
 export const engineScene = {
 	title: 'Piston engine, one cylinder',
 	caption: 'Shown 20 times slower than real. The crank turns the piston up and down; air comes in on one side, exhaust leaves on the other.',
@@ -117,8 +116,8 @@ export const engineScene = {
 		{ part: 'exhaust', kind: 'flow', speed: turn }
 	],
 	readouts: [
-		{ label: 'Crank turns per second', value: '{rpm / 60}', decimals: 0 },
-		{ label: 'Power strokes per second', value: '{rpm / 120}', decimals: 1 }
+		{ label: 'Crank turns per second', value: 'rpm / 60', decimals: 0 },
+		{ label: 'Power strokes per second', value: 'rpm / 120', decimals: 1 }
 	],
 	labels: [
 		{ part: 'piston', label: 'Piston', note: 'slides up and down' },

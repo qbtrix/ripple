@@ -398,7 +398,8 @@ export function drawPart(index: number, p: IsoPart, A: Affine, P: Projection, da
 
 /**
  * Painter's order. A is behind B when their boxes are apart along an axis and
- * A sits on the far side; overlapping boxes fall back to centre depth.
+ * A sits on the far side; intersecting boxes compare centres along the axis of
+ * least overlap, then centre depth.
  * ponytail: O(n^2) pair checks, fine for the 150-part cap; a sweep line if the cap grows.
  */
 export function sortItems(items: IsoItem[], P: Projection): IsoItem[] {
@@ -412,7 +413,17 @@ export function sortItems(items: IsoItem[], P: Projection): IsoItem[] {
 			if (near ? a.box[1][k]! <= b.box[0][k]! + eps : a.box[0][k]! >= b.box[1][k]! - eps) return -1;
 			if (near ? b.box[1][k]! <= a.box[0][k]! + eps : b.box[0][k]! >= a.box[1][k]! - eps) return 1;
 		}
-		return 0;
+		// Boxes intersect: compare centres along the axis they overlap least on.
+		let axis = -1;
+		let least = Infinity;
+		for (let k = 0; k < 3; k++) {
+			if (Math.abs(V[k]!) < 1e-6) continue;
+			const overlap = Math.min(a.box[1][k]!, b.box[1][k]!) - Math.max(a.box[0][k]!, b.box[0][k]!);
+			if (overlap < least) [least, axis] = [overlap, k];
+		}
+		if (axis < 0) return 0;
+		const d = ((a.box[0][axis]! + a.box[1][axis]!) / 2 - (b.box[0][axis]! + b.box[1][axis]!) / 2) * Math.sign(V[axis]!);
+		return Math.abs(d) > eps ? Math.sign(d) : 0;
 	};
 	const after: number[][] = items.map(() => []);
 	const indegree = new Array(n).fill(0);

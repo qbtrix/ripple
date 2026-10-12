@@ -12,8 +12,10 @@
     riding `on` one) are redrawn per frame, then the list is re-sorted.
   - The rAF loop runs only while on screen (IntersectionObserver), the tab is
     visible and reduced motion is off; otherwise the card holds a still frame.
-  - Speeds, readouts: a number or an expression over params, resolved by the
-    Ripple expression resolver (never eval), then clamped.
+  - Speeds, readouts: a number or a brace-free expression over params
+    ("cadence / 60"; braces would be resolved against spec state by the
+    renderer first), evaluated by the Ripple expression resolver (never
+    eval), then clamped.
 -->
 <script module lang="ts">
 	import { ISO_LIMITS, clampNum, plainText } from '@ripple-ui/core/iso';
@@ -273,7 +275,7 @@
 			{#each pins as pin, i (i)}
 				<li class="flex gap-2">
 					<span class="iso-pin-num">{i + 1}</span>
-					<span><span class="font-medium">{pin.label}</span>{#if pin.note}<span class="text-ripple-muted-foreground"> {pin.note}</span>{/if}</span>
+					<span class="grid"><span class="font-medium">{pin.label}</span>{#if pin.note}<span class="text-ripple-muted-foreground">{pin.note}</span>{/if}</span>
 				</li>
 			{/each}
 		</ol>

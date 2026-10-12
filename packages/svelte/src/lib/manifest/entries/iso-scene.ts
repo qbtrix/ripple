@@ -16,7 +16,7 @@ export const isoSceneEntry: WidgetManifestEntry = {
     params: {
       type: 'Array<{ key: string; label: string; min: number; max: number; step?: number; unit?: string; value: number }>',
       required: false,
-      description: 'Up to 6 sliders. `key` is an identifier that speeds and readouts can use, e.g. "{cadence / 60}".',
+      description: 'Up to 6 sliders. `key` is an identifier that speeds and readouts can use, e.g. "cadence / 60".',
     },
     parts: {
       type: 'Array<{ id: string; kind: "slab" | "box" | "cylinder" | "disc" | "gear" | "tube" | "sphere" | "cone" | "rod" | "arrow" | "plate"; at?: [x, y, z]; w?: number; d?: number; h?: number; r?: number; teeth?: number; axis?: "x" | "y" | "z"; path?: [x, y, z][]; from?: [x, y, z]; to?: [x, y, z]; label?: string; color?: "neutral" | "accent" | "red" | "blue" | "green" | "amber" | "metal"; on?: string }>',
@@ -28,12 +28,12 @@ export const isoSceneEntry: WidgetManifestEntry = {
       type: 'Array<{ part: string; kind: "spin" | "slide" | "swing" | "pulse" | "flow"; axis?: "x" | "y" | "z"; speed: number | string; range?: number; phase?: number }>',
       required: false,
       description:
-        'Up to 20. speed is turns or cycles per second, a number or an expression over params. range: swing degrees (default 25), slide distance (8), pulse growth 0..0.6 (0.12). phase 0..1. flow animates tubes, rods and arrows.',
+        'Up to 20. speed is turns or cycles per second, a number or an expression over params written without braces, e.g. "cadence / 60". range: swing degrees (default 25), slide distance (8), pulse growth 0..0.6 (0.12). phase 0..1. flow animates tubes, rods and arrows.',
     },
     readouts: {
       type: 'Array<{ label: string; value: string | number; unit?: string; decimals?: number }>',
       required: false,
-      description: 'Up to 4 live numbers, each an expression over params, e.g. "{rate * 70 / 1000}".',
+      description: 'Up to 4 live numbers, each an expression over params without braces, e.g. "rate * 70 / 1000".',
     },
     labels: {
       type: 'Array<{ part?: string; at?: [x, y, z]; label: string; note?: string }>',
@@ -44,7 +44,7 @@ export const isoSceneEntry: WidgetManifestEntry = {
   },
   example: {
     type: 'iso-scene',
-    bind: '{state.gears}',
+    bind: 'state.gears',
     props: {
       title: 'Two gears',
       params: [{ key: 'speed', label: 'Input speed', min: 10, max: 120, step: 5, unit: 'rpm', value: 40 }],
@@ -54,10 +54,10 @@ export const isoSceneEntry: WidgetManifestEntry = {
         { id: 'small', kind: 'gear', at: [44, 0, 6], r: 15, h: 6, teeth: 15, color: 'accent' },
       ],
       motions: [
-        { part: 'big', kind: 'spin', speed: '{speed / 60}' },
-        { part: 'small', kind: 'spin', speed: '{speed / 60 * -2}', phase: 0.03 },
+        { part: 'big', kind: 'spin', speed: 'speed / 60' },
+        { part: 'small', kind: 'spin', speed: 'speed / 60 * -2', phase: 0.03 },
       ],
-      readouts: [{ label: 'Output speed', value: '{speed * 2}', unit: 'rpm', decimals: 0 }],
+      readouts: [{ label: 'Output speed', value: 'speed * 2', unit: 'rpm', decimals: 0 }],
       labels: [
         { part: 'big', label: 'Driver', note: '30 teeth' },
         { part: 'small', label: 'Driven', note: '15 teeth, twice as fast' },
