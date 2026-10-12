@@ -24,5 +24,7 @@ test('watch-savings-grow spec: growth-projection controls stay labelled', () => 
     expect(section.querySelector(`input[type="range"][aria-label="${name}"]`)).not.toBeNull();
     const label = [...section.querySelectorAll('label')].find((l) => l.textContent === name);
     expect(label && section.querySelector(`#${CSS.escape(label.htmlFor)}`)).toBeTruthy();
+    // On a very narrow card the number box wraps under its label, not over it.
+    expect(label!.parentElement!.className).toContain('flex-wrap');
   }
 });
