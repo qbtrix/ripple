@@ -8,12 +8,17 @@
     host events land in onHostEvent: the order demo's checkout `api` event goes
     to checkout.ts and the test store (PUBLIC_STORE_URL), and the returned
     payment link shows as the PayCard the landing chat uses, so the page never
-    navigates away. Local tokens are prefixed (--live-*) so the widgets in the
-    frame keep their own --accent and --radius.
+    navigates away. A business run has a brand (brands.ts): the host's skin,
+    applied to <Ripple brand> and painted on the render pane, with a switch
+    back to Ripple's default look; its fixture's context (what the model
+    already knew) opens under the prompt. Local tokens are prefixed (--live-*)
+    so the widgets in the frame keep their own --accent and --radius.
 -->
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { Ripple, type RippleEvent } from '$lib/index.js';
+	import { brandToStyleString } from '@ripple-ui/core';
+	import { BRANDS } from './brands.js';
 	import { streamSpec, type StreamSpecStore } from '$lib/streaming/index.js';
 	import JsonLines from '$lib/site/JsonLines.svelte';
 	import { replay } from './replay.js';
@@ -38,6 +43,9 @@
 	const restingSpec = $derived(JSON.parse(fullText(scenario)));
 	const streaming = $derived(store != null && !store.done);
 	const handWritten = $derived(scenario.fixture.model === 'hand-written');
+	const context = $derived((scenario.fixture as { context?: string }).context);
+	let branded = $state(true);
+	const brand = $derived(branded ? BRANDS[scenario.id] : undefined);
 
 	async function* tap(source: AsyncIterable<string>) {
 		for await (const text of source) {
@@ -119,11 +127,25 @@
 
 <section class="stage" aria-label="Replay of {scenario.title}">
 	<div class="bar">
-		<p class="bubble"><span class="who">Prompt</span>{scenario.fixture.prompt}</p>
+		<div class="ask">
+			<p class="bubble"><span class="who">Prompt</span>{scenario.fixture.prompt}</p>
+			{#if context}
+				<details class="context">
+					<summary>What the model already knew</summary>
+					<pre>{context}</pre>
+				</details>
+			{/if}
+		</div>
 		<div class="controls">
 			<span class="status" aria-live="polite">
 				{streaming ? `streaming ${typed.length} / ${total} bytes` : 'done, try it'}
 			</span>
+			{#if BRANDS[scenario.id]}
+				<div class="segmented" role="group" aria-label="Look">
+					<button type="button" aria-pressed={branded} onclick={() => (branded = true)}>{BRANDS[scenario.id].name}</button>
+					<button type="button" aria-pressed={!branded} onclick={() => (branded = false)}>Default</button>
+				</div>
+			{/if}
 			<div class="segmented" role="group" aria-label="Replay controls">
 				{#each [1, 2] as n (n)}
 					<button type="button" aria-pressed={speed === n} aria-label="{n}x speed" onclick={() => setSpeed(n)}>{n}x</button>
@@ -134,14 +156,14 @@
 	</div>
 
 	<div class="panes">
-		<div class="render">
+		<div class="render" class:branded={!!brand} style={brand ? brandToStyleString(brand) : undefined}>
 			<span class="label">ripple render</span>
 			<div class="frame" data-thumb>
 				{#key take}
 					{#if store}
-						<Ripple streaming={store} skeleton="card" onEvent={onHostEvent} />
+						<Ripple streaming={store} skeleton="card" {brand} onEvent={onHostEvent} />
 					{:else}
-						<Ripple spec={restingSpec} onEvent={onHostEvent} />
+						<Ripple spec={restingSpec} {brand} onEvent={onHostEvent} />
 					{/if}
 				{/key}
 				{#if toast}
@@ -206,6 +228,28 @@
 		background: var(--site-hover);
 		line-height: 1.5;
 		font-size: 15px;
+	}
+	.ask {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		max-width: 60ch;
+	}
+	.context {
+		font-size: 13px;
+		color: var(--ink-soft);
+	}
+	.context summary {
+		cursor: pointer;
+		font-weight: 600;
+	}
+	.context pre {
+		margin: 8px 0 0;
+		max-height: 16rem;
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+		font-size: 12px;
+		font-family: inherit;
 	}
 	.who {
 		display: block;
@@ -280,6 +324,14 @@
 		padding: 16px;
 		min-width: 0;
 		overflow: auto;
+	}
+	/* A business run's brand paints its own ground behind the card. */
+	.render.branded {
+		background: var(--background);
+		color: var(--foreground);
+	}
+	.render.branded > .label {
+		color: var(--muted-foreground);
 	}
 	.frame {
 		position: relative;

@@ -21,11 +21,18 @@ import hiitWorkout from './fixtures/hiit-workout.json';
 import mealPlan from './fixtures/meal-plan.json';
 import explainer from './fixtures/explainer.json';
 import plane3d from './fixtures/plane-3d.json';
+import refundApproval from './fixtures/refund-approval.json';
+import incidentRollback from './fixtures/incident-rollback.json';
+import returnExchange from './fixtures/return-exchange.json';
+import bookAppointment from './fixtures/book-appointment.json';
+import quoteBuilder from './fixtures/quote-builder.json';
 
 export interface ScenarioFixture {
 	id: string;
 	title: string;
 	prompt: string;
+	/** What the model already knew when it drew (tool results, a shop's slots), from the recorder's --context. */
+	context?: string;
 	model: string;
 	/** ISO timestamp of the recording. */
 	recordedAt: string;
@@ -245,3 +252,18 @@ export function groupedSuggestions(pool: (Scenario | ChatPrompt)[]): SuggestionC
 		})
 	);
 }
+
+/**
+ * Runs set inside a business: an agent asking before it acts, a shop's own
+ * widget, a work app. They play on /live under "For business", each in its
+ * business's brand (brands.ts). Not on the landing: its chips and answers
+ * come from `scenarios` and `playScenarios` only.
+ */
+export const BUSINESS_GROUP = 'For business';
+export const businessScenarios: Scenario[] = [
+	{ id: 'refund-approval', title: 'Approve a refund', category: 'Support', fixture: refundApproval, group: BUSINESS_GROUP },
+	{ id: 'incident-rollback', title: 'Roll back a bad deploy', category: 'Ops', fixture: incidentRollback, group: BUSINESS_GROUP },
+	{ id: 'return-exchange', title: 'Swap a size', category: 'Store', fixture: returnExchange, group: BUSINESS_GROUP },
+	{ id: 'book-appointment', title: 'Book a haircut', category: 'Booking', fixture: bookAppointment, group: BUSINESS_GROUP },
+	{ id: 'quote-builder', title: 'Draft a client quote', category: 'Work app', fixture: quoteBuilder, group: BUSINESS_GROUP }
+];

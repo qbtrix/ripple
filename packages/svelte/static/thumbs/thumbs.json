@@ -258,5 +258,55 @@
 		"href": "/live?s=heart",
 		"w": 800,
 		"h": 600
+	},
+	{
+		"id": "live-refund-approval",
+		"title": "Approve a refund",
+		"caption": "A customer wants a $240 refund on order 4821 because it arrived three days late. Show me what you checked, and let me approve or deny it before you issue anything.",
+		"group": "For business",
+		"tag": "Recorded",
+		"href": "/live?s=refund-approval",
+		"w": 800,
+		"h": 600
+	},
+	{
+		"id": "live-incident-rollback",
+		"title": "Roll back a bad deploy",
+		"caption": "Checkout errors jumped about ten minutes ago. What changed, and can we roll back?",
+		"group": "For business",
+		"tag": "Recorded",
+		"href": "/live?s=incident-rollback",
+		"w": 800,
+		"h": 600
+	},
+	{
+		"id": "live-return-exchange",
+		"title": "Swap a size",
+		"caption": "The trail runners from my last order are too small. Can I swap them for a bigger size, or just get my money back?",
+		"group": "For business",
+		"tag": "Recorded",
+		"href": "/live?s=return-exchange",
+		"w": 800,
+		"h": 600
+	},
+	{
+		"id": "live-book-appointment",
+		"title": "Book a haircut",
+		"caption": "Book me a haircut with Sam next week, after 5pm if possible.",
+		"group": "For business",
+		"tag": "Recorded",
+		"href": "/live?s=book-appointment",
+		"w": 800,
+		"h": 600
+	},
+	{
+		"id": "live-quote-builder",
+		"title": "Draft a client quote",
+		"caption": "Draft a quote for Fernhill Bakery: a five-page website, a logo refresh and a year of hosting, with 10% off if they pay upfront.",
+		"group": "For business",
+		"tag": "Recorded",
+		"href": "/live?s=quote-builder",
+		"w": 800,
+		"h": 600
 	}
 ]
