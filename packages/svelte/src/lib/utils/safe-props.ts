@@ -199,3 +199,21 @@ export function canonicalOptions(v: unknown, ctx?: Ctx): CanonicalOption[] {
       return true;
     });
 }
+
+/**
+ * One each-key per item, unique even when the model repeats an id: the first
+ * `a` keys as `a`, later ones as `a#1`, `a#2` (skipping any key already taken).
+ * Use as `{#each items as item, i (keys[i])}` with `keys` derived alongside
+ * the list, so a repeated id renders both items instead of throwing
+ * `each_key_duplicate`. Unlike canonicalOptions, nothing is dropped.
+ */
+export function uniqueKeys<T>(items: readonly T[], getId: (item: T, i: number) => unknown): string[] {
+  const seen = new Set<string>();
+  return items.map((item, i) => {
+    const id = String(getId(item, i));
+    let key = id;
+    for (let n = 1; seen.has(key); n++) key = `${id}#${n}`;
+    seen.add(key);
+    return key;
+  });
+}
