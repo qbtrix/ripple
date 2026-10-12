@@ -157,6 +157,7 @@
     "@testing-library/user-event": "^14.6.1",
     "@types/d3-scale": "^4.0.0",
     "jsdom": "^29.0.2",
+    "mermaid": "12.1.0",
     "oxlint": "^1.82.0",
     "oxlint-tsgolint": "^7.0.2001",
     "pagefind": "1.5.2",

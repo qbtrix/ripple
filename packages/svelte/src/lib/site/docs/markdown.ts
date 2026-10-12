@@ -9,6 +9,11 @@
 // - A ```ripple fence must parse as JSON and pass validateCatalog (the
 //   svelte-bound one, so the full widget registry counts). Anything else
 //   throws `<file>:<line>: ...`, which fails the prerender and so the build.
+// - A ```mermaid fence becomes <figure class="diagram">: the escaped source in
+//   a <pre> (what no-JS readers see; diagrams.ts swaps in the SVG) and, from
+//   an optional first line `%% caption: ...`, a figcaption. Parsing is checked
+//   by diagrams.test.ts, not here: mermaid needs a DOM. toPlainMarkdown (the
+//   .md and llms outputs) keeps the fence as written.
 // The HTML is ours (files in src/docs), so it is not sanitized.
 
 import { Marked, type Token, type Tokens } from 'marked';
@@ -91,6 +96,19 @@ export function parseRippleFence(src: string, file: string, line: number): Recor
 	return spec as Record<string, unknown>;
 }
 
+/** Split a mermaid fence's optional `%% caption: ...` first line from the diagram source. */
+export function splitDiagramCaption(text: string): { caption: string; source: string } {
+	const m = /^%%\s*caption:\s*(.*)\r?\n/.exec(text);
+	return m ? { caption: m[1].trim(), source: text.slice(m[0].length) } : { caption: '', source: text };
+}
+
+function renderDiagram(text: string): string {
+	const { caption, source } = splitDiagramCaption(text);
+	const cap = caption ? `<figcaption>${escapeHtml(caption)}</figcaption>` : '';
+	const src = `<pre class="diagram-src"><code>${escapeHtml(source.trim())}</code></pre>`;
+	return `<figure class="diagram"><div class="diagram-canvas" data-pagefind-ignore>${src}</div>${cap}</figure>\n`;
+}
+
 const COPY = '<button type="button" class="copy" data-copy data-pagefind-ignore>Copy</button>';
 
 export function renderDoc(raw: string, file: string): RenderedDoc {
@@ -116,6 +134,7 @@ export function renderDoc(raw: string, file: string): RenderedDoc {
 			},
 			code({ text, lang }: Tokens.Code) {
 				const language = (lang ?? '').split(/\s/)[0];
+				if (language === 'mermaid') return renderDiagram(text);
 				const html = highlightCode(text, language);
 				const cls = language ? ` class="language-${escapeHtml(language)}"` : '';
 				return `<div class="code-block"><pre><code${cls}>${html}</code></pre>${COPY}</div>\n`;
