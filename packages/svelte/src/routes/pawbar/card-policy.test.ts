@@ -961,30 +961,6 @@ describe('play cards', () => {
 	});
 });
 
-describe('notes card', () => {
-	const notesCard = {
-		state: { notes: { notes: [] } },
-		ui: {
-			type: 'notes',
-			bind: '{state.notes}',
-			props: {
-				title: 'Ideas',
-				tags: ['idea', 'todo'],
-				notes: [
-					{ id: 'n1', title: 'Market stall', text: 'Try lemon cookies first', tags: ['idea'], pinned: true, color: 'yellow' },
-					{ title: 'Call the venue', text: 'Ask about Saturday', tags: ['todo'] }
-				]
-			}
-		}
-	};
-
-	test('a notes card passes, at final and at every streamed prefix', () => {
-		expect(refuseCard(notesCard)).toBeNull();
-		const wire = JSON.stringify(notesCard);
-		for (let i = 1; i < wire.length; i += 37) {
-			const { value } = parsePartialSpec(wire.slice(0, i));
-			if (value) expect(refuseCard(value, { partial: true }), wire.slice(0, i)).toBeNull();
-		}
 describe('map', () => {
 	const pin = (extra: Record<string, unknown> = {}) => ({ lat: 38.71, lng: -9.13, label: 'Rossio', ...extra });
 	const map = (props: Record<string, unknown>) => ({ ui: { type: 'card', children: [{ type: 'map', props: { center: [38.71, -9.13], zoom: 15, ...props } }] } });
@@ -1022,5 +998,32 @@ describe('map', () => {
 		expect(refuseCard(map({ tileUrl: 'https://x' }), { partial: true })).toBe('map:tiles');
 		expect(refuseCard(map({ tiles: 'os' }), { partial: true })).toBeNull();
 		expect(refuseCard(map({ tiles: 'carto' }), { partial: true })).toBe('map:tiles');
+	});
+});
+
+describe('notes card', () => {
+	const notesCard = {
+		state: { notes: { notes: [] } },
+		ui: {
+			type: 'notes',
+			bind: '{state.notes}',
+			props: {
+				title: 'Ideas',
+				tags: ['idea', 'todo'],
+				notes: [
+					{ id: 'n1', title: 'Market stall', text: 'Try lemon cookies first', tags: ['idea'], pinned: true, color: 'yellow' },
+					{ title: 'Call the venue', text: 'Ask about Saturday', tags: ['todo'] }
+				]
+			}
+		}
+	};
+
+	test('a notes card passes, at final and at every streamed prefix', () => {
+		expect(refuseCard(notesCard)).toBeNull();
+		const wire = JSON.stringify(notesCard);
+		for (let i = 1; i < wire.length; i += 37) {
+			const { value } = parsePartialSpec(wire.slice(0, i));
+			if (value) expect(refuseCard(value, { partial: true }), wire.slice(0, i)).toBeNull();
+		}
 	});
 });
