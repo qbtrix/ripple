@@ -3,7 +3,7 @@
 // builds with every anchor inside the box.
 import { describe, expect, it } from 'vitest';
 import { clampParams, outputOf, stateAt, stillTime, timingOf, readoutsOf, describe as say } from './model.js';
-import { ANCHORS, heartSvg } from './figure.js';
+import { anchorsOf, heartSvg } from './figure.js';
 
 const rest = clampParams({});
 
@@ -60,7 +60,7 @@ describe('heart figure', () => {
 		expect(svg).toContain('data-live="right-ventricle"');
 		expect(svg).toContain('data-lever="aortic"');
 		expect((svg.match(/class="iso-solid/g) ?? []).length).toBeGreaterThanOrEqual(40);
-		for (const a of ANCHORS) {
+		for (const a of anchorsOf()) {
 			expect(a.x).toBeGreaterThan(0);
 			expect(a.x).toBeLessThan(100);
 			expect(a.y).toBeGreaterThan(0);

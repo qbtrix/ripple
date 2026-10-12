@@ -44,25 +44,30 @@ const VC_Y = -30;
 const VC_Z = 80;
 const PV_Z = 114;
 
-const P = k.fitProjection(
-	[...k.boxCorners(PLATE, -PLATE_H - FOOT_H, 0), [0, 0, PV_Z + 8], [LUNGS.x, 0, TANK_TOP + 8], [BODY.x + BODY.w, 0, TANK_TOP + 8]],
-	WIDTH,
-	HEIGHT,
-	{ pad: 22, azimuth: 58 }
-);
+// The camera is fitted on first use (ready()), so importing this module does no work.
+let P = null as unknown as k.Projection;
+let V: Point3 = [0, 0, 0];
+// Contact shadows fall away from the light: a world offset on the floor plane.
+let AWAY: [number, number] = [0, 0];
+function ready() {
+	if (P) return;
+	P = k.fitProjection(
+		[...k.boxCorners(PLATE, -PLATE_H - FOOT_H, 0), [0, 0, PV_Z + 8], [LUNGS.x, 0, TANK_TOP + 8], [BODY.x + BODY.w, 0, TANK_TOP + 8]],
+		WIDTH,
+		HEIGHT,
+		{ pad: 22, azimuth: 58 }
+	);
+	V = k.viewOf(P);
+	const light = k.lightOf(P);
+	const n = Math.hypot(light[0], light[1]) || 1;
+	AWAY = [-light[0] / n, -light[1] / n];
+}
 
 const at = (p: Point3): Flat => k.iso(p, P);
 const S = (paths: SolidPaths, style: k.SolidStyle = {}) => k.solidSvg(paths, style);
 const L = (d: string, style: k.LineStyle = {}) => k.lineSvg(d, style);
 const D = (points: Flat[], style: { size?: number; tone?: k.Tone } = {}) => k.dotsSvg(points, style);
 const depth = (p: Point3) => k.depthOf(p, P);
-const V = k.viewOf(P);
-// Contact shadows fall away from the light: a world offset on the floor plane.
-const LIGHT = k.lightOf(P);
-const AWAY: [number, number] = (() => {
-	const n = Math.hypot(LIGHT[0], LIGHT[1]) || 1;
-	return [-LIGHT[0] / n, -LIGHT[1] / n];
-})();
 /** A soft contact shadow of `plan` on the surface at height `z`, drawn just above that surface. */
 function shadow(plan: k.Plan, z: number, by = 2.5, spread = 1, far = false): string {
 	const p = { x: plan.x + AWAY[0] * by - spread, y: plan.y + AWAY[1] * by - spread, w: plan.w + spread * 2, d: plan.d + spread * 2, r: plan.r + spread };
@@ -400,7 +405,10 @@ export interface Anchor {
 	y: number;
 }
 
-const ANCHOR_POINTS: Array<[string, string, Point3]> = [
+/** Named anchors in percent of the figure box, for the widget's pins. */
+export function anchorsOf(): Anchor[] {
+	ready();
+	const points: Array<[string, string, Point3]> = [
 	['right-atrium', 'Right atrium', [centreX('right', A_W) - 6, A_D / 2, A_BOT + 20]],
 	['right-ventricle', 'Right ventricle', [centreX('right', V_W) - 6, V_D / 2, 30]],
 	['left-atrium', 'Left atrium', [centreX('left', A_W) + 6, A_D / 2, A_BOT + 20]],
@@ -417,10 +425,11 @@ const ANCHOR_POINTS: Array<[string, string, Point3]> = [
 	['body', 'Body', [BODY.x + BODY.w / 2, BODY.y + BODY.d, 25]]
 ];
 
-export const ANCHORS: Anchor[] = ANCHOR_POINTS.map(([id, label, p]) => {
-	const [x, y] = at(p);
-	return { id, label, x: Math.round((x / WIDTH) * 1000) / 10, y: Math.round((y / HEIGHT) * 1000) / 10 };
-});
+	return points.map(([id, label, p]) => {
+		const [x, y] = at(p);
+		return { id, label, x: Math.round((x / WIDTH) * 1000) / 10, y: Math.round((y / HEIGHT) * 1000) / 10 };
+	});
+}
 
 export const HEART_CSS = `
 .iso[data-figure-host]{--heart-tint:7%}
@@ -451,6 +460,7 @@ export const LABEL = 'A heart drawn as two pumps on a bench: blue right side to 
 
 /** The whole figure as an SVG string at the given state (chambers and levers filled in). */
 export function heartSvg(params: HeartParams = clampParams(), t?: number, standalone: k.Theme | false = false): string {
+	ready();
 	const svg = k.figureSvg({ width: WIDTH, height: HEIGHT, label: LABEL, body: heartBody(), standalone });
 	const state = stateAt(params, t ?? stillTime(params));
 	return fillLive(svg, state);

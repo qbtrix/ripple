@@ -12,6 +12,4 @@ export const FIGURES: Record<string, FigureEntry> = {
 	heart: { title: 'How a heart pumps', load: () => import('./heart/index.js') }
 };
 
-export const FIGURE_IDS = Object.keys(FIGURES);
-
 export type { FigureAnchor, FigureHandle, FigureMeta, FigureModule, FigureParam, FigureReadout, FigureTheme } from './types.js';
