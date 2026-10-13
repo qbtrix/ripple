@@ -262,7 +262,7 @@ function bench(): string {
 	out.push(L(ticks.minor, { tone: 'lo' }), L(ticks.major, { tone: 'mid' }));
 	const label = { x: -350, y: PLATE.y + PLATE.d - 24, w: 44, d: 14, r: 1.2 };
 	out.push(S(k.slabOf(label, 0, 1, P, 3, 0.3), { tone: 'mid' }));
-	for (const [i, yy] of [3.6, 7, 10.4].entries()) out.push(L(k.lineOnTop([label.x + 3, label.y + yy], [label.x + label.w - (i ? 10 : 3), label.y + yy], 1, P), { tone: i === 0 ? 'lo' : 'faint', free: 'end' }));
+	for (const [i, yy] of [3.6, 7, 10.4].entries()) out.push(L(k.lineOnTop([label.x + 0.4, label.y + yy], [label.x + label.w - (i ? 10 : 0.4), label.y + yy], 1, P), { tone: i === 0 ? 'lo' : 'faint', free: 'end' }));
 	return out.join('');
 }
 
@@ -291,7 +291,7 @@ function staticItems(): Item[] {
 	add('bb-shell', 0.2, S(plate(circle(0, BBZ, 10, 36), -17, 17), { tone: 'mid' }) + L(k.pathOf(circle(0, BBZ, 6.5, 36).map(([x, z]) => at(xz(x, z, 17))), true), { tone: 'faint' }));
 	for (const side of [-1, 1]) {
 		const y = side * 36;
-		const dropout = hullOfCircles([[HX, HZ, 7], [HX + 16, HZ - 3, 5.5], [HX + 8, HZ + 14, 4.5], ...(side > 0 ? ([[HX - 6, HZ - 14, 6]] as Array<[number, number, number]>) : [])]);
+		const dropout = hullOfCircles([[HX, HZ, 5.2], [HX + 16, HZ - 3, 4.4], [HX + 8, HZ + 14, 3.8], ...(side > 0 ? ([[HX - 6, HZ - 14, 4.6]] as Array<[number, number, number]>) : [])]);
 		add(`dropout-${side}`, y + side * 0.5, S(plate(dropout, y - 1.3, y + 1.3), { tone: 'mid' }) + D([at(xz(HX + 12, HZ + 4, y + 1.3 * side))], { size: 0.45 }));
 		const csA: Point3 = [4, side * 13, BBZ - 1];
 		const csB: Point3 = [HX + 16, y, HZ - 3];
@@ -306,7 +306,7 @@ function staticItems(): Item[] {
 	add('axle', 35, S(plate(circle(HX, HZ, 2.4, 20), -44, 41), { tone: 'mid', crease: 'none' }));
 	add('nut', 40, S(plate(circle(HX, HZ, 4.6, 6, Math.PI / 6), 37.6, 41), { tone: 'mid' }));
 	add('nut-nd', -40, S(plate(circle(HX, HZ, 4.6, 6, Math.PI / 6), -44, -37.6), { tone: 'mid' }));
-	add('hub', 0.3, S(plate(circle(HX, HZ, 5.5, 28), -16, 8), { tone: 'hi', crease: 'none' }) + S(plate(circle(HX, HZ, 10, 32), -16, -14.4), { tone: 'mid' }) + S(plate(circle(HX, HZ, 10, 32), 5, 6.6), { tone: 'mid' }));
+	add('hub', 0.3, S(plate(circle(HX, HZ, 5.5, 28), -16, 8), { tone: 'mid', crease: 'none' }) + S(plate(circle(HX, HZ, 10, 32), -16, -14.4), { tone: 'mid' }) + S(plate(circle(HX, HZ, 10, 32), 5, 6.6), { tone: 'mid' }));
 	add('lockring', 32.8, S(plate(sprocket(HX, HZ, 12, 0, 8.4), 31.6, 33.4), { tone: 'mid' }));
 	// Rim and tyre: a cut-away sector of the rear wheel.
 	const arc = (r: number, a0: number, a1: number, steps = 64): Ring2 => Array.from({ length: steps + 1 }, (_, i) => [HX + r * Math.cos(a0 + ((a1 - a0) * i) / steps), HZ + r * Math.sin(a0 + ((a1 - a0) * i) / steps)] as Flat);
@@ -314,7 +314,7 @@ function staticItems(): Item[] {
 	const rimSeam = L(k.pathOf(arc(RIM.inner + 3, SECTOR[0], SECTOR[1]).map(([x, z]) => at(xz(x, z, 4)))), { tone: 'faint' });
 	add('rim', -0.6, S(plate(sector(RIM.inner, RIM.outer), -4, 4), { tone: 'mid', inner: rimSeam }));
 	const wall = L(k.pathOf(arc(RIM.outer + 6, SECTOR[0], SECTOR[1]).map(([x, z]) => at(xz(x, z, 6.5)))), { tone: 'faint' });
-	add('tyre', -0.5, S(plate(sector(RIM.outer, RIM.tyre), -6.5, 6.5), { tone: 'hi', inner: wall }));
+	add('tyre', -0.5, S(plate(sector(RIM.outer, RIM.tyre), -6.5, 6.5), { tone: 'mid', inner: wall }));
 	return items;
 }
 
@@ -379,7 +379,7 @@ function crankItems(theta: number): Item[] {
 		const a = side > 0 ? theta : theta + Math.PI;
 		const end: Flat = [CRANK * Math.cos(a), BBZ + CRANK * Math.sin(a)];
 		const y0 = side > 0 ? 32 : -36;
-		const arm = S(plate(bar([0, BBZ], end, 7.5, 5.2), y0, y0 + 4), { tone: 'hi' });
+		const arm = S(plate(bar([0, BBZ], end, 7.5, 5.2), y0, y0 + 4), { tone: 'mid' });
 		const cap = side > 0 ? S(plate(circle(0, BBZ, 6, 28), 36, 37.2), { tone: 'mid' }) + D([at([0, 37.2, BBZ])], { size: 0.6, tone: 'hi' }) : '';
 		items.push({ id: `crank-${side}`, key: side * 34, svg: arm + cap });
 		const py0 = side > 0 ? 36 : -44;
@@ -458,7 +458,7 @@ function rearDerailleur(rig: Rig, state: DriveState, spacing: number): Item[] {
 		const F = k.frameAlong(a, k.sub3(b, a));
 		arms.push(S(k.prismOf(F, [[-1.4, -2.6], [1.4, -2.6], [1.4, 2.6], [-1.4, 2.6]], 0, k.len3(k.sub3(b, a)), P), { tone: 'mid', crease: 'none' }));
 	}
-	const knuckle = (c: Point3, r: number, y0: number, y1: number) => S(plate(circle(c[0], c[2], r, 28), y0, y1), { tone: 'hi' });
+	const knuckle = (c: Point3, r: number, y0: number, y1: number) => S(plate(circle(c[0], c[2], r, 28), y0, y1), { tone: 'mid' });
 	items.push({ id: 'rd-body', key: Math.max(yc + 6, 39), svg: knuckle(B, 5.5, 37.6, 44) + arms.join('') + knuckle(K, 6, yc + 5, yc + 10) + D([at([B[0], 44, B[2]]), at([K[0], yc + 10, K[2]])], { size: 0.6, tone: 'hi' }) });
 	return items;
 }
