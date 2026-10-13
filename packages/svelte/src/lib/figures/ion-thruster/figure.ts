@@ -392,8 +392,7 @@ function feeds(): string {
 	const out1: Point3 = [FLOW.x + FLOW.w, FLOW.y + 5, 10];
 	out.push(collar(out1, [1, 0, 0], 2.6, 1.6));
 	out.push(pipe([k.add3(out1, [1.6, 0, 0]), [X_BACK - 12, out1[1], 10], [X_BACK - 12, out1[1], AXIS_Z - 6], [X_BACK - 2.4, out1[1], AXIS_Z - 6]], 1.6, 'main'));
-	const n0 = NEUT_BASE();
-	const back = k.sub3(n0, k.mul3(k.unit3(k.sub3(NEUT_AIM(), n0)), 0));
+	const back = NEUT_BASE();
 	const out2: Point3 = [FLOW.x + FLOW.w, FLOW.y + 11, 18];
 	out.push(collar(out2, [1, 0, 0], 2.2, 1.4));
 	out.push(pipe([k.add3(out2, [1.4, 0, 0]), [X_BACK - 18, out2[1], 18], [X_BACK - 18, out2[1], back[2]], [back[0], out2[1], back[2]], [back[0], back[1], back[2]]], 1.1, 'neutraliser'));
