@@ -419,7 +419,7 @@ function engineBody(): string {
 	// Last band to the lip; the lip is open, so its end cap is the hot interior.
 	out.push(S(turned(E, bellProfile(RINGS.manifold[1], EXIT_X, 2), 72, true), { tone: 'hi', crease: 'lo', inner: channels(RINGS.manifold[1] + 0.4, EXIT_X - 0.6) }));
 	out.push(`<path class="rk-interior" d="${lipPath()}"/>`);
-	out.push(`<clipPath id="rk-lip"><path d="${lipPath(0.985)}"/></clipPath><g clip-path="url(#rk-lip)"><path class="rk-glow" d="${lipPath(0.62, THROAT_X + 30)}"/></g>`);
+	out.push(`<clipPath id="rk-lip"><path d="${lipPath(0.985)}"/></clipPath><g clip-path="url(#rk-lip)"><path class="rk-glow" d="${lipPath(0.8, THROAT_X + 45)}"/></g>`);
 	out.push(L(arcInside(), { tone: 'lo' }));
 	return out.join('');
 }
@@ -555,7 +555,7 @@ const paint = (b: string[][]) => b.map((list, i) => (list.length ? (i === 4 ? `<
 /** An inducer: three helical blades on a hub from s0 to s1, turned to `theta`. */
 function inducer(F: Frame, s0: number, s1: number, hub: number, tip: number, turns: number, theta: number, out: Sheet) {
 	const w = cutNormal(F);
-	const M = 16;
+	const M = 20;
 	for (let b = 0; b < 3; b++) {
 		const phiAt = (s: number) => theta + (b * TAU) / 3 + (turns * TAU * (s - s0)) / (s1 - s0);
 		// Each blade's outline, closed, one per half it passes through: tip helix out, hub helix back.
@@ -629,7 +629,7 @@ function rotorSvg(theta: number): string {
 	};
 	const shaft = (s0: number, s1: number) => S(turned(F, [[s0, 3.2], [s1, 3.2]], 32), { tone: 'mid', crease: 'none' });
 	const sheetSvg = (sh: Sheet, middle: string) =>
-		`<g class="rk-sheet">${paint(sh.back)}${L(sh.edgeBack.join(''), { tone: 'mid' })}</g>${middle}<g class="rk-sheet">${paint(sh.front)}${L(sh.edgeFront.join(''), { tone: 'hi' })}</g>`;
+		`<g class="rk-sheet">${paint(sh.back)}${L(sh.edgeBack.join(''), { tone: 'lo' })}</g>${middle}<g class="rk-sheet">${paint(sh.front)}${L(sh.edgeFront.join(''), { tone: 'mid' })}</g>`;
 	// Oxygen pump: inducer at the inlet, then the impeller.
 	section('ox', { s0: true, s1: true }, () => {
 		const sh = sheet();
@@ -691,10 +691,17 @@ function plumeSvg(params: EngineParams, t: number): string {
 	for (let i = 0; i < 6; i++) {
 		const x0 = EXIT_X + step * (i + 0.35);
 		if (x0 + step * 0.75 > EXIT_X + len * 0.85) break;
-		const r = EXIT_R * (0.2 - i * 0.022) * flick(13 + i, 0.05);
-		const pts = [at([x0, 0, ZE]), at([x0 + step * 0.75, 0, ZE]), ...ringPts(x0 + step * 0.32, r, 24)];
+		// A lozenge on screen: long along the axis, narrow across it.
+		const r = EXIT_R * (0.13 - i * 0.014) * flick(13 + i, 0.05);
+		const [ax0, ay0] = at([x0, 0, ZE]);
+		const [ax1, ay1] = at([x0 + step * 0.8, 0, ZE]);
+		const [cx, cy] = [(ax0 + ax1) / 2, (ay0 + ay1) / 2];
+		const [ex, ey] = [(ax1 - ax0) / 2, (ay1 - ay0) / 2];
+		const el = Math.hypot(ex, ey) || 1;
+		const wk = (r * P.scale * Math.SQRT2) / el;
+		const pts: Flat[] = [[ax0, ay0], [cx - ey * wk, cy + ex * wk], [ax1, ay1], [cx + ey * wk, cy - ex * wk]];
 		const a = (0.9 - i * 0.15) * s;
-		diamonds.push(`<path class="rk-diamond" style="opacity:${Math.max(0, a).toFixed(2)}" d="${k.pathOf(k.hullOf(pts), true)}"/>`);
+		diamonds.push(`<path class="rk-diamond" style="opacity:${Math.max(0, a).toFixed(2)}" d="${k.pathOf(pts, true)}"/>`);
 	}
 	return `<g class="rk-plume-group" style="--rk-soot:${(pl.soot * 100).toFixed(0)}%">${defs}${outer}${core}${diamonds.join('')}</g>`;
 }
@@ -714,11 +721,11 @@ function ready() {
 export const ENGINE_CSS = `
 .iso[data-figure-host="rocket-engine"]{
   --rk-ox:#3e63dd;--rk-fuel:#c27c0e;--rk-hot:#e5484d;--rk-tint:8%;--rk-cavity:#000000;--rk-depth:16%;
-  --rk-flame:#f08c00;--rk-core:#ffb224;--rk-diamond:#fff1c2;--rk-glow:#ff8b3e;--rk-interior:#5a4a40
+  --rk-flame:#f08c00;--rk-core:#ffb224;--rk-diamond:#fff1c2;--rk-glow:#ff8b3e;--rk-interior:#8a5634
 }
 .iso[data-theme="dark"][data-figure-host="rocket-engine"]{
   --rk-ox:#7b9bff;--rk-fuel:#f0b54a;--rk-hot:#ff7b72;--rk-tint:16%;--rk-depth:38%;
-  --rk-flame:#ff8a2a;--rk-core:#ffd27a;--rk-diamond:#fff6dc;--rk-glow:#ff9a4d;--rk-interior:#120c09
+  --rk-flame:#ff8a2a;--rk-core:#ffd27a;--rk-diamond:#fff6dc;--rk-glow:#ff9a4d;--rk-interior:#1c100a
 }
 .rk-ox{--rk-c:var(--rk-ox)}
 .rk-fuel{--rk-c:var(--rk-fuel)}
