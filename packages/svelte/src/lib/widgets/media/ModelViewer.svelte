@@ -15,6 +15,10 @@
   anchor's orbit), and fires the spec's `on_select` with { anchor, label }.
   Clicking again or Esc closes it. `focus` opens one at start.
 
+  The stage has a toned backdrop and a ground shadow (default 1), so a white
+  model still reads on the light theme; dark keeps a quiet tint. A pin label
+  flips to the pin's left when it would cross the viewer's right edge.
+
   Invariants: everything derives from props ($derived), so a streamed spec
   that grows its annotations never remounts or reloads the model. Under
   prefers-reduced-motion there is no auto-rotate and camera moves jump.
@@ -185,6 +189,36 @@
 		void Promise.resolve(el.updateComplete).then(() => el.jumpCameraToGoal?.());
 	});
 
+	// A pin's label sits right of it unless that would cross the viewer's
+	// right edge; then it flips left. Re-checked on every camera move.
+	let flipped = $state<Record<string, boolean>>({});
+	$effect(() => {
+		const el = viewer;
+		if (!el) return;
+		let frame = 0;
+		const place = () => {
+			frame = 0;
+			const box = el.getBoundingClientRect();
+			if (!box.width) return; // not laid out (hidden, or no layout engine)
+			const edge = box.right;
+			const next: Record<string, boolean> = {};
+			for (const pin of el.querySelectorAll<HTMLElement>('[data-slot="pin"]')) {
+				const label = pin.querySelector<HTMLElement>('[data-slot="pin-label"]');
+				if (label && pin.dataset.anchor) next[pin.dataset.anchor] = pin.getBoundingClientRect().right + 6 + label.offsetWidth > edge;
+			}
+			if (JSON.stringify(next) !== JSON.stringify(flipped)) flipped = next;
+		};
+		const schedule = () => (frame ||= requestAnimationFrame(place));
+		el.addEventListener('camera-change', schedule);
+		el.addEventListener('load', schedule);
+		schedule();
+		return () => {
+			el.removeEventListener('camera-change', schedule);
+			el.removeEventListener('load', schedule);
+			if (frame) cancelAnimationFrame(frame);
+		};
+	});
+
 	let figure = $state<HTMLElement>();
 	let trigger: HTMLElement | null = null;
 
@@ -234,7 +268,7 @@
 		{:else if loaded && model}
 			<model-viewer
 				bind:this={viewer}
-				class="block h-80 w-full"
+				class="ripple-model-stage block h-80 w-full rounded-ripple"
 				style={styleString}
 				src={safeUrl(model.src, { kind: 'resource' })}
 				poster={safeUrl(model.poster, { kind: 'resource' })}
@@ -244,7 +278,7 @@
 				ar={ar ? '' : undefined}
 				environment-image={safeUrl(environmentImage, { kind: 'resource' })}
 				exposure={exposure != null ? String(exposure) : undefined}
-				shadow-intensity={shadowIntensity != null ? String(shadowIntensity) : undefined}
+				shadow-intensity={String(shadowIntensity ?? 1)}
 				camera-orbit={cameraOrbit}
 				camera-target={cameraTarget}
 				interpolation-decay={reduced ? '1' : undefined}
@@ -269,7 +303,7 @@
 					>
 						{i + 1}
 						<span
-							class="pointer-events-none absolute top-1/2 left-full ml-1.5 -translate-y-1/2 whitespace-nowrap rounded-full border border-ripple-border bg-ripple-surface/90 px-2 py-0.5 text-footnote font-medium text-ripple-surface-foreground shadow-sm"
+							class="pointer-events-none absolute top-1/2 {flipped[n.key] ? 'right-full mr-1.5' : 'left-full ml-1.5'} -translate-y-1/2 whitespace-nowrap rounded-full border border-ripple-border bg-ripple-surface/90 px-2 py-0.5 text-footnote font-medium text-ripple-surface-foreground shadow-sm"
 							aria-hidden="true"
 							data-slot="pin-label">{n.label}</span
 						>
@@ -324,3 +358,18 @@
 		</ol>
 	{/if}
 </figure>
+
+<style>
+	/* Light: a mid tone a white model reads against. Dark: a quiet tint. */
+	.ripple-model-stage {
+		background: radial-gradient(
+			ellipse at 50% 40%,
+			color-mix(in oklab, var(--ripple-muted-foreground) 14%, var(--ripple-surface)),
+			color-mix(in oklab, var(--ripple-muted-foreground) 34%, var(--ripple-surface))
+		);
+	}
+	:global(.dark) .ripple-model-stage,
+	:global([data-theme='dark']) .ripple-model-stage {
+		background: color-mix(in oklab, var(--ripple-muted) 60%, transparent);
+	}
+</style>

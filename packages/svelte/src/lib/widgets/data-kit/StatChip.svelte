@@ -4,7 +4,8 @@
   type in §3). Value, judgement and direction in one tile. A number renders
   through num() (non-finite is 'n/a'); a string renders as written, so money
   arrives pre-formatted with money(). A trend is coloured only when `good`
-  says which way is good; otherwise it is neutral ink.
+  says which way is good; otherwise it is neutral ink. An inset border edge
+  keeps the tile apart from a card of nearly the same tone (light theme).
 -->
 <script lang="ts">
 	import type { LucideIcon } from '@lucide/svelte';
@@ -39,7 +40,7 @@
 	const TrendIcon = $derived(dir === 'up' ? ArrowUp : dir === 'down' ? ArrowDown : Minus);
 </script>
 
-<div class={['flex min-w-0 flex-col gap-1 rounded-md bg-ripple-muted px-3 py-2.5', className]}>
+<div class={['flex min-w-0 flex-col gap-1 rounded-md bg-ripple-muted px-3 py-2.5 ring-1 ring-ripple-border ring-inset', className]}>
 	<div class="flex min-w-0 items-center gap-1.5 text-ripple-muted-foreground">
 		{#if Icon}<Icon size={14} strokeWidth={1.75} aria-hidden="true" class="shrink-0" />{/if}
 		<span class="truncate text-footnote">{plain(label)}</span>

@@ -11,9 +11,10 @@
     state that a re-sent spec keeps.
   - Icons come from WeatherIcon's trusted constants by kind; an unknown
     condition draws cloudy. Model text is only ever rendered as text.
-  - Below 560px the days stack as rows with horizontal bars; at 560px and
-    up they sit side by side with vertical bars. Same markup, container
-    queries only.
+  - Below 560px the days stack as rows with horizontal bars that fit a
+    phone-width card; at 560px and up, with 3 days or more, they sit side by
+    side with vertical bars (one or two days stay rows, never a lone column).
+    Same markup, container queries only.
 -->
 <script lang="ts">
 	import { safeStyle } from '@ripple-ui/core';
@@ -130,7 +131,7 @@
 
 		{#if dayRows.length}
 			<div class="flex flex-col gap-2">
-				<div class="wf-days" role="group" aria-label="{dayRows.length}-day forecast" data-slot="days">
+				<div class="wf-days" data-many={dayRows.length >= 3 ? 'true' : 'false'} role="group" aria-label="{dayRows.length}-day forecast" data-slot="days">
 					{#each dayRows as d, i (i)}
 						<button
 							type="button"
@@ -187,10 +188,10 @@
 	}
 	.wf-day {
 		display: grid;
-		grid-template-columns: 3.5rem 2rem 2.5rem 2.75rem minmax(3rem, 1fr) 2.75rem;
+		grid-template-columns: minmax(2.75rem, 3.5rem) 2rem 2.25rem 2.25rem minmax(1.5rem, 1fr) 2.25rem;
 		align-items: center;
-		gap: 0.5rem;
-		padding: 0.375rem 0.5rem;
+		gap: 0.375rem;
+		padding: 0.375rem;
 	}
 	.wf-lo,
 	.wf-hi {
@@ -221,13 +222,13 @@
 		border: 2px solid currentColor;
 		transform: translate(-50%, -50%);
 	}
-	/* Wide: days side by side, bars stand up between high (top) and low. */
+	/* Wide, 3 days or more: days side by side, bars stand up between high (top) and low. */
 	@container (min-width: 560px) {
-		.wf-days {
+		.wf-days[data-many='true'] {
 			flex-direction: row;
 			gap: 0.25rem;
 		}
-		.wf-day {
+		[data-many='true'] .wf-day {
 			flex: 1 1 0;
 			min-width: 0;
 			grid-template-columns: 1fr;
@@ -237,29 +238,29 @@
 			padding: 0.5rem 0.25rem;
 			text-align: center;
 		}
-		.wf-name {
+		[data-many='true'] .wf-name {
 			order: 0;
 		}
-		.wf-icon {
+		[data-many='true'] .wf-icon {
 			order: 1;
 		}
-		.wf-pct {
+		[data-many='true'] .wf-pct {
 			order: 2;
 		}
-		.wf-hi {
+		[data-many='true'] .wf-hi {
 			order: 3;
 			text-align: center;
 		}
-		.wf-track {
+		[data-many='true'] .wf-track {
 			order: 4;
 			width: 0.375rem;
 			height: 100%;
 		}
-		.wf-lo {
+		[data-many='true'] .wf-lo {
 			order: 5;
 			text-align: center;
 		}
-		.wf-fill {
+		[data-many='true'] .wf-fill {
 			inset-block: auto;
 			inset-inline: 0;
 			left: 0;
@@ -268,7 +269,7 @@
 			top: calc(100% - var(--hi, 0%));
 			background: linear-gradient(0deg, #5ac8fa, #a3e635, #fbbf24, #fb923c);
 		}
-		.wf-now {
+		[data-many='true'] .wf-now {
 			top: auto;
 			left: 50%;
 			bottom: var(--at);

@@ -83,6 +83,17 @@ export const countIn = (ticks: ReadonlySet<string>, days: readonly string[]) => 
 /** Met, or still reachable in the days left this week (today included). */
 export const onTrack = (done: number, target: number, daysLeft: number) => done >= target || target - done <= daysLeft;
 
+/** The tracker's first day: its earliest tick across habits, else today. */
+export function startDay(ticks: Record<string, readonly string[]>, today: string): string {
+	let first = today;
+	for (const days of Object.values(ticks)) if (days[0] && days[0] < first) first = days[0];
+	return first;
+}
+
+/** A weekly target cut to the week's days on or after `start`: a tracker begun on Friday owes at most 3 days. */
+export const targetSince = (target: number, week: readonly string[], start: string) =>
+	Math.min(target, week.filter((d) => d >= start).length);
+
 export const clampTarget = (v: unknown): number => {
 	const n = finite(v);
 	return n === undefined ? 7 : Math.min(Math.max(Math.round(n), 1), 7);

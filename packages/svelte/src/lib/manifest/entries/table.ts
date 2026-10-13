@@ -6,7 +6,7 @@ export const tableEntry: WidgetManifestEntry = {
   description: 'Tabular data with sorting, search, and optional pagination. Simpler alternative to data-grid.',
   props: {
     rows: { type: 'Array<Record<string, unknown>>', required: true, description: 'Row objects.' },
-    columns: { type: 'Array<{ header?: string; accessorKey?: string; sortable?: boolean; href?: string }>', required: true, description: 'Column definitions. `href` names a row field holding a URL; that column\'s cell text then links to it (new tab). Keep the URL in its own row field, not in the visible text.' },
+    columns: { type: 'Array<{ header?: string; accessorKey?: string; sortable?: boolean; href?: string; align?: "left" | "center" | "right" }>', required: true, description: 'Column definitions. `href` names a row field holding a URL; that column\'s cell text then links to it (new tab). Keep the URL in its own row field, not in the visible text. `align` overrides the default (all-number columns right).' },
     variant: { type: '"default" | "compact" | "striped" | "minimal"', required: false, description: 'Visual style.' },
     sortable: { type: 'boolean', required: false, description: 'Enable click-to-sort headers.' },
     searchable: { type: 'boolean', required: false, description: 'Show search input.' },

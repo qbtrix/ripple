@@ -17,8 +17,12 @@
   - No storage: ticks live in the value only; a reload starts from the props.
   - One tab stop for the whole grid (roving tabindex); arrows move between
     days and habits. Future days are aria-disabled, never ticked.
-  - Below 560px each habit is a card with 7 day dots; above it, a grid row
-    under a day header. Same markup, container queries only.
+  - The board panel is the container: below 688px of it (the wide row's
+    own sum: name 13.5rem, 7 days, progress 10rem, gaps) each habit is a card
+    with 7 day dots; above it, a grid row under a day header. Names wrap,
+    never cut. Same markup, container queries only.
+  - "On track" counts only days since the tracker started (its earliest
+    tick, else today), so a fresh tracker is not behind on day one.
 -->
 <script lang="ts">
 	import { safeStyle } from '@ripple-ui/core';
@@ -47,6 +51,8 @@
 		onTrack,
 		readHabits,
 		seedTicks,
+		startDay,
+		targetSince,
 		toValue,
 		toggleTick,
 		weekDays,
@@ -131,6 +137,7 @@
 	const daysLeft = $derived(thisWeek.filter((d) => d >= today).length);
 	const weekName = $derived(at === 0 ? 'This week' : at === -1 ? 'Last week' : `${-at} weeks ago`);
 
+	const start = $derived(startDay(current.ticks, today));
 	const rows = $derived(
 		current.habits.map((h) => {
 			const set = new Set(current.ticks[h.id] ?? []);
@@ -140,7 +147,7 @@
 				set,
 				done,
 				met: done >= h.target_per_week,
-				track: onTrack(countIn(set, thisWeek), h.target_per_week, daysLeft),
+				track: onTrack(countIn(set, thisWeek), targetSince(h.target_per_week, thisWeek, start), daysLeft),
 				streak: currentStreak(set, today),
 				best: longestStreak(set)
 			};
@@ -250,8 +257,8 @@
 	const C = 2 * Math.PI * 15;
 	const focusRing = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ripple-ring';
 	const iconBtn = ['grid size-8 shrink-0 place-items-center rounded-md text-ripple-muted-foreground hover:bg-ripple-muted hover:text-ripple-surface-foreground', focusRing];
-	const rowGrid = 'grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-2.5 @min-[560px]:grid-cols-[minmax(8rem,1fr)_auto_10rem] @min-[560px]:items-center';
-	const dayGrid = 'grid grid-cols-7 gap-1 @min-[560px]:grid-cols-[repeat(7,2.25rem)]';
+	const rowGrid = 'grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-2.5 @min-[688px]:grid-cols-[minmax(13.5rem,1fr)_auto_10rem] @min-[688px]:items-center';
+	const dayGrid = 'grid grid-cols-7 gap-1 @min-[688px]:grid-cols-[repeat(7,2.25rem)]';
 </script>
 
 <div {id} class={['@container text-ripple-surface-foreground', className]} style={rootStyle} data-widget="habit-tracker">
@@ -266,7 +273,7 @@
 			<VerdictLine {verdict} />
 		{/if}
 
-		<section class="flex flex-col gap-2 rounded-ripple border border-ripple-border bg-ripple-surface p-3" aria-label="Habits" data-slot="board">
+		<section class="@container flex flex-col gap-2 rounded-ripple border border-ripple-border bg-ripple-surface p-3" aria-label="Habits" data-slot="board">
 			<div class="flex items-center gap-2">
 				{#if weekCount > 1}
 					<button type="button" class={iconBtn} aria-label="Previous week" disabled={at <= -(weekCount - 1)} onclick={() => (offset = at - 1)}>
@@ -285,7 +292,7 @@
 			</div>
 
 			{#if total}
-				<div class={['hidden', rowGrid, '@min-[560px]:grid']} aria-hidden="true">
+				<div class={['hidden', rowGrid, '@min-[688px]:grid']} aria-hidden="true">
 					<span></span>
 					<span class={dayGrid}>
 						{#each shownWeek as d (d)}
@@ -296,11 +303,11 @@
 				</div>
 
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
-				<div class="flex flex-col gap-2 @min-[560px]:gap-1" bind:this={gridEl} onkeydown={onGridKey}>
+				<div class="flex flex-col gap-2 @min-[688px]:gap-1" bind:this={gridEl} onkeydown={onGridKey}>
 					{#each rows as h, r (h.id)}
 						{@const HabitIcon = kindIcon(HABIT_ICONS, h.icon)}
 						<div
-							class={[rowGrid, 'rounded-ripple border border-ripple-border p-3 @min-[560px]:rounded-md @min-[560px]:border-0 @min-[560px]:px-1 @min-[560px]:py-1.5']}
+							class={[rowGrid, 'rounded-ripple border border-ripple-border p-3 @min-[688px]:rounded-md @min-[688px]:border-0 @min-[688px]:px-1 @min-[688px]:py-1.5']}
 							role="group"
 							aria-label={h.name}
 							data-habit={h.id}
@@ -328,11 +335,11 @@
 									/>
 								{:else}
 									<div class="min-w-0 flex-1">
-										<p class="truncate text-body-emph" data-slot="name">{h.name}</p>
-										<p class="flex items-center gap-1 truncate text-footnote whitespace-nowrap text-ripple-muted-foreground tabular-nums">
+										<p class="text-body-emph text-pretty [overflow-wrap:anywhere]" data-slot="name">{h.name}</p>
+										<p class="flex flex-wrap items-center gap-x-1 text-footnote text-ripple-muted-foreground tabular-nums">
 											{#if h.streak}<Flame size={12} strokeWidth={2} aria-hidden="true" class="shrink-0 text-ripple-warning-text" />{/if}
 											<span data-slot="streak">{h.streak}-day streak</span>
-											{#if h.met}<span class="font-medium text-ripple-success-text @min-[560px]:hidden">· Done for the week</span>{/if}
+											{#if h.met}<span class="font-medium text-ripple-success-text @min-[688px]:hidden">· Done for the week</span>{/if}
 										</p>
 									</div>
 									<button type="button" class={iconBtn} aria-label="Rename {h.name}" onclick={() => (renaming = h.id)}>
@@ -344,7 +351,7 @@
 								{/if}
 							</div>
 
-							<div class={['col-span-2 row-start-2', dayGrid, '@min-[560px]:col-span-1 @min-[560px]:col-start-2 @min-[560px]:row-start-1']} data-slot="days">
+							<div class={['col-span-2 row-start-2', dayGrid, '@min-[688px]:col-span-1 @min-[688px]:col-start-2 @min-[688px]:row-start-1']} data-slot="days">
 								{#each shownWeek as d, c (d)}
 									{@const on = h.set.has(d)}
 									{@const future = d > today}
@@ -352,7 +359,7 @@
 										<button
 											type="button"
 											class={[
-												'relative grid size-9 place-items-center rounded-full border transition-colors duration-150 motion-reduce:transition-none',
+												'relative grid aspect-square w-full max-w-9 place-items-center rounded-full border transition-colors duration-150 motion-reduce:transition-none',
 												focusRing,
 												on
 													? 'border-ripple-accent bg-ripple-accent text-ripple-accent-foreground'
@@ -377,14 +384,14 @@
 												</span>
 											{/if}
 										</button>
-										<span class={['text-caption-2 @min-[560px]:hidden', d === today ? 'font-semibold text-ripple-accent' : 'text-ripple-muted-foreground']} aria-hidden="true">{dayShort(d)[0]}</span>
+										<span class={['text-caption-2 @min-[688px]:hidden', d === today ? 'font-semibold text-ripple-accent' : 'text-ripple-muted-foreground']} aria-hidden="true">{dayShort(d)[0]}</span>
 									</div>
 								{/each}
 							</div>
 
-							<div class="col-start-2 row-start-1 flex items-center justify-end gap-2 @min-[560px]:col-start-3" data-slot="progress">
+							<div class="col-start-2 row-start-1 flex items-center justify-end gap-2 @min-[688px]:col-start-3" data-slot="progress">
 								{#if h.met}
-									<span class="hidden text-right text-footnote font-medium text-ripple-success-text @min-[560px]:inline">Done for the week</span>
+									<span class="hidden text-right text-footnote font-medium text-ripple-success-text @min-[688px]:inline">Done for the week</span>
 								{/if}
 								<span class="relative grid size-9 shrink-0 place-items-center">
 									<svg class="absolute inset-0 size-9 -rotate-90" viewBox="0 0 36 36" aria-hidden="true">
