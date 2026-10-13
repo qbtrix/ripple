@@ -62,7 +62,8 @@
 		{ href: '/ds/data-kit', title: 'Data kit', caption: 'Status pills, stat chips, photo tiles, formatters.' },
 		{ href: '/ds/shell', title: 'Shell', caption: 'Sidebar rows, panel headers, key hints.' },
 		{ href: '/ds/feature', title: 'Feature page parts', caption: 'Page header, empty state, inline alerts.' },
-		{ href: '/ds/call', title: 'Call parts', caption: 'Control bar, tiles, dock and incoming call card.' }
+		{ href: '/ds/call', title: 'Call parts', caption: 'Control bar, tiles, dock and incoming call card.' },
+		{ href: '/ds/apps', title: 'App widgets', caption: 'Notes, music, weather, schedules, places, products, drawings.' }
 	];
 </script>
 
