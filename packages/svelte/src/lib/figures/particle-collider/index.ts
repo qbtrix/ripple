@@ -11,7 +11,7 @@ export const meta: FigureMeta = {
 	title: 'How a particle collider works',
 	params: PARAMS,
 	readouts: [
-		{ key: 'speed', label: 'Speed', unit: '% of light' },
+		{ key: 'speed', label: 'Share of light speed', unit: '%' },
 		{ key: 'field', label: 'Dipole field', unit: 'T' },
 		{ key: 'energy', label: 'Collision energy', unit: 'TeV' },
 		{ key: 'collisions', label: 'Collisions a second' }

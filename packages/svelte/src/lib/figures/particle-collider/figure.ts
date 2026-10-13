@@ -640,7 +640,7 @@ export const COLLIDER_CSS = `
 .pc-bunch[data-beam="2"]{fill:var(--anatomy-red)}
 .pc-bunch.pc-glow{opacity:.22}
 .pc-flash{fill:var(--anatomy-lit);opacity:.9}
-.pc-track{stroke-width:.8}
+.pc-track{stroke-width:1}
 .pc-layer{stroke:none;fill:var(--anatomy-shade-2)}
 .pc-layer[data-l="tracker"]{fill:var(--anatomy-top)}
 .pc-layer[data-l="ecal"]{fill:var(--anatomy-shade-3)}
@@ -706,15 +706,15 @@ function anchorPoints(): Array<[string, string, Point3]> {
 		return k.add3(lerp3(c.a, c.b, f), [0, 0, r]);
 	};
 	const cut = chord(228, 282);
-	const half = DET.half;
+	const capPoint = (r: number, a: number): Point3 => k.pointOf(DF, DET.half, r * Math.cos(a), r * Math.sin(a));
 	return [
-		['collision-point', 'Collision point', [0, 0, ZB]],
+		['collision-point', 'Collision point', [16, 3, ZB]],
 		['detector', 'Detector', [-20, DET.r * Math.cos(2.05), ZB + DET.r * Math.sin(2.05)]],
-		['tracker', 'Tracker', [-half + 8, 10, ZB]],
-		['ecal', 'Electromagnetic calorimeter', [-half + 18, 20.5, ZB]],
-		['hcal', 'Hadron calorimeter', [-half + 28, 29, ZB]],
-		['solenoid', 'Solenoid magnet', [-half + 38, 36, ZB]],
-		['muon-chambers', 'Muon chambers', [-half + 48, 48.25, ZB]],
+		['tracker', 'Tracker', [-48, 0, ZB + 9.5]],
+		['ecal', 'Electromagnetic calorimeter', [-14, 0, ZB + 20.5]],
+		['hcal', 'Hadron calorimeter', [26, 0, ZB + 29]],
+		['solenoid', 'Solenoid magnet', capPoint(36, (258 * Math.PI) / 180)],
+		['muon-chambers', 'Muon chambers', capPoint(51.75, (300 * Math.PI) / 180)],
 		['beam-pipes', 'Beam pipes', boreAt(chord(112, 124), 'a', 2).map((v, i) => (i === 2 ? v + PIPE_R : v)) as Point3],
 		['dipole', 'Dipole magnet', top(124, 188, 15, 0.4)],
 		['quadrupole', 'Quadrupole magnet', top(198, 218, 13.4)],
