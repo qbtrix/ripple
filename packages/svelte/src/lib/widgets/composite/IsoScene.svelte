@@ -6,10 +6,11 @@
   by default (`detail: "auto"`) adds the small parts that belong to the
   model's parts (feet, hubs, spider arms, chain links, pins, collars) so a
   few parts read as a real machine; `detail: "none"` draws only what was
-  written. No model SVG, no URLs. `look`: "soft" (default) is Anatomy's near-white ramp
-  (theme tokens ported from Anatomy's kit/iso.css, MIT, Copyright (c) 2026
-  Ryan, github.com/wheresryan22/anatomy) with roles as faint tints; "color"
-  fills each role with its Ripple token.
+  written. No model SVG, no URLs. `look`: "soft" (default) is Ripple's
+  Blueprint ramp (blue-grey solids, navy ink, white ink in dark, flow lines in
+  brand blue) with roles as faint tints; "color" fills each role with its
+  Ripple token. The kit is ported from Anatomy by Ryan, MIT (see
+  THIRD_PARTY_NOTICES.md).
 
   Invariants:
   - `value` is the one bound field (default `value` / `onchange`): the param
@@ -480,45 +481,44 @@
 		opacity: 0.6;
 	}
 
-	/* Soft look: Anatomy's theme tokens (kit/iso.css, MIT, (c) 2026 Ryan), light and dark. */
+	/* Soft look: Ripple's Blueprint tokens (the kit's ISO_CSS palette), light and dark. */
 	.iso-scene[data-look='soft'] {
-		--a-paper: #fbfbfa;
-		--a-top: #ffffff;
-		--a-s0: #dcdcd9;
-		--a-s1: #e5e5e2;
-		--a-s2: #ededea;
-		--a-s3: #f4f4f1;
-		--a-hi: #26262a;
-		--a-mid: #8a8a8f;
-		--a-lo: #b4b4b8;
-		--a-faint: #d4d4d6;
+		--a-paper: #e6eef8;
+		--a-top: #f9fbff;
+		--a-s0: #b2c5dd;
+		--a-s1: #c3d3e7;
+		--a-s2: #d4e0ef;
+		--a-s3: #e4ecf7;
+		--a-hi: #0f2a4d;
+		--a-mid: #57709a;
+		--a-lo: #8ea5c3;
+		--a-faint: #bccde2;
 		--a-rim: #ffffff;
-		--a-halo: #8a8a80;
+		--a-halo: #1b3a6b;
 		--a-halo-o: 0.32;
 		--a-red: #e5484d;
-		--a-green: #30a46c;
-		--a-blue: #3e63dd;
+		--a-green: #2f9e6e;
+		--a-blue: #1877f2;
 		--a-amber: #d9930d;
 	}
 	:global(.dark) .iso-scene[data-look='soft'] {
-		/* Lifted from Anatomy's near-black ramp so faces separate on a dark card. */
-		--a-paper: #1d1d1a;
-		--a-face: #2c2c28;
-		--a-top: #4a4a44;
-		--a-s0: #2c2c28;
-		--a-s1: #33332f;
-		--a-s2: #3a3a35;
-		--a-s3: #42423d;
-		--a-hi: #ecece6;
-		--a-mid: rgb(236 236 230 / 0.55);
-		--a-lo: rgb(236 236 230 / 0.35);
-		--a-faint: rgb(236 236 230 / 0.14);
-		--a-rim: #77776e;
+		--a-paper: #0e1b2e;
+		--a-face: #1c2f4a;
+		--a-top: #284163;
+		--a-s0: #15253b;
+		--a-s1: #192b44;
+		--a-s2: #1d324e;
+		--a-s3: #223959;
+		--a-hi: #f4f8ff;
+		--a-mid: rgb(230 238 250 / 0.6);
+		--a-lo: rgb(230 238 250 / 0.35);
+		--a-faint: rgb(230 238 250 / 0.16);
+		--a-rim: #4a6890;
 		--a-halo: #000;
-		--a-halo-o: 0.55;
-		--a-red: #ff6b6b;
-		--a-green: #6be0a0;
-		--a-blue: #6b9bff;
+		--a-halo-o: 0.6;
+		--a-red: #ff7b80;
+		--a-green: #5fd6a0;
+		--a-blue: #4d9bff;
 		--a-amber: #f0b24a;
 	}
 	:global(.dark) [data-look='soft'] path[data-cls='edge'] {
@@ -583,7 +583,7 @@
 		stroke-width: 1;
 	}
 	[data-look='soft'] path[data-cls='flow'] {
-		stroke: var(--a-mid);
+		stroke: var(--a-blue);
 		stroke-width: 1.2;
 	}
 	[data-look='soft'] g[data-role] text {

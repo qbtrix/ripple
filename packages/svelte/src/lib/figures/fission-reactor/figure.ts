@@ -1,5 +1,5 @@
 // figures/fission-reactor/figure.ts: a pressurised water reactor plant drawn
-// the Anatomy way, as a teaching model on a bench, with @ripple-ui/core/iso.
+// as a teaching model on a bench, with @ripple-ui/core/iso.
 // World: x along the bench (left, the containment; right, the turbine hall and
 // the cooling tower), y toward the viewer, z up; not to scale.
 //
@@ -16,13 +16,12 @@
 //
 // `reactorSvg()` is pure (strings only). `mount()` keeps one <g data-item> per
 // part; per frame it rewrites only the core (when the rods move) and the turning
-// marks, and slides the flow dashes. Look: the paper ramp, one lit part (the
+// marks, and slides the flow dashes. Look: the kit's Blueprint ramp, one lit part (the
 // control rods), faint warm and cool tints on the primary and cooling pipes.
 // No DOM or work at module top level.
 
 import * as k from '@ripple-ui/core/iso';
 import type { Flat, Point3, SolidPaths } from '@ripple-ui/core/iso';
-import { PAPER_CSS } from '../paper.js';
 import { frameOf, framed, percentIn, type FrameBox } from '../frame.js';
 import { clampParams, describe, readoutsOf, stateOf, type ReactorParams } from './model.js';
 
@@ -684,18 +683,18 @@ export const STILL = { pumpAngle: 0.6, turbineAngle: 0.5, fanAngle: 0.3 };
 export const REACTOR_CSS = `
 .iso[data-figure-host]{--fr-tint:8%}
 .iso[data-theme="dark"][data-figure-host]{--fr-tint:18%}
-.fr-hot>.iso-edge{stroke:color-mix(in srgb,var(--anatomy-red) 35%,var(--anatomy-hi));stroke-opacity:.8}
-.fr-cold>.iso-edge,.fr-water>.iso-edge{stroke:color-mix(in srgb,var(--anatomy-blue) 35%,var(--anatomy-hi));stroke-opacity:.8}
-.fr-hot>.iso-top{fill:color-mix(in srgb,var(--anatomy-red) var(--fr-tint),var(--anatomy-top))}
-.fr-cold>.iso-top,.fr-water>.iso-top{fill:color-mix(in srgb,var(--anatomy-blue) var(--fr-tint),var(--anatomy-top))}
-.fr-hot>.iso-shade{fill:color-mix(in srgb,var(--anatomy-red) calc(var(--fr-tint) * .8),var(--anatomy-shade-2))}
-.fr-cold>.iso-shade,.fr-water>.iso-shade{fill:color-mix(in srgb,var(--anatomy-blue) calc(var(--fr-tint) * .8),var(--anatomy-shade-2))}
-.fr-hot>.iso-shade[data-shade="0"],.fr-hot>.iso-shade[data-shade="1"]{fill:color-mix(in srgb,var(--anatomy-red) calc(var(--fr-tint) * .6),var(--anatomy-shade-0))}
-.fr-cold>.iso-shade[data-shade="0"],.fr-cold>.iso-shade[data-shade="1"],.fr-water>.iso-shade[data-shade="0"],.fr-water>.iso-shade[data-shade="1"]{fill:color-mix(in srgb,var(--anatomy-blue) calc(var(--fr-tint) * .6),var(--anatomy-shade-0))}
+.fr-hot>.iso-edge{stroke:color-mix(in srgb,var(--iso-red) 35%,var(--iso-hi));stroke-opacity:.8}
+.fr-cold>.iso-edge,.fr-water>.iso-edge{stroke:color-mix(in srgb,var(--iso-blue) 35%,var(--iso-hi));stroke-opacity:.8}
+.fr-hot>.iso-top{fill:color-mix(in srgb,var(--iso-red) var(--fr-tint),var(--iso-top))}
+.fr-cold>.iso-top,.fr-water>.iso-top{fill:color-mix(in srgb,var(--iso-blue) var(--fr-tint),var(--iso-top))}
+.fr-hot>.iso-shade{fill:color-mix(in srgb,var(--iso-red) calc(var(--fr-tint) * .8),var(--iso-shade-2))}
+.fr-cold>.iso-shade,.fr-water>.iso-shade{fill:color-mix(in srgb,var(--iso-blue) calc(var(--fr-tint) * .8),var(--iso-shade-2))}
+.fr-hot>.iso-shade[data-shade="0"],.fr-hot>.iso-shade[data-shade="1"]{fill:color-mix(in srgb,var(--iso-red) calc(var(--fr-tint) * .6),var(--iso-shade-0))}
+.fr-cold>.iso-shade[data-shade="0"],.fr-cold>.iso-shade[data-shade="1"],.fr-water>.iso-shade[data-shade="0"],.fr-water>.iso-shade[data-shade="1"]{fill:color-mix(in srgb,var(--iso-blue) calc(var(--fr-tint) * .6),var(--iso-shade-0))}
 .fr-flow{stroke-dasharray:2 5;stroke-width:1;stroke-opacity:.75}
-.iso-halo.fr-shadow{filter:blur(2.5px);opacity:calc(var(--anatomy-halo-opacity) * .5);transform:none}
-.iso-halo.fr-shadow[data-far]{filter:blur(4px);opacity:calc(var(--anatomy-halo-opacity) * .25)}
-.fr-void{fill:color-mix(in srgb,var(--anatomy-shade-0) 55%,var(--anatomy-halo));stroke:none}
+.iso-halo.fr-shadow{filter:blur(2.5px);opacity:calc(var(--iso-halo-opacity) * .5);transform:none}
+.iso-halo.fr-shadow[data-far]{filter:blur(4px);opacity:calc(var(--iso-halo-opacity) * .25)}
+.fr-void{fill:color-mix(in srgb,var(--iso-shade-0) 55%,var(--iso-halo));stroke:none}
 `;
 
 export const LABEL = 'A pressurised water reactor plant on a bench: the reactor vessel cut open over its core, the steam generator, pump and pressuriser, the turbine and generator, the condenser and a cooling tower.';
@@ -718,7 +717,7 @@ export function reactorSvg(params: ReactorParams = clampParams(), drive: Partial
 function rawSvg(params: ReactorParams, drive: Partial<DriveState>, standalone: k.Theme | false): string {
 	ready();
 	const svg = fillLive(k.figureSvg({ width: WIDTH, height: HEIGHT, label: LABEL, body: STATIC.map(wrap).join(''), standalone }), driveOf(params, drive));
-	return standalone ? svg.replace('</style>', `${PAPER_CSS}${REACTOR_CSS}</style>`).replace('class="iso-svg iso"', 'class="iso-svg iso" data-figure-host="fission-reactor"') : svg;
+	return standalone ? svg.replace('</style>', `${REACTOR_CSS}</style>`).replace('class="iso-svg iso"', 'class="iso-svg iso" data-figure-host="fission-reactor"') : svg;
 }
 
 let FRAME: FrameBox | null = null;
@@ -792,7 +791,7 @@ export function mount(el: HTMLElement, { theme = 'dark', params: initial, onRead
 	if (!doc.getElementById(STYLE_ID)) {
 		const style = doc.createElement('style');
 		style.id = STYLE_ID;
-		style.textContent = k.ISO_CSS + PAPER_CSS + REACTOR_CSS;
+		style.textContent = k.ISO_CSS + REACTOR_CSS;
 		doc.head.appendChild(style);
 	}
 	let params = clampParams(initial);

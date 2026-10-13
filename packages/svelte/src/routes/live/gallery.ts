@@ -94,6 +94,10 @@ const widgetOf = (s: (typeof liveRuns)[number]) => {
 	return s.id;
 };
 
+/** Keys of the runs that draw with the iso kit (`figure`, `iso-scene`); the page credits Anatomy under them. */
+const ISO_TYPE = /\\?"type\\?"\s*:\s*\\?"(figure|iso-scene|iso|isometric)\\?"/;
+export const isoKeys = new Set(liveRuns.filter((s) => ISO_TYPE.test(s.fixture.chunks.map((c) => c.text).join(''))).map((s) => s.id));
+
 /** Every run as an item, pruned or not. */
 export const liveItems: GalleryItem[] = liveRuns.map((s) => {
 	const widget = widgetOf(s);

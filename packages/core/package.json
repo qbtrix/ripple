@@ -67,12 +67,14 @@
   "files": [
     "dist",
     "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
     "!dist/**/*.test.*",
     "!dist/**/__tests__/**",
     "!dist/**/fixtures/**"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+    "prepack": "cp ../../THIRD_PARTY_NOTICES.md .",
     "check": "tsc -p tsconfig.build.json --noEmit",
     "test": "vitest --run"
   },

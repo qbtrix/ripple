@@ -140,8 +140,10 @@ MIT
 ## Credits
 
 The isometric drawing kit in `packages/core/src/iso/` is ported from
-[Anatomy](https://github.com/wheresryan22/anatomy) by Ryan, MIT License,
-Copyright (c) 2026 Ryan. The notice is kept at the top of each ported file.
+[Anatomy](https://skills.wheresryan.sh/anatomy) by Ryan
+([source](https://github.com/wheresryan22/anatomy)), MIT License, Copyright
+(c) 2026 Ryan. The full license text, and the files it covers, are in
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
 The 3D models behind `model-viewer`'s `asset` ids are CC0 or public domain,
 except the sneaker (Shopify, CC BY 4.0). They come from Quaternius, Kenney and

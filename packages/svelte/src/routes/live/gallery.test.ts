@@ -1,12 +1,13 @@
 // routes/live/gallery.test.ts — Holds the gallery registry to its rules and the
 // files it points at: one card per widget type (a run wins over a demo), every
-// pruned demo key opens the run that replaced it, every demo has its component
+// pruned demo key opens the run that replaced it, iso drawings are found for
+// the Anatomy credit, every demo has its component
 // in ./demos, every grid id a committed thumb and nothing else in
 // static/thumbs, thumbs.json lists the grid in order (run `bun run thumbs`
 // after a change), and every old /showcase URL redirects to what it showed.
 // Files are listed with Vite globs.
 import { expect, test } from 'vitest';
-import { demoItems, galleryItems, GROUPS, itemByKey, liveItems, liveRuns, resolveKey } from './gallery.js';
+import { demoItems, galleryItems, GROUPS, isoKeys, itemByKey, liveItems, liveRuns, resolveKey } from './gallery.js';
 import { businessScenarios, scenarios } from './scenarios.js';
 import { appScenarios } from './app-runs.js';
 import { playScenarios } from '../pawbar/play-cards.js';
@@ -85,4 +86,10 @@ test('old /showcase URLs redirect to /live, its items, or /ds', () => {
 	expect(redirect('booking')).toBe('/live?s=demo-booking');
 	expect(redirect('motion')).toBe('/ds/motion');
 	expect(() => redirect('nope')).toThrow();
+});
+
+test('the Anatomy credit finds the figure and iso-scene runs, and only those', () => {
+	expect(isoKeys).toContain('heart-pump');
+	expect(isoKeys).toContain('iso-bike');
+	expect(isoKeys.has('bill-splitter')).toBe(false);
 });

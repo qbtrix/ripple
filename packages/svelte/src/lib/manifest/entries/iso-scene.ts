@@ -12,7 +12,7 @@ export const isoSceneEntry: WidgetManifestEntry = {
   props: {
     title: { type: 'string', required: false, description: 'Up to 80 characters.' },
     caption: { type: 'string', required: false, description: 'One plain sentence under the drawing. Up to 200 characters.' },
-    look: { type: '"soft" | "color"', required: false, description: 'soft (default): near-white parts in four soft tones, colors as faint tints. color: saturated fills.' },
+    look: { type: '"soft" | "color"', required: false, description: 'soft (default): Blueprint look, blue-grey parts in four soft tones, navy ink (white in dark), flows in brand blue, colors as faint tints. color: saturated fills.' },
     detail: { type: '"auto" | "none"', required: false, description: 'auto (default) adds small parts that belong to yours: feet, hubs, bolts, spider arms, pins, collars, clamps. none draws only what you wrote.' },
     scale: { type: 'number', required: false, description: 'Zoom, 0.4 to 2.5. Default 1 (fits the drawing).' },
     params: {
