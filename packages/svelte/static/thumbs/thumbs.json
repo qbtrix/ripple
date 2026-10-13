@@ -130,6 +130,16 @@
 		"h": 600
 	},
 	{
+		"id": "live-particle-collider",
+		"title": "How a particle collider works",
+		"caption": "How does a particle collider work? Show me the beams, the magnets and the detector, and let me change the beam energy.",
+		"group": "Learn",
+		"tag": "Hand-written",
+		"href": "/live?s=particle-collider",
+		"w": 800,
+		"h": 600
+	},
+	{
 		"id": "live-iso-bike",
 		"title": "Bike drivetrain",
 		"caption": "Show how a bike's chain drive works as a live drawing, with a cadence slider and how far one pedal turn takes you",
