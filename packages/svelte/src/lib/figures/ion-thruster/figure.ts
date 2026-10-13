@@ -518,13 +518,13 @@ function anchorPoints(): Array<[string, string, Point3]> {
 		['power-unit', 'Power unit', [PPU.x + PPU.w / 2, PPU.y + PPU.d, PPU_H * 0.6]],
 		['discharge-chamber', 'Discharge chamber', onAxis(X_BACK + 24, R_IN, KEEP + Math.PI * 0.62)],
 		['magnets', 'Ring magnets', onAxis(MAGNETS[1]!, R_OUT + MAG_T, KEEP)],
-		['cathode', 'Hollow cathode', onAxis(X_BACK + 8, 4.6, KEEP - 0.3)],
+		['cathode', 'Hollow cathode', onAxis(X_BACK + 1.2, 7.5, KEEP + Math.PI * 0.8)],
 		['plasma', 'Plasma', onAxis(X_BACK + 32, 12, KEEP + Math.PI * 0.75)],
 		['screen-grid', 'Screen grid', onAxis(SCREEN_X, R_IN * 0.92, KEEP + 0.2)],
 		['accel-grid', 'Accelerator grid', onAxis(ACCEL_X + 1.2, R_IN * 0.6, KEEP + Math.PI * 0.72)],
 		['neutraliser', 'Neutraliser', NEUT_BASE()],
 		['ion-beam', 'Ion beam', [X_EXIT + 56, 0, AXIS_Z]],
-		['thrust-dial', 'Thrust dial', [DIAL.x, DIAL.y, DIAL_TOP]]
+		['thrust-dial', 'Thrust dial', [DIAL.x - DIAL.r, DIAL.y, DIAL.z + 2]]
 	];
 }
 
