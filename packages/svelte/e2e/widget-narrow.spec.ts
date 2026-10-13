@@ -1,7 +1,7 @@
 // e2e/widget-narrow.spec.ts: the layout half of the phone-width widget fixes,
 // in real Chromium (jsdom has no layout and no container queries). Each case
-// renders a spec through /playground?s= inside a fixed-width column, 360px
-// (a phone chat card) and 720px (a desktop chat card), and asserts on rects:
+// renders a spec through /playground?s= inside a fixed-width column, 288 to
+// 360px (phone chat cards) and 640 to 720px (desktop), and asserts on rects:
 // nothing cut, nothing past the widget's edge, the intended column count.
 // Colour cases run in both themes and read contrast through a canvas, so
 // oklch() and color-mix() computed values compare as sRGB.
