@@ -124,7 +124,7 @@ const faceCircle = (F: k.Frame, s: number, cu: number, cv: number, r: number, st
 /** An annular sector in the cross-section plane at s, angles a0..a1. */
 function faceSector(F: k.Frame, s: number, cu: number, cv: number, r0: number, r1: number, a0: number, a1: number, steps = 24): string {
 	const outer = Array.from({ length: steps + 1 }, (_, i) => a0 + ((a1 - a0) * i) / steps);
-	const pts: Point3[] = [...outer.map((a) => k.pointOf(F, s, cu + r1 * Math.cos(a), cv + r1 * Math.sin(a))), ...[...outer].reverse().map((a) => k.pointOf(F, s, cu + r0 * Math.cos(a), cv + r0 * Math.sin(a)))];
+	const pts: Point3[] = [...outer.map((a) => k.pointOf(F, s, cu + r1 * Math.cos(a), cv + r1 * Math.sin(a))), ...outer.toReversed().map((a) => k.pointOf(F, s, cu + r0 * Math.cos(a), cv + r0 * Math.sin(a)))];
 	return ring(pts);
 }
 

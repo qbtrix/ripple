@@ -165,7 +165,7 @@ function cutShell(F: Frame, s0: number, s1: number, R: number, t: number, wall: 
 	// Inner surface of the half that stays.
 	for (let i = 0; i < N; i++) put(k.mul3(radial(F, (phis[i]! + phis[i + 1]!) / 2), -1), [onRing(F, s0, ri, phis[i]!), onRing(F, s0, ri, phis[i + 1]!), onRing(F, s1, ri, phis[i + 1]!), onRing(F, s1, ri, phis[i]!)]);
 	// The far end wall (inside face, toward +s) and the near end (the cut wall's outer face).
-	const halfDisc = (s: number, r0: number) => [...phis.map((p) => onRing(F, s, R, p)), ...[...phis].reverse().map((p) => onRing(F, s, r0, p))];
+	const halfDisc = (s: number, r0: number) => [...phis.map((p) => onRing(F, s, R, p)), ...phis.toReversed().map((p) => onRing(F, s, r0, p))];
 	if (wall.s0) put(F.a, halfDisc(s0, hole));
 	// Cut faces: two strips along the cut, facing the viewer, bare machined metal.
 	const cut = [phis[0]!, phis[N]!].map((p) => k.pathOf([onRing(F, s0, ri, p), onRing(F, s0, R, p), onRing(F, s1, R, p), onRing(F, s1, ri, p)].map(at), true)).join('');
@@ -562,7 +562,7 @@ function inducer(F: Frame, s0: number, s1: number, hub: number, tip: number, tur
 		let run: Array<[Flat, Flat]> = [];
 		let side: boolean | null = null;
 		const flush = () => {
-			if (run.length > 1) (side ? out.edgeFront : out.edgeBack).push(k.pathOf([...run.map((r) => r[0]), ...[...run].reverse().map((r) => r[1])], true));
+			if (run.length > 1) (side ? out.edgeFront : out.edgeBack).push(k.pathOf([...run.map((r) => r[0]), ...run.toReversed().map((r) => r[1])], true));
 		};
 		for (let i = 0; i < M; i++) {
 			const sa = s0 + ((s1 - s0) * i) / M;

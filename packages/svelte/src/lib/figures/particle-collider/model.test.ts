@@ -35,7 +35,7 @@ group('particle-collider model', () => {
 		expect(two).toContain(-0);
 		const later = bunchesAt(p, t + 0.5, -300, 300);
 		expect(later.one[0]! - one[0]!).toBeCloseTo(DRAW_SPEED * 0.5, 9);
-		expect([...later.two].sort((a, b) => a - b)).toEqual(later.one.map((s) => -s).sort((a, b) => a - b));
+		expect(later.two.toSorted((a, b) => a - b)).toEqual(later.one.map((s) => -s).sort((a, b) => a - b));
 		for (const s of [...later.one, ...later.two]) expect(Math.abs(s)).toBeLessThanOrEqual(300);
 	});
 

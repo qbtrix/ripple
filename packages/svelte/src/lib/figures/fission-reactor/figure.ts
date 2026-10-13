@@ -614,7 +614,7 @@ function staticItems(): Item[] {
 	const kDeck = key([87, SHAFT.y]);
 	for (const [id, y, z, kind] of [['warm-water', SHAFT.y - 6, 30, 'out'], ['cold-water', SHAFT.y + 6, 13, 'in']] as const) {
 		const route: Point3[] = [[COND.x + COND.w + 7, y, z], [DECK.x + DECK.w + 1.5, y, z], [192, y, z]];
-		const r = pipe(id, kind === 'out' ? route : [...route].reverse(), 3.4, { flow: 'water', tone: 'blue', cls: 'fr-water', pad: 0, keys: kind === 'out' ? [kDeck - 1, key([182, y])] : [key([182, y]), kDeck - 1] });
+		const r = pipe(id, kind === 'out' ? route : route.toReversed(), 3.4, { flow: 'water', tone: 'blue', cls: 'fr-water', pad: 0, keys: kind === 'out' ? [kDeck - 1, key([182, y])] : [key([182, y]), kDeck - 1] });
 		push(r.items.filter((i) => !i.id.includes('elbow')));
 		add(`${id}-flange`, key([DECK.x + DECK.w + 1.5, y]) + 0.5, flange([DECK.x + DECK.w + 1.5, y, z], [1, 0, 0], 3.4, 'fr-water'));
 	}

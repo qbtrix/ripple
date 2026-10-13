@@ -149,7 +149,7 @@ function oriented(points: Flat[]) {
 		const [bx, by] = points[(i + 1) % points.length]!;
 		a += ax * by - bx * ay;
 	}
-	return a < 0 ? [...points].reverse() : points;
+	return a < 0 ? points.toReversed() : points;
 }
 
 function area(ring: Ring2) {
@@ -168,7 +168,7 @@ function area(ring: Ring2) {
  * flat end caps. The fill is the union of every visible face.
  */
 function revolve(profile: Ring2, th0: number, th1: number, steps: number, caps: { start?: boolean; end?: boolean; joined?: boolean; hull?: boolean } = {}): SolidPaths {
-	const prof = area(profile) < 0 ? [...profile].reverse() : profile;
+	const prof = area(profile) < 0 ? profile.toReversed() : profile;
 	const n = prof.length;
 	const ths = Array.from({ length: steps + 1 }, (_, j) => th0 + ((th1 - th0) * j) / steps);
 	const pts = prof.map(([R, z]) => ths.map((th) => at(W(R, th, z))));
@@ -274,7 +274,7 @@ const coilFrame = (th: number): k.Frame => ({ o: [0, 0, 0], a: ePhi(th), u: eR(t
 
 /** A flat plate in frame F: `outer` (and holes) in (u, v), swept along the axis from s0 to s1. Concave outlines are fine. */
 function plate(F: k.Frame, outer: Ring2, s0: number, s1: number, holes: Ring2[] = []): SolidPaths {
-	const rings = [area(outer) < 0 ? [...outer].reverse() : outer, ...holes.map((h) => (area(h) > 0 ? [...h].reverse() : h))];
+	const rings = [area(outer) < 0 ? outer.toReversed() : outer, ...holes.map((h) => (area(h) > 0 ? h.toReversed() : h))];
 	const front = k.dot3(F.a, V) > 0 ? s1 : s0;
 	const back = front === s1 ? s0 : s1;
 	const p = (s: number, u: number, v: number) => at(k.pointOf(F, s, u, v));
