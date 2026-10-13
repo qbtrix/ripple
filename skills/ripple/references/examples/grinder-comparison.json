@@ -1,0 +1,67 @@
+{
+  "version": "1.0",
+  "state": {},
+  "ui": {
+    "type": "comparison-layout",
+    "props": {
+      "title": "Three espresso grinders for a home bar",
+      "subtitle": "Two drinks a day, a small counter. Sample data, fictional brands.",
+      "verdict": {
+        "text": "Get the Halden Duo 64: quiet enough for 6 am without hand cranking, and its flat burrs dial in espresso and filter.",
+        "status": "good"
+      },
+      "currency": "USD",
+      "winner": {
+        "id": "halden-duo-64",
+        "reason": "The quietest electric one at 68 dB, 260 grind steps for fine espresso changes, and it fits under a wall cabinet.",
+        "runner_up": {
+          "id": "marlow-sg-54",
+          "reason": "The cheapest electric one, with good espresso, if the noise and the coarse steps do not bother you."
+        }
+      },
+      "picks": [
+        { "id": "marlow-sg-54", "label": "Cheapest electric" },
+        { "id": "brisa-hand-38", "label": "Silent, by hand" }
+      ],
+      "items": [
+        {
+          "id": "halden-duo-64",
+          "name": "Halden Duo 64",
+          "subtitle": "64 mm flat burrs",
+          "price": 549,
+          "noise": 68,
+          "steps": 260,
+          "weight": 4.2,
+          "burrs": "Flat, steel"
+        },
+        {
+          "id": "marlow-sg-54",
+          "name": "Marlow SG 54",
+          "subtitle": "54 mm conical burrs",
+          "price": 329,
+          "noise": 79,
+          "steps": 40,
+          "weight": 3.1,
+          "burrs": "Conical, steel"
+        },
+        {
+          "id": "brisa-hand-38",
+          "name": "Brisa Hand 38",
+          "subtitle": "Hand grinder",
+          "price": 189,
+          "noise": 45,
+          "steps": 90,
+          "weight": 0.7,
+          "burrs": "Conical, titanium"
+        }
+      ],
+      "features": [
+        { "key": "noise", "label": "Noise", "kind": "number", "unit": "dB", "better": "lower", "icon": "audio", "highlight": true },
+        { "key": "steps", "label": "Grind steps", "kind": "number", "better": "higher", "icon": "size", "highlight": true },
+        { "key": "weight", "label": "Weight", "kind": "number", "unit": "kg", "better": "lower", "icon": "weight" },
+        { "key": "burrs", "label": "Burrs", "kind": "text", "icon": "motor" }
+      ]
+    },
+    "bind": "grinder"
+  }
+}
