@@ -11,8 +11,16 @@
 //
 // It is also a module: `renderer(spec, { base, widths, themes, outdir })`
 // does the same shots and returns one RenderResult per width x theme (the
-// shape `@ripple-ui/core/build` takes), throwing on a setup error instead of
-// exiting. build.mjs uses it. The CLI and renderer() share one code path.
+// shape `@ripple-ui/core/build` takes, with offender boxes), throwing on a
+// setup error instead of exiting. build.mjs uses it. The CLI and renderer()
+// share one code path.
+//
+// The page audit is not in this file: it is the site's own
+// `<base>/page-audit.js` (built from packages/svelte/src/lib/build/page-audit.ts),
+// fetched once per call and evaluated in each page, so the skill, the worker
+// and the chat page run one audit. A site without that file is a setup error
+// (exit 2): deploy the site before releasing a skill that needs it. axe-core
+// stays here.
 //
 // Invariants: one browser per call and only paths under <outdir>, so several
 // calls can run at once. It never starts a server. Theme is set the way a
@@ -100,137 +108,28 @@ async function checkServer(base) {
 	if (!r.ok) fail(`${base}/playground answered ${r.status}`);
 }
 
-// Runs in the page: the counts for one render. `root` is the shot surface.
-function auditInPage() {
-	const surface = [...document.querySelectorAll('.surface')].find((s) => s.querySelector('.ripple-root'));
-	const out = { surfaceWidth: 0, surfaceHeight: 0, errorBoxes: [], overflow: [], clippedText: [], emptyContainers: [], badText: [] };
-	if (!surface) return out;
-	const root = surface.querySelector('.ripple-root');
-	const r = surface.getBoundingClientRect();
-	out.surfaceWidth = Math.round(r.width);
-	out.surfaceHeight = Math.round(r.height);
-	const where = (el) => {
-		const node = el.closest('[data-ripple-node]')?.getAttribute('data-ripple-node');
-		const w = el.closest('[data-widget]')?.getAttribute('data-widget');
-		const cls = typeof el.className === 'string' ? el.className.split(/\s+/).slice(0, 2).join('.') : '';
-		return [w && `widget=${w}`, node && `node=${node}`, `${el.tagName.toLowerCase()}${cls ? '.' + cls : ''}`].filter(Boolean).join(' ');
+/** The site's shared page audit (a script that sets globalThis.ripplePageAudit); throws SetupError without it. */
+async function loadPageAudit(base) {
+	let r;
+	try {
+		r = await fetch(`${base}/page-audit.js`, { signal: AbortSignal.timeout(5000) });
+	} catch {}
+	if (!r?.ok)
+		fail(`${base}/page-audit.js is missing (${r ? r.status : 'no answer'}): this Ripple site predates the shared page audit. Deploy the ripple site first (in a ripple checkout: cd packages/svelte && bun run deploy:site), or for a local build run bun run build:site && bunx vite preview --port 4790 and pass --base http://localhost:4790`);
+	return r.text();
+}
+
+/** Ripple node id -> JSON Pointer into the spec, for the nodes that carry an id. */
+function nodePaths(spec) {
+	const paths = new Map();
+	const walk = (n, p) => {
+		if (!n || typeof n !== 'object') return;
+		if (typeof n.id === 'string') paths.set(n.id, p);
+		if (Array.isArray(n.children)) n.children.forEach((c, i) => walk(c, `${p}/children/${i}`));
+		if (Array.isArray(n.else_children)) n.else_children.forEach((c, i) => walk(c, `${p}/else_children/${i}`));
 	};
-	const visible = (el) => {
-		const s = getComputedStyle(el);
-		if (s.display === 'none' || s.visibility === 'hidden' || Number(s.opacity) === 0) return false;
-		const b = el.getBoundingClientRect();
-		return b.width > 0 && b.height > 0;
-	};
-	const text = (el) => (el.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 50);
-
-	// Render errors: the node boundary, an unknown type, the pane's own alerts.
-	for (const el of document.querySelectorAll('[data-ripple-node-error], [data-ripple-unknown-widget], .pane .alert, .url-error'))
-		out.errorBoxes.push(`${where(el)}: ${text(el)}`);
-
-	// Drawing internals (paths, groups inside an svg) are not layout boxes; the svg itself is.
-	const all = [...root.querySelectorAll('*')].filter((el) => !el.parentElement?.closest('svg') && visible(el));
-	const clips = (el) => ['hidden', 'clip', 'auto', 'scroll'].includes(getComputedStyle(el).overflowX);
-	const clippedByAncestor = (el) => {
-		for (let p = el.parentElement; p && p !== surface; p = p.parentElement) if (clips(p)) return true;
-		return false;
-	};
-
-	// Horizontal overflow: the surface or a box inside it scrolls sideways, or an
-	// unclipped element pokes past the surface edge (outermost offender only).
-	if (surface.scrollWidth > surface.clientWidth + 1) out.overflow.push(`surface scrollWidth ${surface.scrollWidth} > ${surface.clientWidth}`);
-	for (const el of all) {
-		const s = getComputedStyle(el);
-		if ((s.overflowX === 'auto' || s.overflowX === 'scroll') && el.scrollWidth > el.clientWidth + 1)
-			out.overflow.push(`${where(el)} scrolls sideways ${el.scrollWidth} > ${el.clientWidth}`);
-		const b = el.getBoundingClientRect();
-		if ((b.right > r.right + 1 || b.left < r.left - 1) && !clippedByAncestor(el)) {
-			const p = el.parentElement?.getBoundingClientRect();
-			if (p && (p.right > r.right + 1 || p.left < r.left - 1)) continue;
-			out.overflow.push(`${where(el)} spans ${Math.round(b.left - r.left)}..${Math.round(b.right - r.left)} of ${Math.round(r.width)}`);
-		}
-	}
-
-	// Clipped text: an element's own text runs past its box and the box cuts it
-	// (overflow hidden/clip, ellipsis, a line clamp). overflow:hidden does not
-	// excuse it: the reader still loses the words. Measured on the text itself
-	// (a Range), so positioned children do not count.
-	for (const el of all) {
-		const nodes = [...el.childNodes].filter((n) => n.nodeType === 3 && n.textContent.trim());
-		if (!nodes.length || el.closest('svg, canvas, [aria-hidden="true"]')) continue;
-		const s = getComputedStyle(el);
-		// Visually hidden screen-reader text (sr-only: 1px box, clipped) is meant to be clipped.
-		if (el.clientWidth <= 2 || el.clientHeight <= 2 || (s.clip && s.clip !== 'auto') || s.clipPath.startsWith('inset(50%')) continue;
-		const cutsX = s.overflowX !== 'visible' || s.textOverflow === 'ellipsis';
-		const cutsY = s.overflowY !== 'visible' || s.webkitLineClamp !== 'none';
-		if (!cutsX && !cutsY) continue;
-		const box = el.getBoundingClientRect();
-		let wide = 0, tall = 0;
-		for (const n of nodes) {
-			const range = document.createRange();
-			range.selectNodeContents(n);
-			const t = range.getBoundingClientRect();
-			wide = Math.max(wide, t.right - box.right, box.left - t.left);
-			tall = Math.max(tall, t.bottom - box.bottom);
-		}
-		// A clipped single line still lays out at full width inside its box, so scrollWidth tells it.
-		if (cutsX && s.whiteSpace.includes('nowrap')) wide = Math.max(wide, el.scrollWidth - el.clientWidth);
-		if (s.webkitLineClamp !== 'none') tall = Math.max(tall, el.scrollHeight - el.clientHeight);
-		if ((cutsX && wide > 1) || (cutsY && tall > 2))
-			out.clippedText.push(`${where(el)} "${text(el)}" (${wide > 1 ? `${Math.round(wide)}px cut sideways` : `${Math.round(tall)}px cut below`})`);
-	}
-
-	// Inputs hold their words in a value, not a text node: a value wider than its
-	// box is cut the same way (a 20-character name in a narrow name field).
-	for (const el of root.querySelectorAll('input, textarea')) {
-		if (!visible(el) || !el.value || ['checkbox', 'radio', 'range', 'color', 'hidden', 'file'].includes(el.type)) continue;
-		const cut = el.scrollWidth - el.clientWidth;
-		if (cut > 1) out.clippedText.push(`${where(el)} value "${el.value.slice(0, 40)}" (${Math.round(cut)}px cut sideways)`);
-	}
-
-	// Chart and drawing labels: svg text cut by its own svg's edge (a last axis tick "14:2").
-	for (const t of root.querySelectorAll('svg text')) {
-		const svg = t.ownerSVGElement;
-		if (!svg || !visible(svg) || !(t.textContent ?? '').trim()) continue;
-		const sb = svg.getBoundingClientRect();
-		const tb = t.getBoundingClientRect();
-		if (tb.width === 0) continue;
-		const cut = Math.max(tb.right - sb.right, sb.left - tb.left, tb.bottom - sb.bottom, sb.top - tb.top);
-		if (cut > 1 && getComputedStyle(svg).overflow !== 'visible')
-			out.clippedText.push(`${where(svg)} svg text "${t.textContent.trim().slice(0, 30)}" (${Math.round(cut)}px past the svg edge)`);
-	}
-
-	// Empty containers: a visible in-flow box of real size with no text, no media, no control, no drawing.
-	const MEDIA = 'img, svg, canvas, video, iframe, input, textarea, select, button, [role="img"], [role="slider"], [role="progressbar"], [role="separator"], hr';
-	for (const el of all) {
-		const b = el.getBoundingClientRect();
-		if (b.width < 40 || b.height < 40) continue;
-		if (el.matches(MEDIA) || el.querySelector(MEDIA)) continue;
-		if ((el.textContent ?? '').trim()) continue;
-		const s = getComputedStyle(el);
-		if (s.backgroundImage !== 'none') continue;
-		// Decoration (rings, glows, overlays) is positioned or hidden from assistive tech.
-		if (s.position === 'absolute' || s.position === 'fixed' || el.closest('[aria-hidden="true"]')) continue;
-		if (el.parentElement && !el.parentElement.textContent.trim() && el.parentElement !== root && root.contains(el.parentElement)) {
-			const pb = el.parentElement.getBoundingClientRect();
-			if (pb.width >= 40 && pb.height >= 40) continue; // report the outermost only
-		}
-		out.emptyContainers.push(`${where(el)} ${Math.round(b.width)}x${Math.round(b.height)}`);
-	}
-
-	// Leaked values in visible text.
-	const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-	const BAD = /\bNaN\b|\bundefined\b|\[object Object\]|\bnull\b|\{state\.|Infinity/;
-	for (let n = walker.nextNode(); n; n = walker.nextNode()) {
-		const el = n.parentElement;
-		if (!el || !visible(el) || !BAD.test(n.textContent)) continue;
-		out.badText.push(`${where(el)} "${n.textContent.trim().slice(0, 60)}"`);
-	}
-	// Text that looks like a JSON object or array printed raw (F2).
-	for (const el of all) {
-		const t = [...el.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join('').trim();
-		if (/^[{[]\s*"[^"]+"\s*:/.test(t)) out.badText.push(`${where(el)} raw JSON "${t.slice(0, 60)}"`);
-	}
-	return out;
+	walk(spec?.ui, '/ui');
+	return paths;
 }
 
 async function settle(page) {
@@ -290,10 +189,12 @@ async function run(packed, { base, widths, themes, outdir }) {
 	const chromium = loadChromium();
 	const axeSource = loadAxe();
 	await checkServer(base);
+	const auditSource = await loadPageAudit(base);
 	mkdirSync(outdir, { recursive: true });
 	const url = `${base}/playground?s=${packed}`;
 	const browser = await launch(chromium);
 	const shots = [];
+	const boxes = []; // per shot, beside `shots` so audit.json keeps its shape
 	const consoleErrors = [];
 	let axeResult = axeSource ? [] : null;
 	let status = null;
@@ -327,7 +228,14 @@ async function run(packed, { base, widths, themes, outdir }) {
 					rendered = false;
 				}
 				const themeOk = await page.evaluate((t) => document.documentElement.classList.contains('dark') === (t === 'dark'), theme);
-				const a = await page.evaluate(auditInPage);
+				await page.evaluate(auditSource);
+				const res = await page.evaluate(() => {
+					const s = [...document.querySelectorAll('.surface')].find((x) => x.querySelector('.ripple-root'));
+					return s ? globalThis.ripplePageAudit(s, { documentErrors: '.pane .alert, .url-error' }) : null;
+				});
+				const a = { surfaceWidth: res?.width ?? 0, surfaceHeight: res?.height ?? 0 };
+				for (const k of LISTS) a[k] = res?.items[k] ?? [];
+				boxes.push(res?.boxes ?? []);
 				status ??= await page.evaluate(() => {
 					const s = document.querySelector('.surface .ripple-root')?.closest('.pane')?.querySelector('.strip .state');
 					return s ? s.textContent.replace(/\s+/g, ' ').trim() : null;
@@ -351,7 +259,7 @@ async function run(packed, { base, widths, themes, outdir }) {
 	} finally {
 		await browser.close();
 	}
-	return { shots, consoleErrors, axeResult, axeSource, status };
+	return { shots, boxes, consoleErrors, axeResult, axeSource, status };
 }
 
 const DEFAULTS = { widths: [380, 1024], themes: ['light', 'dark'] };
@@ -361,13 +269,17 @@ const LISTS = ['errorBoxes', 'overflow', 'clippedText', 'emptyContainers', 'badT
  * Renders `spec` at each width x theme into `outdir` (PNG per shot, no
  * audit.json) and returns one RenderResult per shot: `{ width, theme, png,
  * audit, boxes }`, where `audit` is one `{ check, count, items }` report per
- * audit count (axe only when axe-core is present). `boxes` is empty for now.
+ * audit count (axe only when axe-core is present), and `boxes` is one
+ * `{ check, path?, x, y, w, h }` per page-audit item: CSS px from the shot's
+ * top left (the PNG is at device scale 2), `path` a JSON Pointer to the node
+ * when the node has an id.
  * Throws SetupError on a usage or setup problem.
  */
 export async function renderer(spec, { base = process.env.RIPPLE_BASE || DEFAULT_BASE, widths = DEFAULTS.widths, themes = DEFAULTS.themes, outdir } = {}) {
 	if (!outdir) fail('renderer() needs an outdir');
 	const out = await run(pack(spec), { base: base.replace(/\/$/, ''), widths, themes, outdir: resolve(outdir) });
-	return out.shots.map((s) => {
+	const paths = nodePaths(spec);
+	return out.shots.map((s, i) => {
 		const tag = `${s.width}-${s.theme}`;
 		const report = (check, messages) => ({
 			check,
@@ -382,7 +294,8 @@ export async function renderer(spec, { base = process.env.RIPPLE_BASE || DEFAULT
 			report('consoleErrors', mine(out.consoleErrors))
 		];
 		if (out.axeResult) audit.push(report('axeViolations', mine(out.axeResult)));
-		return { width: s.width, theme: s.theme, png: s.file, audit, boxes: [] };
+		const boxes = out.boxes[i].map(({ node, ...b }) => (paths.has(node) ? { ...b, path: paths.get(node) } : b));
+		return { width: s.width, theme: s.theme, png: s.file, audit, boxes };
 	});
 }
 

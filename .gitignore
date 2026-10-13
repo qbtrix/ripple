@@ -47,3 +47,6 @@ vite.config.ts.timestamp-*
 
 # Copied from the repo root by packages/core prepack.
 /packages/core/THIRD_PARTY_NOTICES.md
+
+# Built by `bun run build:page-audit` (part of build:site) from src/lib/build/page-audit.entry.ts
+packages/svelte/static/page-audit.js
