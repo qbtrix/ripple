@@ -1,0 +1,105 @@
+{
+ "id": "particle-collider",
+ "title": "How a particle collider works",
+ "prompt": "How does a particle collider work? Show me the beams, the magnets and the detector, and let me change the beam energy.",
+ "model": "hand-written",
+ "recordedAt": "2026-10-13T12:00:00.000Z",
+ "chunks": [
+  {
+   "t": 0,
+   "text": "{\"version\":\"1.0\",\"state\":{\"figure\":null},\"ui\":{\"type\":\"figure\",\"bi"
+  },
+  {
+   "t": 18,
+   "text": "nd\":\"{state.figure}\",\"props\":{\"figure\":\"particle-collider\",\"params"
+  },
+  {
+   "t": 36,
+   "text": "\":{\"energy\":6.8,\"rate\":40},\"labels\":[{\"anchor\":\"collision-point\",\""
+  },
+  {
+   "t": 54,
+   "text": "note\":\"The two beams cross here. About 25 pairs of protons hit eac"
+  },
+  {
+   "t": 72,
+   "text": "h time two bunches meet.\"},{\"anchor\":\"tracker\",\"note\":\"Thin silico"
+  },
+  {
+   "t": 90,
+   "text": "n layers record the path of every charged particle. The magnet ben"
+  },
+  {
+   "t": 108,
+   "text": "ds the paths, which gives their momentum.\"},{\"anchor\":\"ecal\",\"note"
+  },
+  {
+   "t": 126,
+   "text": "\":\"Crystals stop electrons and photons and measure their energy.\"}"
+  },
+  {
+   "t": 144,
+   "text": ",{\"anchor\":\"hcal\",\"note\":\"Dense plates stop heavier particles, lik"
+  },
+  {
+   "t": 162,
+   "text": "e protons and pions, and measure their energy.\"},{\"anchor\":\"soleno"
+  },
+  {
+   "t": 180,
+   "text": "id\",\"note\":\"A huge superconducting coil. Its field bends the track"
+  },
+  {
+   "t": 198,
+   "text": "s.\"},{\"anchor\":\"muon-chambers\",\"note\":\"Muons pass through everythi"
+  },
+  {
+   "t": 216,
+   "text": "ng else. These chambers between the iron plates catch them on the "
+  },
+  {
+   "t": 234,
+   "text": "way out.\"},{\"anchor\":\"dipole\",\"note\":\"Superconducting magnets cool"
+  },
+  {
+   "t": 252,
+   "text": "ed to 1.9 K. Their field bends both beams round the ring.\"},{\"anch"
+  },
+  {
+   "t": 270,
+   "text": "or\":\"quadrupole\",\"note\":\"Focuses the beam like a lens, so the bunc"
+  },
+  {
+   "t": 288,
+   "text": "hes stay thin.\"},{\"anchor\":\"rf-cavities\",\"note\":\"Radio waves in th"
+  },
+  {
+   "t": 306,
+   "text": "ese cavities give each bunch a push and keep it tightly bunched.\"}"
+  },
+  {
+   "t": 324,
+   "text": ",{\"anchor\":\"magnet-coils\",\"note\":\"Cut through: two beam pipes side"
+  },
+  {
+   "t": 342,
+   "text": " by side, each inside its own coil, in one iron yoke.\"}],\"caption\""
+  },
+  {
+   "t": 360,
+   "text": ":\"Like CERN's Large Hadron Collider: two beams of protons go round"
+  },
+  {
+   "t": 378,
+   "text": " a 27 km ring in opposite directions and meet inside the detector."
+  },
+  {
+   "t": 396,
+   "text": " Parts that sit kilometres apart are drawn side by side, and every"
+  },
+  {
+   "t": 414,
+   "text": "thing moves far slower than real.\"}}}"
+  }
+ ]
+}

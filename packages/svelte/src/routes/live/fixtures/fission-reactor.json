@@ -1,0 +1,93 @@
+{
+ "id": "fission-reactor",
+ "title": "How a nuclear fission reactor works",
+ "prompt": "How does a nuclear reactor make electricity? Show me the plant and let me move the control rods and the pump speed.",
+ "model": "hand-written",
+ "recordedAt": "2026-10-13T12:00:00.000Z",
+ "chunks": [
+  {
+   "t": 0,
+   "text": "{\"version\":\"1.0\",\"state\":{\"figure\":null},\"ui\":{\"type\":\"figure\",\""
+  },
+  {
+   "t": 18,
+   "text": "bind\":\"{state.figure}\",\"props\":{\"figure\":\"fission-reactor\",\"para"
+  },
+  {
+   "t": 36,
+   "text": "ms\":{\"rods\":20,\"pump\":100},\"labels\":[{\"anchor\":\"control-rods\",\"n"
+  },
+  {
+   "t": 54,
+   "text": "ote\":\"Slide them in to soak up neutrons and slow the chain react"
+  },
+  {
+   "t": 72,
+   "text": "ion. Pull them out for more power.\"},{\"anchor\":\"fuel\",\"note\":\"Ur"
+  },
+  {
+   "t": 90,
+   "text": "anium fuel. Splitting its atoms here makes the heat.\"},{\"anchor\""
+  },
+  {
+   "t": 108,
+   "text": ":\"reactor-vessel\",\"note\":\"A thick steel vessel. Water at 155 bar"
+  },
+  {
+   "t": 126,
+   "text": " flows through the core without boiling.\"},{\"anchor\":\"pressurise"
+  },
+  {
+   "t": 144,
+   "text": "r\",\"note\":\"Holds the pressure up so the hot water stays liquid.\""
+  },
+  {
+   "t": 162,
+   "text": "},{\"anchor\":\"steam-generator\",\"note\":\"Hot water from the core bo"
+  },
+  {
+   "t": 180,
+   "text": "ils a separate loop of water into steam.\"},{\"anchor\":\"coolant-pu"
+  },
+  {
+   "t": 198,
+   "text": "mp\",\"note\":\"Pushes the water round the loop. Slower pumps let th"
+  },
+  {
+   "t": 216,
+   "text": "e core run hotter.\"},{\"anchor\":\"turbine\",\"note\":\"The steam spins"
+  },
+  {
+   "t": 234,
+   "text": " the turbine.\"},{\"anchor\":\"generator\",\"note\":\"Turns the spin int"
+  },
+  {
+   "t": 252,
+   "text": "o electricity.\"},{\"anchor\":\"condenser\",\"note\":\"Cools the used st"
+  },
+  {
+   "t": 270,
+   "text": "eam back into water for the next trip.\"},{\"anchor\":\"cooling-towe"
+  },
+  {
+   "t": 288,
+   "text": "r\",\"note\":\"Carries the leftover heat away into the air.\"}],\"capt"
+  },
+  {
+   "t": 306,
+   "text": "ion\":\"Splitting uranium heats water that never boils; it boils a"
+  },
+  {
+   "t": 324,
+   "text": " second loop into steam that spins the turbine. Move the control"
+  },
+  {
+   "t": 342,
+   "text": " rods and the pump speed and watch the power and the coolant tem"
+  },
+  {
+   "t": 360,
+   "text": "perature.\"}}}"
+  }
+ ]
+}

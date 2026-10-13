@@ -3,8 +3,10 @@ import { FIGURES } from './index.js';
 import { frameOf, pointsOf } from './frame.js';
 import { heartSvg } from './heart/figure.js';
 import { bikeSvg } from './bike-gears/figure.js';
+import { reactorSvg } from './fission-reactor/figure.js';
 import { clampParams as heartParams } from './heart/model.js';
 import { clampParams as bikeParams } from './bike-gears/model.js';
+import { clampParams as reactorParams } from './fission-reactor/model.js';
 
 const viewBox = (svg: string) => svg.match(/viewBox="([^"]*)"/)![1]!.split(' ').map(Number) as [number, number, number, number];
 
@@ -22,17 +24,14 @@ describe('figure framing', () => {
 
 	const frames: Array<[string, string[]]> = [
 		['heart', [heartSvg(heartParams({ bpm: 40, stroke: 110 }), 0.3), heartSvg(heartParams({ bpm: 180 }), 0.1)]],
-		['bike-gears', [bikeSvg(bikeParams({ ring: 50, gear: 7 }), { theta: 0.7 }), bikeSvg(bikeParams({ ring: 34, gear: 1 }), { theta: 2.9, pose: { ring: 0.5, cog: 2.5 } })]]
+		['bike-gears', [bikeSvg(bikeParams({ ring: 50, gear: 7 }), { theta: 0.7 }), bikeSvg(bikeParams({ ring: 34, gear: 1 }), { theta: 2.9, pose: { ring: 0.5, cog: 2.5 } })]],
+		['fission-reactor', [reactorSvg(reactorParams({ rods: 0, pump: 40 }), { fanAngle: 2 }), reactorSvg(reactorParams({ rods: 100, pump: 100 }), { pumpAngle: 4, turbineAngle: 1 })]]
 	];
 	test.each(frames)('%s: the viewBox holds every point it draws, at any moment', (_, svgs) => {
 		for (const svg of svgs) {
 			const [x, y, w, h] = viewBox(svg);
-			for (const [px, py] of pointsOf(svg)) {
-				expect(px).toBeGreaterThanOrEqual(x);
-				expect(px).toBeLessThanOrEqual(x + w);
-				expect(py).toBeGreaterThanOrEqual(y);
-				expect(py).toBeLessThanOrEqual(y + h);
-			}
+			// One expect over the stray points: an expect per point is slow under a loaded suite.
+			expect(pointsOf(svg).filter(([px, py]) => px < x || px > x + w || py < y || py > y + h)).toEqual([]);
 		}
 	});
 
