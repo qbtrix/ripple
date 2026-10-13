@@ -96,6 +96,41 @@ describe('specAudit', () => {
 		]);
 	});
 
+	it('passes literal text that only looks like a leftover', () => {
+		const spec = { ui: { type: 'text', props: { text: 'Infinity pool, NaN the nanny, undefined behaviour' } }, state: {} };
+		expect(items(spec)).toEqual([]);
+	});
+
+	it('flags an embedded read of unseeded state once, but not host data', () => {
+		const spec = {
+			ui: {
+				type: 'card',
+				children: [
+					{ type: 'text', props: { text: 'Price: {state.missing} USD' } },
+					{ type: 'text', props: { text: 'Plan: {data.plan}' } }
+				]
+			},
+			state: {}
+		};
+		expect(items(spec)).toEqual([
+			{
+				code: 'leftover',
+				path: '/ui/children/0/props/text',
+				message: '`{state.missing}` is undefined, so it renders as blank; seed the state it reads'
+			}
+		]);
+	});
+
+	it('keeps a schema fault at child 1 when child 10 has an unknown action', () => {
+		const children: unknown[] = Array.from({ length: 11 }, () => ({ type: 'text', props: { text: 'x' } }));
+		children[1] = { type: 'button', props: { label: 'Go' }, on_click: { action: 'set' } };
+		children[10] = { type: 'button', props: { label: 'Go' }, on_click: { action: 'boom' } };
+		expect(items({ ui: { type: 'card', children }, state: {} })).toEqual([
+			expect.objectContaining({ code: 'schema', path: '/ui/children/1/on_click' }),
+			expect.objectContaining({ code: 'badAction', path: '/ui/children/10/on_click' })
+		]);
+	});
+
 	it('reports a bind missing in one loop row once, at the node', () => {
 		const spec = {
 			ui: { type: 'each', items: '{state.rows}', children: [{ type: 'input', bind: 'rows.{index}.qty' }] },

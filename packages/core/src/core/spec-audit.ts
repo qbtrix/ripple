@@ -11,8 +11,11 @@
 //   - action: every handler and sub-step names an `EventAction`.
 //   - envelope: a top-level key from `specEnvelope.aliasesNotAllowed`.
 //   - leftover, bind, twoControls read the tree after `resolveTree` against
-//     the seed state; each, expr and props read the raw tree. expr calls the
-//     evaluator directly, since `resolveString` swallows every throw.
+//     the seed state. expr evaluates each resolved node's source props with
+//     its loop context, calling the evaluator directly since `resolveString`
+//     swallows every throw; an embedded expression that comes out undefined
+//     (blank in the render) is a leftover. Leftover text is only looked for in
+//     strings that resolution changed. each and props read the raw tree.
 //   - size: the base64url share link (`specFromUrl.ts` in the svelte package)
 //     must fit `SHARE_CAP`.
 //   - futureDate: an ISO date more than a day after `now`, skipped (count 0)
@@ -146,9 +149,16 @@ const LEFTOVER_TEXT = /\{[^{}\s][^{}]*\}|\bundefined\b|\bNaN\b|\bInfinity\b|\[ob
 /** Where a resolved node's spec node sits, through `ResolvedNode.source`. */
 const flatten = (nodes: ResolvedNode[]): ResolvedNode[] => nodes.flatMap((n) => [n, ...flatten(n.children)]);
 
-/** A props expression the evaluator throws on, per node and per loop copy. */
-function exprItems(resolved: ResolvedNode[], where: Map<object, string>, state: Obj): AuditItem[] {
+const READS_DATA = /(?<![\w.$])data\b/; // host data, not in the spec
+
+/**
+ * Per node and loop copy: props expressions the evaluator throws on (`thrown`),
+ * and ones that come out undefined, which render as blank (`blank`, leftovers;
+ * not for expressions reading host `data`).
+ */
+function exprItems(resolved: ResolvedNode[], where: Map<object, string>, state: Obj) {
 	const items: AuditItem[] = [];
+	const blank: AuditItem[] = [];
 	for (const node of resolved) {
 		const at = node.source && where.get(node.source);
 		if (!at) continue;
@@ -156,7 +166,13 @@ function exprItems(resolved: ResolvedNode[], where: Map<object, string>, state: 
 			if (typeof leaf.value !== 'string') continue;
 			for (const [, expr] of leaf.value.matchAll(EXPRESSION)) {
 				try {
-					evaluateExpression(expr, { state, data: {}, ...(node.loop ?? {}) });
+					const value = evaluateExpression(expr, { state, data: {}, ...(node.loop ?? {}) });
+					if (value === undefined && !READS_DATA.test(expr))
+						blank.push({
+							code: 'leftover',
+							path: leaf.at,
+							message: `\`{${expr}}\` is undefined, so it renders as blank; seed the state it reads`
+						});
 				} catch {
 					// The engine's own error text differs by JS engine; keep the message stable.
 					items.push({
@@ -168,15 +184,21 @@ function exprItems(resolved: ResolvedNode[], where: Map<object, string>, state: 
 			}
 		}
 	}
-	return dedupe(items);
+	return { thrown: dedupe(items), blank };
 }
 
-/** Resolved prop values that did not resolve to something a person can read. */
+/**
+ * Resolved prop values that did not resolve to something a person can read.
+ * undefined and non-finite numbers cannot be JSON, so they always come from
+ * resolution; leftover text is only looked for where resolution changed the
+ * string, so literal text ("Infinity pool") passes.
+ */
 function leftoverItems(resolved: ResolvedNode[], where: Map<object, string>, skip: Set<string>): AuditItem[] {
 	const items: AuditItem[] = [];
 	for (const node of resolved) {
 		const at = node.source && where.get(node.source);
 		if (!at) continue;
+		const source = new Map(leaves(node.source?.props, `${at}/props`).map((l) => [l.at, l.value]));
 		for (const leaf of leaves(node.props, `${at}/props`)) {
 			if (skip.has(leaf.at)) continue;
 			const { value } = leaf;
@@ -185,7 +207,7 @@ function leftoverItems(resolved: ResolvedNode[], where: Map<object, string>, ski
 					? 'resolves to undefined; seed the state it reads'
 					: typeof value === 'number' && !Number.isFinite(value)
 						? `resolves to ${value}`
-						: typeof value === 'string' && LEFTOVER_TEXT.test(value)
+						: typeof value === 'string' && source.get(leaf.at) !== value && LEFTOVER_TEXT.test(value)
 							? `renders as "${value.slice(0, 60)}"`
 							: '';
 			if (bad) items.push({ code: 'leftover', path: leaf.at, message: `this prop ${bad}` });
@@ -333,7 +355,7 @@ export function specAudit(spec: unknown, opts: SpecAuditOptions = {}): AuditRepo
 		? []
 		: parsed.error.issues
 				.map((issue) => ({ code: 'schema', path: toPointer(issue.path), message: issue.message }))
-				.filter((i) => !(/\/on_/.test(i.path) && action.some((a) => a.path.startsWith(i.path))));
+				.filter((i) => !(/\/on_/.test(i.path) && action.some((a) => a.path === i.path || a.path.startsWith(`${i.path}/`))));
 
 	const catalog: AuditItem[] = root
 		? validateCatalog(root as never, catalogOpts).map((node) => ({
@@ -355,15 +377,18 @@ export function specAudit(spec: unknown, opts: SpecAuditOptions = {}): AuditRepo
 			unresolved = [{ code: 'leftover', path: '/ui', message: `the tree does not resolve (${String(err)})` }];
 		}
 	}
-	const expr = exprItems(resolved, where, state);
+	const { thrown: expr, blank } = exprItems(resolved, where, state);
 	const thrown = new Set(expr.map((i) => i.path));
+	const leftover = [...unresolved, ...leftoverItems(resolved, where, thrown)];
+	const flagged = new Set([...thrown, ...leftover.map((i) => i.path)]);
+	leftover.push(...dedupe(blank.filter((i) => !flagged.has(i.path))));
 
 	const reports = [
 		report('schema', schema),
 		report('catalog', catalog),
 		report('action', action),
 		report('envelope', root ? envelopeItems(root) : []),
-		report('leftover', [...unresolved, ...leftoverItems(resolved, where, thrown)]),
+		report('leftover', leftover),
 		report('each', eachItems(nodes, state)),
 		report('bind', bindItems(resolved, where)),
 		report('expr', expr)
