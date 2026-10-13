@@ -24,6 +24,7 @@ export const intervalWorkoutEntry: WidgetManifestEntry = {
     workSec: { type: 'number', required: true, description: 'Seconds of work per exercise (5 to 600). Two-way bind with `bind: "{state.workSec}"`; a change applies from the next interval.' },
     restSec: { type: 'number', required: true, description: 'Seconds of rest between exercises (0 to 300; 0 skips rests).' },
     rounds: { type: 'number', required: false, description: 'Times through the list. Default 1. Total time = rounds × exercises × workSec plus the rests.' },
+    sound: { type: 'boolean', required: false, description: 'Quiet cues: a tick in the last 3 seconds of each interval, a chime between intervals and one when done. Default true; false mutes this widget.' },
   },
   example: {
     type: 'interval-workout',

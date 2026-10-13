@@ -25,6 +25,7 @@ export const quizEntry: WidgetManifestEntry = {
       required: false,
       description: 'Progress, written by the widget: the current question, the picked choice per answered question (null = ran out of time), the score and whether every question is answered. Bind with `bind: "{state.quiz}"`.',
     },
+    sound: { type: 'boolean', required: false, description: 'Quiet cues for a right or wrong answer and a finished quiz. Default true; false mutes this widget.' },
   },
   events: {
     on_complete: { type: 'EventAction', required: false, description: 'Fired once per run when the last question is answered, with { score, total }.' },

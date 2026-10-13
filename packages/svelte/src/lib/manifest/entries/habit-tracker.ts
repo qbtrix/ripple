@@ -27,6 +27,7 @@ export const habitTrackerEntry: WidgetManifestEntry = {
       required: false,
       description: 'Demo ticks per habit id as day offsets back from today (0 = today, 1 = yesterday). Leave out for a fresh tracker.',
     },
+    sound: { type: 'boolean', required: false, description: 'A soft pop when a day is ticked. Default true; false mutes this widget.' },
   },
   example: {
     type: 'habit-tracker',

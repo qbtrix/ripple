@@ -17,6 +17,7 @@ export const agendaEntry: WidgetManifestEntry = {
       required: true,
       description: '1 to 30 items in running order. minutes 1 to 240. Keep notes to one short line.',
     },
+    sound: { type: 'boolean', required: false, description: "A soft chime when the running item's time is up. Default true; false mutes this widget." },
   },
   example: {
     type: 'agenda',
