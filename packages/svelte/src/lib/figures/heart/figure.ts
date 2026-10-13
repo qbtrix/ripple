@@ -19,7 +19,8 @@
 import * as k from '@ripple-ui/core/iso';
 import type { Flat, Point3, SolidPaths } from '@ripple-ui/core/iso';
 import { PAPER_CSS } from '../paper.js';
-import { clampParams, describe, readoutsOf, stateAt, stillTime, type HeartParams, type HeartState } from './model.js';
+import { frameOf, framed, percentIn, type FrameBox } from '../frame.js';
+import { clampParams, describe, readoutsOf, stateAt, stillTime, timingOf, type HeartParams, type HeartState } from './model.js';
 
 export const WIDTH = 640;
 export const HEIGHT = 420;
@@ -408,8 +409,13 @@ export interface Anchor {
 
 /** Named anchors in percent of the figure box, for the widget's pins. */
 export function anchorsOf(): Anchor[] {
+	const points = anchorPoints();
+	return points.map(([id, label, p]) => ({ id, label, ...percentIn(frame(), at(p)) }));
+}
+
+function anchorPoints(): Array<[string, string, Point3]> {
 	ready();
-	const points: Array<[string, string, Point3]> = [
+	return [
 	['right-atrium', 'Right atrium', [centreX('right', A_W) - 6, A_D / 2, A_BOT + 20]],
 	['right-ventricle', 'Right ventricle', [centreX('right', V_W) - 6, V_D / 2, 30]],
 	['left-atrium', 'Left atrium', [centreX('left', A_W) + 6, A_D / 2, A_BOT + 20]],
@@ -423,13 +429,21 @@ export function anchorsOf(): Anchor[] {
 	['pulmonary-artery', 'Pulmonary artery', [-90, 0, OUT_Z + TUBE_R]],
 	['pulmonary-veins', 'Pulmonary veins', [-50, 0, PV_Z + TUBE_R]],
 	['lungs', 'Lungs', [LUNGS.x + LUNGS.w / 2, LUNGS.y + LUNGS.d, 25]],
-	['body', 'Body', [BODY.x + BODY.w / 2, BODY.y + BODY.d, 25]]
-];
+		['body', 'Body', [BODY.x + BODY.w / 2, BODY.y + BODY.d, 25]]
+	];
+}
 
-	return points.map(([id, label, p]) => {
-		const [x, y] = at(p);
-		return { id, label, x: Math.round((x / WIDTH) * 1000) / 10, y: Math.round((y / HEIGHT) * 1000) / 10 };
-	});
+let FRAME: FrameBox | null = null;
+/** The viewBox: everything drawn through a beat, plus the pins. */
+function frame(): FrameBox {
+	if (FRAME) return FRAME;
+	ready();
+	const svgs: string[] = [];
+	// Chambers only shrink from full, so a full heart, a squeezed one and the still frame bound every beat.
+	const params = clampParams({ bpm: 40, stroke: 110 });
+	for (const t of [0, stillTime(params), timingOf(params).period * 0.9]) svgs.push(rawSvg(params, t, false));
+	FRAME = frameOf(svgs, anchorPoints().map(([, , p]) => at(p)));
+	return FRAME;
 }
 
 export const HEART_CSS = `
@@ -452,12 +466,15 @@ export const HEART_CSS = `
 
 export const LABEL = 'A heart drawn as two pumps on a bench: blue right side to the lungs, red left side to the body.';
 
-/** The whole figure as an SVG string at the given state (chambers and levers filled in). */
+/** The whole figure as an SVG string at the given state (chambers and levers filled in), framed to all it draws. */
 export function heartSvg(params: HeartParams = clampParams(), t?: number, standalone: k.Theme | false = false): string {
+	return framed(rawSvg(params, t ?? stillTime(params), standalone), frame());
+}
+
+function rawSvg(params: HeartParams, t: number, standalone: k.Theme | false): string {
 	ready();
 	const svg = k.figureSvg({ width: WIDTH, height: HEIGHT, label: LABEL, body: heartBody(), standalone });
-	const state = stateAt(params, t ?? stillTime(params));
-	return fillLive(svg, state);
+	return fillLive(svg, stateAt(params, t));
 }
 
 /** String version of the per-frame update, for static exports and SSR-free checks. */
