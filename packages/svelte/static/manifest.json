@@ -1,7 +1,7 @@
 {
   "schema": "ripple.manifest/v1",
   "version": "0.8.0",
-  "generatedAt": "2026-10-13T04:38:43.880Z",
+  "generatedAt": "2026-10-13T05:48:09.551Z",
   "spec": {
     "uiField": "ui",
     "stateField": "state",
@@ -11279,12 +11279,12 @@
     {
       "type": "figure",
       "category": "composite",
-      "description": "A hand-built live isometric figure picked by id (\"heart\": how a heart pumps; \"bike-gears\": how bike gears work), with sliders, live readouts and numbered labels on its named parts. Bind value.",
+      "description": "A hand-built live isometric figure picked by id (\"heart\": how a heart pumps; \"bike-gears\": how bike gears work; \"particle-collider\": how a particle collider works), with sliders, live readouts and numbered labels on its named parts. Bind value.",
       "props": {
         "figure": {
-          "type": "\"heart\" | \"bike-gears\"",
+          "type": "\"heart\" | \"bike-gears\" | \"particle-collider\"",
           "required": true,
-          "description": "Figure id. \"heart\" is a beating heart as two pumps: sliders bpm (40-180) and stroke (50-110 ml). \"bike-gears\" is a bicycle drivetrain on a stand: sliders cadence (40-120 rpm), ring (34 or 50 teeth) and gear (1-7, 1 = the 28-tooth cog, 7 = the 11); readouts gear ratio, metres per pedal turn and km/h."
+          "description": "Figure id. \"heart\" is a beating heart as two pumps: sliders bpm (40-180) and stroke (50-110 ml). \"bike-gears\" is a bicycle drivetrain on a stand: sliders cadence (40-120 rpm), ring (34 or 50 teeth) and gear (1-7, 1 = the 28-tooth cog, 7 = the 11); readouts gear ratio, metres per pedal turn and km/h. \"particle-collider\" is a cutaway piece of a proton collider ring (dipoles, quadrupoles, RF cavities, a layered detector where the beams cross): sliders energy (0.5-7 TeV per beam) and rate (5-40 million bunch crossings a second); readouts share of light speed, dipole field in tesla, collision energy and collisions a second."
         },
         "params": {
           "type": "Record<string, number>",
@@ -11294,7 +11294,7 @@
         "labels": {
           "type": "Array<{ anchor: string; label?: string; note?: string }>",
           "required": false,
-          "description": "Up to 10 numbered pins, plain text. heart anchors: right-atrium, right-ventricle, left-atrium, left-ventricle, tricuspid, mitral, pulmonary-valve, aortic-valve, aorta, vena-cava, pulmonary-artery, pulmonary-veins, lungs, body. bike-gears anchors: chainring, crank, pedal, chain, cassette, rear-derailleur, front-derailleur, jockey-wheels, rear-hub, wheel."
+          "description": "Up to 10 numbered pins, plain text. heart anchors: right-atrium, right-ventricle, left-atrium, left-ventricle, tricuspid, mitral, pulmonary-valve, aortic-valve, aorta, vena-cava, pulmonary-artery, pulmonary-veins, lungs, body. bike-gears anchors: chainring, crank, pedal, chain, cassette, rear-derailleur, front-derailleur, jockey-wheels, rear-hub, wheel. particle-collider anchors: collision-point, detector, tracker, ecal, hcal, solenoid, muon-chambers, beam-pipes, dipole, quadrupole, final-focus, separation-magnet, rf-cavities, magnet-coils, field-gauge."
         },
         "caption": {
           "type": "string",
