@@ -35,8 +35,8 @@
 	import { PhotoTile, VerdictLine, holds, nextEdit, plain, rise } from '../data-kit/index.js';
 	import type { Edit } from '../data-kit/edit.js';
 	import { shuffled } from './FlashcardDeck.svelte';
-	import {
 	import { playCue } from '../../sound/index.js';
+	import {
 		bandOf,
 		bestStreakOf,
 		clampSeconds,

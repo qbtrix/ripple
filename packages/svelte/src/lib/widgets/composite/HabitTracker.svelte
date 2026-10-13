@@ -56,6 +56,7 @@
 		type HabitValue
 	} from './habit-tracker.js';
 	import type { HabitIconKey } from '../data-kit/icons.js';
+	import { playCue } from '../../sound/index.js';
 
 	interface Props {
 		id?: string;
@@ -73,9 +74,11 @@
 		/** Two-way bindable: the habits and their ticked days. */
 		value?: HabitValue;
 		onchange?: (value: HabitValue) => void;
+		/** A soft pop when a day is ticked. Default true. */
+		sound?: boolean;
 	}
 
-	let { id, class: className, style, title, habits, week_start, weeks, seed, value = $bindable(), onchange }: Props = $props();
+	let { id, class: className, style, title, habits, week_start, weeks, seed, value = $bindable(), onchange, sound = true }: Props = $props();
 
 	const uid = $props.id();
 
@@ -167,6 +170,7 @@
 		const was = h.set.has(day);
 		commit(toggleTick(current, h.id, day));
 		popped = was ? '' : `${h.id}|${day}`;
+		if (sound && !was) playCue('check');
 		const done = h.done + (shownWeek.includes(day) ? (was ? -1 : 1) : 0);
 		announce = `${h.name}, ${dayLong(day)}, ${was ? 'not done' : 'done'}. ${done} of ${h.target_per_week} this week.`;
 	}

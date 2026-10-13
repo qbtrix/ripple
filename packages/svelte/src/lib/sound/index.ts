@@ -92,8 +92,11 @@ function context(): AudioContext | null {
 	return ctx;
 }
 
-/** Plays a short, quiet cue. Safe to call anywhere; does nothing when it can't or shouldn't. */
-export function playCue(name: CueName): void {
+/**
+ * Plays a short, quiet cue, scaled by `volume` (0..1). Safe to call anywhere;
+ * does nothing when it can't or shouldn't.
+ */
+export function playCue(name: CueName, volume = 1): void {
 	if (typeof window === 'undefined' || typeof document === 'undefined') return;
 	if (!soundEnabled() || document.hidden || !SPEC[name]) return;
 	// Browsers block audio before a gesture; don't even make the context then.
@@ -108,7 +111,9 @@ export function playCue(name: CueName): void {
 		buf.getChannelData(0).set(samples);
 		const src = c.createBufferSource();
 		src.buffer = buf;
-		src.connect(c.destination);
+		const gain = c.createGain();
+		gain.gain.value = Math.min(Math.max(volume, 0), 1);
+		src.connect(gain).connect(c.destination);
 		src.start();
 	} catch {
 		// a closed or broken context: stay silent

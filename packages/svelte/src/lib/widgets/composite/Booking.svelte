@@ -42,6 +42,7 @@
 	import type { LucideIcon } from '@lucide/svelte';
 	import { PhotoTile, StageRail, VerdictLine, SERVICE_ICONS, STATUS_CLASS, STATUS_ICONS, finite, kindIcon, money, plain, slide } from '../data-kit/index.js';
 	import type { Verdict } from '../data-kit/types.js';
+	import { playCue } from '../../sound/index.js';
 	import {
 		LIMITS,
 		checkDetails,
@@ -79,6 +80,8 @@
 		selection?: Selection;
 		onselectionchange?: (next: Selection) => void;
 		onbook?: (request: BookingRequest) => void;
+		/** A soft pop when Book is pressed. Default true. */
+		sound?: boolean;
 	}
 
 	let {
@@ -99,7 +102,8 @@
 		contact = true,
 		selection = $bindable(),
 		onselectionchange,
-		onbook
+		onbook,
+		sound = true
 	}: Props = $props();
 
 	const uid = $props.id();
@@ -227,6 +231,7 @@
 		if (busy || !request || !onbook) return;
 		sending = request.start;
 		onbook(request);
+		if (sound) playCue('sent');
 	}
 
 	const guestWord = (n: number | undefined) => (n === 1 ? '1 guest' : `${n ?? ''} guests`);
