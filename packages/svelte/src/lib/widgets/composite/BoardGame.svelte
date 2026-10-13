@@ -66,6 +66,7 @@
 	import Handshake from '@lucide/svelte/icons/handshake';
 	import { StatChip, plain } from '../data-kit/index.js';
 	import { DIMS, MARKS, aiMove, dropCell, emptyBoard, isFull, play, winAt } from './board-game.js';
+	import { playCue } from '../../sound/index.js';
 
 	interface Props {
 		id?: string;
@@ -85,6 +86,8 @@
 		oncomplete?: (result: { winner: Result; series: Series }) => void;
 		/** The node's type as NodeRenderer stamps it; picks the game for an alias. */
 		'data-ripple-type'?: string;
+		/** A short chime when you win a game. Default true. */
+		sound?: boolean;
 	}
 
 	let {
@@ -100,7 +103,8 @@
 		value = $bindable(),
 		onchange,
 		oncomplete,
-		'data-ripple-type': nodeType
+		'data-ripple-type': nodeType,
+		sound = true
 	}: Props = $props();
 
 	const rootStyle = $derived(
@@ -185,6 +189,7 @@
 		const next: Play = { ...cur, board: res.board, line, result, decided, series, turn: result ? null : who === 'player' ? 'computer' : 'player' };
 		progress = next;
 		write(next);
+		if (sound && result === 'player') playCue('win');
 		if (decided) oncomplete?.({ winner: decided, series: { ...series } });
 		if (result) void tick().then(() => againEl?.focus());
 		return next;

@@ -93,6 +93,7 @@
 	import Delete from '@lucide/svelte/icons/delete';
 	import Copy from '@lucide/svelte/icons/copy';
 	import { finite, plain } from '../data-kit/index.js';
+	import { playCue } from '../../sound/index.js';
 
 	interface Props {
 		id?: string;
@@ -111,6 +112,8 @@
 		onchange?: (value: WordGuessValue) => void;
 		/** Fires once when the game ends. */
 		oncomplete?: (result: { won: boolean; guesses: string[] }) => void;
+		/** A short chime when the word is solved. Default true. */
+		sound?: boolean;
 	}
 
 	let {
@@ -123,7 +126,8 @@
 		max_guesses,
 		value = $bindable(),
 		onchange,
-		oncomplete
+		oncomplete,
+		sound = true
 	}: Props = $props();
 
 	const rootStyle = $derived(
@@ -223,6 +227,7 @@
 					: `Guess ${n} of ${max}, ${guess}: ${read}.`;
 		write();
 		if (end) {
+			if (sound && end === 'won') playCue('win');
 			oncomplete?.({ won: end === 'won', guesses: [...g.guesses] });
 			await tick();
 			endEl?.focus();

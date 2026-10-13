@@ -119,6 +119,7 @@
 	import { safeArray } from '$lib/utils/safe-props.js';
 	import { StatChip, plain, rise } from '../data-kit/index.js';
 	import { shuffled } from './FlashcardDeck.svelte';
+	import { playCue } from '../../sound/index.js';
 
 	interface Props {
 		id?: string;
@@ -136,6 +137,8 @@
 		onchange?: (value: MemoryMatchValue) => void;
 		/** Fires once per won game. */
 		oncomplete?: (result: { moves: number; seconds: number }) => void;
+		/** Quiet cues for a pair found and a game won. Default true. */
+		sound?: boolean;
 	}
 
 	let {
@@ -148,7 +151,8 @@
 		time_limit_s,
 		value = $bindable(),
 		onchange,
-		oncomplete
+		oncomplete,
+		sound = true
 	}: Props = $props();
 
 	const rootStyle = $derived(
@@ -271,6 +275,7 @@
 			progress = next;
 			write(next);
 			said = `Match: ${nameOf(other.face)} and ${nameOf(c.face)}. ${matched.length} of ${deck.list.length} pairs found.`;
+			if (sound) playCue(won ? 'win' : 'check');
 			if (won) {
 				newBest = bestMoves !== undefined && moves < bestMoves;
 				if (bestMoves === undefined || moves < bestMoves) best = { sig: deck.sig, moves };
