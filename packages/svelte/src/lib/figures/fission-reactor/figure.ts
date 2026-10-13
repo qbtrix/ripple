@@ -30,10 +30,10 @@ export const WIDTH = 640;
 export const HEIGHT = 420;
 
 const TAU = Math.PI * 2;
-const PLATE = { x: -252, y: -112, w: 512, d: 206, r: 10 };
+const PLATE = { x: -252, y: -116, w: 512, d: 200, r: 10 };
 const PLATE_H = 10;
 const FOOT_H = 5;
-const C: Flat = [-140, -10]; // containment
+const C: Flat = [-140, -16]; // containment
 const R: Flat = [-172, 22]; // reactor vessel
 const G: Flat = [-100, -62]; // steam generator
 const U: Flat = [-172, -62]; // reactor coolant pump
@@ -724,8 +724,8 @@ function anchorPoints(): Array<[string, string, Point3]> {
 	const face = Math.atan2(SA, CA);
 	const on = (c: Flat, r: number, z: number, turn = 0): Point3 => [c[0] + r * Math.cos(face + turn), c[1] + r * Math.sin(face + turn), z];
 	return [
-		['reactor-vessel', 'Reactor vessel', on(R, VR, 98, -0.5)],
-		['fuel', 'Fuel assemblies', [R[0] - PITCH * 0.6, R[1] - PITCH * 0.6, 58]],
+		['reactor-vessel', 'Reactor vessel', on(R, VR, 34, -0.7)],
+		['fuel', 'Fuel assemblies', [R[0] - PITCH * 2 + 2.2, R[1] + 2.2, 50]],
 		['control-rods', 'Control rods', [R[0], R[1], HEAD_Z + 40]],
 		['pressuriser', 'Pressuriser', on(Z, 8.5, PZ_Z + 18)],
 		['steam-generator', 'Steam generator', on(G, 16, SG_Z + 60, -0.6)],

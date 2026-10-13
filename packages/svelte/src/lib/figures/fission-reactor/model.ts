@@ -100,6 +100,7 @@ export function stateOf(p: ReactorParams): PlantState {
 	};
 }
 
+/** The coolant readout is the hot leg: the water as it leaves the core. */
 export function readoutsOf(p: ReactorParams): Record<string, string> {
 	const s = stateOf(p);
 	return {

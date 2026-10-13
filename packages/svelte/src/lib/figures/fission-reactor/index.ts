@@ -13,7 +13,7 @@ export const meta: FigureMeta = {
 	readouts: [
 		{ key: 'thermal', label: 'Thermal power', unit: 'MW' },
 		{ key: 'electric', label: 'Electric power', unit: 'MW' },
-		{ key: 'coolant', label: 'Coolant out of the core', unit: '°C' }
+		{ key: 'coolant', label: 'Coolant temperature', unit: '°C' }
 	],
 	get anchors() {
 		return anchorsOf();
