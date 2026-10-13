@@ -109,7 +109,9 @@ describe('@ripple-ui/core/headless/slim imports', () => {
 
 	it('keeps the manifest entry free of the full dispatcher and the schema too', () => {
 		const manifest = [...crawl('../manifest/index.ts')];
-		expect(manifest).toEqual(expect.arrayContaining(['../manifest/index.ts', '../manifest/slim.ts', '../manifest/actions.ts']));
+		expect(manifest).toEqual(
+			expect.arrayContaining(['../manifest/index.ts', '../manifest/slim.ts', '../manifest/actions.ts', '../manifest/craft.ts'])
+		);
 		expect(manifest.filter((k) => k.endsWith('/event-dispatcher.ts') || k.includes('/schema/'))).toEqual([]);
 	});
 

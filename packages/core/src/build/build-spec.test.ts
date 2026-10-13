@@ -1,8 +1,7 @@
 // build-spec.test.ts: the build loop against a fake model and renderer. Pins
 // the stop rules (clean, no-progress, round cap, abort as cap, a parse failure
-// never ending the run), strict-better
-// acceptance, token summing, feedback folding and that the module never reads
-// a clock.
+// never ending the run, the data guard), strict-better acceptance, waivers,
+// token summing, feedback folding and that the module never reads a clock.
 import { describe, it, expect } from 'vitest';
 import { buildSpec, parseSpecText, type Model, type ModelRequest, type RenderResult, type Renderer } from './index.js';
 import clean from '../core/__fixtures__/audit-corpus/clean.json';
@@ -185,6 +184,90 @@ describe('buildSpec', () => {
 
 	it('never reads a clock', () => {
 		expect(source).not.toMatch(/Date\.now|new Date|performance\.now/);
+	});
+});
+
+/** A weather card with one unknown widget, so round 1 is not clean and the loop asks for a fix. */
+function weather(extra: unknown[] = [{ type: 'lsit' }]) {
+	return {
+		version: '1.0',
+		state: { days: [{ day: '2026-10-12', condition: 'sunny', high: 23, low: 16, rainChance: 5 }] },
+		ui: { type: 'card', children: [{ type: 'weather-forecast', props: { place: 'Lisbon', days: '{state.days}' } }, ...extra] }
+	};
+}
+const W = { ...base, widgetTypes: ['card', 'text', 'weather-forecast'] };
+
+describe('buildSpec data guard', () => {
+	const bends: [string, (s: ReturnType<typeof weather>) => void, string][] = [
+		['a dropped number', (s) => delete (s.state.days[0] as { rainChance?: number }).rainChance, 'dataChanged'],
+		['a changed date', (s) => (s.state.days[0].day = '2026-10-11'), 'dataChanged'],
+		['an invented future date', (s) => s.state.days.push({ ...s.state.days[0], day: '2026-11-02' }), 'inventedDate']
+	];
+	it.each(bends)('stops guard on %s in round 2 and keeps round 1', async (_, bend, code) => {
+		const bent = weather([]);
+		bend(bent);
+		const { model } = fakeModel([JSON.stringify(weather()), JSON.stringify(bent)]);
+		let renders = 0;
+		const renderer: Renderer = async (spec) => (renders++, fakeRenderer()(spec));
+		const res = await buildSpec({ ...W, model, renderer });
+		expect(res.stopped).toBe('guard');
+		expect(res.spec).toEqual(weather());
+		expect(res.rounds.map((r) => r.accepted)).toEqual([true, false]);
+		expect(res.rounds[1].guard).toMatchObject({ ok: false, baseline: 'round1' });
+		expect(res.widgetFaults).toEqual([expect.objectContaining({ code, fixable: 'widget', lens: 'data truth' })]);
+		expect(renders).toBe(1); // a disqualified round is never rendered
+	});
+
+	it('passes a round that restructures state but keeps every value', async () => {
+		const moved = weather([]);
+		moved.state = {} as never;
+		(moved.ui.children[0] as { props: Record<string, unknown> }).props.days = weather().state.days;
+		const { model } = fakeModel([JSON.stringify(weather()), JSON.stringify(moved)]);
+		const res = await buildSpec({ ...W, model, renderer: fakeRenderer() });
+		expect(res.stopped).toBe('clean');
+		expect(res.spec).toEqual(moved);
+	});
+
+	it('returns no spec when round 1 already breaks a given fact', async () => {
+		const { model } = fakeModel([JSON.stringify(weather())]);
+		const res = await buildSpec({ ...W, model, renderer: fakeRenderer(), facts: [{ value: 24, kind: 'given' }] });
+		expect(res).toMatchObject({ spec: null, stopped: 'guard' });
+		expect(res.rounds[0].guard?.baseline).toBe('facts');
+	});
+});
+
+describe('buildSpec waivers', () => {
+	const overflowAt = (...paths: string[]): Renderer =>
+		async () => [
+			{
+				width: 380,
+				theme: 'light',
+				png: null,
+				boxes: [],
+				audit: [{ check: 'overflow', count: paths.length, items: paths.map((path) => ({ code: 'overflow', path, message: 'scrolls sideways' })) }]
+			}
+		];
+	const spec = JSON.stringify(weather([{ type: 'text', props: { text: 'hi' } }]));
+
+	it('takes a waived item out of the count, keeps it in the record, and costs 2', async () => {
+		const { model } = fakeModel([spec]);
+		const res = await buildSpec({ ...W, model, renderer: overflowAt('/ui/children/0/div') });
+		expect(res.stopped).toBe('clean');
+		expect(res.rounds[0]).toMatchObject({ faults: 0, score: 98, waived: [expect.objectContaining({ code: 'overflow' })] });
+		expect(res.rounds[0].renders[0].audit[0]).toMatchObject({ count: 0, items: [], waived: [expect.anything()] });
+	});
+
+	it('still counts the same check on a widget with no waiver', async () => {
+		const { model } = fakeModel([spec]);
+		const res = await buildSpec({ ...W, model, renderer: overflowAt('/ui/children/0', '/ui/children/1'), limits: { rounds: 1 } });
+		expect(res.rounds[0]).toMatchObject({ faults: 1, score: 88 });
+	});
+
+	it('drops a waiver past its until date', async () => {
+		const { model } = fakeModel([spec]);
+		const waivers = [{ widget: 'weather-forecast', check: 'overflow', reason: 'test', until: '2026-10-01' }];
+		const res = await buildSpec({ ...W, model, renderer: overflowAt('/ui/children/0'), waivers, limits: { rounds: 1 } });
+		expect(res.rounds[0]).toMatchObject({ faults: 1, waived: [] });
 	});
 });
 

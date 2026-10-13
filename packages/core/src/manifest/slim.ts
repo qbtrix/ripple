@@ -24,6 +24,8 @@ export interface SlimWidgetField {
 	type: string;
 	required: boolean;
 	description: string;
+	/** The prop carries the user's data (values, rows, amounts, dates); the build loop's data guard compares it. */
+	data?: boolean;
 }
 
 /**

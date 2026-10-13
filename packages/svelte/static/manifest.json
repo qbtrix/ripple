@@ -1,7 +1,7 @@
 {
   "schema": "ripple.manifest/v1",
   "version": "0.8.0",
-  "generatedAt": "2026-10-13T13:08:30.304Z",
+  "generatedAt": "2026-10-13T14:58:44.589Z",
   "spec": {
     "uiField": "ui",
     "stateField": "state",
@@ -1667,7 +1667,8 @@
         "events": {
           "type": "Array<{ id: string | number; title: string; start: string; end?: string; color?: string }>",
           "required": false,
-          "description": "Events with ISO dates."
+          "description": "Events with ISO dates.",
+          "data": true
         },
         "view": {
           "type": "\"month\" | \"week\"",
@@ -1858,7 +1859,8 @@
         "data": {
           "type": "Array<{ label: string; value?: number; series?: Record<string, number> }>",
           "required": true,
-          "description": "Data points (shape varies by chart type)."
+          "description": "Data points (shape varies by chart type).",
+          "data": true
         },
         "type": {
           "type": "\"bar\" | \"line\" | \"area\" | \"pie\" | \"donut\" | \"candlestick\" | \"sparkline\" | \"heatmap\" | \"gauge\" | \"radar\"",
@@ -3750,7 +3752,8 @@
         "rows": {
           "type": "Array<{ feature: string; [key: string]: unknown }>",
           "required": true,
-          "description": "Table rows. `feature` is the row label; remaining keys map to column keys."
+          "description": "Table rows. `feature` is the row label; remaining keys map to column keys.",
+          "data": true
         }
       },
       "example": {
@@ -4185,7 +4188,8 @@
         "rows": {
           "type": "Array<Record<string, unknown>>",
           "required": true,
-          "description": "Row objects."
+          "description": "Row objects.",
+          "data": true
         },
         "value": {
           "type": "string | number | null",
@@ -6239,7 +6243,8 @@
         "data": {
           "type": "Array<{ label: string; value: number }>",
           "required": true,
-          "description": "Funnel stages."
+          "description": "Funnel stages.",
+          "data": true
         },
         "height": {
           "type": "number",
@@ -6295,7 +6300,8 @@
         "tasks": {
           "type": "Array<{ id: string; name: string; start: string; end: string; progress?: number; dependencies?: string }>",
           "required": true,
-          "description": "Task definitions (ISO dates YYYY-MM-DD)."
+          "description": "Task definitions (ISO dates YYYY-MM-DD).",
+          "data": true
         },
         "viewMode": {
           "type": "\"Quarter Day\" | \"Half Day\" | \"Day\" | \"Week\" | \"Month\" | \"Year\"",
@@ -6347,12 +6353,14 @@
         "value": {
           "type": "number",
           "required": true,
-          "description": "Current value."
+          "description": "Current value.",
+          "data": true
         },
         "max": {
           "type": "number",
           "required": false,
-          "description": "Maximum value. Default 100."
+          "description": "Maximum value. Default 100.",
+          "data": true
         },
         "label": {
           "type": "string",
@@ -6522,7 +6530,8 @@
         "cells": {
           "type": "Array<{ x: string | number; y: string | number; value: number }>",
           "required": true,
-          "description": "Cell data."
+          "description": "Cell data.",
+          "data": true
         },
         "xLabels": {
           "type": "(string | number)[]",
@@ -7182,7 +7191,8 @@
         "lines": {
           "type": "Array<{ id?: string | number; description: string; quantity?: number; unitPrice?: number; total?: number; note?: string }>",
           "required": true,
-          "description": "Line items."
+          "description": "Line items.",
+          "data": true
         },
         "currency": {
           "type": "string",
@@ -7197,12 +7207,14 @@
         "subtotal": {
           "type": "number",
           "required": false,
-          "description": "Override auto-computed subtotal."
+          "description": "Override auto-computed subtotal.",
+          "data": true
         },
         "total": {
           "type": "number",
           "required": false,
-          "description": "Override auto-computed grand total."
+          "description": "Override auto-computed grand total.",
+          "data": true
         },
         "showRowTotals": {
           "type": "boolean",
@@ -7282,7 +7294,8 @@
         "budget": {
           "type": "number",
           "required": false,
-          "description": "Trip budget. Planned spend (stop and leg costs) is shown against it: warning past 90%, alert when over."
+          "description": "Trip budget. Planned spend (stop and leg costs) is shown against it: warning past 90%, alert when over.",
+          "data": true
         },
         "route": {
           "type": "string[]",
@@ -7292,7 +7305,8 @@
         "days": {
           "type": "Array<{ id?: string; label: string; when?: string; theme?: string; stay?: string; stops: Array<{ id?: string; time?: string; title: string; kind: \"sight\" | \"food\" | \"stay\" | \"transit\" | \"activity\" | \"shop\" | \"nature\" | \"nightlife\" | \"flight\"; place?: string; cost?: number; minutes?: number; must?: boolean; done?: boolean; image?: string }> }>",
           "required": true,
-          "description": "The days. `when` is a display label (\"Fri 16 Oct\"); `time` shows as written (\"08:30\"). `must` tags a must-see. Two-way bind with `bind: \"{state.days}\"` so ticking a stop or adding one persists."
+          "description": "The days. `when` is a display label (\"Fri 16 Oct\"); `time` shows as written (\"08:30\"). `must` tags a must-see. Two-way bind with `bind: \"{state.days}\"` so ticking a stop or adding one persists.",
+          "data": true
         },
         "open": {
           "type": "number",
@@ -7439,22 +7453,26 @@
         "initial": {
           "type": "number",
           "required": false,
-          "description": "Starting balance. Default 0. For a lump sum with no deposits, set this and deposit: 0."
+          "description": "Starting balance. Default 0. For a lump sum with no deposits, set this and deposit: 0.",
+          "data": true
         },
         "deposit": {
           "type": "number",
           "required": true,
-          "description": "Added at the end of every month. Write 0 for none. Two-way bind with `bind: \"{state.deposit}\"`."
+          "description": "Added at the end of every month. Write 0 for none. Two-way bind with `bind: \"{state.deposit}\"`.",
+          "data": true
         },
         "rate": {
           "type": "number",
           "required": true,
-          "description": "Interest in percent a year: 5 means 5%, never 0.05. Capped at 100."
+          "description": "Interest in percent a year: 5 means 5%, never 0.05. Capped at 100.",
+          "data": true
         },
         "years": {
           "type": "number",
           "required": true,
-          "description": "How long. Fractions round to whole months. Capped at 100."
+          "description": "How long. Fractions round to whole months. Capped at 100.",
+          "data": true
         },
         "compounding": {
           "type": "\"monthly\" | \"yearly\"",
@@ -7464,12 +7482,14 @@
         "goal": {
           "type": "number",
           "required": false,
-          "description": "Target balance: draws a goal line and says the year it is reached."
+          "description": "Target balance: draws a goal line and says the year it is reached.",
+          "data": true
         },
         "inflation": {
           "type": "number",
           "required": false,
-          "description": "Percent a year; adds the final balance in today's money."
+          "description": "Percent a year; adds the final balance in today's money.",
+          "data": true
         }
       },
       "events": {
@@ -7517,17 +7537,20 @@
         "subtotal": {
           "type": "number",
           "required": true,
-          "description": "The bill before tip and before tax, e.g. 186.4."
+          "description": "The bill before tip and before tax, e.g. 186.4.",
+          "data": true
         },
         "tax": {
           "type": "number",
           "required": false,
-          "description": "Tax ON TOP of subtotal, shared in proportion to what each person had. Omit when the subtotal already includes tax."
+          "description": "Tax ON TOP of subtotal, shared in proportion to what each person had. Omit when the subtotal already includes tax.",
+          "data": true
         },
         "tip_percent": {
           "type": "number",
           "required": false,
-          "description": "Percent of subtotal: 18 means 18%. Default 18."
+          "description": "Percent of subtotal: 18 means 18%. Default 18.",
+          "data": true
         },
         "tip_options": {
           "type": "number[]",
@@ -7537,7 +7560,8 @@
         "people": {
           "type": "Array<{ id: string; name: string; extras?: number }>",
           "required": true,
-          "description": "2 to 12 people. `extras` is what that person had on top of the shared part (drinks), as an amount. The rest of the subtotal is split evenly."
+          "description": "2 to 12 people. `extras` is what that person had on top of the shared part (drinks), as an amount. The rest of the subtotal is split evenly.",
+          "data": true
         },
         "extras_label": {
           "type": "string",
@@ -7767,7 +7791,8 @@
         "rows": {
           "type": "Array<{ key: string; value: string }>",
           "required": true,
-          "description": "Key/value pairs."
+          "description": "Key/value pairs.",
+          "data": true
         },
         "columns": {
           "type": "number",
@@ -8539,7 +8564,8 @@
         "days": {
           "type": "Array<{ id?: string; day: string; meals: Array<{ id?: string; slot: \"breakfast\" | \"lunch\" | \"dinner\" | \"snack\"; recipe: string }> }>",
           "required": true,
-          "description": "`day` is a display label (\"Mon\"). `recipe` is a recipe id from `recipes`. Swapping a meal writes a new days array."
+          "description": "`day` is a display label (\"Mon\"). `recipe` is a recipe id from `recipes`. Swapping a meal writes a new days array.",
+          "data": true
         }
       },
       "example": {
@@ -8766,12 +8792,14 @@
         "value": {
           "type": "string | number",
           "required": true,
-          "description": "The number or formatted string to display."
+          "description": "The number or formatted string to display.",
+          "data": true
         },
         "trend": {
           "type": "string",
           "required": false,
-          "description": "Change badge text, e.g. \"+12%\" or \"-3\". Leading +/- drives badge color (green/red)."
+          "description": "Change badge text, e.g. \"+12%\" or \"-3\". Leading +/- drives badge color (green/red).",
+          "data": true
         },
         "description": {
           "type": "string",
@@ -10648,7 +10676,8 @@
         "habits": {
           "type": "Array<{ id: string; name: string; icon?: \"read\" | \"run\" | \"walk\" | \"bike\" | \"gym\" | \"stretch\" | \"water\" | \"sleep\" | \"meditate\" | \"journal\" | \"code\" | \"music\" | \"veg\" | \"no-sugar\" | \"vitamins\"; target_per_week: number }>",
           "required": true,
-          "description": "1 to 8 habits. target_per_week is 1 to 7 (7 = every day). Any other icon value shows a plain dot."
+          "description": "1 to 8 habits. target_per_week is 1 to 7 (7 = every day). Any other icon value shows a plain dot.",
+          "data": true
         },
         "week_start": {
           "type": "\"mon\" | \"sun\"",
@@ -12331,12 +12360,14 @@
         "start": {
           "type": "string",
           "required": false,
-          "description": "Start time \"HH:MM\" (24 h). Without it items show offsets like +0:15."
+          "description": "Start time \"HH:MM\" (24 h). Without it items show offsets like +0:15.",
+          "data": true
         },
         "items": {
           "type": "Array<{ id?: string; title: string; owner?: string; minutes: number; notes?: string; done?: boolean }>",
           "required": true,
-          "description": "1 to 30 items in running order. minutes 1 to 240. Keep notes to one short line."
+          "description": "1 to 30 items in running order. minutes 1 to 240. Keep notes to one short line.",
+          "data": true
         },
         "sound": {
           "type": "boolean",
@@ -12408,7 +12439,8 @@
         "events": {
           "type": "Array<{ id?: string; day: string; start: string; end: string; title: string; place?: string; color?: \"blue\" | \"green\" | \"orange\" | \"purple\" | \"pink\" | \"teal\" | \"red\" | \"yellow\" | \"gray\" }>",
           "required": true,
-          "description": "Up to 60 events. start and end are \"HH:MM\" (24 h). Same color for the same kind of event; leave it out to colour by title."
+          "description": "Up to 60 events. start and end are \"HH:MM\" (24 h). Same color for the same kind of event; leave it out to colour by title.",
+          "data": true
         }
       },
       "example": {
@@ -12493,17 +12525,20 @@
         "now": {
           "type": "{ temp: number; condition: \"sunny\" | \"partly-cloudy\" | \"cloudy\" | \"rain\" | \"heavy-rain\" | \"thunder\" | \"snow\" | \"fog\" | \"wind\" | \"night-clear\"; feelsLike?: number; humidity?: number; wind?: string }",
           "required": false,
-          "description": "Current conditions. humidity is a percent; wind is text like \"14 km/h NW\"."
+          "description": "Current conditions. humidity is a percent; wind is text like \"14 km/h NW\".",
+          "data": true
         },
         "days": {
           "type": "Array<{ day: string; condition: \"sunny\" | \"partly-cloudy\" | \"cloudy\" | \"rain\" | \"heavy-rain\" | \"thunder\" | \"snow\" | \"fog\" | \"wind\" | \"night-clear\"; high: number; low: number; rainChance?: number; sunrise?: string; sunset?: string }>",
           "required": true,
-          "description": "1 to 14 days, first is today. day is \"Mon\" or an ISO date. Other condition words map to the closest icon."
+          "description": "1 to 14 days, first is today. day is \"Mon\" or an ISO date. Other condition words map to the closest icon.",
+          "data": true
         },
         "hourly": {
           "type": "Array<{ time: string; temp: number; condition: \"sunny\" | \"partly-cloudy\" | \"cloudy\" | \"rain\" | \"heavy-rain\" | \"thunder\" | \"snow\" | \"fog\" | \"wind\" | \"night-clear\"; rainChance?: number }>",
           "required": false,
-          "description": "Up to 48 hours, time like \"14:00\" or \"2 PM\"."
+          "description": "Up to 48 hours, time like \"14:00\" or \"2 PM\".",
+          "data": true
         },
         "note": {
           "type": "string",
@@ -13398,7 +13433,8 @@
         "tiers": {
           "type": "Array<{ id: string; name: string; price: string | number; period?: string; description?: string; features?: Array<string | { label: string; included?: boolean }>; cta?: string; popular?: boolean; actions?: EventAction | EventAction[] }>",
           "required": true,
-          "description": "Pricing tiers, 1 to 4 in a row; a narrow card stacks them. `period` is \"month\", not \"/month\". A tier's `actions` fire on its CTA instead of on_select."
+          "description": "Pricing tiers, 1 to 4 in a row; a narrow card stacks them. `period` is \"month\", not \"/month\". A tier's `actions` fire on its CTA instead of on_select.",
+          "data": true
         },
         "currency": {
           "type": "string",
@@ -13481,12 +13517,14 @@
         "value": {
           "type": "number",
           "required": false,
-          "description": "Current progress (0 to max)."
+          "description": "Current progress (0 to max).",
+          "data": true
         },
         "max": {
           "type": "number",
           "required": false,
-          "description": "Maximum value. Default 100."
+          "description": "Maximum value. Default 100.",
+          "data": true
         },
         "color": {
           "type": "string",
@@ -13516,12 +13554,14 @@
         "value": {
           "type": "number",
           "required": false,
-          "description": "Current progress (0 to max)."
+          "description": "Current progress (0 to max).",
+          "data": true
         },
         "max": {
           "type": "number",
           "required": false,
-          "description": "Maximum value. Default 100."
+          "description": "Maximum value. Default 100.",
+          "data": true
         },
         "size": {
           "type": "number",
@@ -14167,17 +14207,20 @@
         "min": {
           "type": "number",
           "required": true,
-          "description": "Minimum value (left bound)."
+          "description": "Minimum value (left bound).",
+          "data": true
         },
         "max": {
           "type": "number",
           "required": true,
-          "description": "Maximum value (right bound)."
+          "description": "Maximum value (right bound).",
+          "data": true
         },
         "current": {
           "type": "number",
           "required": true,
-          "description": "Current value (marker position)."
+          "description": "Current value (marker position).",
+          "data": true
         },
         "label": {
           "type": "string",
@@ -14359,22 +14402,26 @@
         "minutes": {
           "type": "number",
           "required": false,
-          "description": "Total time. Summed from step minutes when omitted."
+          "description": "Total time. Summed from step minutes when omitted.",
+          "data": true
         },
         "serves": {
           "type": "number",
           "required": true,
-          "description": "Servings the quantities are written for. Scaling multiplies qty by servings / serves."
+          "description": "Servings the quantities are written for. Scaling multiplies qty by servings / serves.",
+          "data": true
         },
         "kcal": {
           "type": "number",
           "required": false,
-          "description": "Calories PER SERVING."
+          "description": "Calories PER SERVING.",
+          "data": true
         },
         "protein_g": {
           "type": "number",
           "required": false,
-          "description": "Protein grams PER SERVING."
+          "description": "Protein grams PER SERVING.",
+          "data": true
         },
         "tags": {
           "type": "string[]",
@@ -14389,7 +14436,8 @@
         "ingredients": {
           "type": "Array<{ id?: string; name: string; qty?: number; unit?: string; note?: string; aisle?: \"produce\" | \"protein\" | \"dairy\" | \"grains\" | \"pantry\" | \"frozen\" | \"other\" }>",
           "required": true,
-          "description": "qty is a NUMBER (1.5, not \"1 1/2\"); the widget prints 1½. unit is separate (\"cup\", \"g\", \"tbsp\"); omit it for counted items (\"2\" eggs). note: \"finely grated\"."
+          "description": "qty is a NUMBER (1.5, not \"1 1/2\"); the widget prints 1½. unit is separate (\"cup\", \"g\", \"tbsp\"); omit it for counted items (\"2\" eggs). note: \"finely grated\".",
+          "data": true
         },
         "steps": {
           "type": "Array<{ id?: string; text: string; minutes?: number; tip?: string }>",
@@ -15824,7 +15872,8 @@
         "values": {
           "type": "number[]",
           "required": true,
-          "description": "Numeric values, oldest to newest."
+          "description": "Numeric values, oldest to newest.",
+          "data": true
         },
         "labels": {
           "type": "(string | number)[]",
@@ -15961,7 +16010,8 @@
         "value": {
           "type": "number | string",
           "required": true,
-          "description": "Main value."
+          "description": "Main value.",
+          "data": true
         },
         "format": {
           "type": "\"number\" | \"currency\" | \"percent\" | \"compact\"",
@@ -15981,12 +16031,14 @@
         "delta": {
           "type": "number",
           "required": false,
-          "description": "Absolute change."
+          "description": "Absolute change.",
+          "data": true
         },
         "deltaPercent": {
           "type": "number",
           "required": false,
-          "description": "Percent change."
+          "description": "Percent change.",
+          "data": true
         },
         "deltaFormat": {
           "type": "\"absolute\" | \"percent\" | \"both\"",
@@ -16175,7 +16227,8 @@
         "rows": {
           "type": "Array<Record<string, unknown>>",
           "required": true,
-          "description": "Row objects."
+          "description": "Row objects.",
+          "data": true
         },
         "columns": {
           "type": "Array<{ header?: string; accessorKey?: string; sortable?: boolean; href?: string; align?: \"left\" | \"center\" | \"right\" }>",
@@ -16626,7 +16679,8 @@
         "events": {
           "type": "Array<{ date: string; title: string; detail?: string; type?: \"default\" | \"success\" | \"warning\" | \"error\" | \"info\"; color?: string }>",
           "required": true,
-          "description": "Timeline events."
+          "description": "Timeline events.",
+          "data": true
         },
         "maxItems": {
           "type": "number",
@@ -18308,6 +18362,18 @@
           }
         }
       }
+    }
+  ],
+  "waivers": [
+    {
+      "widget": "weather-forecast",
+      "check": "overflow",
+      "reason": "the hourly strip is a designed sideways scroller; its hours past the edge are meant to scroll"
+    },
+    {
+      "widget": "data-grid",
+      "check": "overflow",
+      "reason": "a wide table scrolls sideways inside its own frame on a phone instead of squeezing its columns"
     }
   ]
 }
