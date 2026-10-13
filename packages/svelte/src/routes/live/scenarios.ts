@@ -21,6 +21,7 @@ import heartPump from './fixtures/heart-pump.json';
 import hiitWorkout from './fixtures/hiit-workout.json';
 import mealPlan from './fixtures/meal-plan.json';
 import explainer from './fixtures/explainer.json';
+import bikeGears from './fixtures/bike-gears.json';
 import plane3d from './fixtures/plane-3d.json';
 import refundApproval from './fixtures/refund-approval.json';
 import incidentRollback from './fixtures/incident-rollback.json';
@@ -75,9 +76,10 @@ export const scenarios: Scenario[] = [
 	{ id: 'flashcards', title: 'Spanish flashcards', category: 'Learning', fixture: flashcards, group: 'Learn' },
 	{ id: 'hiit-workout', title: '20-minute HIIT', category: 'Fitness', fixture: hiitWorkout, group: 'Track' },
 	{ id: 'meal-plan', title: 'High-protein week', category: 'Food', fixture: mealPlan, group: 'Track' },
-	{ id: 'explainer', title: 'How bike gears work', category: 'Learning', fixture: explainer, prompt: 'How do bike gears work? Draw me an animated picture of the chain drive and explain it in a few lines.', group: 'Learn' },
+	{ id: 'explainer', title: 'Bike gears, explained', category: 'Learning', fixture: explainer, prompt: 'How do bike gears work? Draw me an animated picture of the chain drive and explain it in a few lines.', group: 'Learn' },
 	{ id: 'plane-3d', title: 'See a plane in 3D', category: 'Learning', fixture: plane3d, prompt: 'Show me a plane in 3D and label its parts', group: 'Learn' },
-	{ id: 'heart-pump', title: 'The heart as a pump', category: 'Learning', fixture: heartPump, prompt: 'How does the heart pump blood?', group: 'Learn' }
+	{ id: 'heart-pump', title: 'The heart as a pump', category: 'Learning', fixture: heartPump, prompt: 'How does the heart pump blood?', group: 'Learn' },
+	{ id: 'bike-gears', title: 'How bike gears work', category: 'Learning', fixture: bikeGears, prompt: 'How do bike gears work?', group: 'Learn' }
 ];
 
 export const chatPrompts: ChatPrompt[] = [
@@ -173,7 +175,7 @@ export const suggestionGroups: { label: string; chips: GroupChip[] }[] = [
 			['take-quiz', 'graduation-cap'],
 			['explain-concept', 'lightbulb'],
 			['study-plan', 'book-open'],
-			['explainer', 'bike'],
+			['bike-gears', 'bike'],
 			['bike-gears-live', 'bike'],
 			['heart', 'heart-pulse'],
 			['plane-3d', 'box'],
