@@ -14,11 +14,11 @@
  */
 
 import { depthOf, fitProjection, iso, pathOf, roundedPlan, topMatrix, type Flat, type Point3, type Projection, type SolidPaths } from './kit.js';
-import { add3, axisFrame, pointOf, circlePolygon, coneOf, dot3, frameAlong, gearRing, len3, mul3, prismOf, sphereOf, sub3, viewOf, type Frame } from './solids.js';
+import { add3, axisFrame, pointOf, circlePolygon, coneOf, cross3, dot3, frameAlong, gearRing, len3, mul3, prismOf, sphereOf, sub3, unit3, viewOf, type Frame } from './solids.js';
 
-export const ISO_KINDS = ['slab', 'box', 'cylinder', 'disc', 'gear', 'tube', 'sphere', 'cone', 'rod', 'arrow', 'plate'] as const;
+export const ISO_KINDS = ['slab', 'box', 'cylinder', 'disc', 'gear', 'tube', 'sphere', 'cone', 'rod', 'arrow', 'plate', 'chain'] as const;
 export const ISO_ROLES = ['neutral', 'accent', 'red', 'blue', 'green', 'amber', 'metal'] as const;
-export const ISO_MOTIONS = ['spin', 'slide', 'swing', 'pulse', 'flow'] as const;
+export const ISO_MOTIONS = ['spin', 'slide', 'swing', 'pulse', 'flow', 'link'] as const;
 export const ISO_LIMITS = { parts: 150, motions: 20, params: 6, readouts: 4, labels: 10, pathPoints: 64, text: 60, coord: 500, size: 400, speed: 20 } as const;
 
 export type IsoKind = (typeof ISO_KINDS)[number];
@@ -56,6 +56,10 @@ export interface IsoPart {
 	/** Derived parts only: the model part this detail belongs to (-1 for a model part), drawn under or over it. */
 	owner: number;
 	under: boolean;
+	/** chain: the two gears it wraps (indices), else empty. Its `path` is then the loop in world space and `w` the link pitch. */
+	around: number[];
+	/** Drawn see-through (faint fill and outline), so moving parts inside show. */
+	ghost: boolean;
 }
 
 export interface IsoMotion {
@@ -64,8 +68,15 @@ export interface IsoMotion {
 	axis: Axis;
 	/** As written: a number or an expression string. The host resolves it. */
 	speed: unknown;
+	/** Amplitude, and the centre it swings or slides about (a `[min, max]` range sets both). */
 	range: number;
+	offset: number;
 	phase: number;
+	/** link: the parts the rod's two ends ride on. slide: the spinning part that drives it (crank-slider) and its crank throw. */
+	from: number;
+	to: number;
+	driven: number;
+	throw: number;
 }
 
 export interface IsoScene {
@@ -74,7 +85,7 @@ export interface IsoScene {
 }
 
 export interface IsoShape {
-	cls: 'halo' | 'fill' | 'shade' | 'top' | 'rim' | 'bevel' | 'detail' | 'screw' | 'hole' | 'texture' | 'crease' | 'edge' | 'tube-edge' | 'tube' | 'tube-hi' | 'link-edge' | 'link' | 'pin' | 'line' | 'flow' | 'text';
+	cls: 'halo' | 'fill' | 'ghost' | 'shade' | 'top' | 'rim' | 'bevel' | 'detail' | 'screw' | 'hole' | 'texture' | 'crease' | 'edge' | 'tube-edge' | 'tube' | 'tube-hi' | 'link-edge' | 'link' | 'pin' | 'line' | 'flow' | 'text';
 	d: string;
 	band?: number;
 	width?: number;
@@ -132,6 +143,8 @@ export function normalizeScene(rawParts: unknown, rawMotions?: unknown): IsoScen
 	const S = ISO_LIMITS.size;
 	const parts: IsoPart[] = [];
 	const parents: unknown[] = [];
+	const arounds: unknown[] = [];
+	const ghosts: unknown[] = [];
 	for (const raw of Array.isArray(rawParts) ? rawParts : []) {
 		if (parts.length >= ISO_LIMITS.parts) break;
 		if (!isObj(raw) || !(ISO_KINDS as readonly string[]).includes(raw.kind as string)) continue;
@@ -152,7 +165,7 @@ export function normalizeScene(rawParts: unknown, rawMotions?: unknown): IsoScen
 			w: clampNum(raw.w, 0.5, S, 20),
 			d: clampNum(raw.d, 0.5, S, kind === 'plate' ? 14 : 20),
 			h: clampNum(raw.h, 0.5, S, kind === 'disc' || kind === 'gear' ? 3 : kind === 'plate' ? 1.2 : round ? 12 : 8),
-			r: clampNum(raw.r, 0.3, S / 2, kind === 'tube' || kind === 'rod' ? 2 : kind === 'slab' ? 3 : 10),
+			r: clampNum(raw.r, 0.3, S / 2, kind === 'tube' || kind === 'rod' ? 2 : kind === 'chain' ? 1.5 : kind === 'slab' ? 3 : 10),
 			teeth: Math.round(clampNum(raw.teeth, 6, 64, 18)),
 			axis: axisOf(raw.axis, 'z'),
 			path,
@@ -166,9 +179,13 @@ export function normalizeScene(rawParts: unknown, rawMotions?: unknown): IsoScen
 			rich: false,
 			chain: false,
 			owner: -1,
-			under: false
+			under: false,
+			around: [],
+			ghost: false
 		});
 		parents.push(raw.on);
+		arounds.push(raw.around);
+		ghosts.push(raw.ghost);
 	}
 	const byId = new Map(parts.map((p, i) => [p.id, i]));
 	parts.forEach((p, i) => {
@@ -186,6 +203,24 @@ export function normalizeScene(rawParts: unknown, rawMotions?: unknown): IsoScen
 			at = parts[at]!.on;
 		}
 	});
+	// Chains: `around` two gears, or a tube the model named a chain, around the two gears nearest it.
+	const gears = parts.flatMap((p, i) => (p.kind === 'gear' || p.kind === 'disc' ? [i] : []));
+	parts.forEach((p, i) => {
+		let around: number[] = [];
+		if (p.kind === 'chain' && Array.isArray(arounds[i])) around = (arounds[i] as unknown[]).slice(0, 2).map((id) => (typeof id === 'string' ? (byId.get(id) ?? -1) : -1));
+		else if (p.kind === 'tube' && gears.length >= 2 && /chain/i.test(`${p.id} ${p.label}`)) {
+			const gap = (g: number) => Math.min(...p.path.map((q) => Math.abs(len3(sub3(add3(p.at, q), parts[g]!.at)) - parts[g]!.r)));
+			around = [...gears].sort((a, b) => gap(a) - gap(b) || a - b).slice(0, 2).sort((a, b) => a - b);
+			p.kind = 'chain';
+		}
+		if (p.kind !== 'chain') return;
+		const ok = around.length === 2 && around[0] !== around[1] && around.every((g) => gears.includes(g));
+		p.around = ok ? around : [];
+		p.path = ok ? chainPath(p, parts[around[0]!]!, parts[around[1]!]!) : [];
+		p.at = [0, 0, 0];
+		const A = ok ? parts[around[0]!]! : undefined;
+		p.w = A && A.kind === 'gear' ? (TAU * pitchRadius(A)) / A.teeth : p.r * 4;
+	});
 	const motions: IsoMotion[] = [];
 	for (const raw of Array.isArray(rawMotions) ? rawMotions : []) {
 		if (motions.length >= ISO_LIMITS.motions) break;
@@ -195,16 +230,72 @@ export function normalizeScene(rawParts: unknown, rawMotions?: unknown): IsoScen
 		const kind = raw.kind as IsoMotionKind;
 		const fallbackRange = kind === 'swing' ? 25 : kind === 'slide' ? 8 : kind === 'pulse' ? 0.12 : 0;
 		const maxRange = kind === 'swing' ? 180 : kind === 'pulse' ? 0.6 : ISO_LIMITS.size;
+		const ref = (v: unknown) => (typeof v === 'string' ? (byId.get(v) ?? -1) : -1);
+		const from = ref(raw.from);
+		const to = ref(raw.to);
+		if (kind === 'link' && (parts[part]!.kind !== 'rod' || from < 0 || to < 0)) continue;
+		// A [min, max] range oscillates between the two: amplitude half the span, about the midpoint.
+		const pair = Array.isArray(raw.range) && raw.range.length >= 2 ? [clampNum(raw.range[0], -maxRange, maxRange, 0), clampNum(raw.range[1], -maxRange, maxRange, 0)] : null;
+		const range = pair ? (kind === 'pulse' ? Math.min(maxRange, Math.abs(pair[1]! - pair[0]!)) : Math.abs(pair[1]! - pair[0]!) / 2) : clampNum(raw.range, 0, maxRange, fallbackRange);
+		const driven = kind === 'slide' ? ref(raw.driven) : -1;
 		motions.push({
 			part,
 			kind,
 			axis: axisOf(raw.axis, parts[part]!.axis),
 			speed: typeof raw.speed === 'number' || typeof raw.speed === 'string' ? raw.speed : 0.5,
-			range: clampNum(raw.range, 0, maxRange, fallbackRange),
-			phase: clampNum(raw.phase, -1, 1, 0)
+			range,
+			offset: pair && kind !== 'pulse' ? (pair[0]! + pair[1]!) / 2 : 0,
+			phase: clampNum(raw.phase, -1, 1, 0),
+			from,
+			to,
+			driven: driven === part ? -1 : driven,
+			throw: clampNum(raw.throw, 0, ISO_LIMITS.size, range || 8)
 		});
 	}
-	return { parts, motions };
+	// See-through: asked for, or (unless ghost: false) a solid that fully holds a part that moves on its own.
+	const scene = { parts, motions };
+	const moving = movingParts(scene);
+	if (moving.some(Boolean)) {
+		const unit: Projection = { origin: [0, 0], scale: 1 };
+		const boxes = parts.map((p, i) => drawPart(i, p, IDENTITY, unit).box);
+		const rides = (j: number, i: number) => {
+			for (let at = parts[j]!.on, hops = 0; at >= 0 && hops < 64; at = parts[at]!.on, hops++) if (at === i) return true;
+			return false;
+		};
+		const holds = (i: number, j: number) => [0, 1, 2].every((k) => boxes[j]![0][k]! >= boxes[i]![0][k]! - 0.5 && boxes[j]![1][k]! <= boxes[i]![1][k]! + 0.5);
+		parts.forEach((p, i) => {
+			const solid = p.kind === 'box' || p.kind === 'cylinder' || p.kind === 'sphere' || p.kind === 'cone';
+			p.ghost = ghosts[i] === true || (ghosts[i] !== false && solid && moving.some((m, j) => m && j !== i && !rides(j, i) && holds(i, j)));
+		});
+	} else parts.forEach((p, i) => (p.ghost = ghosts[i] === true));
+	return scene;
+}
+
+/** Radius a chain runs on: half way down a gear's teeth, a disc's rim. */
+export const pitchRadius = (g: IsoPart) => (g.kind === 'gear' ? g.r - Math.min(g.r * 0.18, 6) / 2 : g.r);
+
+/**
+ * The loop a chain makes round two gears: A's far side, the lower run, B's far
+ * side, the upper run, in world space, set just in front of the nearer gear
+ * faces. Points run the way the gears turn under a positive spin.
+ */
+function chainPath(c: IsoPart, A: IsoPart, B: IsoPart): Point3[] {
+	const a = AXIS[A.axis];
+	const [rA, rB] = [pitchRadius(A), pitchRadius(B)];
+	const d = sub3(B.at, A.at);
+	const dp = sub3(d, mul3(a, dot3(d, a)));
+	const D = len3(dp);
+	if (D <= Math.abs(rA - rB) + 1e-3) return [];
+	const e1 = mul3(dp, 1 / D);
+	const e2 = cross3(a, e1);
+	const lift = (dot3(a, viewOf({ origin: [0, 0], scale: 1 })) >= 0 ? 1 : -1) * (Math.max(A.h, B.h) / 2 + c.r + 0.3);
+	const beta = Math.acos(Math.max(-1, Math.min(1, (rA - rB) / D)));
+	const pt = (o: Point3, r: number, t: number) => add3(add3(add3(o, mul3(e1, r * Math.cos(t))), mul3(e2, r * Math.sin(t))), mul3(a, lift));
+	const arc = (o: Point3, r: number, t0: number, t1: number) => {
+		const n = Math.max(4, Math.ceil(Math.abs(t1 - t0) / (TAU / 48)));
+		return Array.from({ length: n + 1 }, (_, k) => pt(o, r, t0 + ((t1 - t0) * k) / n));
+	};
+	return [...arc(A.at, rA, beta, TAU - beta), ...arc(B.at, rB, -beta, beta), pt(A.at, rA, beta)];
 }
 
 // ── Affine transforms ─────────────────────────────────────────────────────
@@ -242,8 +333,8 @@ function motionAffine(m: IsoMotion, p: IsoPart, t: number, speed: number): Affin
 	const w = TAU * (speed * t + m.phase);
 	const pivot = pivotOf(p);
 	if (m.kind === 'spin') return about(pivot, rotation(m.axis, w));
-	if (m.kind === 'swing') return about(pivot, rotation(m.axis, m.range * DEG * Math.sin(w)));
-	if (m.kind === 'slide') return { m: IDENTITY.m, t: mul3(AXIS[m.axis], m.range * Math.sin(w)) };
+	if (m.kind === 'swing') return about(pivot, rotation(m.axis, (m.offset + m.range * Math.sin(w)) * DEG));
+	if (m.kind === 'slide') return { m: IDENTITY.m, t: mul3(AXIS[m.axis], m.offset + m.range * Math.sin(w)) };
 	if (m.kind === 'pulse') {
 		const k = 1 + m.range * (0.5 + 0.5 * Math.sin(w));
 		return about(pivot, [k, 0, 0, 0, k, 0, 0, 0, k]);
@@ -251,11 +342,48 @@ function motionAffine(m: IsoMotion, p: IsoPart, t: number, speed: number): Affin
 	return IDENTITY;
 }
 
+/**
+ * Crank-slider travel from the start: a crank of `throw` r at angle a pushing
+ * a rod of length L (no rod: a pure cosine). Zero at a = 0.
+ */
+export function crankSlide(a: number, r: number, L: number): number {
+	if (L <= r) return r * Math.cos(a) - r;
+	return r * Math.cos(a) + Math.sqrt(L * L - r * r * Math.sin(a) ** 2) - r - L;
+}
+
+/** The affine that carries a rod from p0..p1 onto q0..q1: a rotation, then a stretch along the rod only, so its radius holds. */
+function stretchTo(p0: Point3, p1: Point3, q0: Point3, q1: Point3): Affine {
+	const l0 = len3(sub3(p1, p0)) || 1;
+	const l1 = len3(sub3(q1, q0));
+	const u = mul3(sub3(p1, p0), 1 / l0);
+	const v = l1 > 1e-9 ? mul3(sub3(q1, q0), 1 / l1) : u;
+	const c = dot3(u, v);
+	const [k0, k1, k2] = cross3(u, v);
+	const K = [0, -k2, k1, k2, 0, -k0, -k1, k0, 0];
+	const K2 = compose({ m: K, t: [0, 0, 0] }, { m: K, t: [0, 0, 0] }).m;
+	const R = c < -0.9999 ? [-1, 0, 0, 0, -1, 0, 0, 0, 1] : IDENTITY.m.map((x, i) => x + K[i]! + K2[i]! / (1 + c));
+	const s = l1 / l0 - 1;
+	const S = IDENTITY.m.map((x, i) => x + s * v[Math.floor(i / 3)]! * v[i % 3]!);
+	const M = compose({ m: S, t: [0, 0, 0] }, { m: R, t: [0, 0, 0] }).m;
+	return { m: M, t: sub3(q0, mulV(M, p0)) };
+}
+
 /** One world affine per part at time t (seconds). `speeds` is per motion. */
 export function sceneTransforms(scene: IsoScene, t: number, speeds: number[]): Affine[] {
 	const own: Affine[] = scene.parts.map(() => IDENTITY);
+	const rodLength = (part: number) => {
+		const link = scene.motions.find((m) => m.kind === 'link' && (m.from === part || m.to === part));
+		const rod = link && scene.parts[link.part]!;
+		return rod ? len3(sub3(rod.to, rod.from)) : 0;
+	};
 	scene.motions.forEach((m, i) => {
-		own[m.part] = compose(motionAffine(m, scene.parts[m.part]!, t, speeds[i] ?? 0), own[m.part]!);
+		let A = motionAffine(m, scene.parts[m.part]!, t, speeds[i] ?? 0);
+		const crank = m.kind === 'slide' && m.driven >= 0 ? scene.motions.findIndex((q) => q.part === m.driven && q.kind === 'spin') : -1;
+		if (crank >= 0) {
+			const a = TAU * ((speeds[crank] ?? 0) * t + scene.motions[crank]!.phase);
+			A = { m: IDENTITY.m, t: mul3(AXIS[m.axis], m.offset + crankSlide(a, m.throw, rodLength(m.part))) };
+		}
+		own[m.part] = compose(A, own[m.part]!);
 	});
 	const world: Array<Affine | undefined> = [];
 	const of = (i: number): Affine => {
@@ -264,7 +392,15 @@ export function sceneTransforms(scene: IsoScene, t: number, speeds: number[]): A
 		world[i] = parent >= 0 ? compose(of(parent), own[i]!) : own[i]!;
 		return world[i]!;
 	};
-	return scene.parts.map((_, i) => of(i));
+	const out = scene.parts.map((_, i) => of(i));
+	// Link rods: each end rides its own part. ponytail: parts riding on a link rod don't follow the stretch; add when one needs to.
+	for (const m of scene.motions) {
+		if (m.kind !== 'link') continue;
+		const rod = scene.parts[m.part]!;
+		const [p0, p1] = [add3(rod.at, rod.from), add3(rod.at, rod.to)];
+		out[m.part] = stretchTo(p0, p1, applyAffine(out[m.from]!, p0), applyAffine(out[m.to]!, p1));
+	}
+	return out;
 }
 
 /** Which parts move: those with a motion, and everything riding on them. */
@@ -274,13 +410,27 @@ export function movingParts(scene: IsoScene): boolean[] {
 	return scene.parts.map((_, i) => moves(i));
 }
 
-/** Dash offset per part for `flow` motions at time t. */
+/** Dash offset per part for `flow` motions at time t; for a chain, how far it has travelled (world units) with its spinning gear. */
 export function flowOffsets(scene: IsoScene, t: number, speeds: number[]): number[] {
 	const out = scene.parts.map(() => NaN);
 	scene.motions.forEach((m, i) => {
 		if (m.kind === 'flow') out[m.part] = -((speeds[i] ?? 0) * t * 24) % 240;
 	});
+	scene.parts.forEach((p, i) => {
+		for (const g of p.kind === 'chain' ? p.around : []) {
+			const k = scene.motions.findIndex((m) => m.part === g && m.kind === 'spin');
+			if (k < 0) continue;
+			out[i] = TAU * ((speeds[k] ?? 0) * t + scene.motions[k]!.phase) * pitchRadius(scene.parts[g]!);
+			break;
+		}
+	});
 	return out;
+}
+
+/** Parts redrawn every frame: moving ones, flowing ones and chains on a moving gear. */
+export function animatedParts(scene: IsoScene): boolean[] {
+	const moving = movingParts(scene);
+	return scene.parts.map((p, i) => moving[i]! || scene.motions.some((m) => m.kind === 'flow' && m.part === i) || (p.kind === 'chain' && p.around.some((g) => moving[g])));
 }
 
 // ── Drawing ───────────────────────────────────────────────────────────────
@@ -426,7 +576,9 @@ function capDetail(p: IsoPart, F: Frame, poly: Flat[], s0: number, s1: number, P
 export function drawPart(index: number, p: IsoPart, A: Affine, P: Projection, dash = NaN): IsoItem {
 	const shapes: IsoShape[] = [];
 	let points: Point3[] = [];
-	const k = len3(mulV(A.m, [1, 0, 0])) || 1;
+	// Size scale across the part (a link rod stretches only along itself).
+	const across: Point3 = p.kind === 'rod' ? unit3(cross3(sub3(p.to, p.from), Math.abs(p.to[2] - p.from[2]) < 0.9 * len3(sub3(p.to, p.from)) ? [0, 0, 1] : [1, 0, 0])) : [1, 0, 0];
+	const k = len3(mulV(A.m, across)) || 1;
 	const kScreen = P.scale * Math.sqrt(1.6);
 	const prism = (F0: Frame, poly: Flat[], s0: number, s1: number) => {
 		const F = moveFrame(A, F0);
@@ -522,11 +674,6 @@ export function drawPart(index: number, p: IsoPart, A: Affine, P: Projection, da
 			const d = pathOf(pts.map((q) => iso(q, P)));
 			shapes.push({ cls: 'tube-edge', d, width: width + 1.4 });
 			shapes.push({ cls: 'tube', d, width });
-			points = pts;
-			if (p.chain) {
-				shapes.push(...chainLinks(d, width, Number.isNaN(dash) ? 0 : dash));
-				break;
-			}
 			const lift = p.r * k * kScreen * 0.38;
 			shapes.push({ cls: 'tube-hi', d: pathOf(pts.map((q) => iso(q, P)).map(([x, y]) => [x - lift * 0.3, y - lift] as Flat)), width: width * 0.32 });
 			if (!Number.isNaN(dash)) shapes.push({ cls: 'flow', d, dash });
@@ -534,14 +681,33 @@ export function drawPart(index: number, p: IsoPart, A: Affine, P: Projection, da
 			break;
 		}
 	}
+	if (p.kind === 'chain' && p.path.length > 1) {
+		const pts = p.path.map((q) => applyAffine(A, q));
+		const flat = pts.map((q) => iso(q, P));
+		let world = 0;
+		let screen = 0;
+		for (let j = 1; j < pts.length; j++) {
+			world += len3(sub3(pts[j]!, pts[j - 1]!));
+			screen += Math.hypot(flat[j]![0] - flat[j - 1]![0], flat[j]![1] - flat[j - 1]![1]);
+		}
+		const ratio = world ? screen / world : 1;
+		const pitch = Math.max(2, p.w * ratio);
+		const width = Math.min(2 * p.r * k * kScreen, pitch * 0.55);
+		const d = pathOf(flat, true);
+		const off = Number.isNaN(dash) ? 0 : (-dash * ratio) % (2 * pitch);
+		shapes.push({ cls: 'tube-edge', d, width: width + 1.4 }, { cls: 'tube', d, width }, ...chainLinks(d, width, off, pitch));
+		points = pts;
+	}
 	if (!points.length) points = [applyAffine(A, p.at)];
-	const box = boxOf(points, p.kind === 'tube' || p.kind === 'rod' ? p.r * k : 0);
+	const box = boxOf(points, p.kind === 'tube' || p.kind === 'rod' || p.kind === 'chain' ? p.r * k : 0);
 	const flat = [box[0], box[1], [box[0][0], box[1][1], box[0][2]], [box[1][0], box[0][1], box[1][2]], [box[0][0], box[0][1], box[1][2]], [box[1][0], box[1][1], box[0][2]]].map((q) => iso(q as Point3, P));
 	const xs = flat.map((q) => q[0]);
 	const ys = flat.map((q) => q[1]);
 	const centre = mul3(add3(box[0], box[1]), 0.5);
-	const halo = shapes[0]?.cls === 'fill' ? shapes[0].d : undefined;
-	return { part: index, role: p.color, depth: depthOf(centre, P), box, screen: [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)], shapes, halo };
+	// A ghost keeps its outline, creases and a faint fill, so whatever moves inside it shows.
+	const drawn = p.ghost ? shapes.flatMap((s) => (s.cls === 'fill' ? [{ ...s, cls: 'ghost' as const }] : s.cls === 'edge' || s.cls === 'crease' ? [s] : [])) : shapes;
+	const halo = !p.ghost && shapes[0]?.cls === 'fill' ? shapes[0].d : undefined;
+	return { part: index, role: p.color, depth: depthOf(centre, P), box, screen: [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)], shapes: drawn, halo };
 }
 
 /** A box's seam round its two visible sides near the top, and a label plate with rule lines on its wider visible side. */
@@ -572,19 +738,20 @@ function boxDetail(p: IsoPart, F: Frame, P: Projection): IsoShape[] {
 	return out;
 }
 
-/** Divisors of the 240 px flow wrap, so dashed links never jump when the offset wraps. */
-const PITCHES = [6, 8, 10, 12, 15, 16, 20, 24, 30, 40, 48, 60];
-
-/** A chain as outer plates (dashes) over the inner plates (the tube), with a pin at each plate end. */
-function chainLinks(d: string, width: number, offset: number): IsoShape[] {
+/**
+ * Chain links on a loop path: outer plates every other pitch (round-capped
+ * dashes, pin to pin) over the inner plates (the tube stroke), and a pin at
+ * every pitch. All in screen px; `offset` moves them along together.
+ */
+function chainLinks(d: string, width: number, offset: number, pitch: number): IsoShape[] {
 	const plate = width * 1.15;
-	const pitch = PITCHES.find((n) => n >= width * 2.2) ?? 60;
-	const len = Math.max(0.1, pitch * 0.62 - plate);
-	const pattern = `${len.toFixed(2)} ${(pitch - len).toFixed(2)}`;
+	const len = Math.max(0.1, pitch * 1.05 - plate);
+	const f = (n: number) => n.toFixed(2);
+	const pattern = `${f(len)} ${f(2 * pitch - len)}`;
 	return [
 		{ cls: 'link-edge', d, width: plate + 1.4, pattern, dash: offset },
 		{ cls: 'link', d, width: plate, pattern, dash: offset },
-		{ cls: 'pin', d, width: width * 0.4, pattern: `0 ${len.toFixed(2)} 0 ${(pitch - len).toFixed(2)}`, dash: offset }
+		{ cls: 'pin', d, width: width * 0.45, pattern: `0 ${f(pitch)}`, dash: offset - len / 2 + pitch / 2 }
 	];
 }
 
@@ -699,9 +866,14 @@ export function drawScene(scene: IsoScene, P: Projection, transforms: Affine[], 
 export function fitScene(scene: IsoScene, width: number, height: number, pad = 28): Projection {
 	const unit: Projection = { origin: [0, 0], scale: 1 };
 	const points: Point3[] = [];
+	// Every pose a motion reaches, not just the rest pose: twelve samples round each cycle.
+	const moving = movingParts(scene);
+	const poses = moving.some(Boolean) ? Array.from({ length: 12 }, (_, k) => sceneTransforms(scene, k / 12, scene.motions.map(() => 1))) : [];
 	scene.parts.forEach((p, i) => {
-		const { box } = drawPart(i, p, IDENTITY, unit);
-		points.push(box[0], box[1], [box[0][0], box[1][1], box[0][2]], [box[1][0], box[0][1], box[1][2]], [box[0][0], box[0][1], box[1][2]], [box[1][0], box[1][1], box[0][2]]);
+		for (const A of [IDENTITY, ...(moving[i] ? poses.map((tf) => tf[i]!) : [])]) {
+			const { box } = drawPart(i, p, A, unit);
+			points.push(box[0], box[1], [box[0][0], box[1][1], box[0][2]], [box[1][0], box[0][1], box[1][2]], [box[0][0], box[0][1], box[1][2]], [box[1][0], box[1][1], box[0][2]]);
+		}
 	});
 	if (!points.length) points.push([-10, -10, 0], [10, 10, 10]);
 	return fitProjection(points, width, height, { pad });
@@ -711,7 +883,7 @@ export function fitScene(scene: IsoScene, width: number, height: number, pad = 2
 export function pinPoint(scene: IsoScene, transforms: Affine[], P: Projection, part: number, at: Point3 | null): Flat {
 	if (at) return iso(at, P);
 	const p = scene.parts[part]!;
-	const centre = p.kind === 'rod' || p.kind === 'arrow' ? mul3(add3(add3(p.at, p.from), add3(p.at, p.to)), 0.5) : p.kind === 'tube' ? add3(p.at, p.path[Math.floor(p.path.length / 2)]!) : p.at;
+	const centre = p.kind === 'rod' || p.kind === 'arrow' ? mul3(add3(add3(p.at, p.from), add3(p.at, p.to)), 0.5) : (p.kind === 'tube' || p.kind === 'chain') && p.path.length ? add3(p.at, p.path[Math.floor(p.path.length / 2)]!) : p.at;
 	return iso(applyAffine(transforms[part] ?? IDENTITY, centre), P);
 }
 

@@ -8,9 +8,8 @@
  *   - gear/disc: hub and centre bolt (slot); a chainring gets spider arms and bolts
  *   - upright cylinder: a flange under it; a tiny one is knurled
  *   - tube: collars where an end meets a part, clamps where it runs over a slab;
- *     a tube looped over two gears becomes a chain of links
  *   - rod: a pivot pin at an end that touches a part, a rounded cap at a free end
- * In-part strokes (gear holes, box seam and label plate, chain links) are drawn
+ * In-part strokes (gear holes, box seam and label plate) are drawn
  * by `drawPart` when enrichment sets `rich`.
  *
  * Invariants: pure and deterministic (same parts in, same parts out); model
@@ -18,7 +17,7 @@
  * parts with `on: owner`, so they inherit its motion, and `owner` so
  * `mergeOwned` sorts them with it; a derived part that would sit inside another
  * solid is dropped; the drawn shape count stays within ISO_DETAIL_SHAPES.
- * `detail: "none"` on the scene returns it untouched; on a part, skips that part.
+ * `detail: "none"` on the scene returns it untouched; on a part (or a ghost), skips that part.
  */
 
 import { depthOf, type Point3, type Projection } from './kit.js';
@@ -32,7 +31,7 @@ type Box = [Point3, Point3];
 const UNIT: Projection = { origin: [0, 0], scale: 1 };
 const TAU = Math.PI * 2;
 const AXES = { x: [1, 0, 0], y: [0, 1, 0], z: [0, 0, 1] } as const satisfies Record<string, Point3>;
-const LONG = new Set(['rod', 'tube', 'arrow']);
+const LONG = new Set(['rod', 'tube', 'arrow', 'chain']);
 
 const pad = (b: Box, by: number): Box => [b[0].map((v) => v - by) as Point3, b[1].map((v) => v + by) as Point3];
 const inside = (q: Point3, b: Box) => [0, 1, 2].every((k) => q[k]! >= b[0][k]! && q[k]! <= b[1][k]!);
@@ -78,34 +77,22 @@ function derived(owner: number, base: IsoPart, fields: Partial<IsoPart> & Pick<I
 		chain: false,
 		owner,
 		under,
+		around: [],
+		ghost: false,
 		...fields
 	};
-}
-
-/** A tube touches a gear when one of its points lies on the gear's rim, in the gear's plane. */
-function onRim(tube: IsoPart, gear: IsoPart): boolean {
-	const a = AXES[gear.axis] as Point3;
-	return tube.path.some((q) => {
-		const d = sub3(world(tube, q), gear.at);
-		const along = dot3(d, a);
-		const radial = len3(sub3(d, mul3(a, along)));
-		return Math.abs(along) <= gear.h / 2 + tube.r + 2 && Math.abs(radial - gear.r) <= tube.r + Math.max(3, gear.r * 0.15);
-	});
 }
 
 export function enrichScene(scene: IsoScene, mode: unknown = 'auto'): IsoScene {
 	if (mode === 'none' || !scene.parts.length) return scene;
 	const V = viewOf(UNIT);
-	const parts = scene.parts.map((p) => (p.detail === 'none' ? p : { ...p, rich: true }));
-	const on = (i: number) => parts[i]!.detail !== 'none';
+	const parts = scene.parts.map((p) => (p.detail === 'none' || p.ghost ? p : { ...p, rich: true }));
+	const on = (i: number) => parts[i]!.detail !== 'none' && !parts[i]!.ghost;
 
-	// Chain drives: a tube looped over two gears becomes links; the bigger gear is the chainring.
-	parts.forEach((t, i) => {
-		if (t.kind !== 'tube' || !on(i)) return;
-		const gears = parts.map((g, j) => j).filter((j) => (parts[j]!.kind === 'gear' || parts[j]!.kind === 'disc') && onRim(t, parts[j]!));
-		if (gears.length < 2) return;
-		parts[i] = { ...t, chain: true };
-		const ring = gears.reduce((a, b) => (parts[b]!.r > parts[a]!.r ? b : a));
+	// The bigger gear a chain wraps is the chainring: it gets spider arms.
+	parts.forEach((c) => {
+		if (c.kind !== 'chain' || c.around.length < 2) return;
+		const ring = c.around.reduce((a, b) => (parts[b]!.r > parts[a]!.r ? b : a));
 		if (parts[ring]!.kind === 'gear' && on(ring)) parts[ring] = { ...parts[ring]!, chain: true };
 	});
 	// A tiny upright cylinder is a knob: knurl it.
@@ -143,7 +130,7 @@ export function enrichScene(scene: IsoScene, mode: unknown = 'auto'): IsoScene {
 			.map((_, j) => j)
 			.filter((j) => {
 				const o = parts[j]!;
-				if (j === self || o.kind === 'arrow') return false;
+				if (j === self || o.kind === 'arrow' || o.kind === 'chain') return false;
 				if (o.kind === 'rod') return toSegment(q, world(o, o.from), world(o, o.to)) <= o.r + by;
 				if (o.kind === 'tube') return o.path.slice(1).some((b, k) => toSegment(q, world(o, o.path[k]!), world(o, b)) <= o.r + by);
 				return inside(q, pad(boxes[j]!, by));
@@ -228,7 +215,7 @@ export function enrichScene(scene: IsoScene, mode: unknown = 'auto'): IsoScene {
 
 	// 4. Tubes: collars where an end meets a part, clamps where the run passes just over a slab.
 	parts.forEach((p, i) => {
-		if (!on(i) || p.kind !== 'tube' || p.chain) return;
+		if (!on(i) || p.kind !== 'tube') return;
 		const pts = p.path.map((q) => world(p, q));
 		const ends: Array<[Point3, Point3]> = [
 			[pts[0]!, unit3(sub3(pts[1]!, pts[0]!))],

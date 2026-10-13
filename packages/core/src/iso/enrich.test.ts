@@ -40,7 +40,8 @@ describe('enrichScene', () => {
 		expect(by('base', 'cylinder')).toBe(4); // feet
 		expect(by('base', 'plate')).toBe(1); // ruler strip
 		expect(by('ring', 'rod')).toBe(5); // spider arms
-		expect(rich.parts[3]!.chain).toBe(true);
+		expect(rich.parts[3]!.kind).toBe('chain'); // a tube named chain wraps the two gears
+		expect(rich.parts[3]!.around).toEqual([1, 2]);
 		expect(rich.parts[1]!.chain).toBe(true);
 		expect(rich.parts[2]!.chain).toBe(false);
 		expect(derived.every((p) => p.owner >= 0 && p.on === p.owner)).toBe(true);
