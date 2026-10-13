@@ -176,6 +176,7 @@ export const suggestionGroups: { label: string; chips: GroupChip[] }[] = [
 			['explain-concept', 'lightbulb'],
 			['study-plan', 'book-open'],
 			['bike-gears', 'bike'],
+			['explainer', 'bike'],
 			['bike-gears-live', 'bike'],
 			['heart', 'heart-pulse'],
 			['plane-3d', 'box'],
