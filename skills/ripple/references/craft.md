@@ -34,7 +34,8 @@ is missing from the manifest or a manifest id is missing here.
 - **Invented dates are never after today.** `rule:no-future-dates` A/B: a running log for "this month" held runs dated after today; every
   number agreed with every other number, so the consistency check passed and the judge still caught it.
   Internal consistency is not plausibility. Look up today's date before writing any. A forecast is the one place
-  future days belong, and it says it is a sample. Enforcer: eyes (the dates lens).
+  future days belong, and it says it is a sample. Enforcer: `futureDate` (dates after today, skipped under
+  `meta.sample: true`), with eyes (the dates lens) as the backup.
 - **Invented is fine, false is not.** `rule:invented-not-false` Fictional names and sample numbers are expected when the user gave none; say
   which values are samples in the answer so they can be swapped.
 
@@ -47,7 +48,7 @@ is missing from the manifest or a manifest id is missing here.
   `invoice-layout`). Enforcer: eyes plus `references/widgets.md`.
 - **A data widget stands alone.** `rule:data-widget-alone` "Watch savings grow" wrapped `growth-projection` in hand-built sliders and a
   stepper: the controls appeared twice and a slider thumb covered the balance label (F13). The widget already has
-  "Try other numbers". Enforcer: none in code yet (planned server check: two controls bound to one state value).
+  "Try other numbers". Enforcer: `twoControls` (two controls bound to one state value).
 - **A booking is a `booking`.** `rule:booking-widget` The gallery's haircut card (G: `book-appointment`) builds services, slots, name and
   phone from buttons and inputs; it works, but a `booking` gives stages, a review step and the host's real slots,
   and a dentist once got a restaurant table form because the hand-built path guessed (F14).
@@ -106,8 +107,8 @@ is missing from the manifest or a manifest id is missing here.
 
 ## 5. Numbers, money and units
 
-- **Every computed or decimal number goes in a `stat`** `rule:numbers-in-stat` with `format: number|currency|percent` (and `decimals` when
-  the size rule is wrong). "8,971.429 steps" (F10) came from a sum/length in a text template. `stat` now rounds by
+- **Every computed or decimal number goes in a `stat` with `format: number|currency|percent`** (and `decimals` when
+  the size rule is wrong). `rule:numbers-in-stat` "8,971.429 steps" (F10) came from a sum/length in a text template. `stat` now rounds by
   size (whole from 100, one decimal from 10, two below). Enforcer: fixture in ripple (8dcabf5, #229); live: eyes.
 - **Money carries its currency everywhere.** `rule:money-has-currency` `currency` is an ISO code, never a symbol inside a number. G:
   `quote-builder` titles say "(650 per page)" while totals say "$3,250.00"; G: `refund-approval` says "shipping 14
@@ -123,12 +124,12 @@ is missing from the manifest or a manifest id is missing here.
 ## 6. Empty, loading, error and edge states
 
 - **A data widget with 0 rows passes the checks and shows a blank card.** `rule:empty-rows` Seed real rows or say why there are none.
-- **A widget that throws shows "This widget hit an error" inside the card** `rule:widget-error` (F7, pizza). Usually a bad prop shape.
+- **A widget that throws shows "This widget hit an error" inside the card** (F7, pizza). `rule:widget-error` Usually a bad prop shape.
   Enforcer: `errorBoxes` (`[data-ripple-node-error]`), the playground strip's `specStatus` ("Valid, N nodes" or the
   `specIssues` problems).
 - **An unknown widget type renders a red box naming it.** `rule:unknown-widget` Enforcer: `errorBoxes` (`[data-ripple-unknown-widget]`).
-- **Raw JSON must never reach the reader** `rule:no-raw-json`, neither as chat text (F1) nor inside cells (F2, comparison cells printed
-  objects). Text props take strings; `text-coerce` stringifies objects on purpose, so the fault shows as JSON-looking
+- **Raw JSON must never reach the reader**, neither as chat text (F1) nor inside cells (F2, comparison cells printed
+  objects). `rule:no-raw-json` Text props take strings; `text-coerce` stringifies objects on purpose, so the fault shows as JSON-looking
   text. Enforcer: `badText` "raw JSON".
 - **Show each choice once.** `rule:choice-once` Flow choice cards rendered twice (F19, a renderer bug); the same label twice is still
   worth a look in the screenshot.

@@ -1,9 +1,10 @@
 // craft.test.ts: the craft data stays honest. Every waiver names a known check
 // id, every pure audit check is a known id, the data-props table names each
 // widget once, there are 11 lenses, every rule has a unique id, a known lens
-// and a known check, and each widget has one intent entry. That each waived widget and data prop exists in the full
-// manifest is checked on the svelte side (manifest/craft.test.ts there), and a
-// waiver with no live item is caught by the browser acceptance run.
+// and a known check, and each widget has one intent entry. That each waived
+// widget and data prop exists in the full manifest is checked on the svelte
+// side (manifest/craft.test.ts there), and a waiver with no live item is
+// caught by the browser acceptance run.
 import { describe, it, expect } from 'vitest';
 import { CHECK_IDS, DATA_PROPS, intents, lenses, rules, waivers } from './craft.js';
 import { specAudit } from '../core/spec-audit.js';
