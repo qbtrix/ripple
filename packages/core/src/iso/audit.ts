@@ -25,14 +25,11 @@
  * and line-ends scripts (MIT, see THIRD_PARTY_NOTICES.md); the code is our own.
  */
 
+import type { AuditReport } from "../core/audit-report.js";
 import type { Flat, Point3 } from "./kit.js";
 import { axisFrame, pointOf, type Frame } from "./solids.js";
 
-export interface AuditReport<T> {
-  check: string;
-  count: number;
-  items: T[];
-}
+export type { AuditReport } from "../core/audit-report.js";
 
 /** A solid as closed rings (holes wound the other way) in F's u,v plane, swept along F.a from s0 to s1. */
 export interface Extrusion {
