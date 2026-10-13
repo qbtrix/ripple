@@ -1,7 +1,7 @@
 {
   "schema": "ripple.manifest/v1",
   "version": "0.8.0",
-  "generatedAt": "2026-10-13T05:18:12.716Z",
+  "generatedAt": "2026-10-13T05:31:10.642Z",
   "spec": {
     "uiField": "ui",
     "stateField": "state",
@@ -10264,6 +10264,11 @@
           "type": "{ service_id?: string; start?: string; party?: number; customer?: { name?: string; email?: string; phone?: string }; notes?: string }",
           "required": false,
           "description": "Bindable: the request in progress."
+        },
+        "sound": {
+          "type": "boolean",
+          "required": false,
+          "description": "A soft pop when Book is pressed. Default true; false mutes this widget."
         }
       },
       "events": {
@@ -10555,6 +10560,11 @@
           "type": "number",
           "required": false,
           "description": "Times through the list. Default 1. Total time = rounds × exercises × workSec plus the rests."
+        },
+        "sound": {
+          "type": "boolean",
+          "required": false,
+          "description": "Quiet cues: a tick in the last 3 seconds of each interval, a chime between intervals and one when done. Default true; false mutes this widget."
         }
       },
       "example": {
@@ -10654,6 +10664,11 @@
           "type": "Record<string, number[]>",
           "required": false,
           "description": "Demo ticks per habit id as day offsets back from today (0 = today, 1 = yesterday). Leave out for a fresh tracker."
+        },
+        "sound": {
+          "type": "boolean",
+          "required": false,
+          "description": "A soft pop when a day is ticked. Default true; false mutes this widget."
         }
       },
       "example": {
@@ -10741,6 +10756,11 @@
           "type": "string",
           "required": false,
           "description": "The writing line prompt. Default \"Write a note…\"."
+        },
+        "sound": {
+          "type": "boolean",
+          "required": false,
+          "description": "A very quiet pop when a note is saved. Default true; false mutes this widget."
         }
       },
       "example": {
@@ -11048,6 +11068,11 @@
           "type": "{ phase: \"focus\" | \"short\" | \"long\"; remaining_s: number; running: boolean; rounds_done: number; task: string; log: string[] }",
           "required": false,
           "description": "Two-way bind with `bind: \"{state.focus}\"`. Written on start, pause, reset, skip, phase end and edits (not every second), so remaining_s is as of the last event. `log` holds the ISO time each focus round finished."
+        },
+        "sound": {
+          "type": "boolean",
+          "required": false,
+          "description": "A soft chime when a phase ends. Default true; false mutes this widget."
         }
       },
       "example": {
@@ -12031,6 +12056,11 @@
           "type": "{ guesses: string[]; status: \"playing\" | \"won\" | \"lost\"; hint_used: boolean }",
           "required": false,
           "description": "The game so far, written by the widget on every guess and hint. Bind with `bind: \"{state.game}\"` to read it elsewhere; the widget never reads it back."
+        },
+        "sound": {
+          "type": "boolean",
+          "required": false,
+          "description": "A short chime when the word is solved. Default true; false mutes this widget."
         }
       },
       "events": {
@@ -12084,6 +12114,11 @@
           "type": "{ index: number; answers: (number | null)[]; score: number; done: boolean }",
           "required": false,
           "description": "Progress, written by the widget: the current question, the picked choice per answered question (null = ran out of time), the score and whether every question is answered. Bind with `bind: \"{state.quiz}\"`."
+        },
+        "sound": {
+          "type": "boolean",
+          "required": false,
+          "description": "Quiet cues for a right or wrong answer and a finished quiz. Default true; false mutes this widget."
         }
       },
       "events": {
@@ -12164,6 +12199,11 @@
           "type": "{ moves: number; matched: string[]; completed: boolean; seconds: number }",
           "required": false,
           "description": "The game so far, written by the widget on each move. `matched` lists pair ids. Bind with `bind: \"{state.game}\"` to show it elsewhere."
+        },
+        "sound": {
+          "type": "boolean",
+          "required": false,
+          "description": "Quiet cues for a pair found and a game won. Default true; false mutes this widget."
         }
       },
       "events": {
@@ -12252,6 +12292,11 @@
           "type": "{ board: string[]; turn: \"player\" | \"computer\" | null; result: \"player\" | \"computer\" | \"draw\" | null; series: { player: number; computer: number; draws: number } }",
           "required": false,
           "description": "The game so far, written by the widget on every move. `board` is row-major (\"\" empty). Bind with `bind: \"{state.game}\"` to show it elsewhere."
+        },
+        "sound": {
+          "type": "boolean",
+          "required": false,
+          "description": "A short chime when the player wins a game. Default true; false mutes this widget."
         }
       },
       "events": {
@@ -12292,6 +12337,11 @@
           "type": "Array<{ id?: string; title: string; owner?: string; minutes: number; notes?: string; done?: boolean }>",
           "required": true,
           "description": "1 to 30 items in running order. minutes 1 to 240. Keep notes to one short line."
+        },
+        "sound": {
+          "type": "boolean",
+          "required": false,
+          "description": "A soft chime when the running item's time is up. Default true; false mutes this widget."
         }
       },
       "example": {
@@ -17450,6 +17500,11 @@
           "type": "string",
           "required": false,
           "description": "Add-input placeholder."
+        },
+        "sound": {
+          "type": "boolean",
+          "required": false,
+          "description": "A soft pop when an item is checked off. Default true; false mutes this widget."
         }
       },
       "events": {

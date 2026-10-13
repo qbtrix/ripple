@@ -18,6 +18,7 @@ export const notesEntry: WidgetManifestEntry = {
     },
     tags: { type: 'string[]', required: false, description: 'Suggested tags shown as chips, e.g. ["idea", "todo"].' },
     placeholder: { type: 'string', required: false, description: 'The writing line prompt. Default "Write a note…".' },
+    sound: { type: 'boolean', required: false, description: 'A very quiet pop when a note is saved. Default true; false mutes this widget.' },
   },
   example: {
     type: 'notes',

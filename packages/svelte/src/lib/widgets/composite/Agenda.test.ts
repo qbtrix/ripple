@@ -11,6 +11,11 @@ import { getWidget } from '../index.js';
 import { getBindContract } from '@ripple-ui/core';
 import Agenda from './Agenda.svelte';
 import { move, readItems, startLabels } from './agenda.js';
+import { playCue } from '$lib/sound/index.js';
+
+vi.mock('$lib/sound/index.js', () => ({ playCue: vi.fn() }));
+const cues = () => vi.mocked(playCue).mock.calls.map((c) => c[0]);
+
 
 afterEach(() => {
 	cleanup();
@@ -86,5 +91,19 @@ describe('agenda: behaviour', () => {
 
 	it('streams with id-less and field-less items and ends equal to the whole render', async () => {
 		await expectStreamParity({ ui: { type: 'agenda', props: { title: 'Sync', start: '10:00', items: [items[0], {}, { title: 'Blockers' }, items[1]] } } });
+	});
+});
+
+describe('agenda: sound', () => {
+	it("chimes when the running item's time is up", async () => {
+		vi.useFakeTimers();
+		vi.mocked(playCue).mockClear();
+		render(Agenda, { props: { title: 'Sync', items } });
+		await fireEvent.click(screen.getByRole('button', { name: 'Start meeting' }));
+		vi.advanceTimersByTime(299_000);
+		expect(playCue).not.toHaveBeenCalled();
+		vi.advanceTimersByTime(1000);
+		expect(cues()).toEqual(['phase']);
+		vi.useRealTimers();
 	});
 });

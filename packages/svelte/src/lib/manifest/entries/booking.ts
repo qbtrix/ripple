@@ -44,6 +44,7 @@ export const bookingEntry: WidgetManifestEntry = {
     contact: { type: 'boolean', required: false, description: 'Host: false skips the contact details stage (no name, email or phone); review takes the optional note and the button reads "Send to chat". Default true.' },
     sent: { type: '{ text: string }', required: false, description: 'Host: the request went to the chat as a message instead of a store (nothing is booked). Shows "Sent to chat" with the text and no more actions.' },
     selection: { type: '{ service_id?: string; start?: string; party?: number; customer?: { name?: string; email?: string; phone?: string }; notes?: string }', required: false, description: 'Bindable: the request in progress.' },
+    sound: { type: 'boolean', required: false, description: 'A soft pop when Book is pressed. Default true; false mutes this widget.' },
   },
   events: {
     on_book: {

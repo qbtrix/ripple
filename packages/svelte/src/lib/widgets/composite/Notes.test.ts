@@ -12,6 +12,11 @@ import { getWidget, hasWidget } from '../index.js';
 import { _resetBindContractWarnings, getBindContract, warnUnregisteredBindContract } from '@ripple-ui/core';
 import Notes from './Notes.svelte';
 import { MAX_NOTES, MAX_TEXT, MAX_TITLE, ago, allTags, asDraft, fromDraft, matches, ordered, parseTags, readNotes, type NotesValue } from './notes.js';
+import { playCue } from '$lib/sound/index.js';
+
+vi.mock('$lib/sound/index.js', () => ({ playCue: vi.fn() }));
+const cues = () => vi.mocked(playCue).mock.calls.map((c) => c[0]);
+
 
 afterEach(() => {
 	cleanup();
@@ -96,7 +101,7 @@ describe('notes: registry, bind contract, manifest', () => {
 	it('has a manifest entry whose example renders its two notes, pinned first', () => {
 		const entry = manifestEntries.find((e) => e.type === 'notes')!;
 		expect(entry.description.length).toBeLessThan(200);
-		expect(Object.keys(entry.props)).toEqual(['title', 'notes', 'tags', 'placeholder']);
+		expect(Object.keys(entry.props)).toEqual(['title', 'notes', 'tags', 'placeholder', 'sound']);
 		const { container } = render(Ripple, { props: { spec: { state: {}, ui: entry.example } } });
 		expect(container.querySelectorAll('[data-note]')).toHaveLength(2);
 		expect(container.querySelector('[data-note]')?.hasAttribute('data-pinned')).toBe(true);
@@ -270,5 +275,21 @@ describe('notes: junk props', () => {
 	])('%s renders without throwing', (_name, props) => {
 		const { container } = render(Notes, { props: props as never });
 		expect(container.querySelector('[data-widget="notes"]')).not.toBeNull();
+	});
+});
+
+describe('notes: sound', () => {
+	it('a saved note plays a very quiet cue; sound false keeps it silent', async () => {
+		vi.mocked(playCue).mockClear();
+		render(Notes, { props: { notes: SEED() } });
+		await write('Buy oat milk');
+		await fireEvent.keyDown(newNote(), { key: 'Enter' });
+		expect(vi.mocked(playCue).mock.calls).toEqual([['sent', 0.5]]);
+		cleanup();
+		vi.mocked(playCue).mockClear();
+		render(Notes, { props: { notes: SEED(), sound: false } });
+		await write('Call back');
+		await fireEvent.keyDown(newNote(), { key: 'Enter' });
+		expect(playCue).not.toHaveBeenCalled();
 	});
 });

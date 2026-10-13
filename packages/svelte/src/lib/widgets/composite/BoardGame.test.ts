@@ -14,6 +14,11 @@ import { expectStreamParity } from '$lib/streaming/__fixtures__/stream-parity.js
 import { getWidget, hasWidget } from '../index.js';
 import { _resetBindContractWarnings, getBindContract, warnUnregisteredBindContract } from '@ripple-ui/core';
 import BoardGame, { seriesWinner, type BoardGameValue } from './BoardGame.svelte';
+import { playCue } from '$lib/sound/index.js';
+
+vi.mock('$lib/sound/index.js', () => ({ playCue: vi.fn() }));
+const cues = () => vi.mocked(playCue).mock.calls.map((c) => c[0]);
+
 
 const motion = vi.hoisted(() => ({ reduce: false }));
 vi.mock('svelte/motion', async (orig) => ({
@@ -354,5 +359,17 @@ describe('board-game: junk props', () => {
 		expect(container.querySelector('[data-widget="board-game"]')).not.toBeNull();
 		expect(slot(container, 'status')).toBe('Your turn');
 		expect(slot(container, 'meta')).toMatch(/^You are (X|red) · Medium$/);
+	});
+});
+
+describe('board-game: sound', () => {
+	it('chimes when the player wins', async () => {
+		vi.mocked(playCue).mockClear();
+		vi.useFakeTimers();
+		vi.spyOn(Math, 'random').mockReturnValue(0);
+		const { container } = render(BoardGame, { props: { game: 'tic-tac-toe', difficulty: 'easy' } });
+		await winTicTacToe(container);
+		expect(slot(container, 'status')).toBe('You win!');
+		expect(cues()).toEqual(['win']);
 	});
 });

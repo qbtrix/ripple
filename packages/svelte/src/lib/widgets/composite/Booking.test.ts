@@ -14,6 +14,11 @@ import { getWidget } from '../index.js';
 import Booking from './Booking.svelte';
 import serviceDaysCard from '../../../routes/pawbar/fixtures/dentist-service-days-card.json' with { type: 'json' };
 import { checkDetails, clock, isSlotTaken, nearest, partsOfDay, readDays, toRequest, type Service } from './booking.js';
+import { playCue } from '$lib/sound/index.js';
+
+vi.mock('$lib/sound/index.js', () => ({ playCue: vi.fn() }));
+const cues = () => vi.mocked(playCue).mock.calls.map((c) => c[0]);
+
 
 afterEach(cleanup);
 
@@ -196,6 +201,13 @@ describe('booking flow', () => {
 		await fireEvent.click(btn('Review'));
 		return { ...r, onbook };
 	}
+
+	it('Book plays a soft sent cue', async () => {
+		vi.mocked(playCue).mockClear();
+		await toReview();
+		await fireEvent.click(btn('Book table'));
+		expect(cues()).toEqual(['sent']);
+	});
 
 	it('opens on guests with the asked party, then the time stage on the asked day', async () => {
 		render(Booking, { props: PROPS });

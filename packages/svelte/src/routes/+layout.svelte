@@ -6,7 +6,7 @@
     mark on the left; a centred icon nav (Chat, Gallery, Playground, Docs, Design system)
     where every item is an icon with an aria-label and a tooltip and the
     current one is PE's liquid-glass pill carrying its icon and label; on the
-    right the docs search as a ⌘K chip, the GitHub and theme icon buttons, and a
+    right the docs search as a ⌘K chip, the GitHub, sound and theme icon buttons, and a
     blue "Try Paw OS" pill in PlanBadge's paid style. The strip is PE's frosted
     shade over the warm ground with its faint cool tint, mirrored in light.
     Below 640px the nav sits between the mark and the tools, GitHub and Try Paw
@@ -18,6 +18,7 @@
     Glass falls back to solid under prefers-reduced-transparency. Tokens and
     fonts come from ./site.css. Theme: static/theme-init.js sets `dark` on
     <html> before paint; this reads and flips that class and remembers it.
+    Sound: the speaker button flips $lib/sound's on/off flag (widget cues).
     Labs and dev routes stay reachable by URL, unlinked. The bar says "Try Paw
     OS" (the pill's accessible name carries "by PocketPaw"), and the footer
     links "Paw OS by PocketPaw". It points the model-viewer library at the
@@ -34,6 +35,9 @@
 	import Palette from '@lucide/svelte/icons/palette';
 	import Sun from '@lucide/svelte/icons/sun';
 	import Moon from '@lucide/svelte/icons/moon';
+	import Volume2 from '@lucide/svelte/icons/volume-2';
+	import VolumeX from '@lucide/svelte/icons/volume-x';
+	import { setSoundEnabled, soundEnabled } from '$lib/sound/index.js';
 	import '$lib/styles.css';
 	import './site.css';
 	import Search from '$lib/site/docs/Search.svelte';
@@ -65,7 +69,14 @@
 	let dark = $state(true);
 	onMount(() => {
 		dark = document.documentElement.classList.contains('dark');
+		sound = soundEnabled();
 	});
+
+	let sound = $state(true);
+	function toggleSound() {
+		sound = !sound;
+		setSoundEnabled(sound);
+	}
 
 	function toggleTheme() {
 		dark = !dark;
@@ -120,6 +131,15 @@
 						/></svg
 					>
 				</a>
+				<button
+					class="util"
+					type="button"
+					onclick={toggleSound}
+					aria-label={sound ? 'Turn sounds off' : 'Turn sounds on'}
+					data-tip={sound ? 'Sounds on' : 'Sounds off'}
+				>
+					{#if sound}<Volume2 size={14} strokeWidth={2} aria-hidden="true" />{:else}<VolumeX size={14} strokeWidth={2} aria-hidden="true" />{/if}
+				</button>
 				<button
 					class="util"
 					type="button"
