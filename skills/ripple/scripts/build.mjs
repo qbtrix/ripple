@@ -14,7 +14,8 @@
 //
 // The model and the critic are injected. The default runs the local Claude
 // Code CLI (`claude -p`, the user's own login, no API key) with no settings,
-// from the temp dir so no CLAUDE.md is read, every tool off. The critic gets
+// from the temp dir so no CLAUDE.md is read, every tool off and no MCP
+// servers (their tool lists cost about 25k tokens a call). The critic gets
 // the PNGs inline in one message (stream-json), so it judges in one turn
 // instead of paying for a Read loop.
 // `--model <alias>` picks the CLI's model for both; `--model-cmd "<shell
@@ -121,7 +122,7 @@ function readReply(stdout, sent) {
 
 /** The default Model: the local Claude Code CLI, no tools, no settings, no session kept. */
 export function claudeModel({ system, model }) {
-	const args = ['-p', '--output-format', 'json', '--tools', '', '--setting-sources', '', '--no-session-persistence', '--system-prompt', system];
+	const args = ['-p', '--output-format', 'json', '--tools', '', '--setting-sources', '', '--strict-mcp-config', '--no-session-persistence', '--system-prompt', system];
 	if (model) args.push('--model', model);
 	return async (req) => {
 		const input = userPrompt(req);
@@ -198,7 +199,7 @@ export function hostCritic(ask, parse) {
 /** The default critic's reply: the local Claude Code CLI, no tools, the shots inline as images in one user message. */
 export function claudeCriticAsk({ model }) {
 	return async (system, input, signal, renders = []) => {
-		const args = ['-p', '--input-format', 'stream-json', '--output-format', 'stream-json', '--verbose', '--tools', '', '--setting-sources', '', '--no-session-persistence', '--system-prompt', system];
+		const args = ['-p', '--input-format', 'stream-json', '--output-format', 'stream-json', '--verbose', '--tools', '', '--setting-sources', '', '--strict-mcp-config', '--no-session-persistence', '--system-prompt', system];
 		if (model) args.push('--model', model);
 		const images = renders.filter((r) => r.png).map((r) => ({ type: 'image', source: { type: 'base64', media_type: 'image/png', data: readFileSync(r.png).toString('base64') } }));
 		const line = JSON.stringify({ type: 'user', message: { role: 'user', content: [{ type: 'text', text: input }, ...images] } });
