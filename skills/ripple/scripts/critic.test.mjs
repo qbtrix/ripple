@@ -1,7 +1,8 @@
 // critic.test.mjs: build.mjs's host critic, with no model and no browser.
 // Pins what the critic is told (every lens, every rule id, each PNG path and
 // offender box) and how its reply becomes CriticIssue[] (unknown lens dropped,
-// unknown rule cleared, severity clamped, `spec` unless it says `widget`).
+// unknown rule cleared, severity clamped, `spec` unless it says `widget`),
+// and that the shots reach the host's reply function to attach.
 //   node --test skills/ripple/scripts/critic.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -61,8 +62,8 @@ test('hostCritic passes the prompts through, returns the tokens, and throws on a
 		}
 	};
 	let seen;
-	const critic = hostCritic(async (system, user) => {
-		seen = { system, user };
+	const critic = hostCritic(async (system, user, signal, shots) => {
+		seen = { system, user, shots };
 		return { text: '{"issues":[{"lens":"layout","severity":2,"message":"cramped"}]}', tokens: 1234 };
 	}, parse);
 	const res = await critic({ spec: {}, renders, rules, prompt: 'x' });
@@ -70,6 +71,7 @@ test('hostCritic passes the prompts through, returns the tokens, and throws on a
 	assert.equal(res.issues[0].severity, 2);
 	assert.match(seen.system, /reads-at-phone/);
 	assert.match(seen.user, /380-light\.png/);
+	assert.equal(seen.shots, renders, 'the shots reach the host so it can attach the PNGs');
 	const bad = hostCritic(async () => ({ text: 'looks fine to me', tokens: 1 }), parse);
 	await assert.rejects(bad({ spec: {}, renders, rules, prompt: 'x' }), /not JSON/);
 });

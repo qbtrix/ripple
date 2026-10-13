@@ -14,12 +14,13 @@
 //
 // The model and the critic are injected. The default runs the local Claude
 // Code CLI (`claude -p`, the user's own login, no API key) with no settings,
-// from the temp dir so no CLAUDE.md is read: the model with every tool off,
-// the critic with only Read, scoped to <outdir>, so it can open the PNGs.
+// from the temp dir so no CLAUDE.md is read, every tool off. The critic gets
+// the PNGs inline in one message (stream-json), so it judges in one turn
+// instead of paying for a Read loop.
 // `--model <alias>` picks the CLI's model for both; `--model-cmd "<shell
 // cmd>"` swaps both for any command that reads the prompt on stdin and prints
 // the reply (or `claude -p --output-format json` style JSON) on stdout; the
-// critic's prompt names the PNG paths. Tokens come from the CLI's usage; a
+// critic's prompt names the PNG paths for it to open. Tokens come from the CLI's usage; a
 // command that reports none is counted at 4 chars a token.
 //
 // Core resolves from the caller's project (`@ripple-ui/core`, built), then
@@ -158,7 +159,7 @@ export function criticPrompt({ prompt, spec, renders }) {
 	return [
 		`The ask: ${prompt}`,
 		'The spec:\n```json\n' + JSON.stringify(spec) + '\n```',
-		'Open each screenshot with Read before you judge:\n' + shots.join('\n')
+		'The screenshots, in this order (attached, or open each path before you judge):\n' + shots.join('\n')
 	].join('\n\n');
 }
 
@@ -187,20 +188,24 @@ export function criticIssues(reply, rules) {
 /** A Critic over any reply function `(system, user, signal) => { text, tokens }`; `parse` is core's parseSpecText. */
 export function hostCritic(ask, parse) {
 	return async ({ spec, renders, rules, prompt, signal }) => {
-		const reply = await ask(criticSystem(rules), criticPrompt({ prompt, spec, renders }), signal);
+		const reply = await ask(criticSystem(rules), criticPrompt({ prompt, spec, renders }), signal, renders);
 		const parsed = parse(reply.text);
 		if ('error' in parsed) throw new Error(`the critic's reply is not JSON: ${reply.text.slice(0, 300)}`);
 		return { issues: criticIssues(parsed.spec, rules), tokens: reply.tokens };
 	};
 }
 
-/** The default critic's reply: the local Claude Code CLI with only Read, scoped to `dir`. */
-export function claudeCriticAsk({ model, dir }) {
-	return async (system, input, signal) => {
-		const args = ['-p', '--output-format', 'json', '--tools', 'Read', '--allowedTools', 'Read', '--setting-sources', '', '--no-session-persistence', '--system-prompt', system];
+/** The default critic's reply: the local Claude Code CLI, no tools, the shots inline as images in one user message. */
+export function claudeCriticAsk({ model }) {
+	return async (system, input, signal, renders = []) => {
+		const args = ['-p', '--input-format', 'stream-json', '--output-format', 'stream-json', '--verbose', '--tools', '', '--setting-sources', '', '--no-session-persistence', '--system-prompt', system];
 		if (model) args.push('--model', model);
-		args.push('--add-dir', dir);
-		return readReply(await exec('claude', args, input, { signal }), system + input);
+		const images = renders.filter((r) => r.png).map((r) => ({ type: 'image', source: { type: 'base64', media_type: 'image/png', data: readFileSync(r.png).toString('base64') } }));
+		const line = JSON.stringify({ type: 'user', message: { role: 'user', content: [{ type: 'text', text: input }, ...images] } });
+		const out = await exec('claude', args, line + '\n', { signal });
+		// stream-json prints one event per line; the last `result` event is what --output-format json prints.
+		const result = out.trim().split('\n').reverse().find((l) => l.includes('"type":"result"'));
+		return readReply(result ?? out, system + input);
 	};
 }
 
@@ -281,7 +286,7 @@ async function main() {
 		const system = systemPrompt(now);
 		const model = modelCmd ? commandModel({ system, cmd: modelCmd }) : claudeModel({ system, model: modelName });
 		mkdirSync(outdir, { recursive: true });
-		const critic = hostCritic(modelCmd ? commandCriticAsk({ cmd: modelCmd }) : claudeCriticAsk({ model: modelName, dir: outdir }), parseSpecText);
+		const critic = hostCritic(modelCmd ? commandCriticAsk({ cmd: modelCmd }) : claudeCriticAsk({ model: modelName }), parseSpecText);
 		let n = 0; // the round in flight, so round-N matches rounds.json even after a reply that did not parse
 		const rounds = [];
 		const started = d.getTime();

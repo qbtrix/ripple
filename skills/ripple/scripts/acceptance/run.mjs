@@ -2,7 +2,9 @@
 // acceptance/run.mjs: the crafted-mode acceptance run. Builds each task in
 // tasks.json (the six A/B asks) through build.mjs with its default model,
 // two at a time, and writes <outdir>/results.json: per task `{ faults, clean,
-// seconds, tokens, rounds, stopped, guardHits }` plus the gate verdict.
+// seconds, tokens, rounds, stopped, guardHits, guardRejects }` plus the gate
+// verdict. guardHits (accepted rounds that failed the data guard) must be 0;
+// guardRejects counts every round the guard refused, as telemetry.
 //   node skills/ripple/scripts/acceptance/run.mjs <outdir> [build.mjs options]
 // Run it from a project where Playwright resolves (packages/svelte works).
 // Extra options (--base, --model, --model-cmd) pass through to build.mjs.
@@ -56,6 +58,7 @@ function build(name, ask) {
 				rounds: r.rounds,
 				stopped: r.stopped,
 				guardHits: rounds.filter((x) => x.accepted && x.guard && !x.guard.ok).length,
+				guardRejects: rounds.filter((x) => x.guard && !x.guard.ok).length,
 				waived: rounds.find((x) => x.n === r.bestRound)?.waived.length ?? 0,
 				widgetFaults: r.widgetFaults.map((f) => `${f.rule ?? f.code}: ${f.message}`)
 			});
