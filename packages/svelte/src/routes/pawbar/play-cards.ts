@@ -257,7 +257,7 @@ const STEP_MS = 18;
 /** An iso-scene card bound to its own state key, so the sliders survive a re-render. */
 export const isoCard = (key: string, props: object) => ({ state: {}, ui: { type: 'iso-scene', bind: `{state.${key}}`, props } });
 
-function handWritten(id: string, title: string, category: string, group: string, prompt: string, card: object): Scenario {
+export function handWritten(id: string, title: string, category: string, group: string, prompt: string, card: object): Scenario {
 	const text = JSON.stringify({ version: '1.0', ...card });
 	const chunks = Array.from({ length: Math.ceil(text.length / CHUNK) }, (_, i) => ({ t: i * STEP_MS, text: text.slice(i * CHUNK, (i + 1) * CHUNK) }));
 	return { id, title, category, group, fixture: { id, title, prompt, model: 'hand-written', recordedAt: '2026-10-10T00:00:00Z', chunks } };
