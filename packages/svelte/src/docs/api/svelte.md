@@ -42,6 +42,7 @@ order: 2
 | `streaming` | `StreamSpecStore` | A store from `streamSpec`. When set, `spec` is ignored. |
 | `skeleton` | `'card' \| 'dashboard' \| 'text' \| 'none'` | Placeholder while a stream has nothing to show. Default `card`. |
 | `onComplete` | `(result: TerminalResult) => void` | Called when a multi-step flow finishes. See [Intents](/docs/guides/intents). |
+| `onRenderError` | `(nodeId: string \| undefined) => void` | Called when a node's error boundary shows its fallback in a plain or finished render (never mid-stream). A nested Ripple without its own handler reports to its parent's. |
 | `onSpecChanged` | `(spec: DashboardSpec) => void` | Called when a user rearranges a dashboard. |
 | `checkCatalog` | `boolean` | Warn in the console about unknown widget types whenever the spec changes. |
 | `extraWidgetTypes` | `string[]` | Types `checkCatalog` should treat as known. |
