@@ -62,7 +62,7 @@ let STATIC: Item[] = [];
 const at = (p: Point3): Flat => k.iso(p, P);
 const S = (paths: SolidPaths, style: k.SolidStyle = {}) => k.solidSvg(paths, style);
 const L = (d: string, style: k.LineStyle = {}) => k.lineSvg(d, style);
-const D = (points: Flat[], style: { size?: number; tone?: k.Tone } = {}) => k.dotsSvg(points, style);
+const D = (points: Array<Flat | [number, number, number]>, style: { size?: number; tone?: k.Tone } = {}) => k.dotsSvg(points, style);
 /** Painter's key: depth of a footprint on the floor. */
 const key = (p: Flat | Point3) => p[0] * CA + p[1] * SA;
 const cyl = (c: Flat, r: number, z0: number, z1: number, steps = 40, bevel = 0) => k.cylinder(c[0], c[1], r, z0, z1 - z0, P, steps, bevel);
