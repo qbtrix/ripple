@@ -18,6 +18,10 @@
 // part, rewrites only the parts that move and reorders them only when a shift
 // changes the order. Look: the kit's Blueprint ramp, thin lines, the chain
 // in brand blue, one lit part (the cog the chain is on). No DOM or work at module top level.
+//
+// `auditSvgOf()` draws the same figure with each solid's world shape on it for
+// the iso audit (live output never carries it); `review` is what the audit test,
+// `scripts/capture-figure.ts` and `scripts/score-figure.ts` read.
 
 import * as k from '@ripple-ui/core/iso';
 import type { Flat, Point3, SolidPaths } from '@ripple-ui/core/iso';
@@ -53,7 +57,17 @@ let LINKS = 0;
 let STATIC: Item[] = [];
 
 const at = (p: Point3): Flat => k.iso(p, P);
-const S = (paths: SolidPaths, style: k.SolidStyle = {}) => k.solidSvg(paths, style);
+const FLOOR = -PLATE_H - FOOT_H;
+/** Set only while `auditSvgOf` renders: solids then carry their world shape for `@ripple-ui/core/iso`'s audit. */
+let AUDIT = false;
+type Shaped = SolidPaths & { shape?: k.Extrusion; ground?: boolean };
+const shaped = (paths: SolidPaths, shape: k.Extrusion, ground = false): Shaped => Object.assign(paths, { shape, ground });
+const S = (paths: Shaped, style: k.SolidStyle = {}) => {
+	const svg = k.solidSvg(paths, style);
+	return AUDIT && paths.shape ? svg.replace('<g', `<g${k.shapeAttr(paths.shape)}${paths.ground ? ' data-ground=""' : ''}`) : svg;
+};
+/** Plates face +y: their rings are in world x,z. */
+const PLATE_FRAME: k.Frame = { o: [0, 0, 0], a: [0, 1, 0], u: [1, 0, 0], v: [0, 0, 1] };
 const L = (d: string, style: k.LineStyle = {}) => k.lineSvg(d, style);
 const D = (points: Flat[], style: { size?: number; tone?: k.Tone } = {}) => k.dotsSvg(points, style);
 const xz = (x: number, z: number, y: number): Point3 => [x, y, z];
@@ -102,13 +116,13 @@ function plate(outer: Ring2, y0: number, y1: number, holes: Ring2[] = []): Solid
 	const cap = (y: number) => rings.map((ring) => k.pathOf(ring.map(([x, z]) => at(xz(x, z, y))), true)).join('');
 	buckets[k.bandOf(k.dot3([0, Math.sign(front - back), 0], LIGHT))]!.push(cap(front));
 	const joinSegs = (segs: Flat[][]) => segs.map((s) => k.pathOf(s)).join('');
-	return {
+	return shaped({
 		fill: cap(front) + cap(back),
 		outline: cap(front) + joinSegs(edges),
 		crease: joinSegs(creases),
 		top: buckets[4]!.join(''),
 		shades: buckets.slice(0, 4).map((b) => b.join(''))
-	};
+	}, { F: PLATE_FRAME, rings, s0: Math.min(y0, y1), s1: Math.max(y0, y1) });
 }
 
 /** A sprocket outline: valleys (where rollers sit) at `rot + j * pitch` on the pitch circle. */
@@ -124,8 +138,19 @@ function sprocket(cx: number, cz: number, teeth: number, rot: number, r = pitchR
 	return out;
 }
 
+/** A prism of cross-section `poly` from world point a to b. */
+function rod(a: Point3, b: Point3, poly: Flat[]) {
+	const F = k.frameAlong(a, k.sub3(b, a));
+	const len = k.len3(k.sub3(b, a));
+	return shaped(k.prismOf(F, poly, 0, len, P), { F, rings: [poly], s0: 0, s1: len });
+}
+
 /** A tube between two world points. */
-const tube = (a: Point3, b: Point3, r: number, steps = 24) => k.prismOf(k.frameAlong(a, k.sub3(b, a)), k.circlePolygon(r, steps), 0, k.len3(k.sub3(b, a)), P);
+const tube = (a: Point3, b: Point3, r: number, steps = 24) => rod(a, b, k.circlePolygon(r, steps));
+const along = (a: Point3, dir: Point3, len: number): Point3 => k.add3(a, k.mul3(k.unit3(dir), len));
+const cyl = (x: number, y: number, r: number, z: number, h: number, steps = 32, bevel = 0) =>
+	shaped(k.cylinder(x, y, r, z, h, P, steps, bevel), { F: k.axisFrame([x, y, 0], 'z'), rings: [k.circlePolygon(r, steps)], s0: z, s1: z + h }, z <= FLOOR + 1e-6);
+const slab = (plan: k.Plan, z: number, h: number, steps = 8, bevel = 0) => shaped(k.slabOf(plan, z, h, P, steps, bevel), k.boxShape([plan.x, plan.y, z], [plan.x + plan.w, plan.y + plan.d, z + h]));
 
 /** A flat bar in x,z from a to b, half-width w, round ends. */
 function bar(a: Flat, b: Flat, w: number, wb = w): Ring2 {
@@ -248,20 +273,20 @@ function bench(): string {
 	const out = [`<path class="iso-halo" d="${k.haloOf(PLATE, -PLATE_H - FOOT_H, PLATE_H, P)}"/>`];
 	const feet = [...k.corners(PLATE, 24)].sort((a, b) => k.depthOf([a[0], a[1], 0], P) - k.depthOf([b[0], b[1], 0], P));
 	for (const [x, y] of feet) {
-		out.push(S(k.cylinder(x, y, 7, -PLATE_H - FOOT_H, 1.6, P, 28), { tone: 'lo' }));
-		out.push(S(k.cylinder(x, y, 5.4, -PLATE_H - FOOT_H + 1.6, FOOT_H - 1.6, P, 28), { tone: 'lo' }));
+		out.push(S(cyl(x, y, 7, -PLATE_H - FOOT_H, 1.6, 28), { tone: 'lo' }));
+		out.push(S(cyl(x, y, 5.4, -PLATE_H - FOOT_H + 1.6, FOOT_H - 1.6, 28), { tone: 'lo' }));
 	}
-	out.push(S(k.slabOf(PLATE, -PLATE_H, PLATE_H, P, 8, 1.6), { tone: 'lo', inner: L(k.sideSeam(PLATE, -PLATE_H + 3, P), { tone: 'faint' }) }));
+	out.push(S(slab(PLATE, -PLATE_H, PLATE_H, 8, 1.6), { tone: 'lo', inner: L(k.sideSeam(PLATE, -PLATE_H + 3, P), { tone: 'faint' }) }));
 	out.push(L(k.planOutline(k.insetPlan(PLATE, 6), 0, P), { tone: 'faint' }));
 	const screws = k.corners(PLATE, 11);
 	out.push(L(screws.map(([x, y]) => k.ring(x, y, 2.4, 0, P, 16)).join(''), { tone: 'lo' }));
 	out.push(D(screws.map(([x, y]) => at([x, y, 0])), { size: 0.5 }));
 	const strip = { x: -150, y: PLATE.y + PLATE.d - 16, w: 230, d: 8, r: 1 };
-	out.push(S(k.slabOf(strip, 0, 0.6, P, 3), { tone: 'lo', crease: 'none' }));
+	out.push(S(slab(strip, 0, 0.6, 3), { tone: 'lo', crease: 'none' }));
 	const ticks = k.topTicks(strip.x + 4, strip.x + strip.w - 4, 5, 5, strip.y + 0.8, 0.6, [2.2, 4], P);
 	out.push(L(ticks.minor, { tone: 'lo' }), L(ticks.major, { tone: 'mid' }));
 	const label = { x: -350, y: PLATE.y + PLATE.d - 24, w: 44, d: 14, r: 1.2 };
-	out.push(S(k.slabOf(label, 0, 1, P, 3, 0.3), { tone: 'mid' }));
+	out.push(S(slab(label, 0, 1, 3, 0.3), { tone: 'mid' }));
 	for (const [i, yy] of [3.6, 7, 10.4].entries()) out.push(L(k.lineOnTop([label.x + 0.4, label.y + yy], [label.x + label.w - (i ? 10 : 0.4), label.y + yy], 1, P), { tone: i === 0 ? 'lo' : 'faint', free: 'end' }));
 	return out.join('');
 }
@@ -279,34 +304,38 @@ function staticItems(): Item[] {
 	const clampAt = onSeatTube(seatPostTop - 6);
 	for (const [id, x, top] of [['post-rear', HX, HZ - 9], ['post-seat', clampAt[0], clampAt[2] + 6]] as const) {
 		const parts = [halo({ x: x - 9, y: POST_Y - 9, w: 18, d: 18, r: 9 })];
-		parts.push(S(k.cylinder(x, POST_Y, 9, 0, 3, P, 32, 0.5), { tone: 'mid' }));
-		parts.push(S(k.cylinder(x, POST_Y, 4.5, 3, top - 3, P, 28), { tone: 'mid', crease: 'none', inner: L(k.sideArc(x, POST_Y, 4.5, 20, P, 16), { tone: 'faint' }) }));
+		parts.push(S(cyl(x, POST_Y, 9, 0, 3, 32, 0.5), { tone: 'mid' }));
+		parts.push(S(cyl(x, POST_Y, 4.5, 3, top - 3, 28), { tone: 'mid', crease: 'none', inner: L(k.sideArc(x, POST_Y, 4.5, 20, P, 16), { tone: 'faint' }) }));
 		add(id, -1e3 + 1, parts.join(''));
 	}
 	add('cup-rear', POST_Y + 12, S(plate([[HX - 7, HZ - 14], [HX + 7, HZ - 14], [HX + 7, HZ - 2.4], [HX - 7, HZ - 2.4]], POST_Y - 4, -44), { tone: 'mid' }));
 	add('arm-seat', POST_Y + 12, S(plate([[clampAt[0] - 4, clampAt[2] - 3], [clampAt[0] + 4, clampAt[2] - 3], [clampAt[0] + 4, clampAt[2] + 3], [clampAt[0] - 4, clampAt[2] + 3]], POST_Y - 4, -9), { tone: 'mid' }));
-	add('clamp-seat', 0.4, S(k.prismOf(k.frameAlong(onSeatTube(seatPostTop - 12), ST), k.circlePolygon(10, 32), 0, 12, P), { tone: 'mid' }) + D([at([clampAt[0] + 9.5, 6, clampAt[2]])], { size: 0.6 }));
+	add('clamp-seat', 0.4, S(rod(onSeatTube(seatPostTop - 12), onSeatTube(seatPostTop), k.circlePolygon(10, 32)), { tone: 'mid' }) + D([at([clampAt[0] + 9.5, 6, clampAt[2]])], { size: 0.6 }));
 	// Frame: seat tube, bottom bracket shell, stays and dropouts on each side.
 	add('seat-tube', 0, S(tube(onSeatTube(0), onSeatTube(seatPostTop + 18), 7, 32), { tone: 'mid', crease: 'none' }));
+	// Bottom bracket spindle, each side of the shell: it carries both cranks.
+	add('spindle-nd', -20, S(plate(circle(0, BBZ, 5, 24), -32, -17), { tone: 'mid', crease: 'none' }));
+	add('spindle', 17.5, S(plate(circle(0, BBZ, 5, 24), 17, 28.6), { tone: 'mid', crease: 'none' }));
 	add('bb-shell', 0.2, S(plate(circle(0, BBZ, 10, 36), -17, 17), { tone: 'mid' }) + L(k.pathOf(circle(0, BBZ, 6.5, 36).map(([x, z]) => at(xz(x, z, 17))), true), { tone: 'faint' }));
 	for (const side of [-1, 1]) {
 		const y = side * 36;
 		const dropout = hullOfCircles([[HX, HZ, 5.2], [HX + 16, HZ - 3, 4.4], [HX + 8, HZ + 14, 3.8], ...(side > 0 ? ([[HX - 6, HZ - 14, 4.6]] as Array<[number, number, number]>) : [])]);
 		add(`dropout-${side}`, y + side * 0.5, S(plate(dropout, y - 1.3, y + 1.3), { tone: 'mid' }) + D([at(xz(HX + 12, HZ + 4, y + 1.3 * side))], { size: 0.45 }));
-		const csA: Point3 = [4, side * 13, BBZ - 1];
+		const csA: Point3 = [4, side * 11.5, BBZ - 1]; // inboard enough that the drive-side stay clears the 34T ring
 		const csB: Point3 = [HX + 16, y, HZ - 3];
 		const mid = k.add3(csA, k.mul3(k.sub3(csB, csA), 0.5));
 		const dir = k.unit3(k.sub3(csB, csA));
 		add(`stay-c-front-${side}`, side * 16, S(tube(csA, mid, 4.6), { tone: 'mid', crease: 'none' }));
 		add(`stay-c-rear-${side}`, side * 34, S(tube(mid, csB, 4.6), { tone: 'mid', crease: 'none' }));
-		add(`stay-c-band-${side}`, side * (side > 0 ? 34.1 : 16.1), S(k.prismOf(k.frameAlong(k.add3(mid, k.mul3(dir, -8)), dir), k.circlePolygon(5.4, 24), 0, 16, P), { tone: 'lo' }));
+		add(`stay-c-band-${side}`, side * (side > 0 ? 34.1 : 16.1), S(rod(along(mid, dir, -8), along(mid, dir, 8), k.circlePolygon(5.4, 24)), { tone: 'lo' }));
 		add(`stay-s-${side}`, side * 33, S(tube(onSeatTube(150, side * 8), [HX + 8, y, HZ + 14], 3.6), { tone: 'mid', crease: 'none' }));
 	}
 	// Axle, nuts and hub shell.
 	add('axle', 35, S(plate(circle(HX, HZ, 2.4, 20), -44, 41), { tone: 'mid', crease: 'none' }));
 	add('nut', 40, S(plate(circle(HX, HZ, 4.6, 6, Math.PI / 6), 37.6, 41), { tone: 'mid' }));
 	add('nut-nd', -40, S(plate(circle(HX, HZ, 4.6, 6, Math.PI / 6), -44, -37.6), { tone: 'mid' }));
-	add('hub', 0.3, S(plate(circle(HX, HZ, 5.5, 28), -16, 8), { tone: 'mid', crease: 'none' }) + S(plate(circle(HX, HZ, 10, 32), -16, -14.4), { tone: 'mid' }) + S(plate(circle(HX, HZ, 10, 32), 5, 6.6), { tone: 'mid' }));
+	// Hub shell, its flanges and the freehub body the cogs slide onto (up to the lockring).
+	add('hub', 0.3, S(plate(circle(HX, HZ, 5.5, 28), -16, 8), { tone: 'mid', crease: 'none' }) + S(plate(circle(HX, HZ, 7.5, 24), 6.6, 31.6), { tone: 'mid', crease: 'none' }) + S(plate(circle(HX, HZ, 10, 32), -16, -14.4), { tone: 'mid' }) + S(plate(circle(HX, HZ, 10, 32), 5, 6.6), { tone: 'mid' }));
 	add('lockring', 32.8, S(plate(sprocket(HX, HZ, 12, 0, 8.4), 31.6, 33.4), { tone: 'mid' }));
 	// Rim and tyre: a cut-away sector of the rear wheel.
 	const arc = (r: number, a0: number, a1: number, steps = 64): Ring2 => Array.from({ length: steps + 1 }, (_, i) => [HX + r * Math.cos(a0 + ((a1 - a0) * i) / steps), HZ + r * Math.sin(a0 + ((a1 - a0) * i) / steps)] as Flat);
@@ -354,6 +383,7 @@ function chainItems(rig: Rig, chain: number, spacing: number): Item[] {
 		const faces: string[][] = [[], []];
 		const sides: string[][] = [[], []];
 		const dots: Flat[] = [];
+		const box: [Point3, Point3] = [[Infinity, Infinity, Infinity], [-Infinity, -Infinity, -Infinity]];
 		for (let i = 0; i < n; i++) {
 			const a = pins[i]!;
 			const b = pins[(i + 1) % n]!;
@@ -362,6 +392,8 @@ function chainItems(rig: Rig, chain: number, spacing: number): Item[] {
 			const outer = i % 2 === 0 ? 1 : 0;
 			const y = yAt(mx) + (outer ? 1.7 : 1.1);
 			const shape = bar(a, b, outer ? 2.7 : 2.2);
+			for (const [x, z] of shape)
+				for (const [v, axis] of [[x, 0], [y - 1.6, 1], [y, 1], [z, 2]] as const) (box[0][axis] = Math.min(box[0][axis], v)), (box[1][axis] = Math.max(box[1][axis], v));
 			const face = shape.map(([x, z]) => at(xz(x, z, y)));
 			faces[outer]!.push(k.pathOf(face, true));
 			sides[outer]!.push(k.pathOf(face.map(([x, yy]) => [x + side[0], yy + side[1]] as Flat), true));
@@ -369,7 +401,7 @@ function chainItems(rig: Rig, chain: number, spacing: number): Item[] {
 		}
 		const layer = (o: number) =>
 			`<path class="iso-shade" data-shade="0" d="${sides[o]!.join('')}"/><path class="iso-shade" data-shade="${o ? 3 : 2}" d="${faces[o]!.join('')}"/><path class="iso-line iso-edge" data-tone="mid" d="${faces[o]!.join('')}"/>`;
-		return { id: g.id, key: g.key, svg: `<g class="iso-solid bike-chain">${layer(0)}${layer(1)}${D(dots, { size: 0.55, tone: 'hi' })}</g>` };
+		return { id: g.id, key: g.key, svg: `<g${AUDIT && dots.length ? k.shapeAttr(k.boxShape(...box)) : ''} class="iso-solid bike-chain">${layer(0)}${layer(1)}${D(dots, { size: 0.55, tone: 'hi' })}</g>` };
 	});
 }
 
@@ -412,7 +444,7 @@ function ringItems(rig: Rig, state: DriveState, spacing: number): Item[] {
 		arms.push(S(plate(circle(end[0], end[1], 2.6, 16), 31, 32), { tone: 'mid' }));
 		bolts.push(at(xz(end[0], end[1], 32)));
 	}
-	items.push({ id: 'spider', key: 30, svg: S(plate(circle(0, BBZ, 11, 32), 28.6, 31.2), { tone: 'mid' }) + arms.join('') + D(bolts, { size: 0.5, tone: 'hi' }) });
+	items.push({ id: 'spider', key: 30, svg: S(plate(circle(0, BBZ, 11, 32), 28.6, 32), { tone: 'mid' }) + arms.join('') + D(bolts, { size: 0.5, tone: 'hi' }) });
 	return items;
 }
 
@@ -455,8 +487,7 @@ function rearDerailleur(rig: Rig, state: DriveState, spacing: number): Item[] {
 	for (const dz of [3.5, -3.5]) {
 		const a = k.add3(B, [0, 2, dz]);
 		const b = k.add3(K, [0, 2, dz]);
-		const F = k.frameAlong(a, k.sub3(b, a));
-		arms.push(S(k.prismOf(F, [[-1.4, -2.6], [1.4, -2.6], [1.4, 2.6], [-1.4, 2.6]], 0, k.len3(k.sub3(b, a)), P), { tone: 'mid', crease: 'none' }));
+		arms.push(S(rod(a, b, [[-1.4, -2.6], [1.4, -2.6], [1.4, 2.6], [-1.4, 2.6]]), { tone: 'mid', crease: 'none' }));
 	}
 	const knuckle = (c: Point3, r: number, y0: number, y1: number) => S(plate(circle(c[0], c[2], r, 28), y0, y1), { tone: 'mid' });
 	items.push({ id: 'rd-body', key: Math.max(yc + 6, 39), svg: knuckle(B, 5.5, 37.6, 44) + arms.join('') + knuckle(K, 6, yc + 5, yc + 10) + D([at([B[0], 44, B[2]]), at([K[0], yc + 10, K[2]])], { size: 0.6, tone: 'hi' }) });
@@ -472,7 +503,7 @@ function frontDerailleur(rig: Rig): Item[] {
 	const shape = [...arc(R + 12, a0, a1), ...arc(R + 3, a1, a0)];
 	const band = onSeatTube(70);
 	const top: Flat = [(R + 12) * Math.cos(1.95), BBZ + (R + 12) * Math.sin(1.95)];
-	const body = S(k.prismOf(k.frameAlong(onSeatTube(64), ST), k.circlePolygon(9.4, 32), 0, 11, P), { tone: 'mid' });
+	const body = S(rod(onSeatTube(64), onSeatTube(75), k.circlePolygon(9.4, 32)), { tone: 'mid' });
 	const link = S(plate([[top[0] - 5, top[1]], [top[0] + 5, top[1]], [band[0] + 4, band[2] + 3], [band[0] - 6, band[2] + 3]], 6, yf + 4.6), { tone: 'mid' });
 	return [
 		{ id: 'fd-cage-in', key: yf - 4, svg: S(plate(shape, yf - 4.6, yf - 3.4), { tone: 'mid' }) },
@@ -550,6 +581,38 @@ export const LABEL = 'A bicycle drivetrain on a bench stand: crank, two chainrin
 
 const wrap = (item: Item) => `<g data-item="${item.id}">${item.svg}</g>`;
 
+/** Parts and pins the audit is told to let go, each with the reason. */
+export const AUDIT_WAIVERS: Array<{ check: 'supports' | 'loose-ends'; id: string; reason: string }> = [
+	{ check: 'supports', id: 'rim/0', reason: 'held by the spokes, which are drawn as lines; the audit measures solids only' },
+	{ check: 'supports', id: 'tyre/0', reason: 'sits on the rim, which the spokes hold (see rim/0)' }
+];
+
+/** The unframed SVG with every solid's world box on it, for `auditSvg` from `@ripple-ui/core/iso`. */
+export function auditSvgOf(params: BikeParams = clampParams(), drive: Partial<Omit<DriveState, 'params'>> = {}): string {
+	ready();
+	AUDIT = true;
+	STATIC = staticItems();
+	try {
+		return rawSvg(params, drive, false);
+	} finally {
+		AUDIT = false;
+		STATIC = staticItems();
+	}
+}
+
+/** What the figure review reads: `scripts/capture-figure.ts`, `scripts/score-figure.ts` and the audit test. */
+export const review = {
+	waivers: AUDIT_WAIVERS,
+	/** Audit-mode SVGs at the still frame, top gear mid-stroke and mid-shift in the easiest gear. */
+	auditFrames: (): Array<[string, string]> => [
+		['still', auditSvgOf()],
+		['50x11 mid-stroke', auditSvgOf(clampParams({ ring: 50, gear: 7 }), { theta: 0.7 })],
+		['34x28 mid-shift', auditSvgOf(clampParams({ ring: 34, gear: 1 }), { theta: 2.9, pose: { ring: 0.5, cog: 2.5 } })]
+	],
+	svg: (theme: k.Theme) => bikeSvg(clampParams(), {}, theme),
+	points: () => reviewPointsOf()
+};
+
 /** The whole figure as an SVG string, framed to everything it draws. */
 export function bikeSvg(params: BikeParams = clampParams(), drive: Partial<Omit<DriveState, 'params'>> = {}, standalone: k.Theme | false = false): string {
 	return framed(rawSvg(params, drive, standalone), frame());
@@ -582,6 +645,24 @@ export interface Anchor {
 
 export function anchorsOf(): Anchor[] {
 	return anchorPoints().map(([id, label, p]) => ({ id, label, ...percentIn(frame(), at(p)) }));
+}
+
+/** Junctions a reviewer reads at 4x, in percent of the figure box, at the still frame. */
+export function reviewPointsOf(): Anchor[] {
+	ready();
+	const rig = rigAt(poseOf(clampParams()));
+	const top = rig.loop.segs[7]!; // the top run, cog to ring
+	const points: Array<[string, string, Point3]> = [
+		['chain-ring', 'Chain on chainring', xz(top.p1![0], top.p1![1], rig.yr)],
+		['chain-cog', 'Chain on cog', xz(top.p0![0], top.p0![1], rig.yc)],
+		['crank', 'Crank on spider', [0, 36, BBZ]],
+		['jockeys', 'Chain on jockey wheels', xz((rig.G[0] + rig.T[0]) / 2, (rig.G[1] + rig.T[1]) / 2, rig.yc)],
+		['fd-band', 'Front derailleur on seat tube', onSeatTube(70)],
+		['chainstay-dropout', 'Chainstay at dropout', [HX + 16, 36, HZ - 3]],
+		['seatstay-seat-tube', 'Seat stays at seat tube', onSeatTube(150, 8)],
+		['hanger', 'Derailleur on dropout', [HX - 6, 39, HZ - 14]]
+	];
+	return points.map(([id, label, p]) => ({ id, label, ...percentIn(frame(), at(p)) }));
 }
 
 function anchorPoints(): Array<[string, string, Point3]> {
