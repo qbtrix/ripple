@@ -11,15 +11,25 @@
 //   - A round is accepted only when its score beats the best strictly, so the
 //     returned spec is never worse than the first accepted round. A round that
 //     does not parse is recorded but never returned.
-//   - Score is 100 - 10 x faults. Faults are every pure audit item, every
-//     render audit item and every critic issue marked `fixable: 'spec'`;
-//     `widget` issues go to `widgetFaults` and cost nothing.
+//   - Score is 100 - 10 x faults - 2 x waived. Faults are every pure audit
+//     item, every render audit item and every critic issue marked
+//     `fixable: 'spec'`; `widget` issues go to `widgetFaults` and cost nothing.
+//     An item a live waiver covers (same check, on the waived widget, found
+//     through the item's path) moves to its report's `waived` and to
+//     `Round.waived`: out of the count, still in the record.
+//   - The data guard runs after the pure audit on every parsed round, against
+//     the host's facts or the first parsed round. A round that fails it is
+//     never accepted and never rendered: the loop stops `guard`, keeps the
+//     best guard-clean round (null if there is none) and moves the conflict
+//     to `widgetFaults`. There is no second bend.
 
 import type { AuditItem, AuditReport } from '../core/audit-report.js';
+import { dataGuard, dayAfter, type DataGuardResult, type Fact } from '../core/data-guard.js';
 import { specAudit } from '../core/spec-audit.js';
 import { formatSpecIssues } from '../core/spec-issues.js';
 import type { ValidateCatalogOptions } from '../core/validate-catalog.js';
 import type { SlimWidgetEntry } from '../manifest/slim.js';
+import { waivers as craftWaivers, type Waiver } from '../manifest/craft.js';
 
 export type Preset = 'card' | 'figure';
 export type StopReason = 'clean' | 'cap' | 'guard' | 'no-progress';
@@ -91,8 +101,10 @@ export interface BuildOptions extends ValidateCatalogOptions {
 	critic?: Critic;
 	/** Slim widget entries for prop checks (used by later audit checks). */
 	widgets?: readonly SlimWidgetEntry[];
-	/** The host's given facts (used by the data guard). */
-	facts?: unknown;
+	/** The user's facts; the data guard's baseline when any is `given`, else the first parsed round. */
+	facts?: readonly Fact[];
+	/** Reviewed fault exceptions. Default: craft's `waivers`. */
+	waivers?: readonly Waiver[];
 	/** The caller's clock: an ISO timestamp and an IANA zone. */
 	now: { iso: string; tz: string };
 	limits?: BuildLimits;
@@ -111,6 +123,10 @@ export interface Round {
 	faults: number;
 	score: number;
 	accepted: boolean;
+	/** Items a waiver took out of the count. */
+	waived: AuditItem[];
+	/** The data guard's verdict; absent when the round did not parse. */
+	guard?: DataGuardResult;
 	/** Tokens this round's model and critic calls cost. */
 	tokens: number;
 	/** The feedback this round produced for the next one. */
@@ -146,8 +162,45 @@ export function parseSpecText(text: string): { spec: unknown } | { error: string
 
 class Aborted extends Error {}
 
+/** The widget type of the spec node an item's path points into (`/ui/children/0/props/x` → that child's type). */
+function widgetAt(spec: unknown, path: string): string | undefined {
+	const node = /^\/ui((?:\/(?:children|else_children)\/\d+)*)/.exec(path);
+	if (!node || typeof spec !== 'object' || spec === null) return undefined;
+	let at: unknown = (spec as { ui?: unknown }).ui;
+	for (const seg of node[1].split('/').slice(1)) at = (at as Record<string, unknown> | undefined)?.[seg];
+	const type = (at as { type?: unknown } | undefined)?.type;
+	return typeof type === 'string' ? type : undefined;
+}
+
+/**
+ * Move each item a live waiver covers out of its report's count into
+ * `waived`; returns the moved items. Matches by the item's path only.
+ * ponytail: render items carry path '' until the page audit reports offender
+ * paths (CL-5 boxes), so render waivers bite from then on.
+ */
+function waive(reports: AuditReport<AuditItem>[], spec: unknown, list: readonly Waiver[], day: string): AuditItem[] {
+	const live = list.filter((w) => !w.until || w.until >= day);
+	const moved: AuditItem[] = [];
+	for (const r of reports) {
+		const keep: AuditItem[] = [];
+		for (const item of r.items) {
+			const widget = live.some((w) => w.check === r.check) ? widgetAt(spec, item.path) : undefined;
+			if (widget && live.some((w) => w.check === r.check && w.widget === widget)) moved.push(item);
+			else keep.push(item);
+		}
+		if (keep.length === r.items.length) continue;
+		r.waived = [...(r.waived ?? []), ...r.items.filter((i) => !keep.includes(i))];
+		r.items = keep;
+		r.count = keep.length;
+	}
+	return moved;
+}
+
 export async function buildSpec(opts: BuildOptions): Promise<BuildResult> {
 	const { preset, prompt, model, renderer, critic, signal, onRound } = opts;
+	const list = opts.waivers ?? craftWaivers;
+	const day = dayAfter(opts.now).today; // in the caller's zone, as the guard reads it
+	let first: unknown = undefined; // the first parsed spec, the guard's baseline without facts
 	const cap = opts.limits?.rounds ?? DEFAULT_ROUNDS;
 	const rounds: Round[] = [];
 	let best: Round | null = null;
@@ -188,6 +241,7 @@ export async function buildSpec(opts: BuildOptions): Promise<BuildResult> {
 				faults: 0,
 				score: 0,
 				accepted: false,
+				waived: [],
 				tokens: reply.tokens,
 				feedback: ''
 			};
@@ -197,9 +251,30 @@ export async function buildSpec(opts: BuildOptions): Promise<BuildResult> {
 			} else {
 				round.spec = parsed.spec;
 				round.audit = specAudit(parsed.spec, opts);
-				round.renders = await guarded(() => renderer(parsed.spec));
+				round.waived = waive(round.audit, parsed.spec, list, day);
+				if (first === undefined) first = parsed.spec;
+				round.guard = dataGuard({ before: first, after: parsed.spec, facts: opts.facts, now: opts.now, widgets: opts.widgets });
+			}
+			if (round.guard && !round.guard.ok) {
+				const items = round.audit.flatMap((r) => r.items);
+				round.faults = items.length;
+				round.score = 100 - 10 * round.faults - 2 * round.waived.length;
+				round.feedback = formatSpecIssues([...round.guard.items, ...items]);
+				rounds.push(round);
+				widgetFaults = [
+					...widgetFaults,
+					...round.guard.items.map((i): CriticIssue => ({ ...i, lens: 'data truth', severity: 3, fixable: 'widget' }))
+				];
+				onRound?.(round);
+				stopped = 'guard';
+				break;
+			}
+			if (round.spec !== null) {
+				const spec = round.spec;
+				round.renders = await guarded(() => renderer(spec));
+				for (const r of round.renders) round.waived.push(...waive(r.audit, spec, list, day));
 				if (critic) {
-					const seen = await guarded(() => critic({ spec: parsed.spec, renders: round.renders, prompt, signal }));
+					const seen = await guarded(() => critic({ spec, renders: round.renders, prompt, signal }));
 					tokens += seen.tokens;
 					round.tokens += seen.tokens;
 					round.critic = seen.issues;
@@ -214,7 +289,7 @@ export async function buildSpec(opts: BuildOptions): Promise<BuildResult> {
 				...round.critic.filter((i) => i.fixable === 'spec')
 			];
 			round.faults = items.length;
-			round.score = 100 - 10 * round.faults;
+			round.score = 100 - 10 * round.faults - 2 * round.waived.length;
 			round.feedback = formatSpecIssues(items);
 			round.accepted = round.spec !== null && (!best || round.score > best.score);
 			rounds.push(round);

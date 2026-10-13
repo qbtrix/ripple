@@ -5,6 +5,10 @@
  * grammar and the spec envelope (shared with `@ripple-ui/svelte`'s full
  * manifest), and the slim manifest for `@ripple-ui/core/headless/slim`.
  *
+ * Craft data (craft.ts): the audit check ids, the reviewed waivers and the
+ * props that carry the user's data, shared by the build loop and the
+ * manifest build.
+ *
  * Also the `illustration` widget's SVG allowlist (illustration-svg.ts), which
  * the pocketpaw validator and the landing card policy mirror.
  *
@@ -23,6 +27,7 @@ export {
 } from './slim.js';
 export { BASE_ACTIONS, type BaseAction } from '../core/base-dispatcher.js';
 export { SLIM_WIDGETS } from './slim-widgets.js';
+export { CHECK_IDS, DATA_PROPS, waivers, type Waiver } from './craft.js';
 export {
 	ILLUSTRATION_ELEMENTS,
 	ILLUSTRATION_ATTRIBUTES,

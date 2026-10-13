@@ -9,8 +9,9 @@
  * pointing at a file nobody thought was part of the headless surface.
  *
  * So the check is transitive. It walks the real import graph from
- * `headless/index.ts` (and from the pure audit modules, `core/spec-audit.ts`
- * and `core/audit-report.ts`, and the build loop, `build/index.ts`) and
+ * `headless/index.ts` (and from the pure audit modules, `core/spec-audit.ts`,
+ * `core/audit-report.ts` and `core/data-guard.ts`, and the build loop,
+ * `build/index.ts`) and
  * asserts of every reachable file:
  *
  *   1. no `.svelte` import (component or `.svelte.ts` rune module),
@@ -40,9 +41,9 @@ const SOURCES = import.meta.glob('../**/*.ts', {
 
 /**
  * Crawl roots: the headless entry, plus the pure modules a node host runs
- * without the headless runtime (the spec audit, its report type, the build loop).
+ * without the headless runtime (the spec audit, its report type, the data guard, the build loop).
  */
-const ENTRIES = ['./index.ts', '../core/audit-report.ts', '../core/spec-audit.ts', '../build/index.ts'];
+const ENTRIES = ['./index.ts', '../core/audit-report.ts', '../core/spec-audit.ts', '../core/data-guard.ts', '../build/index.ts'];
 
 /**
  * Static import/export sources: `from '...'` plus bare `import '...'`.
@@ -194,7 +195,9 @@ describe('headless purity', () => {
 		expect(graph.files.some((f) => f.endsWith('resolve-tree.ts'))).toBe(true);
 		expect(graph.files.some((f) => f.endsWith('event-dispatcher.ts'))).toBe(true);
 		expect(graph.files.some((f) => f.endsWith('expression-resolver.ts'))).toBe(true);
-		expect(graph.files).toEqual(expect.arrayContaining(['../core/audit-report.ts', '../core/spec-audit.ts']));
+		expect(graph.files).toEqual(
+			expect.arrayContaining(['../core/audit-report.ts', '../core/spec-audit.ts', '../core/data-guard.ts', '../manifest/craft.ts'])
+		);
 	});
 
 	it('imports nothing from svelte, transitively', () => {
