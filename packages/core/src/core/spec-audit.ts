@@ -283,7 +283,7 @@ function sizeItems(spec: unknown): AuditItem[] {
 		: [];
 }
 
-const ISO_DATE = /\b(\d{4})-(\d{2})-(\d{2})\b/g;
+const ISO_DATE = /(?<!\d)(\d{4})-(\d{2})-(\d{2})(?!\d)/g; // also inside 2026-12-25T10:00
 
 /** ISO dates in `ui` and `state` more than a day after the caller's today. */
 function futureDateItems(spec: Obj, now: { iso: string; tz: string }): AuditItem[] {

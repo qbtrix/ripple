@@ -113,6 +113,7 @@ describe('specAudit', () => {
 		const opts = { widgets, now };
 		expect(items(spec('2026-10-15'), opts)).toEqual([]);
 		expect(items(spec('2026-10-16'), opts)).toEqual([expect.objectContaining({ code: 'futureDate' })]);
+		expect(items(spec('Slot 2026-10-16T10:00'), opts)).toEqual([expect.objectContaining({ code: 'futureDate' })]);
 	});
 
 	it('escapes ~ and / in pointer tokens', () => {
