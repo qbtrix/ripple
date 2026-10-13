@@ -1,0 +1,81 @@
+{
+ "id": "ion-thruster",
+ "title": "How a plasma thruster works",
+ "prompt": "How does a plasma thruster work? Show me inside and let me change the grid voltage and the xenon flow.",
+ "model": "hand-written",
+ "recordedAt": "2026-10-13T12:00:00.000Z",
+ "chunks": [
+  {
+   "t": 0,
+   "text": "{\"version\":\"1.0\",\"state\":{\"figure\":null},\"ui\":{\"type\":\"figure\",\"bi"
+  },
+  {
+   "t": 18,
+   "text": "nd\":\"{state.figure}\",\"props\":{\"figure\":\"ion-thruster\",\"params\":{\"v"
+  },
+  {
+   "t": 36,
+   "text": "oltage\":1100,\"flow\":2},\"labels\":[{\"anchor\":\"cathode\",\"note\":\"Sends"
+  },
+  {
+   "t": 54,
+   "text": " electrons into the xenon. They knock electrons off the atoms and "
+  },
+  {
+   "t": 72,
+   "text": "turn the gas into plasma.\"},{\"anchor\":\"magnets\",\"note\":\"Ring magne"
+  },
+  {
+   "t": 90,
+   "text": "ts bend the electrons' paths, so each one hits more atoms before i"
+  },
+  {
+   "t": 108,
+   "text": "t reaches the wall.\"},{\"anchor\":\"screen-grid\",\"note\":\"Holds the pl"
+  },
+  {
+   "t": 126,
+   "text": "asma in, sitting at the full grid voltage. Ions slip out through i"
+  },
+  {
+   "t": 144,
+   "text": "ts holes.\"},{\"anchor\":\"accel-grid\",\"note\":\"Negative, a millimetre "
+  },
+  {
+   "t": 162,
+   "text": "behind the screen grid. The gap between them throws the ions out a"
+  },
+  {
+   "t": 180,
+   "text": "t tens of km/s.\"},{\"anchor\":\"neutraliser\",\"note\":\"Adds one electro"
+  },
+  {
+   "t": 198,
+   "text": "n for every ion that leaves, so the spacecraft does not charge up."
+  },
+  {
+   "t": 216,
+   "text": "\"},{\"anchor\":\"thrust-dial\",\"note\":\"Reads the push: less than a ten"
+  },
+  {
+   "t": 234,
+   "text": "th of a newton, about the weight of a few coins.\"}],\"caption\":\"Xen"
+  },
+  {
+   "t": 252,
+   "text": "on becomes plasma in the chamber, and two grids pull its ions out "
+  },
+  {
+   "t": 270,
+   "text": "at about 40 km/s. The push is tiny, but that exhaust is about ten "
+  },
+  {
+   "t": 288,
+   "text": "times faster than a chemical rocket's, so a tank of xenon lasts fa"
+  },
+  {
+   "t": 306,
+   "text": "r longer. Drawn hugely slowed.\"}}}"
+  }
+ ]
+}

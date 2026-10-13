@@ -33,7 +33,7 @@ const DEG = Math.PI / 180;
 
 // ---- world plan ----------------------------------------------------------
 
-const PLATE = { x: -168, y: -60, w: 250, d: 120, r: 8 };
+const PLATE = { x: -168, y: -60, w: 250, d: 112, r: 8 };
 const PLATE_H = 10;
 const FOOT_H = 5;
 const R_IN = 30; // grid and chamber radius (30 cm grids)
@@ -564,7 +564,7 @@ function rawSvg(params: IonParams, t: number, standalone: k.Theme | false): stri
 	ready();
 	const a = at([X_EXIT, 0, AXIS_Z]);
 	const b = at([X_EXIT + BEAM_L, 0, AXIS_Z]);
-	const defs = `<defs><linearGradient id="ion-beam-fade" gradientUnits="userSpaceOnUse" x1="${a[0].toFixed(1)}" y1="${a[1].toFixed(1)}" x2="${b[0].toFixed(1)}" y2="${b[1].toFixed(1)}"><stop offset="0" style="stop-color:var(--ion-glow)" stop-opacity=".42"/><stop offset=".45" style="stop-color:var(--ion-glow)" stop-opacity=".16"/><stop offset="1" style="stop-color:var(--ion-glow)" stop-opacity="0"/></linearGradient></defs>`;
+	const defs = `<defs><linearGradient id="ion-beam-fade" gradientUnits="userSpaceOnUse" x1="${a[0].toFixed(1)}" y1="${a[1].toFixed(1)}" x2="${b[0].toFixed(1)}" y2="${b[1].toFixed(1)}"><stop offset="0" style="stop-color:var(--ion-glow)" stop-opacity=".1"/><stop offset=".14" style="stop-color:var(--ion-glow)" stop-opacity=".38"/><stop offset=".5" style="stop-color:var(--ion-glow)" stop-opacity=".15"/><stop offset="1" style="stop-color:var(--ion-glow)" stop-opacity="0"/></linearGradient></defs>`;
 	const svg = k.figureSvg({ width: WIDTH, height: HEIGHT, label: LABEL, body: defs + body(params, t), standalone });
 	return fillLive(svg, params, t);
 }
