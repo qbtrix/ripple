@@ -1,11 +1,12 @@
 // routes/live/app-runs.ts — Hand-written /live runs for the app-like data widgets
 // (notes, music, weather, week schedule, agenda, places, products, posters, a map
-// route). Gallery runs only: not landing chips, so the suggestion groups never see
+// route), plus the hand-built figures (a tokamak). Gallery runs only: not landing chips, so the suggestion groups never see
 // them. Each spec names no demo widget, so each run is its own card (gallery.ts
 // widgetOf). Public site: fictional names, sample numbers.
 
 import { handWritten } from '../pawbar/play-cards.js';
 import type { Scenario } from './scenarios.js';
+import tokamak from './fixtures/tokamak.json';
 
 const card = (ui: object) => ({ state: {}, ui });
 
@@ -205,5 +206,6 @@ export const appScenarios: Scenario[] = [
 	handWritten('team-sync', 'Team sync agenda', 'Work', 'Track', 'Draft a 30-minute weekly team meeting agenda starting at 10:00, with timed items and owners', agenda),
 	handWritten('lisbon-weather', 'Lisbon weather', 'Everyday', 'Track', 'Show me a 7-day weather forecast for Lisbon with highs, lows and chance of rain (sample data)', weather),
 	handWritten('focus-music', 'Focus music', 'Everyday', 'Play', 'Make me a focus music player with a few calm tracks', music),
-	handWritten('ocean-docs', 'Ocean documentaries', 'Learning', 'Learn', 'Recommend 6 ocean documentaries with ratings and running time (sample titles)', posters)
+	handWritten('ocean-docs', 'Ocean documentaries', 'Learning', 'Learn', 'Recommend 6 ocean documentaries with ratings and running time (sample titles)', posters),
+	{ id: 'tokamak', title: 'How a fusion reactor works', category: 'Learning', group: 'Learn', fixture: tokamak }
 ];

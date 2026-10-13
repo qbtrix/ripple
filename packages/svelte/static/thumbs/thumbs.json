@@ -190,22 +190,22 @@
 		"h": 600
 	},
 	{
-		"id": "live-tokamak",
-		"title": "How a fusion reactor works",
-		"caption": "How does a fusion reactor work? Show me a tokamak cut open and let me change the plasma current and the heating.",
-		"group": "Learn",
-		"tag": "Hand-written",
-		"href": "/live?s=tokamak",
-		"w": 800,
-		"h": 600
-	},
-	{
 		"id": "live-ocean-docs",
 		"title": "Ocean documentaries",
 		"caption": "Recommend 6 ocean documentaries with ratings and running time (sample titles)",
 		"group": "Learn",
 		"tag": "Hand-written",
 		"href": "/live?s=ocean-docs",
+		"w": 800,
+		"h": 600
+	},
+	{
+		"id": "live-tokamak",
+		"title": "How a fusion reactor works",
+		"caption": "How does a fusion reactor work? Show me a tokamak cut open and let me change the plasma current and the heating.",
+		"group": "Learn",
+		"tag": "Hand-written",
+		"href": "/live?s=tokamak",
 		"w": 800,
 		"h": 600
 	},

@@ -1,7 +1,7 @@
 {
   "schema": "ripple.manifest/v1",
   "version": "0.8.0",
-  "generatedAt": "2026-10-13T06:16:54.066Z",
+  "generatedAt": "2026-10-13T06:28:33.073Z",
   "spec": {
     "uiField": "ui",
     "stateField": "state",
@@ -11882,7 +11882,7 @@
     {
       "type": "figure",
       "category": "composite",
-      "description": "A hand-built live isometric figure picked by id (\"heart\": how a heart pumps; \"bike-gears\": how bike gears work; \"tokamak\": how a fusion reactor works), with sliders, live readouts and numbered labels on its named parts. Bind value.",
+      "description": "A hand-built live isometric figure picked by id (a heart, bike gears, a fusion reactor), with sliders, live readouts and numbered labels on its named parts. Bind value.",
       "props": {
         "figure": {
           "type": "\"heart\" | \"bike-gears\" | \"tokamak\"",
