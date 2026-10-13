@@ -35,6 +35,7 @@
 	import { PhotoTile, VerdictLine, holds, nextEdit, plain, rise } from '../data-kit/index.js';
 	import type { Edit } from '../data-kit/edit.js';
 	import { shuffled } from './FlashcardDeck.svelte';
+	import { playCue } from '../../sound/index.js';
 	import {
 		bandOf,
 		bestStreakOf,
@@ -64,6 +65,8 @@
 		onchange?: (value: QuizValue) => void;
 		/** Fires once per run when the last question is answered. */
 		oncomplete?: (result: { score: number; total: number }) => void;
+		/** Quiet cues for a right or wrong answer and a finished quiz. Default true. */
+		sound?: boolean;
 	}
 
 	let {
@@ -77,7 +80,8 @@
 		shuffle_choices = false,
 		value = $bindable(),
 		onchange,
-		oncomplete
+		oncomplete,
+		sound = true
 	}: Props = $props();
 
 	const uid = $props.id();
@@ -178,6 +182,7 @@
 	function answer(choice: number | null) {
 		if (!q || revealed || waitingToStart) return;
 		const next = [...answers, choice];
+		if (sound) playCue(scoreOf(list, next) > scoreOf(list, answers) ? 'correct' : 'wrong');
 		commit({ index: at, answers: next });
 		if (next.length === total) oncomplete?.({ score: scoreOf(list, next), total });
 		void focusSlot('[data-slot="next"]');
@@ -190,7 +195,10 @@
 		if (n < total) {
 			arm();
 			void focusSlot('[data-slot="prompt"]');
-		} else void focusSlot('[data-slot="score"]');
+		} else {
+			if (sound) playCue('complete');
+			void focusSlot('[data-slot="score"]');
+		}
 	}
 
 	function start() {

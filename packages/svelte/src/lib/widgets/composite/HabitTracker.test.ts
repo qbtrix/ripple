@@ -27,6 +27,11 @@ import {
 	weekStartOf,
 	type HabitValue
 } from './habit-tracker.js';
+import { playCue } from '$lib/sound/index.js';
+
+vi.mock('$lib/sound/index.js', () => ({ playCue: vi.fn() }));
+const cues = () => vi.mocked(playCue).mock.calls.map((c) => c[0]);
+
 
 const TODAY = '2026-10-14'; // a Wednesday
 
@@ -149,7 +154,7 @@ describe('habit-tracker: registry, bind contract, manifest', () => {
 	it('has a manifest entry whose example renders four habits', () => {
 		const entry = manifestEntries.find((e) => e.type === 'habit-tracker')!;
 		expect(entry.description.length).toBeLessThan(200);
-		expect(Object.keys(entry.props)).toEqual(['title', 'habits', 'week_start', 'weeks', 'seed']);
+		expect(Object.keys(entry.props)).toEqual(['title', 'habits', 'week_start', 'weeks', 'seed', 'sound']);
 		const { container } = render(Ripple, { props: { spec: { state: {}, ui: entry.example } } });
 		expect(container.querySelectorAll('[data-habit]')).toHaveLength(4);
 	});
@@ -380,5 +385,16 @@ describe('habit-tracker: junk props', () => {
 		render(HabitTracker, { props: {} });
 		expect(screen.getByText('No habits yet. Add one to start a streak.')).toBeTruthy();
 		expect(screen.getByRole('button', { name: 'Add habit' })).toBeTruthy();
+	});
+});
+
+describe('habit-tracker: sound', () => {
+	it('ticking a day pops; unticking is silent', async () => {
+		vi.mocked(playCue).mockClear();
+		const { container } = render(HabitTracker, { props: { habits: HABITS() } });
+		const c = () => container.querySelector<HTMLButtonElement>('[data-habit="read"] [data-cell="0:0"]')!;
+		await fireEvent.click(c());
+		await fireEvent.click(c());
+		expect(cues()).toEqual(['check']);
 	});
 });

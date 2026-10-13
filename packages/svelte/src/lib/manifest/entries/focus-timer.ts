@@ -23,6 +23,7 @@ export const focusTimerEntry: WidgetManifestEntry = {
       required: false,
       description: 'Two-way bind with `bind: "{state.focus}"`. Written on start, pause, reset, skip, phase end and edits (not every second), so remaining_s is as of the last event. `log` holds the ISO time each focus round finished.',
     },
+    sound: { type: 'boolean', required: false, description: 'A soft chime when a phase ends. Default true; false mutes this widget.' },
   },
   example: {
     type: 'focus-timer',

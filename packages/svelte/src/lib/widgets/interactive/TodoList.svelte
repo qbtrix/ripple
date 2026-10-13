@@ -16,6 +16,7 @@
 <script lang="ts">
   import { cn } from '$lib/utils.js';
   import { uniqueKeys } from '$lib/utils/safe-props.js';
+  import { playCue } from '$lib/sound/index.js';
 
   interface TodoItem {
     id: string;
@@ -37,6 +38,8 @@
     value?: TodoItem[];
     /** Fires with the full new array whenever items change. */
     onchange?: (items: TodoItem[]) => void;
+    /** A soft pop when an item is checked off. Default true. */
+    sound?: boolean;
   }
 
   let {
@@ -47,7 +50,8 @@
     placeholder = 'Add a new task...',
     items: itemsProp = [],
     value,
-    onchange
+    onchange,
+    sound = true
   }: Props = $props();
 
   // Bound value wins; fall back to the static `items` prop.
@@ -70,6 +74,7 @@
   );
 
   function toggleItem(itemId: string) {
+    if (sound && items.some((item) => item.id === itemId && !item.done)) playCue('check');
     onchange?.(
       items.map((item) => (item.id === itemId ? { ...item, done: !item.done } : item))
     );

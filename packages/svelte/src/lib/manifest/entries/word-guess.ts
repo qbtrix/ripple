@@ -22,6 +22,7 @@ export const wordGuessEntry: WidgetManifestEntry = {
       required: false,
       description: 'The game so far, written by the widget on every guess and hint. Bind with `bind: "{state.game}"` to read it elsewhere; the widget never reads it back.',
     },
+    sound: { type: 'boolean', required: false, description: 'A short chime when the word is solved. Default true; false mutes this widget.' },
   },
   events: {
     on_complete: { type: 'EventAction', required: false, description: 'Fired once when the game ends, with { won, guesses }.' },

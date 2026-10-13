@@ -148,6 +148,9 @@ export {
 } from './motion/moving-indicator.js';
 export { FF_SPRING_TOKENS } from '@ripple-ui/core';
 
+// Sound cues — host apps can play a cue or offer their own mute button.
+export { playCue, setSoundEnabled, soundEnabled, type CueName } from './sound/index.js';
+
 // Fluid Functionalism systems layer (MIT)
 export {
   wghtStyle, animateWght,

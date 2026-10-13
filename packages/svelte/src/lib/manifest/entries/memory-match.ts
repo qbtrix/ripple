@@ -24,6 +24,7 @@ export const memoryMatchEntry: WidgetManifestEntry = {
       required: false,
       description: 'The game so far, written by the widget on each move. `matched` lists pair ids. Bind with `bind: "{state.game}"` to show it elsewhere.',
     },
+    sound: { type: 'boolean', required: false, description: 'Quiet cues for a pair found and a game won. Default true; false mutes this widget.' },
   },
   events: {
     on_complete: { type: 'EventAction', required: false, description: 'Fired once when every pair is matched, with { moves, seconds }.' },

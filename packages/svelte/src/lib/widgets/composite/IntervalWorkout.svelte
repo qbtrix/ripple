@@ -87,6 +87,7 @@
 	import { safeArray } from '$lib/utils/safe-props.js';
 	import { VerdictLine, EXERCISE_ICONS, kindIcon, plain, sum, rise } from '../data-kit/index.js';
 	import type { Verdict } from '../data-kit/types.js';
+	import { playCue } from '../../sound/index.js';
 
 	interface Props {
 		id?: string;
@@ -105,6 +106,8 @@
 		/** Index of the current interval (work and rest both count). Bindable. */
 		step?: number;
 		onworksecchange?: (sec: number) => void;
+		/** Quiet cues: a tick in each interval's last 3 seconds, a chime between intervals, one when done. Default true. */
+		sound?: boolean;
 	}
 
 	let {
@@ -119,7 +122,8 @@
 		restSec = $bindable(),
 		rounds,
 		step = $bindable(0),
-		onworksecchange
+		onworksecchange,
+		sound = true
 	}: Props = $props();
 
 	const uid = $props.id();
@@ -173,14 +177,26 @@
 		lenMs = plan[i] ? secOf(plan[i]) * 1000 : 0;
 		leftMs = Math.max(lenMs + carry, 0);
 		endsAt = Date.now() + leftMs;
+		lastTick = 0;
 	}
 
+	let lastTick = 0;
 	function tickClock() {
 		leftMs = endsAt - Date.now();
-		if (leftMs > 0) return;
+		if (leftMs > 0) {
+			const s = Math.ceil(leftMs / 1000);
+			if (sound && s <= 3 && s !== lastTick) playCue('tick');
+			lastTick = s;
+			return;
+		}
 		// Carry the overshoot so a late tick never stretches the session.
-		if (at + 1 >= plan.length) finish();
-		else begin(at + 1, leftMs);
+		if (at + 1 >= plan.length) {
+			finish();
+			if (sound) playCue('complete');
+		} else {
+			begin(at + 1, leftMs);
+			if (sound) playCue('phase');
+		}
 	}
 
 	function play() {

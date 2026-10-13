@@ -28,6 +28,7 @@
 	import type { Edit } from '../data-kit/edit.js';
 	import { PALETTE, hhmm } from './week-schedule.js';
 	import { clampMinutes, initials, mmss, move, readItems, startLabels, startMin, toItems, type AgendaItem } from './agenda.js';
+	import { playCue } from '../../sound/index.js';
 
 	interface Props {
 		id?: string;
@@ -40,9 +41,11 @@
 		/** Two-way bindable: the items as edited (order, minutes, done). */
 		value?: AgendaItem[];
 		onchange?: (value: AgendaItem[]) => void;
+		/** A soft chime when the running item's time is up. Default true. */
+		sound?: boolean;
 	}
 
-	let { id, class: className, style, title, start, items, value = $bindable(), onchange }: Props = $props();
+	let { id, class: className, style, title, start, items, value = $bindable(), onchange, sound = true }: Props = $props();
 
 	const rootStyle = $derived(
 		style && typeof style === 'object'
@@ -84,7 +87,10 @@
 
 	$effect(() => {
 		if (!running) return;
-		const timer = setInterval(() => (elapsed += 1), 1000);
+		const timer = setInterval(() => {
+			elapsed += 1;
+			if (sound && active && active.minutes * 60 === elapsed) playCue('phase');
+		}, 1000);
 		return () => clearInterval(timer);
 	});
 	$effect(() => {

@@ -11,6 +11,11 @@ import { expectStreamParity } from '$lib/streaming/__fixtures__/stream-parity.js
 import { getWidget, hasWidget } from '../index.js';
 import { _resetBindContractWarnings, getBindContract, warnUnregisteredBindContract } from '@ripple-ui/core';
 import FocusTimer, { nextPhase, type FocusValue } from './FocusTimer.svelte';
+import { playCue } from '$lib/sound/index.js';
+
+vi.mock('$lib/sound/index.js', () => ({ playCue: vi.fn() }));
+const cues = () => vi.mocked(playCue).mock.calls.map((c) => c[0]);
+
 
 const TYPES = ['focus-timer', 'pomodoro', 'pomodoro-timer'];
 const MIN = 60_000;
@@ -309,5 +314,24 @@ describe('focus-timer: junk props', () => {
 		const { container } = render(FocusTimer, { props: { goal_rounds: 6 } });
 		expect(container.querySelectorAll('[data-slot="rounds"] span.rounded-full')).toHaveLength(6);
 		expect(screen.getByRole('img', { name: '0 of 6 rounds' })).toBeTruthy();
+	});
+});
+
+describe('focus-timer: sound', () => {
+	beforeEach(() => vi.mocked(playCue).mockClear());
+
+	it('chimes once when a phase ends, and not with sound false', async () => {
+		mount();
+		await fireEvent.click(btn('Start'));
+		await advance(119_000);
+		expect(playCue).not.toHaveBeenCalled();
+		await advance(1000);
+		expect(cues()).toEqual(['complete']);
+		cleanup();
+		vi.mocked(playCue).mockClear();
+		mount({ sound: false });
+		await fireEvent.click(btn('Start'));
+		await advance(120_000);
+		expect(playCue).not.toHaveBeenCalled();
 	});
 });

@@ -13,6 +13,11 @@ import { getWidget, hasWidget } from '../index.js';
 import { _resetBindContractWarnings, getBindContract, warnUnregisteredBindContract } from '@ripple-ui/core';
 import Quiz from './Quiz.svelte';
 import { bandOf, bestStreakOf, cleanQuestions, scoreOf, streakOf, toPlay, type QuizItem, type QuizValue } from './quiz.js';
+import { playCue } from '$lib/sound/index.js';
+
+vi.mock('$lib/sound/index.js', () => ({ playCue: vi.fn() }));
+const cues = () => vi.mocked(playCue).mock.calls.map((c) => c[0]);
+
 
 afterEach(() => {
 	cleanup();
@@ -407,5 +412,21 @@ describe('quiz: streaming', () => {
 		});
 		cleanup();
 		await expectStreamParity({ ui: { type: 'quiz', props: { title: 'Untimed', questions: space() } } });
+	});
+});
+
+describe('quiz: sound', () => {
+	it('plays correct or wrong per answer and a chime on the results', async () => {
+		vi.mocked(playCue).mockClear();
+		render(Quiz, { props: { questions: space() } });
+		await pick('Jupiter');
+		expect(cues()).toEqual(['correct']);
+		await next();
+		await pick('Sirius');
+		await next();
+		await pick('Saturn');
+		expect(cues()).toEqual(['correct', 'wrong', 'correct']);
+		await next();
+		expect(cues()).toEqual(['correct', 'wrong', 'correct', 'complete']);
 	});
 });
