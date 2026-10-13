@@ -2,11 +2,14 @@
  * @file iso/scene.ts
  * @description The `iso-scene` model: a model-written parts list turned into
  * drawn, depth-sorted items on the iso kit. Three steps, all pure:
- *   1. `normalizeScene` clamps every number, caps counts, skips unknown kinds
- *      and resolves `on` parents (cycles and dangling ids become no parent).
+ *   1. `normalizeScene` clamps every number, caps counts, skips unknown kinds,
+ *      resolves `on` parents (cycles and dangling ids become no parent), lays
+ *      a `chain` round its two gears and marks ghosts (see-through housings).
  *   2. `sceneTransforms` turns motions at time t into one affine per part
- *      (a child moves with its parent). Speeds come in already resolved.
- *   3. `drawPart` + `sortItems` draw each part from its moved frame and order
+ *      (a child moves with its parent; a `link` rod rides two parts; a slide
+ *      `driven` by a crank follows it). Speeds come in already resolved.
+ *   3. `drawPart` + `mergeOwned` + `sortItems` draw each part from its moved
+ *      frame, fold `enrichScene`'s derived detail into its owner, and order
  *      them back to front (bounding-box separation first, centre depth when
  *      boxes overlap).
  * Parts are drawn from 3D geometry every time, so a spinning gear re-shades as
