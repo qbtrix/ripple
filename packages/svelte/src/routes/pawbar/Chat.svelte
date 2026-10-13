@@ -7,12 +7,15 @@
     under it (aria-expanded, aria-controls the panel). Expanded, it is the
     full grid: an uppercase label per group over wrapping pill chips (lucide
     icon from chip-icons.ts, then the title, then "step by step" on steps
-    chips), on its own panel that floats over the bottom of the conversation
+    chips, then an arrow on handoff chips), on its own panel that floats over the bottom of the conversation
     above the toggle (never taking the log's height), scrolling inside itself
     past 55vh. Escape or a chip tap collapses it (focus inside it returns to
     the toggle); a chip runs here (session.send); text the visitor types goes to Paw OS
     (session.handoff, opened from the send gesture) unless `typedLocal` keeps
     it on the Paw Bar (mock and dev only); the hint under the composer says so.
+    A `handoff` chip (replay mode, no answer here) takes the typed-text path
+    (toPawOS) and says "Opens in Paw OS" in its title and accessible
+    description (aria-describedby, one hidden note shared by every such chip).
     The look follows Paw OS: the composer is ChatPill's glass pill (a round
     send that turns into a stop while a turn streams), the visitor's message
     a blue-tint bubble, cards on --site-card with a hairline. A waiting turn
@@ -65,6 +68,7 @@
 <script lang="ts">
 	import { tick, untrack, type Snippet } from 'svelte';
 	import ArrowUp from '@lucide/svelte/icons/arrow-up';
+	import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
 	import X from '@lucide/svelte/icons/x';
 	import ChevronsDownUp from '@lucide/svelte/icons/chevrons-down-up';
 	import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
@@ -93,6 +97,8 @@
 		group?: string;
 		/** A lucide icon name from chip-icons.ts, shown before the title. */
 		icon?: string;
+		/** No answer here: the prompt opens Paw OS, like typed text. */
+		handoff?: boolean;
 	}
 
 	let {
@@ -266,6 +272,11 @@
 		const text = draft;
 		if (session.busy || !text.trim()) return;
 		draft = '';
+		toPawOS(text);
+	}
+
+	/** Typed text and handoff chips: Paw OS, or the Paw Bar when `typedLocal`. Call it from the gesture. */
+	function toPawOS(text: string) {
 		if (typedLocal) void session.send(text);
 		else session.handoff(text, pawosUrl, open);
 	}
@@ -562,17 +573,20 @@
 					type="button"
 					class="chip"
 					disabled={session.busy}
-					title={s.prompt}
+					title={s.handoff ? `${s.prompt} (Opens in Paw OS)` : s.prompt}
+					aria-describedby={s.handoff ? 'ripple-chip-handoff' : undefined}
 					onclick={() => {
 						closePanel();
-						void ask(s.prompt);
+						if (s.handoff) toPawOS(s.prompt);
+						else void ask(s.prompt);
 					}}
 					>{#if Icon}<Icon class="chip-icon" size={15} aria-hidden="true" />{/if}{s.title}{#if s.steps}{' '}<span class="chip-steps"
 							>step by step</span
-						>{/if}</button
+						>{/if}{#if s.handoff}<ArrowUpRight class="chip-out" size={13} aria-hidden="true" />{/if}</button
 				>
 			</li>
 		{/snippet}
+		{#if suggestions.some((s) => s.handoff)}<span id="ripple-chip-handoff" hidden>Opens in Paw OS</span>{/if}
 		{#if suggestions.length}
 			<div id="ripple-suggestions" class="chip-groups" data-expanded={expanded} data-overlay={showAll || undefined}>
 				{#if expanded}
@@ -1478,9 +1492,13 @@
 			background 0.15s,
 			transform 0.1s;
 	}
-	.chip :global(.chip-icon) {
+	.chip :global(.chip-icon),
+	.chip :global(.chip-out) {
 		flex: none;
 		color: var(--site-soft);
+	}
+	.chip :global(.chip-out) {
+		margin-left: -3px;
 	}
 	.chips-toggle {
 		display: grid;

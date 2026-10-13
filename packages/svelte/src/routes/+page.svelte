@@ -23,8 +23,9 @@
     discover, Create and build, Organize, Learn and explore, Work and
     productivity, Lifestyle, Planning, Play), collapsed to one row until the
     visitor expands it. Live, every chip shows (the store ones only with a
-    store); offline, only the recorded and hand-written answers (minus the
-    store one), and a group with none of those is hidden. The chat calls the Paw Bar API only when PUBLIC_PAWBAR_LIVE=1
+    store). In replay mode every chip shows too, in the same places: one with
+    a recorded or hand-written answer replays it, any other opens Paw OS with
+    its prompt like typed text (marked "Opens in Paw OS"). The chat calls the Paw Bar API only when PUBLIC_PAWBAR_LIVE=1
     with PUBLIC_PAWBAR_ENDPOINT / _WIDGET_ID / _SITE_KEY (lib/site/pawbar-env.ts,
     read in vite.config.ts); otherwise it replays the recorded answers locally
     and says so. Live, a card's `checkout` and `book` host events go to the test
@@ -106,11 +107,14 @@
 	const bill = chatScenarios.find((s) => s.id === 'bill-splitter');
 	if (bill) session.seed(bill.fixture.prompt, recordedExchange(bill, intro(bill.fixture.prompt)));
 	// The suggestion panel's chips, grouped and ordered by suggestionGroups. Live:
-	// the store chips (with a store), the chat-only prompts and the recordings;
-	// offline only the recordings answer, so the chat-only chips (and any group
-	// left empty) drop out.
+	// the store chips (with a store), the chat-only prompts and the recordings.
+	// Replay: every chip, store ones included; those with no answer here hand
+	// their prompt to Paw OS, as typed text does.
 	const liveChips = LIVE ? [...scenarios.filter((s) => s.needsStore), ...chatPrompts].filter((c) => !c.needsStore || STORE_URL) : [];
-	const suggestions = groupedSuggestions([...liveChips, ...chatScenarios]);
+	const replayable = new Set(chatScenarios.map((s) => s.id));
+	const suggestions = LIVE
+		? groupedSuggestions([...liveChips, ...chatScenarios])
+		: groupedSuggestions([...answerPool, ...chatPrompts]).map((c) => (replayable.has(c.id) ? c : { ...c, handoff: true }));
 
 	// Step 3 of "how it works": a small spec, rendered for real.
 	const demoSpec = {

@@ -743,10 +743,10 @@ describe('illustration', () => {
 		expect(checkIllustrationSvg(gearsSvg)).toEqual({ ok: true });
 		expect(gearsSvg).not.toMatch(/[{\\]|url\(/);
 		expect(refuseCard(gearsCard)).toBeNull();
-		const explainer = scenarios.find((s) => s.id === 'explainer')!;
-		expect(explainer.prompt).toMatch(/\bbike\b/i);
-		expect(explainer.prompt).toMatch(/\bgears\b/i);
-		expect(pickScenario(explainer.prompt!).id).toBe('explainer');
+		const gears = scenarios.find((s) => s.id === 'bike-gears')!;
+		expect(gears.prompt).toMatch(/\bbike\b/i);
+		expect(gears.prompt).toMatch(/\bgears\b/i);
+		expect(pickScenario(gears.prompt!).id).toBe('bike-gears');
 	});
 
 	test.each([
@@ -982,7 +982,7 @@ describe('play cards', () => {
 	});
 
 	test('every play scenario replays to its card', () => {
-		const cards = [memoryMatchCard, wordGuessCard, quizCard, ticTacToeCard, connectFourCard, habitCard, focusTimerCard, heartCard];
+		const cards = [memoryMatchCard, wordGuessCard, quizCard, ticTacToeCard, connectFourCard, habitCard, focusTimerCard];
 		for (const [i, s] of playScenarios.entries()) {
 			expect(s.fixture.model).toBe('hand-written');
 			expect(JSON.parse(s.fixture.chunks.map((c) => c.text).join(''))).toEqual({ version: '1.0', ...cards[i] });

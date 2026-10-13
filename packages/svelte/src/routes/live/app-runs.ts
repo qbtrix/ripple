@@ -1,18 +1,21 @@
 // routes/live/app-runs.ts — Hand-written /live runs for the app-like data widgets
 // (notes, music, weather, week schedule, agenda, places, products, posters, a map
 // route), then the hand-built figure runs (figureRuns, recorded fixtures: rocket
-// engine, plasma thruster, fusion and fission reactors, particle collider).
+// engine, plasma thruster, fusion and fission reactors, particle collider), then
+// the two drawings whose landing chips now open a figure (retiredChipRuns: the
+// recorded bike gears explainer and the hand-written heart drawing).
 // Gallery runs only: not landing chips, so the suggestion groups never see them.
 // Each spec names no demo widget, so each run is its own card (gallery.ts
 // widgetOf). Public site: fictional names, sample numbers.
 
-import { handWritten } from '../pawbar/play-cards.js';
+import { handWritten, heartCard } from '../pawbar/play-cards.js';
 import type { Scenario } from './scenarios.js';
 import rocketEngine from './fixtures/rocket-engine.json';
 import ionThruster from './fixtures/ion-thruster.json';
 import tokamak from './fixtures/tokamak.json';
 import fissionReactor from './fixtures/fission-reactor.json';
 import particleCollider from './fixtures/particle-collider.json';
+import explainer from './fixtures/explainer.json';
 
 const card = (ui: object) => ({ state: {}, ui });
 
@@ -214,6 +217,12 @@ export const figureRuns: Scenario[] = [
 	figure('particle-collider', 'How a particle collider works', particleCollider)
 ];
 
+/** Drawings that had a landing chip before the figures took it: same ids, so their /live links still open. */
+export const retiredChipRuns: Scenario[] = [
+	{ id: 'explainer', title: 'Bike gears, explained', category: 'Learning', fixture: explainer, prompt: 'How do bike gears work? Draw me an animated picture of the chain drive and explain it in a few lines.', group: 'Learn' },
+	handWritten('heart', 'How a heart pumps', 'Learning', 'Learn', 'How does the heart pump blood? Draw an animated picture with numbered notes on the chambers and valves.', heartCard)
+];
+
 export const appScenarios: Scenario[] = [
 	handWritten('lisbon-walk', 'Walk to the castle', 'Travel', 'Do', 'Show me on a map a walking route from Rossio station to Sao Jorge Castle in Lisbon, with the turns (approximate)', lisbonWalk),
 	handWritten('coffee-nearby', 'Coffee nearby', 'Places', 'Do', 'Find quiet coffee shops with wifi near Baixa in Lisbon, with ratings and distance (sample places)', places),
@@ -224,5 +233,6 @@ export const appScenarios: Scenario[] = [
 	handWritten('lisbon-weather', 'Lisbon weather', 'Everyday', 'Track', 'Show me a 7-day weather forecast for Lisbon with highs, lows and chance of rain (sample data)', weather),
 	handWritten('focus-music', 'Focus music', 'Everyday', 'Play', 'Make me a focus music player with a few calm tracks', music),
 	handWritten('ocean-docs', 'Ocean documentaries', 'Learning', 'Learn', 'Recommend 6 ocean documentaries with ratings and running time (sample titles)', posters),
-	...figureRuns
+	...figureRuns,
+	...retiredChipRuns
 ];
