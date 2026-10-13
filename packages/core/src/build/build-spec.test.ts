@@ -218,6 +218,20 @@ describe('buildSpec data guard', () => {
 		expect(renders).toBe(1); // a disqualified round is never rendered
 	});
 
+	it('stops guard on an appointment moved to a later time the same day', async () => {
+		const at = (start: string) => ({
+			version: '1.0',
+			state: { events: [{ title: 'Dentist', start }] },
+			ui: { type: 'card', children: [{ type: 'text', props: { text: 'Dentist' } }, { type: 'lsit' }] }
+		});
+		const moved = at('2026-10-14T15:30');
+		moved.ui.children.pop();
+		const { model } = fakeModel([JSON.stringify(at('2026-10-14T10:00')), JSON.stringify(moved)]);
+		const res = await buildSpec({ ...W, model, renderer: fakeRenderer() });
+		expect(res.stopped).toBe('guard');
+		expect(res.widgetFaults).toEqual([expect.objectContaining({ code: 'dataChanged' })]);
+	});
+
 	it('passes a round that restructures state but keeps every value', async () => {
 		const moved = weather([]);
 		moved.state = {} as never;

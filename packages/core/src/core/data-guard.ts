@@ -14,7 +14,8 @@
 //     still appear as often as before, so a state restructure that keeps the
 //     values passes. A missing value is still found when it shows up as a
 //     token in any rendered prop text ("5%" in a label).
-//   - Fails (`items`): a missing or changed number or date (`dataChanged`), a
+//   - Fails (`items`): a missing or changed number or date (`dataChanged`; a
+//     datetime counts with its time, so a moved appointment fails), a
 //     date after `now` plus a day that the baseline never had (`inventedDate`,
 //     skipped under `meta.sample: true`), and a number an expression computed
 //     that is now written as a literal (`hardCoded`). Flags (`warnings`): a
@@ -59,6 +60,8 @@ interface Leaf {
 	kind: Kind;
 	shown: string;
 	at: string;
+	/** A date's day (YYYY-MM-DD), for the invented-date check; the key keeps any time. */
+	day?: string;
 	derived?: boolean;
 }
 
@@ -71,11 +74,12 @@ const EXPR = /\{[^{}]+\}/;
 const REF_ONLY = /^\{\s*[A-Za-z_$][\w$]*(?:\.[\w$]+|\[\d+\])*\s*\}$/;
 
 /** A data value's multiset key, or null for values that are not data (booleans, null, blanks). */
-function classify(value: unknown): { key: string; kind: Kind; shown: string } | null {
+function classify(value: unknown): { key: string; kind: Kind; shown: string; day?: string } | null {
 	if (typeof value === 'number' && Number.isFinite(value)) return { key: `n:${value}`, kind: 'number', shown: String(value) };
 	if (typeof value !== 'string' || !value.trim()) return null;
 	const day = ISO_DAY.exec(value)?.[1];
-	if (day) return { key: `d:${day}`, kind: 'date', shown: day };
+	// The key is the whole value, so a moved time (10:00 to 15:30) on the same day is a change.
+	if (day) return { key: `d:${value.trim()}`, kind: 'date', shown: value.trim(), day };
 	return { key: `s:${value}`, kind: 'string', shown: JSON.stringify(value) };
 }
 
@@ -178,7 +182,7 @@ function tokens(text: readonly string[]) {
 }
 
 /** The day after the caller's today, as YYYY-MM-DD in the caller's zone. */
-function dayAfter(now: { iso: string; tz: string }) {
+export function dayAfter(now: { iso: string; tz: string }) {
 	const today = new Date(now.iso).toLocaleDateString('en-CA', { timeZone: now.tz });
 	const [y, m, d] = today.split('-').map(Number);
 	return { today, limit: new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10) };
@@ -232,11 +236,11 @@ export function dataGuard(opts: DataGuardOptions): DataGuardResult {
 		const { today, limit } = dayAfter(opts.now);
 		const known = new Set([...base.map((l) => l.key), ...(opts.facts ?? []).map((f) => classify(f.value)?.key)]);
 		for (const leaf of after.data)
-			if (leaf.kind === 'date' && !known.has(leaf.key) && leaf.shown > limit)
+			if (leaf.kind === 'date' && !known.has(leaf.key) && leaf.day! > limit)
 				items.push({
 					code: 'inventedDate',
 					path: leaf.at,
-					message: `${leaf.shown} is a new date after today (${today}); an invented date stays in the past or present`
+					message: `${leaf.day} is a new date after today (${today}); an invented date stays in the past or present`
 				});
 	}
 

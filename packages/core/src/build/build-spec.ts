@@ -24,7 +24,7 @@
 //     to `widgetFaults`. There is no second bend.
 
 import type { AuditItem, AuditReport } from '../core/audit-report.js';
-import { dataGuard, type DataGuardResult, type Fact } from '../core/data-guard.js';
+import { dataGuard, dayAfter, type DataGuardResult, type Fact } from '../core/data-guard.js';
 import { specAudit } from '../core/spec-audit.js';
 import { formatSpecIssues } from '../core/spec-issues.js';
 import type { ValidateCatalogOptions } from '../core/validate-catalog.js';
@@ -199,7 +199,7 @@ function waive(reports: AuditReport<AuditItem>[], spec: unknown, list: readonly 
 export async function buildSpec(opts: BuildOptions): Promise<BuildResult> {
 	const { preset, prompt, model, renderer, critic, signal, onRound } = opts;
 	const list = opts.waivers ?? craftWaivers;
-	const day = opts.now.iso.slice(0, 10);
+	const day = dayAfter(opts.now).today; // in the caller's zone, as the guard reads it
 	let first: unknown = undefined; // the first parsed spec, the guard's baseline without facts
 	const cap = opts.limits?.rounds ?? DEFAULT_ROUNDS;
 	const rounds: Round[] = [];

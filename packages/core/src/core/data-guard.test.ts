@@ -56,6 +56,17 @@ describe('dataGuard', () => {
 		expect(guard(after).items).toEqual([expect.objectContaining({ code: 'dataChanged', path: '/state/days/0/day' })]);
 	});
 
+	it('fails a datetime whose time moved on the same day', () => {
+		const at = (start: string) => ({
+			version: '1.0',
+			state: { events: [{ title: 'Dentist', start }] },
+			ui: { type: 'calendar', props: { events: '{state.events}' } }
+		});
+		const r = dataGuard({ before: at('2026-10-14T10:00'), after: at('2026-10-14T15:30'), now });
+		expect(r.items).toEqual([expect.objectContaining({ code: 'dataChanged', path: '/state/events/0/start' })]);
+		expect(dataGuard({ before: at('2026-10-14T10:00'), after: at('2026-10-14T10:00'), now }).ok).toBe(true);
+	});
+
 	it('fails an invented date after today, unless the card is marked sample', () => {
 		const after = weather();
 		after.state.days.push({ day: '2026-10-20', condition: 'fog', high: 23, low: 16, rainChance: 5 });
