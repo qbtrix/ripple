@@ -22,6 +22,7 @@
 import * as k from '@ripple-ui/core/iso';
 import type { Flat, Point3, SolidPaths } from '@ripple-ui/core/iso';
 import { PAPER_CSS } from '../paper.js';
+import { frameOf, framed, percentIn, type FrameBox } from '../frame.js';
 import { clampParams, crankSpeedOf, describe, poseAt, poseOf, ratioOf, readoutsOf, ringTeethAt, teethAt, CASSETTE, RINGS, type BikeParams, type Pose } from './model.js';
 
 export const WIDTH = 640;
@@ -550,12 +551,27 @@ export const LABEL = 'A bicycle drivetrain on a bench stand: crank, two chainrin
 
 const wrap = (item: Item) => `<g data-item="${item.id}">${item.svg}</g>`;
 
-/** The whole figure as an SVG string. */
+/** The whole figure as an SVG string, framed to everything it draws. */
 export function bikeSvg(params: BikeParams = clampParams(), drive: Partial<Omit<DriveState, 'params'>> = {}, standalone: k.Theme | false = false): string {
+	return framed(rawSvg(params, drive, standalone), frame());
+}
+
+function rawSvg(params: BikeParams, drive: Partial<Omit<DriveState, 'params'>>, standalone: k.Theme | false): string {
 	ready();
 	const state: DriveState = { params, pose: drive.pose ?? poseOf(params), theta: drive.theta ?? STILL.theta, chain: drive.chain ?? STILL.chain, wheel: drive.wheel ?? STILL.wheel };
 	const svg = k.figureSvg({ width: WIDTH, height: HEIGHT, label: LABEL, body: itemsOf(state).map(wrap).join(''), standalone });
 	return standalone ? svg.replace('</style>', `${PAPER_CSS}${BIKE_CSS}</style>`).replace('class="iso-svg iso"', 'class="iso-svg iso" data-figure-host="bike-gears"') : svg;
+}
+
+let FRAME: FrameBox | null = null;
+/** The viewBox: a full crank turn in the easiest and the hardest gear, plus the pins. */
+function frame(): FrameBox {
+	if (FRAME) return FRAME;
+	const svgs: string[] = [];
+	const gears = [clampParams({ ring: 34, gear: 1 }), clampParams({ ring: 50, gear: CASSETTE.length })];
+	for (let i = 0; i < 4; i++) svgs.push(rawSvg(gears[i % 2]!, { theta: STILL.theta - (i * Math.PI) / 2 }, false));
+	FRAME = frameOf(svgs, anchorPoints().map(([, , p]) => at(p)));
+	return FRAME;
 }
 
 export interface Anchor {
@@ -566,12 +582,16 @@ export interface Anchor {
 }
 
 export function anchorsOf(): Anchor[] {
+	return anchorPoints().map(([id, label, p]) => ({ id, label, ...percentIn(frame(), at(p)) }));
+}
+
+function anchorPoints(): Array<[string, string, Point3]> {
 	ready();
 	const params = clampParams();
 	const rig = rigAt(poseOf(params));
 	const a = STILL.theta;
 	const R = pitchR(50);
-	const points: Array<[string, string, Point3]> = [
+	return [
 		['chainring', 'Chainring', [R * Math.cos(0.5), 28, BBZ + R * Math.sin(0.5)]],
 		['crank', 'Crank', [(CRANK / 2) * Math.cos(a), 36, BBZ + (CRANK / 2) * Math.sin(a)]],
 		['pedal', 'Pedal', [CRANK * Math.cos(a), 72, BBZ + CRANK * Math.sin(a)]],
@@ -583,10 +603,6 @@ export function anchorsOf(): Anchor[] {
 		['rear-hub', 'Rear hub', [HX, 41, HZ]],
 		['wheel', 'Wheel', [HX + RIM.tyre * Math.cos(1.9), 6, HZ + RIM.tyre * Math.sin(1.9)]]
 	];
-	return points.map(([id, label, p]) => {
-		const [x, y] = at(p);
-		return { id, label, x: Math.round((x / WIDTH) * 1000) / 10, y: Math.round((y / HEIGHT) * 1000) / 10 };
-	});
 }
 
 // ---- live mount ---------------------------------------------------------------
