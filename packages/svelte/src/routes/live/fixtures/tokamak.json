@@ -1,0 +1,93 @@
+{
+ "id": "tokamak",
+ "title": "How a fusion reactor works",
+ "prompt": "How does a fusion reactor work? Show me a tokamak cut open and let me change the plasma current and the heating.",
+ "model": "hand-written",
+ "recordedAt": "2026-10-13T12:00:00.000Z",
+ "chunks": [
+  {
+   "t": 0,
+   "text": "{\"version\":\"1.0\",\"state\":{\"figure\":null},\"ui\":{\"type\":\"figure\",\""
+  },
+  {
+   "t": 18,
+   "text": "bind\":\"{state.figure}\",\"props\":{\"figure\":\"tokamak\",\"params\":{\"cu"
+  },
+  {
+   "t": 36,
+   "text": "rrent\":15,\"heating\":50},\"labels\":[{\"anchor\":\"plasma\",\"note\":\"Deu"
+  },
+  {
+   "t": 54,
+   "text": "terium and tritium hotter than 150 million °C. Their nuclei hit "
+  },
+  {
+   "t": 72,
+   "text": "hard enough to fuse into helium and a fast neutron.\"},{\"anchor\":"
+  },
+  {
+   "t": 90,
+   "text": "\"tf-coil\",\"note\":\"Eighteen superconducting coils make the main f"
+  },
+  {
+   "t": 108,
+   "text": "ield. It runs the long way round the ring and keeps the plasma o"
+  },
+  {
+   "t": 126,
+   "text": "ff the walls.\"},{\"anchor\":\"central-solenoid\",\"note\":\"A changing "
+  },
+  {
+   "t": 144,
+   "text": "current here drives the plasma current, like a transformer whose"
+  },
+  {
+   "t": 162,
+   "text": " second winding is the plasma ring.\"},{\"anchor\":\"pf-coil\",\"note\""
+  },
+  {
+   "t": 180,
+   "text": ":\"Ring coils that shape the plasma and hold it in place.\"},{\"anc"
+  },
+  {
+   "t": 198,
+   "text": "hor\":\"blanket\",\"note\":\"Neutrons carry four fifths of the energy."
+  },
+  {
+   "t": 216,
+   "text": " The blanket stops them, turns them into heat and breeds tritium"
+  },
+  {
+   "t": 234,
+   "text": " from lithium.\"},{\"anchor\":\"divertor\",\"note\":\"The plasma edge is"
+  },
+  {
+   "t": 252,
+   "text": " led down here to shed heat and the helium ash.\"},{\"anchor\":\"hea"
+  },
+  {
+   "t": 270,
+   "text": "ting-beam\",\"note\":\"Fires fast neutral atoms into the plasma. The"
+  },
+  {
+   "t": 288,
+   "text": "y collide with its particles and heat it.\"},{\"anchor\":\"vacuum-ve"
+  },
+  {
+   "t": 306,
+   "text": "ssel\",\"note\":\"A double steel wall that holds the vacuum.\"}],\"cap"
+  },
+  {
+   "t": 324,
+   "text": "tion\":\"Deuterium plus tritium gives helium, which stays and heat"
+  },
+  {
+   "t": 342,
+   "text": "s the plasma, and a neutron, which escapes. Q is fusion power ov"
+  },
+  {
+   "t": 360,
+   "text": "er heating power.\"}}}"
+  }
+ ]
+}

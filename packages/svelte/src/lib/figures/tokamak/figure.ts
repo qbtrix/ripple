@@ -43,10 +43,7 @@ const COIL_T = 0.62; // toroidal thickness of a TF coil case
 const COILS = Array.from({ length: 18 }, (_, i) => 10 + 20 * i); // th of each TF coil
 const KEPT = COILS.filter((th) => th >= CUT); // 70 (cut through its middle) .. 350
 const BASE_TOP = -8.6;
-const BASE_R = 12.4;
-const PLATE = { x: -13.5, y: -13.5, w: 30, d: 27.5, r: 0.8 };
-const PLATE_TOP = BASE_TOP - 0.9;
-const PLATE_H = 0.7;
+const BASE_R = 15;
 const FOOT_H = 0.5;
 
 type Ring2 = Flat[]; // closed polygon in (R, z)
@@ -318,42 +315,34 @@ const faceSvg = (cls: string, d: string, tone: k.Tone = 'mid') => `<path class="
 
 // ---- static parts ----------------------------------------------------------------
 
-function bench(): string {
-	const out = [`<path class="iso-halo" d="${k.haloOf(PLATE, PLATE_TOP - PLATE_H - FOOT_H, PLATE_H, P)}"/>`];
-	const feet = [...k.corners(PLATE, 1.6)].sort((a, b) => k.depthOf([a[0], a[1], 0], P) - k.depthOf([b[0], b[1], 0], P));
-	for (const [x, y] of feet) {
-		out.push(S(k.cylinder(x, y, 0.7, PLATE_TOP - PLATE_H - FOOT_H, 0.16, P, 28), { tone: 'lo' }));
-		out.push(S(k.cylinder(x, y, 0.54, PLATE_TOP - PLATE_H - FOOT_H + 0.16, FOOT_H - 0.16, P, 28), { tone: 'lo' }));
-	}
-	out.push(S(k.slabOf(PLATE, PLATE_TOP - PLATE_H, PLATE_H, P, 8, 0.12), { tone: 'lo', inner: L(k.sideSeam(PLATE, PLATE_TOP - PLATE_H + 0.22, P), { tone: 'faint' }) }));
-	out.push(L(k.planOutline(k.insetPlan(PLATE, 0.5), PLATE_TOP, P), { tone: 'faint' }));
-	const screws = k.corners(PLATE, 0.95);
-	out.push(L(screws.map(([x, y]) => k.ring(x, y, 0.22, PLATE_TOP, P, 16)).join(''), { tone: 'lo' }));
-	out.push(D(screws.map(([x, y]) => at([x, y, PLATE_TOP])), { size: 0.5 }));
-	// A ruler in metres along the front edge, and a label plate.
-	const strip = { x: -6, y: PLATE.y + PLATE.d - 1.5, w: 21, d: 0.8, r: 0.1 };
-	out.push(S(k.slabOf(strip, PLATE_TOP, 0.06, P, 3), { tone: 'lo', crease: 'none' }));
-	const ticks = k.topTicks(strip.x + 0.5, strip.x + strip.w - 0.5, 1, 5, strip.y + 0.08, PLATE_TOP + 0.06, [0.24, 0.42], P);
-	out.push(L(ticks.minor, { tone: 'lo' }), L(ticks.major, { tone: 'mid' }));
-	const label = { x: PLATE.x + 1.8, y: PLATE.y + PLATE.d - 3.2, w: 4.6, d: 1.5, r: 0.12 };
-	out.push(S(k.slabOf(label, PLATE_TOP, 0.1, P, 3, 0.03), { tone: 'mid' }));
-	for (const [i, yy] of [0.38, 0.74, 1.1].entries()) out.push(L(k.lineOnTop([label.x + 0.05, label.y + yy], [label.x + label.w - (i ? 1.1 : 0.05), label.y + yy], PLATE_TOP + 0.1, P), { tone: i === 0 ? 'lo' : 'faint', free: 'end' }));
-	return out.join('');
-}
-
+/** The round plinth the machine stands on (a cryostat base at model scale): feet, a bolt ring, a ruler in metres and a label plate. */
 function base(): string {
-	const out = [`<path class="iso-halo" d="${k.haloOf({ x: -BASE_R, y: -BASE_R, w: BASE_R * 2, d: BASE_R * 2, r: BASE_R }, BASE_TOP - 0.8, 0.8, P)}"/>`];
-	out.push(S(k.cylinder(0, 0, BASE_R, BASE_TOP - 0.8, 0.8, P, 96, 0.1), { tone: 'mid', inner: L(k.sideArc(0, 0, BASE_R, BASE_TOP - 0.3, P, 64), { tone: 'faint' }) }));
-	out.push(L(k.ring(0, 0, BASE_R - 0.5, BASE_TOP, P, 96), { tone: 'faint' }));
-	const bolts = Array.from({ length: 36 }, (_, i) => at(W(BASE_R - 0.25, i * 10 + 5, BASE_TOP)));
-	out.push(D(bolts, { size: 0.45 }));
+	const H = 0.9;
+	const bottom = BASE_TOP - H;
+	const out = [`<path class="iso-halo" d="${k.haloOf({ x: -BASE_R, y: -BASE_R, w: BASE_R * 2, d: BASE_R * 2, r: BASE_R }, bottom - FOOT_H, H, P)}"/>`];
+	const feet = Array.from({ length: 8 }, (_, i) => W(BASE_R - 1.4, i * 45 + 22.5, 0)).sort((a, b) => k.depthOf(a, P) - k.depthOf(b, P));
+	for (const [x, y] of feet) {
+		out.push(S(k.cylinder(x, y, 0.75, bottom - FOOT_H, 0.16, P, 28), { tone: 'lo' }));
+		out.push(S(k.cylinder(x, y, 0.56, bottom - FOOT_H + 0.16, FOOT_H - 0.16, P, 28), { tone: 'lo' }));
+	}
+	out.push(S(k.cylinder(0, 0, BASE_R, bottom, H, P, 120, 0.12), { tone: 'lo', inner: L(k.sideArc(0, 0, BASE_R, bottom + 0.3, P, 80), { tone: 'faint' }) }));
+	out.push(L(k.ring(0, 0, BASE_R - 0.5, BASE_TOP, P, 120), { tone: 'faint' }));
+	out.push(D(Array.from({ length: 48 }, (_, i) => at(W(BASE_R - 0.25, i * 7.5 + 3.75, BASE_TOP))), { size: 0.45 }));
+	// A ruler in metres across the open front, and a label plate beside it.
+	const z = BASE_TOP;
+	const strip = { x: -5, y: 12.6, w: 10, d: 0.7, r: 0.1 };
+	out.push(S(k.slabOf(strip, z, 0.06, P, 3), { tone: 'lo', crease: 'none' }));
+	const ticks = k.topTicks(strip.x + 0.5, strip.x + strip.w - 0.5, 1, 5, strip.y + 0.06, z + 0.06, [0.22, 0.4], P);
+	out.push(L(ticks.minor, { tone: 'lo' }), L(ticks.major, { tone: 'mid' }));
+	const label = { x: -9.4, y: 10.6, w: 3.6, d: 1.3, r: 0.12 };
+	out.push(S(k.slabOf(label, z, 0.1, P, 3, 0.03), { tone: 'mid' }));
+	for (const [i, yy] of [0.34, 0.66, 0.98].entries()) out.push(L(k.lineOnTop([label.x + 0.05, label.y + yy], [label.x + label.w - (i ? 0.9 : 0.05), label.y + yy], z + 0.1, P), { tone: i === 0 ? 'lo' : 'faint', free: 'end' }));
 	return out.join('');
 }
 
 function staticItems(): Item[] {
 	const items: Item[] = [];
 	const add = (id: string, key: number, svg: string) => items.push({ id, key, svg });
-	add('bench', -1e9, bench());
 	add('base', -1e9 + 1, base());
 	// Central solenoid: a support core inside six stacked modules, cut on the section plane.
 	add('cs', 0, S(revolve([[0, -CS.top], [CS.r1, -CS.top], [CS.r1, CS.top], [0, CS.top]], CUT, 360, 58), { tone: 'mid' }) + csSeams());
@@ -462,7 +451,11 @@ function divertorFace(): string {
 		});
 		return [...pts, ...side.reverse()];
 	};
-	out.push(faceSvg('tok-div', onSection([[4.15, -5.36], [6.75, -5.36], [6.75, -4.9], [4.15, -4.9]])));
+	// The cassette sits on the vessel floor: its underside follows the inner skin.
+	const floor = VI()
+		.filter(([R, z]) => z < -4.6 && R > 4.35 && R < 6.65)
+		.toSorted((a, b) => b[0] - a[0]);
+	out.push(faceSvg('tok-div', onSection([...floor, [floor[floor.length - 1]![0], -4.9], [floor[0]![0], -4.9]])));
 	out.push(faceSvg('tok-div', onSection(thick([[4.0, -3.5], [4.35, -3.95], [4.88, -4.9]], -0.24))));
 	out.push(faceSvg('tok-div', onSection(thick([[7.25, -3.72], [6.55, -4.05], [6.0, -4.9]], 0.24))));
 	// The edge's open field lines (the separatrix legs) run from the X-point down onto the targets.
@@ -474,7 +467,7 @@ function divertorFace(): string {
 // ---- heating beam injector -----------------------------------------------------
 
 /** The beam runs tangent to a circle of radius BEAM.rt round the axis, entering through the port between the coils at th 290 and 310. */
-const BEAM = { rt: 5.3, psi: 241.6, port: 9.3, valve: 10.9, box: 12.4, end: 15.6, w: 1.1, h: 1.4 };
+const BEAM = { rt: 5.3, psi: 241.6, port: 9.3, valve: 10.35, box: 11.3, end: 14.1, w: 1.1, h: 1.4 };
 const beamS = (r: number) => Math.sqrt(r * r - BEAM.rt * BEAM.rt);
 const beamFrame = (): k.Frame => ({ o: k.mul3(eR(BEAM.psi), BEAM.rt), a: ePhi(BEAM.psi), u: eR(BEAM.psi), v: [0, 0, 1] });
 const beamAt = (r: number, u = 0, v = 0) => k.pointOf(beamFrame(), beamS(r), u, v);
@@ -488,7 +481,7 @@ function injector(): Item[] {
 	const flange = S(plate(F, box2(BEAM.w + 0.5, BEAM.h + 0.5), s0 + 0.35, s0 + 0.55), { tone: 'mid' });
 	const valve = S(plate(F, box2(BEAM.w + 0.7, BEAM.h + 0.9), s1 - 0.25, s1 + 0.35), { tone: 'mid' });
 	const bellows: string[] = [];
-	for (let i = 0; i < 4; i++) bellows.push(S(plate(F, box2(BEAM.w + 0.22, BEAM.h + 0.22), s1 + 0.55 + i * 0.28, s1 + 0.67 + i * 0.28), { tone: 'mid', crease: 'none' }));
+	for (let i = 0; i < 3; i++) bellows.push(S(plate(F, box2(BEAM.w + 0.22, BEAM.h + 0.22), s1 + 0.45 + i * 0.22, s1 + 0.55 + i * 0.22), { tone: 'mid', crease: 'none' }));
 	const neck = S(plate(F, box2(BEAM.w, BEAM.h), s1 + 0.35, s2), { tone: 'mid', crease: 'none' });
 	items.push({ id: 'nbi-duct', key: keyOf(300, 11.9), svg: duct + flange + valve + neck + bellows.join('') + beamLine() });
 	// The beam box (neutraliser and ion dump) on a stand, and the ion source can at its back.
@@ -497,8 +490,8 @@ function injector(): Item[] {
 	for (const s of [s2 + 0.7, s3 - 0.7])
 		for (const u of [-0.8, 0.8]) {
 			const o = k.pointOf(F, s, u, 0);
-			legs.push(S(k.prismOf(k.axisFrame([o[0], o[1], PLATE_TOP], 'z'), k.circlePolygon(0.22, 16), 0, -BOX.h / 2 - PLATE_TOP, P), { tone: 'lo', crease: 'none' }));
-			legs.push(S(k.prismOf(k.axisFrame([o[0], o[1], PLATE_TOP], 'z'), k.circlePolygon(0.42, 20), 0, 0.12, P), { tone: 'lo' }));
+			legs.push(S(k.prismOf(k.axisFrame([o[0], o[1], BASE_TOP], 'z'), k.circlePolygon(0.22, 16), 0, -BOX.h / 2 - BASE_TOP, P), { tone: 'lo', crease: 'none' }));
+			legs.push(S(k.prismOf(k.axisFrame([o[0], o[1], BASE_TOP], 'z'), k.circlePolygon(0.42, 20), 0, 0.12, P), { tone: 'lo' }));
 		}
 	const box = S(plate(F, box2(BOX.w, BOX.h), s2, s3), { tone: 'mid', inner: '' });
 	const seams = [s2 + 1.1, s3 - 1.1].map((s) => L(k.pathOf([at(k.pointOf(F, s, -BOX.w / 2, BOX.h / 2)), at(k.pointOf(F, s, BOX.w / 2, BOX.h / 2)), at(k.pointOf(F, s, BOX.w / 2, -BOX.h / 2))]), { tone: 'faint' })).join('');
@@ -621,7 +614,8 @@ function plasmaFace(params: TokamakParams, drive: Drive): string {
 
 function ready() {
 	if (P) return;
-	const probe: Point3[] = [...k.boxCorners(PLATE, PLATE_TOP - PLATE_H - FOOT_H, PLATE_TOP)];
+	const probe: Point3[] = [];
+	for (let th = 0; th < 360; th += 10) probe.push(W(BASE_R, th, BASE_TOP - 0.9 - FOOT_H), W(BASE_R, th, BASE_TOP));
 	for (let th = 0; th < 360; th += 15) probe.push(W(11.8, th, 7.5), W(11.8, th, -7));
 	P = k.fitProjection(probe, WIDTH, HEIGHT, { pad: 14, azimuth: AZIMUTH });
 	V = k.viewOf(P);
@@ -653,7 +647,7 @@ export const TOKAMAK_CSS = `
 .tok-flux{fill:color-mix(in srgb,var(--tok-plasma) calc(var(--tok-heat) * 28%),transparent);stroke:color-mix(in srgb,var(--tok-plasma) 60%,transparent);stroke-width:.5}
 .tok-field{--anatomy-lit:color-mix(in srgb,var(--tok-plasma) 75%,var(--anatomy-hi))}
 .tok-field .iso-line{stroke-opacity:.6}
-.tok-field .iso-dots circle,.tok-core-face .iso-dots circle{fill:color-mix(in srgb,var(--tok-plasma) 30%,var(--anatomy-hi))}
+.tok-field .iso-dots circle,.tok-core-face .iso-dots circle{fill:#fff;opacity:.9}
 .tok-legs .iso-line{stroke:var(--tok-plasma);stroke-opacity:.8}
 .tok-legs .iso-dots circle{fill:var(--tok-plasma)}
 .tok-beam{stroke:var(--tok-plasma);stroke-dasharray:1.6 3;stroke-width:1}
@@ -703,10 +697,10 @@ function anchorPoints(): Array<[string, string, Point3]> {
 	return [
 		['plasma', 'Plasma', W(PL.R + PL.shift, PLASMA_END, 0)],
 		['central-solenoid', 'Central solenoid', W(1.6, CUT, 3)],
-		['tf-coil', 'Toroidal field coil', W(10.2, CUT, 1.5)],
-		['pf-coil', 'Poloidal field coil', W(PF[2]![0], CUT, PF[2]![1])],
-		['vacuum-vessel', 'Vacuum vessel', W(9.15, CUT, -2)],
-		['blanket', 'Blanket', W(8.6, CUT, 1.8)],
+		['tf-coil', 'Toroidal field coil', W(10.2, CUT, -2.6)],
+		['pf-coil', 'Poloidal field coil', W(PF[1]![0], CUT, PF[1]![1])],
+		['vacuum-vessel', 'Vacuum vessel', W(8.9, CUT, 2.2)],
+		['blanket', 'Blanket', W(5.6, CUT, 3.95)],
 		['divertor', 'Divertor', W(5.9, CUT, -5.1)],
 		['heating-beam', 'Heating beam', beamAt((BEAM.box + BEAM.end) / 2, 0, 1.4)],
 		['port', 'Port', W(10.35, 340, 0)]

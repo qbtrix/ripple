@@ -1,26 +1,26 @@
 // manifest/entries/figure.ts: the LLM-facing entry for `figure`, a curated
 // hand-built isometric figure picked by id (catalog in lib/figures). The model
 // sets the id, starting slider values, up to 10 plain-text labels on the
-// figure's named anchors, and a caption. Ids: heart, bike-gears. No markup, no URLs.
+// figure's named anchors, and a caption. Ids: heart, bike-gears, tokamak. No markup, no URLs.
 import type { WidgetManifestEntry } from '../index.js';
 
 export const figureEntry: WidgetManifestEntry = {
 	type: 'figure',
 	category: 'composite',
-	description: 'A hand-built live isometric figure picked by id ("heart": how a heart pumps; "bike-gears": how bike gears work), with sliders, live readouts and numbered labels on its named parts. Bind value.',
+	description: 'A hand-built live isometric figure picked by id ("heart": how a heart pumps; "bike-gears": how bike gears work; "tokamak": how a fusion reactor works), with sliders, live readouts and numbered labels on its named parts. Bind value.',
 	props: {
 		figure: {
-			type: '"heart" | "bike-gears"',
+			type: '"heart" | "bike-gears" | "tokamak"',
 			required: true,
 			description:
-				'Figure id. "heart" is a beating heart as two pumps: sliders bpm (40-180) and stroke (50-110 ml). "bike-gears" is a bicycle drivetrain on a stand: sliders cadence (40-120 rpm), ring (34 or 50 teeth) and gear (1-7, 1 = the 28-tooth cog, 7 = the 11); readouts gear ratio, metres per pedal turn and km/h.'
+				'Figure id. "heart" is a beating heart as two pumps: sliders bpm (40-180) and stroke (50-110 ml). "bike-gears" is a bicycle drivetrain on a stand: sliders cadence (40-120 rpm), ring (34 or 50 teeth) and gear (1-7, 1 = the 28-tooth cog, 7 = the 11); readouts gear ratio, metres per pedal turn and km/h. "tokamak" is a fusion reactor cut open: sliders current (5-17 MA) and heating (10-75 MW); readouts core temperature (million °C), fusion power (MW) and the gain Q.'
 		},
 		params: { type: 'Record<string, number>', required: false, description: 'Starting slider values, e.g. { "bpm": 120 }. Clamped to each slider.' },
 		labels: {
 			type: 'Array<{ anchor: string; label?: string; note?: string }>',
 			required: false,
 			description:
-				'Up to 10 numbered pins, plain text. heart anchors: right-atrium, right-ventricle, left-atrium, left-ventricle, tricuspid, mitral, pulmonary-valve, aortic-valve, aorta, vena-cava, pulmonary-artery, pulmonary-veins, lungs, body. bike-gears anchors: chainring, crank, pedal, chain, cassette, rear-derailleur, front-derailleur, jockey-wheels, rear-hub, wheel.'
+				'Up to 10 numbered pins, plain text. heart anchors: right-atrium, right-ventricle, left-atrium, left-ventricle, tricuspid, mitral, pulmonary-valve, aortic-valve, aorta, vena-cava, pulmonary-artery, pulmonary-veins, lungs, body. bike-gears anchors: chainring, crank, pedal, chain, cassette, rear-derailleur, front-derailleur, jockey-wheels, rear-hub, wheel. tokamak anchors: plasma, central-solenoid, tf-coil, pf-coil, vacuum-vessel, blanket, divertor, heating-beam, port.'
 		},
 		caption: { type: 'string', required: false, description: 'One or two plain sentences under the figure.' },
 		value: { type: 'Record<string, number>', required: false, description: 'Two-way bind with `bind: "{state.figure}"`: the slider values, written when one moves.' }

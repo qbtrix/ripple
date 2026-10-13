@@ -22,6 +22,7 @@ import hiitWorkout from './fixtures/hiit-workout.json';
 import mealPlan from './fixtures/meal-plan.json';
 import explainer from './fixtures/explainer.json';
 import bikeGears from './fixtures/bike-gears.json';
+import tokamak from './fixtures/tokamak.json';
 import plane3d from './fixtures/plane-3d.json';
 import refundApproval from './fixtures/refund-approval.json';
 import incidentRollback from './fixtures/incident-rollback.json';
@@ -79,7 +80,8 @@ export const scenarios: Scenario[] = [
 	{ id: 'explainer', title: 'Bike gears, explained', category: 'Learning', fixture: explainer, prompt: 'How do bike gears work? Draw me an animated picture of the chain drive and explain it in a few lines.', group: 'Learn' },
 	{ id: 'plane-3d', title: 'See a plane in 3D', category: 'Learning', fixture: plane3d, prompt: 'Show me a plane in 3D and label its parts', group: 'Learn' },
 	{ id: 'heart-pump', title: 'The heart as a pump', category: 'Learning', fixture: heartPump, prompt: 'How does the heart pump blood?', group: 'Learn' },
-	{ id: 'bike-gears', title: 'How bike gears work', category: 'Learning', fixture: bikeGears, prompt: 'How do bike gears work?', group: 'Learn' }
+	{ id: 'bike-gears', title: 'How bike gears work', category: 'Learning', fixture: bikeGears, prompt: 'How do bike gears work?', group: 'Learn' },
+	{ id: 'tokamak', title: 'How a fusion reactor works', category: 'Learning', fixture: tokamak, prompt: 'How does a fusion reactor work?', group: 'Learn' }
 ];
 
 export const chatPrompts: ChatPrompt[] = [
