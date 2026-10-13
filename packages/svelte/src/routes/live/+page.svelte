@@ -13,7 +13,9 @@
     prerendered, and browser Back returns to the grid (shallow pushState). No
     model is called at runtime. A return from the store's checkout (`?order=`
     or `?cancelled=1`, checkout.readReturn) shows OrderReceipt above and opens
-    the order run. Old /showcase URLs redirect here (routes/showcase).
+    the order run. Old /showcase URLs redirect here (routes/showcase). A
+    quiet credit to Anatomy sits under any section with an iso drawing and
+    under an opened one.
 
   Look: the site's tokens and fonts under the shared top bar and footer from
     +layout.svelte. The local --line, --panel and --ink-soft are read by
@@ -24,7 +26,7 @@
 	import { pushState, replaceState } from '$app/navigation';
 	import DiscoverHeader from '$lib/discover/DiscoverHeader.svelte';
 	import GalleryGrid from './GalleryGrid.svelte';
-	import { galleryItems, GROUPS, itemByKey, liveRuns, resolveKey } from './gallery.js';
+	import { galleryItems, GROUPS, isoKeys, itemByKey, liveRuns, resolveKey } from './gallery.js';
 	import { readReturn } from './checkout.js';
 	import OrderReceipt from './OrderReceipt.svelte';
 	import Player from './Player.svelte';
@@ -132,6 +134,10 @@
 	/>
 </svelte:head>
 
+{#snippet credit()}
+	<p class="credit">Isometric drawings inspired by <a href="https://skills.wheresryan.sh/anatomy" rel="noopener">Anatomy</a> by Ryan.</p>
+{/snippet}
+
 <main class="live">
 	{#if receipt}
 		<OrderReceipt storeUrl={STORE_URL} {...receipt} ondismiss={dismissReceipt} />
@@ -155,6 +161,7 @@
 				<div class="demo"><mod.default /></div>
 			{/await}
 		{/if}
+		{#if isoKeys.has(open.key)}{@render credit()}{/if}
 	{:else}
 		<DiscoverHeader as="h1" title="What a model can" accent="build with Ripple" class="hero">
 			<p class="lede">Recorded runs and live widgets. Each one opens here.</p>
@@ -169,6 +176,7 @@
 		<div class="sections">
 			{#each sections as { g, items } (g)}
 				<GalleryGrid {items} label="{g} gallery" title={g} blurb={BLURBS[g]} onopen={openItem} />
+				{#if items.some((i) => isoKeys.has(i.key))}{@render credit()}{/if}
 			{/each}
 		</div>
 	{/if}
@@ -210,6 +218,20 @@
 		display: flex;
 		flex-direction: column;
 		gap: 48px;
+	}
+	/* Credit under the Drawings tiles and an opened drawing: quiet, one line. */
+	.credit {
+		margin: -32px 0 0;
+		font-size: 12px;
+		color: var(--site-soft);
+	}
+	.run-head ~ .credit {
+		margin-top: 16px;
+	}
+	.credit a {
+		color: inherit;
+		text-decoration: underline;
+		text-underline-offset: 2px;
 	}
 	h1 {
 		margin: 0;

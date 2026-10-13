@@ -117,5 +117,5 @@ The library has 31 models: astronaut, boombox, camera, car, chair, dog, fish, fo
 
 ## Credits
 
-- The isometric drawing kit in `@ripple-ui/core/iso` is ported from [Anatomy](https://github.com/wheresryan22/anatomy) by Ryan, MIT License. The notice is kept at the top of each ported file.
+- The isometric drawing kit in `@ripple-ui/core/iso` is ported from [Anatomy](https://skills.wheresryan.sh/anatomy) by Ryan ([source](https://github.com/wheresryan22/anatomy)), MIT License. The full license text and the list of files it covers are in `THIRD_PARTY_NOTICES.md` at the repo root.
 - The 3D models come from Quaternius, Kenney, CreativeTrio and other authors on [Poly Pizza](https://poly.pizza), the [Khronos glTF sample assets](https://github.com/KhronosGroup/glTF-Sample-Assets), [NASA 3D Resources](https://github.com/nasa/NASA-3D-Resources) and [NIH 3D](https://3d.nih.gov). All are CC0 or public domain except the sneaker (Shopify, CC BY 4.0). Every file, author and licence is listed in `static/models/CREDITS.md`.
