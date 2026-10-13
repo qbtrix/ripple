@@ -16,8 +16,8 @@
 // the caller's project (the current directory), never from this machine's
 // paths; the skill ships no dependencies of its own.
 
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { resolve, join } from 'node:path';
+import { readFileSync, writeFileSync, mkdirSync, readdirSync } from 'node:fs';
+import { resolve, join, sep } from 'node:path';
 import { createRequire } from 'node:module';
 
 const DEFAULT_BASE = 'https://ripple-site.pawsites.workers.dev'; // ripple.pocketpaw.xyz once its DNS is live
@@ -273,9 +273,26 @@ async function launch() {
 		return await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {});
 	} catch (e) {
 		if (/Executable doesn't exist/.test(String(e.message)))
-			die(`Playwright has no Chromium to launch. Run: npx playwright install chromium (or set CHROME_PATH)\n${String(e.message).split('\n')[0]}`);
+			die(`Playwright has no Chromium to launch. Run: npx playwright install chromium (or set CHROME_PATH)\n${String(e.message).split('\n')[0]}${chromiumBuilds(String(e.message))}`);
 		throw e;
 	}
+}
+
+/** Which Chromium builds sit beside the one Playwright wanted, so CHROME_PATH is one copy away. */
+function chromiumBuilds(message) {
+	const wanted = /at (\S+)/.exec(message)?.[1];
+	const parts = wanted ? wanted.split(sep) : [];
+	const i = parts.findIndex((p) => /^chromium(_headless_shell)?-\d+$/.test(p));
+	if (i < 1) return '';
+	const root = parts.slice(0, i).join(sep);
+	let found = [];
+	try {
+		found = readdirSync(root).filter((d) => d.startsWith('chromium'));
+	} catch {}
+	const lines = [`\nwanted build: ${parts[i]} (this Playwright)`, `found in ${root}: ${found.join(', ') || 'none'}`];
+	const hit = found.find((d) => d.startsWith(parts[i].replace(/-\d+$/, '-')) && d !== parts[i]);
+	if (hit) lines.push(`try: CHROME_PATH=${join(root, hit, ...parts.slice(i + 1))}`);
+	return lines.join('\n');
 }
 const browser = await launch();
 const shots = [];

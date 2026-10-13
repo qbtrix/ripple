@@ -40,15 +40,18 @@ export function sum(values: unknown): number {
  * Money through Intl. `currency` is ISO 4217 from the widget (default USD);
  * a malformed code or locale falls back to USD instead of throwing a
  * RangeError into the widget. `sign: true` prints '+$8.00' for deltas.
+ * `whole: true` drops the cents of a whole amount ('$1,890', still '$19.50'),
+ * the way pricing-table prints prices; bills and invoices keep the cents.
  */
 export function money(
 	v: unknown,
 	currency: unknown = 'USD',
-	opts: { locale?: string; sign?: boolean } = {}
+	opts: { locale?: string; sign?: boolean; whole?: boolean } = {}
 ): string {
 	const n = finite(v);
 	if (n === undefined) return 'n/a';
 	const base: Intl.NumberFormatOptions = { style: 'currency', signDisplay: opts.sign ? 'exceptZero' : 'auto' };
+	if (opts.whole && Number.isInteger(n)) Object.assign(base, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 	const code = typeof currency === 'string' && currency.trim() ? currency.trim().toUpperCase() : 'USD';
 	try {
 		return new Intl.NumberFormat(opts.locale, { ...base, currency: code }).format(n);

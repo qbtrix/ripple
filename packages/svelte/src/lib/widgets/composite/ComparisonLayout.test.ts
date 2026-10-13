@@ -4,7 +4,10 @@
 //   `on_choose` hook, a streamed spec that must match the whole-spec render,
 //   junk props that must not throw, and the widget's own logic: best-cell
 //   marks per `better`, the price difference from the winner, the `type`
-//   fallback for `kind`, the `icon` kind, and a product_id placeholder.
+//   fallback for `kind`, the `icon` kind, and a product_id placeholder; and
+//   the first outside skill run's faults: one listing (table by default),
+//   whole prices without cents, spec pills on the winner, a table that fits a
+//   phone card, no photo tile without a photo, aligned icon-less rows.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, within } from '@testing-library/svelte';
 import { tick, type ComponentProps } from 'svelte';
@@ -41,7 +44,7 @@ const winner = { id: 'aero', reason: 'Lightest of the three with the longest bat
 
 const table = (c: HTMLElement) => c.querySelector('[data-view="table"]') as HTMLElement;
 const row = (c: HTMLElement, label: string) =>
-	[...table(c).querySelectorAll('tbody tr')].find((r) => r.querySelector('th')?.textContent?.includes(label)) as HTMLElement;
+	[...table(c).querySelectorAll('tbody tr:not([data-slot="row-label"])')].find((r) => r.querySelector('th')?.textContent?.includes(label)) as HTMLElement;
 const bestCols = (r: HTMLElement) =>
 	[...r.querySelectorAll('td')].flatMap((td, i) => (td.querySelector('[data-best]') ? [i] : []));
 
@@ -210,19 +213,19 @@ describe('comparison-layout: logic', () => {
 	it('shows each other item’s price difference from the winner, signed', () => {
 		const c = mount();
 		const deltas = [...c.querySelectorAll('[data-slot="delta"]')].map((n) => n.textContent);
-		expect(deltas).toEqual(['+$700.00 vs Aero 14', '+$200.00 vs Aero 14']);
+		expect(deltas).toEqual(['+$700 vs Aero 14', '+$200 vs Aero 14']);
 		const cheaper = render(ComparisonLayout, {
 			props: { items: laptops(), winner: { id: 'nimbus', reason: 'r' } }
 		}).container;
 		const d = [...cheaper.querySelectorAll('[data-slot="delta"]')].map((n) => n.textContent);
-		expect(d).toEqual(['-$700.00 vs Nimbus Pro 15', '-$500.00 vs Nimbus Pro 15']);
+		expect(d).toEqual(['-$700 vs Nimbus Pro 15', '-$500 vs Nimbus Pro 15']);
 	});
 
 	it('renders the winner card with reason, price, picks and runner-up', () => {
 		const c = mount({ picks: [{ id: 'aero', label: 'Lightest' }, { id: 'aero', label: 'Best value' }, { id: 'nimbus', label: 'Video' }, { id: 'vertex', label: 'Dropped: over 3' }] });
 		const card = c.querySelector('[data-slot="winner"]') as HTMLElement;
 		expect(card.querySelector('[data-slot="reason"]')?.textContent).toBe(winner.reason);
-		expect(card.querySelector('[data-slot="price"]')?.textContent).toBe('$1,099.00');
+		expect(card.querySelector('[data-slot="price"]')?.textContent).toBe('$1,099');
 		expect([...card.querySelectorAll('[data-slot="pick"]')].map((n) => n.textContent)).toEqual(['Lightest', 'Best value']);
 		expect(card.querySelector('[data-slot="runner-up"]')?.textContent).toContain('Vertex X13');
 		expect(c.textContent).not.toContain('Dropped: over 3');
@@ -267,7 +270,7 @@ describe('comparison-layout: logic', () => {
 	it('infers features from item keys when none are given (legacy specs)', () => {
 		const items = [{ id: 'a', title: 'A', seats: 1, sso: false, product_id: 'x' }, { id: 'b', title: 'B', seats: 2, sso: true }];
 		const c = render(ComparisonLayout, { props: { items } }).container;
-		const labels = [...table(c).querySelectorAll('tbody th')].map((th) => th.textContent?.trim());
+		const labels = [...table(c).querySelectorAll('tbody th[scope="row"]')].map((th) => th.textContent?.trim());
 		expect(labels).toEqual(['Seats', 'Sso']);
 	});
 });
@@ -301,7 +304,7 @@ describe('comparison-layout: per-item feature definitions (shape drift)', () => 
 		const c = render(ComparisonLayout, { props: drifted() as never }).container;
 		expect(c.textContent).not.toContain('{"key"');
 		expect(c.innerHTML).not.toContain('&quot;key&quot;');
-		const labels = [...table(c).querySelectorAll('tbody th')].map((th) => th.textContent?.trim());
+		const labels = [...table(c).querySelectorAll('tbody th[scope="row"]')].map((th) => th.textContent?.trim());
 		expect(labels).toEqual(['Graphics', 'Memory', 'Storage', 'Display refresh', 'Weight']);
 		expect(cells(c, 'Graphics')).toEqual(['Integrated graphics', 'RTX 4050 class', 'RTX 4060 class']);
 		expect(cells(c, 'Memory')).toEqual(['8 GB', '16 GB', '16 GB']);
@@ -311,11 +314,11 @@ describe('comparison-layout: per-item feature definitions (shape drift)', () => 
 		expect(bestCols(row(c, 'Weight'))).toEqual([0]);
 		// All three present: C as the best pick, A and B as the other cards, three table columns.
 		expect(c.querySelector('[data-slot="winner"]')?.textContent).toContain('Laptop C');
-		expect(c.querySelector('[data-slot="winner"]')?.textContent).toContain('$1,449.00');
+		expect(c.querySelector('[data-slot="winner"]')?.textContent).toContain('$1,449');
 		const others = [...c.querySelectorAll('[data-slot="item"]')].map((li) => li.textContent);
 		expect(others).toHaveLength(2);
-		expect(others[0]).toContain('$949.00');
-		expect(others[1]).toContain('$1,199.00');
+		expect(others[0]).toContain('$949');
+		expect(others[1]).toContain('$1,199');
 		expect(table(c).querySelectorAll('thead th')).toHaveLength(4);
 	});
 
@@ -345,5 +348,90 @@ describe('comparison-layout: per-item feature definitions (shape drift)', () => 
 		const { whole } = await expectStreamParity({ ui: { type: 'comparison-layout', props: { ...drifted(), defaultView: 'table' } } });
 		expect(whole.textContent).not.toContain('{"key"');
 		expect(whole.textContent).toContain('Display refresh');
+	});
+});
+
+// The first outside run of the Ripple skill (an e-bike comparison) found these.
+const bikes = () => [
+	{ id: 'corvo', name: 'Corvo Metro 2', price: 1890, range: 70, weight: 21, motor: 'Rear hub', torque: 50 },
+	{ id: 'lind', name: 'Lindqvist Stride', price: 2640, range: 95, weight: 19.5, motor: 'Mid-drive', torque: 65 },
+	{ id: 'pell', name: 'Pell Urban Fold', price: 1390, range: 45, weight: 17, motor: 'Front hub', torque: 35 }
+];
+const bikeFeatures = (): Features => [
+	{ key: 'range', label: 'Range', kind: 'number', unit: 'km', better: 'higher', icon: 'battery', highlight: true },
+	{ key: 'weight', label: 'Weight', kind: 'number', unit: 'kg', better: 'lower', icon: 'weight', highlight: true },
+	{ key: 'motor', label: 'Motor', kind: 'text', icon: 'motor' },
+	{ key: 'torque', label: 'Torque', kind: 'number', unit: 'Nm', better: 'higher' }
+];
+const view = (c: HTMLElement, v: string) => c.querySelector(`[data-view="${v}"]`) as HTMLElement;
+const pills = (el: Element) => el.querySelector('[data-slot="specs"]')?.textContent?.replace(/\s+/g, ' ').trim();
+
+describe('comparison-layout: one listing, clean prices, phone-width table', () => {
+	const mountBikes = (extra: Partial<ComponentProps<typeof ComparisonLayout>> = {}) =>
+		render(ComparisonLayout, { props: { items: bikes(), features: bikeFeatures(), winner: { id: 'corvo', reason: 'r' }, ...extra } }).container;
+
+	it('shows the table below the cards by default, so the items are not listed twice', () => {
+		const c = mountBikes();
+		expect(view(c, 'card').className).toContain('hidden');
+		expect(view(c, 'card').className).not.toContain('@min-[720px]:hidden');
+		expect(view(c, 'table').className).not.toContain('hidden');
+	});
+
+	it('keeps the per-item cards one tap away and honours defaultView "card"', async () => {
+		const c = mountBikes();
+		await fireEvent.click(within(c).getByRole('button', { name: /cards/i }));
+		expect(view(c, 'card').className).not.toMatch(/(^|\s)hidden/);
+		const d = mountBikes({ defaultView: 'card' });
+		expect(view(d, 'table').className).toContain('hidden');
+	});
+
+	it('drops the cents of whole prices and deltas, and keeps real cents', () => {
+		const c = mountBikes();
+		expect(c.querySelector('[data-slot="winner"] [data-slot="price"]')?.textContent).toBe('$1,890');
+		expect([...c.querySelectorAll('[data-slot="delta"]')].map((n) => n.textContent)).toEqual(['+$750 vs Corvo Metro 2', '-$500 vs Corvo Metro 2']);
+		const items = [{ id: 'a', name: 'A', price: 19.5 }, { id: 'b', name: 'B', price: 20 }];
+		const d = render(ComparisonLayout, { props: { items } }).container;
+		expect([...d.querySelectorAll('[data-slot="price"]')].map((n) => n.textContent)).toEqual(['$19.50', '$20']);
+	});
+
+	it('gives the winner card the same spec pills as the other cards', () => {
+		const c = mountBikes();
+		expect(pills(c.querySelector('[data-slot="winner"]')!)).toBe('Range 70 km Weight 21 kg');
+		expect(pills(c.querySelector('[data-slot="item"]')!)).toBe('Range 95 km Weight 19.5 kg');
+	});
+
+	it('fits three items in a phone card: a label line per row, no label column, no fixed 420px floor', () => {
+		const c = mountBikes();
+		const t = table(c).querySelector('table') as HTMLTableElement;
+		expect(t.className).not.toContain('min-w-[420px]');
+		expect(t.style.getPropertyValue('--cmp-n')).toBe('3');
+		const labels = [...t.querySelectorAll('[data-slot="row-label"] th')];
+		expect(labels.map((th) => th.textContent?.trim())).toEqual(['Range', 'Weight', 'Motor', 'Torque']);
+		expect(labels.every((th) => th.getAttribute('colspan') === '3')).toBe(true);
+		// The side label column is for 560px+ only.
+		const side = (t.querySelector('tbody th[scope="row"]') as HTMLElement).classList;
+		expect(side.contains('hidden') && side.contains('@min-[560px]:table-cell')).toBe(true);
+		// Names wrap in the narrow header instead of being cut.
+		expect(t.querySelector('thead span.block')?.className).not.toContain('truncate');
+	});
+
+	it('draws no photo tile when no item has a photo, and one per item when any has', () => {
+		expect(mountBikes().querySelector('[data-state]')).toBeNull();
+		const items = bikes().map((b, i) => (i === 0 ? { ...b, image: 'https://example.com/corvo.jpg' } : b));
+		const c = render(ComparisonLayout, { props: { items, features: bikeFeatures(), winner: { id: 'corvo', reason: 'r' } } }).container;
+		expect(c.querySelectorAll('[data-slot="winner"] [data-state]')).toHaveLength(1);
+		expect(c.querySelectorAll('[data-slot="item"] [data-state]')).toHaveLength(2);
+	});
+
+	it('maps a `motor` icon and keeps an icon-less row aligned with a spacer', () => {
+		const c = mountBikes();
+		const label = (name: string) =>
+			[...table(c).querySelectorAll('[data-slot="row-label"] th')].find((th) => th.textContent?.includes(name)) as HTMLElement;
+		expect(label('Motor').querySelector('svg')).not.toBeNull();
+		expect(label('Torque').querySelector('[data-slot="icon-spacer"]')).not.toBeNull();
+		// No spacers when no row has an icon.
+		const plainRows = bikeFeatures().map(({ icon: _i, ...f }) => f);
+		const d = render(ComparisonLayout, { props: { items: bikes(), features: plainRows } }).container;
+		expect(d.querySelector('[data-slot="icon-spacer"]')).toBeNull();
 	});
 });

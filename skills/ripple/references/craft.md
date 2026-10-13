@@ -63,7 +63,12 @@ only a look at the screenshot does.
   Shorten the text at the source (a day title of 3 to 4 words) or give it a row of its own. Enforcer: `clippedText`.
 - **Nothing pokes past the card.** G: `plane-3d`'s label pill for the right-most point sits 1 px past the card edge at
   380 (since fixed: pins flip left at the right edge). Enforcer: `overflow` (a sideways scroller inside the card is listed too; accept it only when the widget
-  designed it, like `exec-dashboard`'s filter-chip row).
+  designed it, like `exec-dashboard`'s filter-chip row or `comparison-layout`'s table with 4 or more items).
+- **A designed sideways scroll is the widget's, not yours, and the audit still counts it.** Accept one only when
+  the widget owns that scroller (its class is the widget's, not a box you added), the content in it is a strip
+  the reader expects to swipe (chips, a wide table), and nothing outside it scrolls. Then the round can end with
+  `overflow` above 0: list each accepted scroller by its locator in your answer. A scroller you built, or a whole
+  card that scrolls, is never accepted.
 - **Inputs get a full row or a 2-column grid.** A number input beside a long label squeezes both; a slider thumb must
   never sit on a label (F13).
 

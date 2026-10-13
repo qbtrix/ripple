@@ -58,7 +58,7 @@ Paths are relative to this skill's folder (`<skill>` below: where this file live
 |---|---|
 | `references/widgets.md` | Before choosing. Intent to the best widget, with the props it really takes. |
 | `references/craft.md` | Before writing, and again when the audit or a screenshot shows a fault. |
-| `references/examples/` | Open the closest one first. Four specs that render clean, each with one line on why. |
+| `references/examples/` | Open the closest one first. Five specs that render clean, each with one line on why. |
 | `scripts/render.mjs` | Every round. Renders, shoots, audits. `node <skill>/scripts/render.mjs --help` for options. |
 
 ## Setup, once
@@ -70,6 +70,10 @@ project (not from the skill folder) and pass the script's path:
 npm i -D playwright && npx playwright install chromium   # skip if the project has them
 npm i -D axe-core                                        # optional: accessibility counts
 ```
+
+**Accessibility is not checked unless axe-core is installed.** Without it `axeViolations` is `null`, not 0, and a
+clean round says nothing about labels, contrast or roles. Install it in the project you run from (`npm i -D
+axe-core`, or point `RIPPLE_AXE` at an `axe.min.js`) before you call a card accessible, or say it was not checked.
 
 It renders through a Ripple playground. The default is the public one,
 `https://ripple-site.pawsites.workers.dev` (it moves to `https://ripple.pocketpaw.xyz` once that domain is live).
@@ -106,6 +110,10 @@ and which you will invent (fictional, plausible, never after today).
 - `{ "version": "1.0", "state": {...}, "ui": {...} }`. The tree is `ui`, never `root` or `body`.
 - Node keys in order: `type`, `props`, then `bind` and handlers, then `children`.
 - Inputs bind to state; outputs are expressions of state; lists render with one `each`.
+- A widget's `bind` sits on the node (next to `props`) and names a path in `state`: `"bind": "pick"` and
+  `"bind": "{state.pick}"` both mean `state.pick`. The widget writes it when the visitor acts (a Choose, a tick).
+  Leave the key out of `state` unless the card should open with a value already set, or another node reads it from
+  the first paint (then seed the empty value, `""` or `[]`). `bill-split`'s key is never seeded.
 - Money is `currency: "USD"` plus numbers; every derived number is a `stat` with a `format`.
 - Use only widget types and props the manifest lists (`curl -s <base>/manifest.json`). A prop a widget does not
   take is dropped without a word. Leave out defaults.
@@ -122,7 +130,7 @@ It opens the playground with the spec in the link, shoots only the preview surfa
 dark (`<outdir>/380-light.png`, `<outdir>/1024-dark.png`, ...), writes `<outdir>/audit.json`, prints the same JSON
 and exits 0 when clean, 1 when any count is non-zero, 2 on a setup error (no Playwright, no server, bad spec; the
 message says what to run; if Playwright's own Chromium build is missing, `npx playwright install chromium` or
-`CHROME_PATH=<a chromium binary>` fixes it). Use a fresh `<outdir>` per round (`out/r1`, `out/r2`) so you can compare. Several runs
+`CHROME_PATH=<a chromium binary>` fixes it; the message lists the builds it found and the one it wanted). Use a fresh `<outdir>` per round (`out/r1`, `out/r2`) so you can compare. Several runs
 can go at once; each starts its own browser and writes only to its outdir.
 
 The audit counts, all targeting 0:
@@ -133,7 +141,7 @@ The audit counts, all targeting 0:
 | `themeNotApplied` | The page did not switch theme | Harness problem, not the card |
 | `errorBoxes` | "This widget hit an error", an unknown type, a rejected card | Bad prop shape or type (6) |
 | `consoleErrors` | Console errors and page exceptions | Usually the same as an error box |
-| `overflow` | Card scrolls sideways, an inner box scrolls sideways, or an element pokes past the card | Wrap tiles, shorten, give a row (2) |
+| `overflow` | Card scrolls sideways, an inner box scrolls sideways, or an element pokes past the card | Wrap tiles, shorten, give a row (2). A scroller the widget designed (a chip row, a table of 4+ items) may be accepted; it still counts, so name it in your answer |
 | `clippedText` | Words cut by an ellipsis, overflow or a line clamp; an input whose value is wider than its box; svg text past its svg | Shorten at the source, not with CSS (2) |
 | `emptyContainers` | An in-flow box of 40 px or more with nothing in it | Real data or remove it (4) |
 | `badText` | NaN, undefined, null, Infinity, `[object Object]`, `{state.` unevaluated, raw JSON | Prop names and formats (5, 6) |
@@ -164,7 +172,7 @@ works, leave it and write it down for the **Widget faults** section.
 
 ### 7. Repeat, and stop
 
-Re-render after every fix round. **Stop after a clean round** (every count 0, and no lens finds anything the spec
+Re-render after every fix round. **Stop after a clean round** (every count 0, or only scrollers the widget designed (craft.md section 2), and no lens finds anything the spec
 can fix at either width in either theme; faults inside a widget go to the Widget faults list and do not keep the
 loop going) **or after 4 rounds.** If round 4 still has faults, stop anyway.
 
@@ -214,7 +222,10 @@ Run them one at a time over all four shots. One lens, one pass: a reviewer looki
 ## Known limits
 
 - The audit sees one rendered state: the first. Steps, tabs, hover and open dialogs are eyes-only unless you render
-  a copy of the spec seeded in that state.
+  a copy of the spec seeded in that state. Two ways to seed it: a widget prop that picks the state
+  (`comparison-layout`'s `chosen` or `defaultView`, a tab's initial value), or `state` set to the value the widget
+  would write (the bind key, a ticked item). Save it as a separate preview file (`card-chosen.json`); changing state
+  in a preview copy is not a data change, and the spec you hand over keeps the user's data.
 - The shot widths are viewport widths; the card itself is narrower (see `surfaceWidth`).
 - `chart` draws on canvas and `model-viewer` in WebGL: their insides are eyes-only.
 - The public playground runs the latest released Ripple. A widget fix that is not released yet only shows against
