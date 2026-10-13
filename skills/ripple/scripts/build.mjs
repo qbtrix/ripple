@@ -52,10 +52,12 @@ exit:  0 stopped clean, 1 stopped otherwise, 2 usage or setup error`;
 
 // --- the model --------------------------------------------------------------
 
+/** SKILL.md from heading `from` up to `to`; throws when a heading moved, so the prompt never shrinks silently. */
 const section = (text, from, to) => {
 	const a = text.indexOf(from);
-	const b = to ? text.indexOf(to, a + from.length) : -1;
-	return a < 0 ? '' : text.slice(a, b < 0 ? undefined : b).trim();
+	const b = text.indexOf(to, a + from.length);
+	if (a < 0 || b < 0) throw new Error(`SKILL.md no longer has "${a < 0 ? from : to}"; update systemPrompt() in build.mjs`);
+	return text.slice(a, b).trim();
 };
 
 /** The rules every round gets: the skill's two rules, its quality bar, how to write a spec, the widget map and the craft rules. */
@@ -198,15 +200,18 @@ async function main() {
 		const system = systemPrompt(now);
 		const model = modelCmd ? commandModel({ system, cmd: modelCmd }) : claudeModel({ system, model: modelName });
 		mkdirSync(outdir, { recursive: true });
-		let n = 0;
+		let n = 0; // the round in flight, so round-N matches rounds.json even after a reply that did not parse
 		const rounds = [];
 		const started = d.getTime();
 
 		const res = await buildSpec({
 			preset: 'card',
 			prompt: ask,
-			model,
-			renderer: (spec) => renderer(spec, { base, outdir: join(outdir, `round-${++n}`) }),
+			model: (req) => {
+				n = req.round;
+				return model(req);
+			},
+			renderer: (spec) => renderer(spec, { base, outdir: join(outdir, `round-${n}`) }),
 			widgetTypes,
 			widgets: manifest.widgets,
 			now,
