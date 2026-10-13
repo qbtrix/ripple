@@ -27,27 +27,25 @@
     BookingReceipt; an order resumed from sessionStorage shows its PayCard
     above the log. A finished flow goes to session.flowComplete. A notice that
     offers a replay gets a button for session.replayRecorded. Once a final card
-    has mounted, an idle callback (a 1 ms timer without requestIdleCallback)
-    calls session.auditCard, which posts its audit counts once.
-    Spec peek: the card's JSON, pretty-printed as it streams, following its
-    newest line while streaming and its start once final; closed except on the
-    first card the visitor triggers per browser session. Clipped, never its own
-    scroll container: under 1024px to 8 lines, from 1024px beside the card at
-    its height; Expand shows it all. Turns there at mount (the prerendered
-    exchange) neither animate in nor open a peek.
-    Scrolling: the log (with the optional `top` snippet, the hero) is the
-    chat's own scroll container; nothing calls scrollIntoView. It follows new
-    content only while the visitor is at the bottom; the visitor's own message
-    always jumps there; scrolled up, growth shows a "New" pill; a resize keeps
-    a reader at the bottom there. At mount it stays at its top. The dock below
-    holds the panel, the composer with `more` to its right, and a foot row
-    (`foot`, then the hint, kept as the textarea's description when narrow).
+    has mounted, an idle callback posts its audit once (session.auditCard);
+    pagehide or a hidden tab re-posts it with time on screen (reportSeen).
+    Spec peek: the card's JSON, pretty-printed, following its newest line while
+    streaming and its start once final; open only on the first card the visitor
+    triggers per browser session. Clipped, never its own scroll container: 8
+    lines under 1024px, beside the card at its height from 1024px; Expand shows
+    it all. Turns there at mount (the prerendered exchange) neither animate in
+    nor open a peek. Scrolling: the log (with the optional `top` snippet, the
+    hero) is the chat's own scroll container; nothing calls scrollIntoView. It
+    follows new content only while the visitor is at the bottom; the visitor's
+    own message always jumps there; scrolled up, growth shows a "New" pill; a
+    resize keeps a reader at the bottom. At mount it stays at its top. The
+    dock holds the panel, the composer with `more` to its right, and a foot
+    row (`foot`, then the hint, the textarea's description when narrow).
     The log is role="log", aria-busy while streaming; one polite region says
-    "Building" and "Done" per turn. DOM ids are positional, never Card.id (it
-    can differ between prerender and hydration). Reduced motion is CSS plus
-    the label rotation staying on "Thinking". Playground props, off on the
-    landing: `chips` (cards as compact chips that pick into its preview) and
-    `onspec` (an Open button for its JSON view); `ask` and `focus` are exported.
+    "Building" and "Done" per turn. DOM ids are positional, never Card.id
+    (prerender and hydration can differ). Reduced motion: CSS, the label stays
+    on "Thinking". Playground props (off on the landing): `chips` (cards as
+    chips into its preview), `onspec` (an Open button); exports `ask`, `focus`.
 -->
 <script lang="ts">
 	import { tick, untrack, type Snippet } from 'svelte';
@@ -489,7 +487,8 @@
 	{/if}
 {/snippet}
 
-<svelte:window onkeydown={(e) => e.key === 'Escape' && closePanel()} />
+<svelte:window onkeydown={(e) => e.key === 'Escape' && closePanel()} onpagehide={() => session.reportSeen()} />
+<svelte:document onvisibilitychange={() => document.visibilityState === 'hidden' && session.reportSeen()} />
 
 <div class="chat">
 	<p class="sr-only" aria-live="polite">{announce}</p>

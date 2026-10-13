@@ -527,6 +527,14 @@ test('a final card with faults posts its audit counts once, from an idle callbac
 	// Later renders of the same card (a re-render, another turn) never post it again.
 	await new Promise((r) => setTimeout(r, 50));
 	expect(audit).toHaveBeenCalledTimes(1);
+
+	// Leaving the page re-posts the same row with the time on screen so far.
+	window.dispatchEvent(new Event('pagehide'));
+	expect(audit).toHaveBeenCalledTimes(2);
+	const [runId2, cardId2, row2] = audit.mock.calls[1];
+	expect([runId2, cardId2]).toEqual(['run-1', 'c1']);
+	expect({ ...row2, seen_ms: 0 }).toEqual({ ...row, seen_ms: 0 });
+	expect(Number.isInteger(row2.seen_ms) && row2.seen_ms >= Math.max(row.seen_ms, 50)).toBe(true);
 });
 
 test('a card with no run id (seeded, recorded) is never audited', async () => {

@@ -35,7 +35,10 @@
 // the server's card_id, on each streamed card. auditCard() (called from an idle
 // callback once a final card has mounted) runs the pure specAudit once per card
 // and hands integer counts and type names, never spec or text, to the AuditPost
-// (pawbarTransport's `audit`, fire-and-forget). `seen_ms` is card.final to post.
+// (pawbarTransport's `audit`, fire-and-forget), keeping the row on the Card.
+// `seen_ms` is time on screen since card.final: reportSeen() (Chat.svelte calls it
+// on pagehide and when the tab is hidden) re-posts each kept row with a fresh
+// `seen_ms`, the same counts, no second audit; the server replaces the card's row.
 // Seeded, recorded and legacy fence cards have no run or card id: never posted.
 
 import { specAudit } from '@ripple-ui/core';
@@ -305,7 +308,8 @@ export class Card {
 	cardId = '';
 	/** performance.now() at card.final, for `seen_ms`. */
 	landedAt = 0;
-	audited = false;
+	/** The audit row last posted; reportSeen() re-posts it with a fresh `seen_ms`. */
+	auditRow: CardAudit | null = null;
 	readonly store: StreamSpecStore;
 	#push!: ReadableStreamDefaultController<string>;
 	#open = true;
@@ -418,6 +422,9 @@ interface TurnState {
 }
 
 let turnSeq = 0;
+/** The server's `seen_ms` ceiling (one day); a tab left open longer posts the cap, not a 422. */
+const SEEN_MAX = 86_400_000;
+const seenMs = (card: Card, now: number) => Math.min(SEEN_MAX, Math.round(now - card.landedAt));
 const MAX_RUN = 1_000_000;
 
 export class ChatSession {
@@ -447,21 +454,33 @@ export class ChatSession {
 	 * No-op without an AuditPost or a run and card id. Call it when the page is idle.
 	 */
 	auditCard(card: Card) {
-		if (!this.audit || card.audited || card.status !== 'final' || !card.spec || !card.runId || !card.cardId) return;
-		card.audited = true;
+		if (!this.audit || card.auditRow || card.status !== 'final' || !card.spec || !card.runId || !card.cardId) return;
 		const start = performance.now();
 		const reports = specAudit(card.spec, {
 			widgetTypes: [...CHAT_WIDGET_TYPES],
 			now: { iso: new Date().toISOString(), tz: Intl.DateTimeFormat().resolvedOptions().timeZone }
 		});
 		const done = performance.now();
-		this.audit(card.runId, card.cardId, {
+		card.auditRow = {
 			counts: Object.fromEntries(reports.map((r) => [r.check, r.count])),
 			waived: reports.reduce((n, r) => n + (r.waived?.length ?? 0), 0),
 			widget_types: widgetTypes(card.spec.ui),
 			ms: Math.round(done - start),
-			seen_ms: Math.round(done - card.landedAt)
-		});
+			seen_ms: seenMs(card, done)
+		};
+		this.audit(card.runId, card.cardId, card.auditRow);
+	}
+
+	/** Re-posts every audited card's row with `seen_ms` = time on screen so far. Call on pagehide or a hidden tab. */
+	reportSeen() {
+		if (!this.audit) return;
+		const now = performance.now();
+		for (const turn of this.turns)
+			for (const p of turn.parts) {
+				if (p.kind !== 'card' || !p.card.auditRow) continue;
+				p.card.auditRow = { ...p.card.auditRow, seen_ms: seenMs(p.card, now) };
+				this.audit(p.card.runId, p.card.cardId, p.card.auditRow);
+			}
 	}
 
 	async send(message: string) {
