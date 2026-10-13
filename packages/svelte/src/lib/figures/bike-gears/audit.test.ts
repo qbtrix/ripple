@@ -7,7 +7,8 @@ import { describe, expect, test } from 'vitest';
 import { auditSvg, boxShape, shapeAttr } from '@ripple-ui/core/iso';
 import { auditSvgOf, bikeSvg, review } from './figure.js';
 
-describe('bike-gears audit', () => {
+// The audit measures real part shapes and takes about 2 s a frame (more on CI).
+describe('bike-gears audit', { timeout: 60_000 }, () => {
 	test.each(review.auditFrames())('%s: 0 faults beyond the waivers', (_, svg) => {
 		for (const report of auditSvg(svg)) {
 			const waived = review.waivers.filter((w) => w.check === report.check).map((w) => w.id);
