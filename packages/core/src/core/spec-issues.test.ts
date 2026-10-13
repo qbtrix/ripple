@@ -90,4 +90,18 @@ describe('formatSpecIssues', () => {
 			'- ui.props: Invalid input'
 		]);
 	});
+
+	it('takes audit items too, with their code, and reads an empty pointer as `spec`', () => {
+		const text = formatSpecIssues([
+			{ path: 'ui.props', message: 'Invalid input' },
+			{ code: 'unknownWidget', path: '/ui/children/2', message: 'widget type "lsit" isn\'t in the catalog' },
+			{ code: 'parse', path: '', message: 'not JSON' }
+		]);
+		expect(text.split('\n')).toEqual([
+			'The last UI spec has 3 problems. Fix them in the next spec:',
+			'- ui.props: Invalid input',
+			'- /ui/children/2 (unknownWidget): widget type "lsit" isn\'t in the catalog',
+			'- spec (parse): not JSON'
+		]);
+	});
 });
