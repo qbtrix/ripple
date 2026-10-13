@@ -33,7 +33,7 @@ const DEG = Math.PI / 180;
 
 // ---- world plan ----------------------------------------------------------
 
-const PLATE = { x: -168, y: -60, w: 250, d: 112, r: 8 };
+const PLATE = { x: -168, y: -60, w: 234, d: 112, r: 8 };
 const PLATE_H = 10;
 const FOOT_H = 5;
 const R_IN = 30; // grid and chamber radius (30 cm grids)
@@ -42,10 +42,10 @@ const R_OUT = R_IN + WALL;
 const X_BACK = -46; // inner face of the back plate
 const X_END = 10; // open end of the chamber, where the grid ring sits
 const SCREEN_X = X_END + 1.2;
-const ACCEL_X = X_END + 3.6;
+const ACCEL_X = X_END + 4;
 const RING_X1 = X_END + 6;
 const X_EXIT = RING_X1; // beam ions start here
-const BEAM_L = 118;
+const BEAM_L = 96;
 const BEAM_DIV = Math.tan(13 * DEG);
 const STAND = { x: -64, y: -26, w: 90, d: 52, r: 3 };
 const STAND_Z = 16; // platform top
@@ -58,7 +58,7 @@ const PPU_H = 26;
 const DIAL = { x: -78, y: 22, r: 10, z: 12, h: 7 };
 const MAGNETS = [X_BACK + 7, X_BACK + 27, X_END - 7];
 const MAG_W = 4.4;
-const MAG_T = 3.6;
+const MAG_T = 2.8;
 
 // The camera is fitted on first use (ready()), so importing this module does no work.
 let P = null as unknown as k.Projection;
@@ -149,7 +149,7 @@ function bench(): string {
 	out.push(L(screws.map(([x, y]) => k.ring(x, y, 2.2, 0, P, 16)).join(''), { tone: 'lo' }));
 	out.push(D(screws.map(([x, y]) => at([x, y, 0])), { size: 0.5 }));
 	// Ruler strip along the front edge, under the beam's start, ticks rooted on its back edge.
-	const strip = { x: -40, y: PLATE.y + PLATE.d - 13, w: 110, d: 7, r: 1 };
+	const strip = { x: -44, y: PLATE.y + PLATE.d - 13, w: 96, d: 7, r: 1 };
 	out.push(S(k.slabOf(strip, 0, 0.6, P, 3), { tone: 'lo', crease: 'none' }));
 	const ticks = k.topTicks(strip.x + 4, strip.x + strip.w - 4, 4, 5, strip.y + 0.8, 0.6, [2, 3.6], P);
 	out.push(L(ticks.minor, { tone: 'lo' }), L(ticks.major, { tone: 'mid' }));
@@ -520,10 +520,10 @@ function anchorPoints(): Array<[string, string, Point3]> {
 		['magnets', 'Ring magnets', onAxis(MAGNETS[1]!, R_OUT + MAG_T, KEEP)],
 		['cathode', 'Hollow cathode', onAxis(X_BACK + 8, 4.6, KEEP - 0.3)],
 		['plasma', 'Plasma', onAxis(X_BACK + 32, 12, KEEP + Math.PI * 0.75)],
-		['screen-grid', 'Screen grid', onAxis(SCREEN_X, R_IN * 0.5, KEEP + Math.PI)],
-		['accel-grid', 'Accelerator grid', onAxis(ACCEL_X + 1.2, R_IN * 0.55, KEEP + Math.PI * 0.6)],
+		['screen-grid', 'Screen grid', onAxis(SCREEN_X, R_IN * 0.92, KEEP + 0.2)],
+		['accel-grid', 'Accelerator grid', onAxis(ACCEL_X + 1.2, R_IN * 0.6, KEEP + Math.PI * 0.72)],
 		['neutraliser', 'Neutraliser', NEUT_BASE()],
-		['ion-beam', 'Ion beam', [X_EXIT + 70, 0, AXIS_Z]],
+		['ion-beam', 'Ion beam', [X_EXIT + 56, 0, AXIS_Z]],
 		['thrust-dial', 'Thrust dial', [DIAL.x, DIAL.y, DIAL_TOP]]
 	];
 }
