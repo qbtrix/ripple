@@ -9,6 +9,7 @@
 // (pawbar/play-cards.ts) import from here and this file runs in node for the
 // recorder. `groupedSuggestions` resolves it against whatever chips are on offer,
 // dropping missing ids, so a group with nothing available never renders.
+// `figureScenarios` are hand-built figure runs shown on /live only, never as chips.
 // Prompts are visitor-facing: plain words, fictional products, no dashes.
 
 import orderBurger from './fixtures/order-burger.json';
@@ -22,6 +23,7 @@ import hiitWorkout from './fixtures/hiit-workout.json';
 import mealPlan from './fixtures/meal-plan.json';
 import explainer from './fixtures/explainer.json';
 import bikeGears from './fixtures/bike-gears.json';
+import fissionReactor from './fixtures/fission-reactor.json';
 import plane3d from './fixtures/plane-3d.json';
 import refundApproval from './fixtures/refund-approval.json';
 import incidentRollback from './fixtures/incident-rollback.json';
@@ -80,6 +82,11 @@ export const scenarios: Scenario[] = [
 	{ id: 'plane-3d', title: 'See a plane in 3D', category: 'Learning', fixture: plane3d, prompt: 'Show me a plane in 3D and label its parts', group: 'Learn' },
 	{ id: 'heart-pump', title: 'The heart as a pump', category: 'Learning', fixture: heartPump, prompt: 'How does the heart pump blood?', group: 'Learn' },
 	{ id: 'bike-gears', title: 'How bike gears work', category: 'Learning', fixture: bikeGears, prompt: 'How do bike gears work?', group: 'Learn' }
+];
+
+/** Hand-built figure runs: /live gallery cards only, not landing chips. */
+export const figureScenarios: Scenario[] = [
+	{ id: 'fission-reactor', title: 'How a nuclear fission reactor works', category: 'Learning', fixture: fissionReactor, group: 'Learn' }
 ];
 
 export const chatPrompts: ChatPrompt[] = [

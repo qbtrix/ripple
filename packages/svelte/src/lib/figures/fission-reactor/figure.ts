@@ -463,7 +463,7 @@ function turbineHallStatic(): Item[] {
 	};
 	add('hp', kT + 0.3, casing(12, 42, 12, 'mid', [20, 34]) + S(k.prismOf(k.axisFrame([42, SHAFT.y, SHAFT.z], 'x'), k.circlePolygon(8, 32), 0, 2, P), { tone: 'mid' }));
 	add('coupling-1', kT + 0.2, S(k.prismOf(k.axisFrame([50.5, SHAFT.y, SHAFT.z], 'x'), k.circlePolygon(4.6, 28), 0, 2, P), { tone: 'mid' }) + '<g data-live="turbine-spin-1"></g>');
-	add('lp', kT + 0.4, casing(56, 100, 20, 'mid', [66, 78, 90]) + S(k.prismOf(k.axisFrame([54, SHAFT.y, SHAFT.z], 'x'), k.circlePolygon(10, 36), 0, 2, P), { tone: 'mid' }) + S(k.prismOf(k.axisFrame([100, SHAFT.y, SHAFT.z], 'x'), k.circlePolygon(10, 36), 0, 2, P), { tone: 'mid' }));
+	add('lp', kT + 0.4, S(k.prismOf(k.axisFrame([54, SHAFT.y, SHAFT.z], 'x'), k.circlePolygon(10, 36), 0, 2, P), { tone: 'mid' }) + casing(56, 100, 20, 'mid', [66, 78, 90]) + S(k.prismOf(k.axisFrame([100, SHAFT.y, SHAFT.z], 'x'), k.circlePolygon(10, 36), 0, 2, P), { tone: 'mid' }));
 	add('coupling-2', kT + 0.2, S(k.prismOf(k.axisFrame([106.5, SHAFT.y, SHAFT.z], 'x'), k.circlePolygon(4.6, 28), 0, 2, P), { tone: 'mid' }) + '<g data-live="turbine-spin-2"></g>');
 	add('generator', kT + 0.5, casing(110, 146, 14, 'mid', [116, 128, 140]) + S(k.prismOf(k.axisFrame([146, SHAFT.y, SHAFT.z], 'x'), k.circlePolygon(9, 32), 0, 1.5, P), { tone: 'mid' }));
 	add('exciter', kT + 0.6, casing(154, 164, 7.5, 'mid', [159]));
@@ -673,7 +673,7 @@ export const REACTOR_CSS = `
 .fr-hot>.iso-shade[data-shade="0"],.fr-hot>.iso-shade[data-shade="1"]{fill:color-mix(in srgb,var(--anatomy-red) calc(var(--fr-tint) * .6),var(--anatomy-shade-0))}
 .fr-cold>.iso-shade[data-shade="0"],.fr-cold>.iso-shade[data-shade="1"],.fr-water>.iso-shade[data-shade="0"],.fr-water>.iso-shade[data-shade="1"]{fill:color-mix(in srgb,var(--anatomy-blue) calc(var(--fr-tint) * .6),var(--anatomy-shade-0))}
 .fr-flow{stroke-dasharray:2 5;stroke-width:1;stroke-opacity:.75}
-.fr-void{fill:var(--anatomy-shade-0);stroke:none}
+.fr-void{fill:color-mix(in srgb,var(--anatomy-shade-0) 55%,var(--anatomy-halo));stroke:none}
 `;
 
 export const LABEL = 'A pressurised water reactor plant on a bench: the reactor vessel cut open over its core, the steam generator, pump and pressuriser, the turbine and generator, the condenser and a cooling tower.';
