@@ -1,7 +1,7 @@
 {
   "schema": "ripple.manifest/v1",
   "version": "0.8.0",
-  "generatedAt": "2026-10-13T05:42:25.401Z",
+  "generatedAt": "2026-10-13T06:19:01.734Z",
   "spec": {
     "uiField": "ui",
     "stateField": "state",
@@ -11279,7 +11279,7 @@
     {
       "type": "figure",
       "category": "composite",
-      "description": "A hand-built live isometric figure picked by id (\"heart\": how a heart pumps; \"bike-gears\": how bike gears work; \"rocket-engine\": inside a rocket engine), with sliders, live readouts and numbered labels on its named parts. Bind value.",
+      "description": "A hand-built live isometric figure picked by id (\"heart\", \"bike-gears\" or \"rocket-engine\"; see the figure prop), with sliders, live readouts and numbered labels on its named parts. Bind value.",
       "props": {
         "figure": {
           "type": "\"heart\" | \"bike-gears\" | \"rocket-engine\"",
