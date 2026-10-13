@@ -158,15 +158,18 @@ export async function buildSpec(opts: BuildOptions): Promise<BuildResult> {
 	const check = () => {
 		if (signal?.aborted) throw new Aborted();
 	};
-	/** Run a host call; an abort during it ends the loop, any other error is the host's. */
+	/** Run a host call; an abort during it ends the loop (even if the call returns), any other error is the host's. */
 	const guarded = async <T>(call: () => Promise<T>): Promise<T> => {
 		check();
+		let r: T;
 		try {
-			return await call();
+			r = await call();
 		} catch (e) {
 			if (signal?.aborted) throw new Aborted();
 			throw e;
 		}
+		check();
+		return r;
 	};
 
 	try {
@@ -225,7 +228,7 @@ export async function buildSpec(opts: BuildOptions): Promise<BuildResult> {
 				stopped = 'clean';
 				break;
 			}
-			if (best && !round.accepted) {
+			if (best && round.spec !== null && !round.accepted) {
 				stopped = 'no-progress';
 				break;
 			}

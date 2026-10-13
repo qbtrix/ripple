@@ -1,5 +1,6 @@
 // build-spec.test.ts: the build loop against a fake model and renderer. Pins
-// the stop rules (clean, no-progress, round cap, abort as cap), strict-better
+// the stop rules (clean, no-progress, round cap, abort as cap, a parse failure
+// never ending the run), strict-better
 // acceptance, token summing, feedback folding and that the module never reads
 // a clock.
 import { describe, it, expect } from 'vitest';
@@ -100,6 +101,16 @@ describe('buildSpec', () => {
 		expect(res.spec).toEqual(clean.spec);
 	});
 
+	it('does not stop no-progress on an unparseable round after an accepted one', async () => {
+		const { model, calls } = fakeModel([UNKNOWN, 'not json', CLEAN]);
+		const res = await buildSpec({ ...base, model, renderer: fakeRenderer() });
+		expect(res.rounds.map((r) => r.accepted)).toEqual([true, false, true]);
+		expect(calls[2].feedback).toContain('spec (parse)');
+		expect(calls[2].prior).toEqual(JSON.parse(UNKNOWN));
+		expect(res.stopped).toBe('clean');
+		expect(res.spec).toEqual(clean.spec);
+	});
+
 	it('returns a null spec when no round parses', async () => {
 		const { model } = fakeModel(['nope']);
 		const res = await buildSpec({ ...base, model, renderer: fakeRenderer() });
@@ -126,13 +137,15 @@ describe('buildSpec', () => {
 
 	it('checks the signal between steps: an abort during render skips the rest', async () => {
 		const ctl = new AbortController();
-		const { model, calls } = fakeModel([UNKNOWN]);
+		const { model, calls } = fakeModel([CLEAN]);
 		const renderer: Renderer = async () => {
 			ctl.abort();
 			return [];
 		};
 		const res = await buildSpec({ ...base, model, renderer, signal: ctl.signal });
 		expect(res.stopped).toBe('cap');
+		expect(res.rounds).toHaveLength(0);
+		expect(res.spec).toBeNull();
 		expect(calls).toHaveLength(1);
 	});
 
