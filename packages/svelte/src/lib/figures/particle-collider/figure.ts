@@ -361,6 +361,12 @@ function plate(e: Element): string {
 	shape.push([-w - 3, -ZB], [w + 3, -ZB]);
 	const out = [halo({ x: c.a[0] - w, y: c.a[1] - 3, w: w * 2, d: 6, r: 2 }, true)];
 	out.push(S(k.prismOf(c.F, shape, 0, c.len, P), { tone: 'mid' }));
+	if (e.id === 'rf-plate-far') {
+		// The module's base girder, plate to plate, under the cavities.
+		const g = chord(-193, -135, 0);
+		const seam = k.pathOf([at(k.pointOf(g.F, 0, 8, 1.6)), at(k.pointOf(g.F, g.len, 8, 1.6))]);
+		out.push(S(k.prismOf(g.F, [[-8, 0], [8, 0], [8, 3.2], [-8, 3.2]], 0, g.len, P), { tone: 'lo', inner: L(seam, { tone: 'faint' }) }));
+	}
 	out.push(L([-SEP, SEP].map((u) => faceCircle(c.F, c.len, u, 0, PIPE_R + 1.2, 28)).join(''), { tone: 'lo' }));
 	out.push(D([at(k.pointOf(c.F, c.len, -w + 1, -ZB + 5)), at(k.pointOf(c.F, c.len, w - 1, -ZB + 5)), at(k.pointOf(c.F, c.len, -w + 2.6, top - 2.6)), at(k.pointOf(c.F, c.len, w - 2.6, top - 2.6))], { size: 0.5 }));
 	return out.join('');
