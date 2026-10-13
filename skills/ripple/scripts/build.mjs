@@ -3,20 +3,24 @@
 // the loop. Part of the Ripple skill (skills/ripple); run `node build.mjs --help`.
 //
 // It is a host for `buildSpec` from `@ripple-ui/core/build`: a model writes a
-// spec, core's pure audit and render.mjs's renderer() check it, the faults go
-// back as one feedback block, and it stops clean, at no progress, at 4 rounds
-// or at 300 s. Everything lands in <outdir>: round-N/<width>-<theme>.png per
-// round, rounds.json (rewritten after each round), spec.json (the best round)
-// and result.json (why it stopped). Exit 0 when it stopped clean, 1 otherwise,
-// 2 on a usage or setup error.
+// spec, core's pure audit and data guard and render.mjs's renderer() check
+// it, a critic looks at the PNGs and offender boxes through core's 11 lenses
+// and craft rule ids, the faults go back as one feedback block, and it stops
+// clean, at no progress, at 4 rounds, at 200k tokens or at 300 s. Everything
+// lands in <outdir>: round-N/<width>-<theme>.png per round, rounds.json
+// (rewritten after each round), spec.json (the best round) and result.json
+// (why it stopped). Exit 0 when it stopped clean, 1 otherwise, 2 on a usage
+// or setup error.
 //
-// The model is injected. The default runs the local Claude Code CLI
-// (`claude -p`, the user's own login, no API key) with every tool off and no
-// settings, from the temp dir so no CLAUDE.md is read. `--model <alias>`
-// picks its model; `--model-cmd "<shell cmd>"` swaps it for any command that
-// reads the prompt on stdin and prints the spec (or `claude -p
-// --output-format json` style JSON) on stdout. Tokens come from the CLI's
-// usage; a command that reports none is counted at 4 chars a token.
+// The model and the critic are injected. The default runs the local Claude
+// Code CLI (`claude -p`, the user's own login, no API key) with no settings,
+// from the temp dir so no CLAUDE.md is read: the model with every tool off,
+// the critic with only Read, scoped to <outdir>, so it can open the PNGs.
+// `--model <alias>` picks the CLI's model for both; `--model-cmd "<shell
+// cmd>"` swaps both for any command that reads the prompt on stdin and prints
+// the reply (or `claude -p --output-format json` style JSON) on stdout; the
+// critic's prompt names the PNG paths. Tokens come from the CLI's usage; a
+// command that reports none is counted at 4 chars a token.
 //
 // Core resolves from the caller's project (`@ripple-ui/core`, built), then
 // from this ripple checkout's built dist, then its source (bun only).
@@ -34,14 +38,15 @@ const DEFAULT_BASE = 'https://ripple-site.pawsites.workers.dev';
 const WALL_CLOCK_MS = 300_000;
 const USAGE = `usage: node build.mjs "<ask>" <outdir> [options]
 
-Builds a Ripple card for <ask> in up to 4 rounds (300 s cap), rendering and
-auditing each round. Writes <outdir>/round-N/*.png, rounds.json, spec.json and
+Builds a Ripple card for <ask> in up to 4 rounds (300 s and 200k token caps),
+rendering, auditing and critiquing each round. Writes <outdir>/round-N/*.png, rounds.json, spec.json and
 result.json.
 
 options:
   --base <url>         Ripple site to render through (env RIPPLE_BASE), default ${DEFAULT_BASE}
-  --model <alias>      model for the default claude -p call (e.g. sonnet)
-  --model-cmd <cmd>    shell command used instead of claude -p: prompt on stdin, spec on stdout
+  --model <alias>      model for the default claude -p calls (e.g. sonnet)
+  --model-cmd <cmd>    shell command used instead of claude -p for the model and
+                       the critic: prompt on stdin, reply on stdout
   --help               this text
 
 needs: what render.mjs needs (Playwright with Chromium in the current project),
@@ -131,6 +136,82 @@ export function commandModel({ system, cmd }) {
 	};
 }
 
+// --- the critic -------------------------------------------------------------
+
+/** The critic's standing instructions: the lenses and rule ids it judges by, and the reply shape. */
+export function criticSystem(rules) {
+	return [
+		'You are the critic for Ripple cards: you look at screenshots of one rendered card and name what a careful designer would fix.',
+		'Look through each lens:\n' + rules.lenses.map((l) => `- ${l.id}: ${l.question}`).join('\n'),
+		'Cite a craft rule by id when an issue breaks one:\n' + rules.rules.map((r) => `- ${r.id} (${r.lens}): ${r.text}`).join('\n'),
+		'Mark an issue `fixable: "widget"` only when no spec could fix it (the widget itself draws it wrong); everything the spec controls is `"spec"`. Severity 1 is polish, 2 hurts reading, 3 breaks the card. Report only what you can see or point at; an empty list is a fine answer.',
+		'Reply with exactly one ```json block holding {"issues": [{"lens": "<lens id>", "rule": "<rule id, optional>", "severity": 1, "fixable": "spec", "path": "<JSON Pointer into the spec, optional>", "message": "<what to change, one sentence>"}]} and nothing else.'
+	].join('\n\n');
+}
+
+/** The per-look message: the ask, the spec, and each shot with its PNG path and the page audit's offender boxes. */
+export function criticPrompt({ prompt, spec, renders }) {
+	const shots = renders.map((r) => {
+		const boxes = r.boxes.length ? r.boxes.map((b) => `  - ${b.check}${b.path ? ` at ${b.path}` : ''}: x ${b.x}, y ${b.y}, ${b.w} x ${b.h} px`).join('\n') : '  - none';
+		return `- ${r.width} px, ${r.theme}: ${r.png ?? '(no screenshot)'}\n  offender boxes (CSS px from the top left; the PNG is at 2x):\n${boxes}`;
+	});
+	return [
+		`The ask: ${prompt}`,
+		'The spec:\n```json\n' + JSON.stringify(spec) + '\n```',
+		'Open each screenshot with Read before you judge:\n' + shots.join('\n')
+	].join('\n\n');
+}
+
+/** The critic's parsed reply as CriticIssue[]: unknown lenses dropped, unknown rules cleared, severity clamped. */
+export function criticIssues(reply, rules) {
+	const lenses = new Set(rules.lenses.map((l) => l.id));
+	const ids = new Set(rules.rules.map((r) => r.id));
+	const list = Array.isArray(reply?.issues) ? reply.issues : [];
+	return list
+		.filter((i) => i && lenses.has(i.lens) && typeof i.message === 'string' && i.message)
+		.map((i) => {
+			const rule = ids.has(i.rule) ? i.rule : undefined;
+			const severity = Math.min(3, Math.max(1, Math.round(Number(i.severity)) || 1));
+			return {
+				code: rule ?? i.lens,
+				path: typeof i.path === 'string' && i.path.startsWith('/') ? i.path : '',
+				message: i.message,
+				lens: i.lens,
+				...(rule ? { rule } : {}),
+				severity,
+				fixable: i.fixable === 'widget' ? 'widget' : 'spec'
+			};
+		});
+}
+
+/** A Critic over any reply function `(system, user, signal) => { text, tokens }`; `parse` is core's parseSpecText. */
+export function hostCritic(ask, parse) {
+	return async ({ spec, renders, rules, prompt, signal }) => {
+		const reply = await ask(criticSystem(rules), criticPrompt({ prompt, spec, renders }), signal);
+		const parsed = parse(reply.text);
+		if ('error' in parsed) throw new Error(`the critic's reply is not JSON: ${reply.text.slice(0, 300)}`);
+		return { issues: criticIssues(parsed.spec, rules), tokens: reply.tokens };
+	};
+}
+
+/** The default critic's reply: the local Claude Code CLI with only Read, scoped to `dir`. */
+export function claudeCriticAsk({ model, dir }) {
+	return async (system, input, signal) => {
+		const args = ['-p', '--output-format', 'json', '--tools', 'Read', '--allowedTools', 'Read', '--setting-sources', '', '--no-session-persistence', '--system-prompt', system];
+		if (model) args.push('--model', model);
+		args.push('--add-dir', dir);
+		return readReply(await exec('claude', args, input, { signal }), system + input);
+	};
+}
+
+/** A critic reply from any shell command: the whole prompt on stdin. */
+export function commandCriticAsk({ cmd }) {
+	return async (system, input, signal) => {
+		const all = `${system}\n\n${input}`;
+		return readReply(await exec(cmd, [], all, { signal, shell: true }), all);
+	};
+}
+
 // --- core -------------------------------------------------------------------
 
 async function loadCore() {
@@ -185,7 +266,7 @@ async function main() {
 	const outdir = resolve(outArg);
 
 	try {
-		const { buildSpec } = await loadCore();
+		const { buildSpec, parseSpecText } = await loadCore();
 		let manifest;
 		try {
 			manifest = await (await fetch(`${base}/manifest.json`, { signal: AbortSignal.timeout(10_000) })).json();
@@ -200,6 +281,7 @@ async function main() {
 		const system = systemPrompt(now);
 		const model = modelCmd ? commandModel({ system, cmd: modelCmd }) : claudeModel({ system, model: modelName });
 		mkdirSync(outdir, { recursive: true });
+		const critic = hostCritic(modelCmd ? commandCriticAsk({ cmd: modelCmd }) : claudeCriticAsk({ model: modelName, dir: outdir }), parseSpecText);
 		let n = 0; // the round in flight, so round-N matches rounds.json even after a reply that did not parse
 		const rounds = [];
 		const started = d.getTime();
@@ -212,6 +294,7 @@ async function main() {
 				return model(req);
 			},
 			renderer: (spec) => renderer(spec, { base, outdir: join(outdir, `round-${n}`) }),
+			critic,
 			widgetTypes,
 			widgets: manifest.widgets,
 			now,
@@ -219,7 +302,7 @@ async function main() {
 			onRound: (r) => {
 				rounds.push(r);
 				writeFileSync(join(outdir, 'rounds.json'), JSON.stringify(rounds, null, 2));
-				console.error(`round ${r.n}: score ${r.score}, ${r.faults} faults, ${r.tokens} tokens, ${r.accepted ? 'accepted' : 'not accepted'}`);
+				console.error(`round ${r.n}: score ${r.score}, ${r.faults} faults, ${r.critic.length} critic issues, ${r.tokens} tokens, ${r.accepted ? 'accepted' : 'not accepted'}${r.preGate ? ' (pre-gate)' : ''}`);
 			}
 		});
 
