@@ -130,6 +130,16 @@
 		"h": 600
 	},
 	{
+		"id": "live-ion-thruster",
+		"title": "How a plasma thruster works",
+		"caption": "How does a plasma thruster work? Show me inside and let me change the grid voltage and the xenon flow.",
+		"group": "Learn",
+		"tag": "Hand-written",
+		"href": "/live?s=ion-thruster",
+		"w": 800,
+		"h": 600
+	},
+	{
 		"id": "live-iso-bike",
 		"title": "Bike drivetrain",
 		"caption": "Show how a bike's chain drive works as a live drawing, with a cadence slider and how far one pedal turn takes you",
