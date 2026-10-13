@@ -472,3 +472,72 @@ test('Escape folds the open panel and hands focus from a chip back to the toggle
 	expect(toggle.getAttribute('aria-expanded')).toBe('false');
 	await waitFor(() => expect(document.activeElement).toBe(toggle));
 });
+
+test('a final card with faults posts its audit counts once, from an idle callback', async () => {
+	const faulty = {
+		state: { due: '2099-03-01' },
+		ui: {
+			type: 'flex',
+			props: { direction: 'column' },
+			children: [
+				{ type: 'heading', props: { text: 'Due {state.due}' } },
+				{ type: 'text', props: { text: 'Total: {state.total}' } }
+			]
+		}
+	};
+	const audit = vi.fn();
+	const session = new ChatSession(
+		async function* () {
+			yield { event: 'message.persisted', data: { run_id: 'run-1', client_message_id: 'm-1' } };
+			yield { event: 'card.start', data: { card_id: 'c1' } };
+			yield { event: 'card.delta', data: { card_id: 'c1', text: JSON.stringify(faulty) } };
+			yield { event: 'card.final', data: { card_id: 'c1', card: faulty } };
+			yield { event: 'stream_end', data: { assistant_message_id: 'm', cancelled: false } };
+		},
+		undefined,
+		undefined,
+		audit
+	);
+	const view = render(Chat, { session, suggestions: [{ id: 'due', title: 'Due date', prompt: 'When is it due' }] });
+
+	await fireEvent.click(view.getByRole('button', { name: 'Due date' }));
+	await waitFor(() => expect(audit).toHaveBeenCalledTimes(1));
+	const [runId, cardId, row] = audit.mock.calls[0];
+	expect([runId, cardId]).toEqual(['run-1', 'c1']);
+	expect(row.counts).toEqual({
+		schema: 0,
+		catalog: 0,
+		action: 0,
+		envelope: 0,
+		leftover: 1,
+		each: 0,
+		bind: 0,
+		expr: 0,
+		twoControls: 0,
+		size: 0,
+		futureDate: 1
+	});
+	expect(row.waived).toBe(0);
+	expect(row.widget_types).toEqual(['flex', 'heading', 'text']);
+	expect(Number.isInteger(row.ms) && row.ms >= 0).toBe(true);
+	expect(Number.isInteger(row.seen_ms) && row.seen_ms >= 0).toBe(true);
+	// Only integers and type names leave the page.
+	expect(JSON.stringify(row)).not.toContain('Total');
+
+	// Later renders of the same card (a re-render, another turn) never post it again.
+	await new Promise((r) => setTimeout(r, 50));
+	expect(audit).toHaveBeenCalledTimes(1);
+});
+
+test('a card with no run id (seeded, recorded) is never audited', async () => {
+	const audit = vi.fn();
+	const session = new ChatSession(async function* () {}, undefined, undefined, audit);
+	session.seed('Make me a lamp switch', [
+		{ event: 'card.start', data: { card_id: 'c1' } },
+		{ event: 'card.final', data: { card_id: 'c1', card } }
+	]);
+	const view = render(Chat, { session });
+	await waitFor(() => expect(view.getByText('Lamp off')).toBeTruthy());
+	await new Promise((r) => setTimeout(r, 50));
+	expect(audit).not.toHaveBeenCalled();
+});

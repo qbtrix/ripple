@@ -508,6 +508,25 @@ describe('ChatSession', () => {
 		expect(lastTurn(session).parts).toEqual([{ kind: 'text', text: 'Hello' }]);
 	});
 
+	test('pawbarTransport posts audit counts with the key, under 1 KB, and swallows a refusal', async () => {
+		const fetch = vi.fn<typeof globalThis.fetch>(async () => new Response('', { status: 404 }));
+		const t = pawbarTransport({ endpoint: 'http://localhost:5288/', widgetId: 'w', siteKey: 'k', fetch, ref: () => 'visitor_123' });
+		const row = { counts: { schema: 0, leftover: 2 }, waived: 0, widget_types: ['card', 'text'], ms: 3, seen_ms: 40 };
+		t.audit('run-1', 'c1', row);
+		const [url, init] = fetch.mock.calls[0];
+		expect(url).toBe('http://localhost:5288/api/v1/paw-bar/cards/run-1/c1/audit');
+		expect(init?.keepalive).toBe(true);
+		expect(init?.credentials).toBe('omit');
+		expect(JSON.parse(typeof init?.body === 'string' ? init.body : '')).toEqual({ widget_id: 'w', signed_key: 'k', customer_ref: 'visitor_123', ...row });
+
+		// Too many type names: dropped from the end until the body fits.
+		t.audit('run-1', 'c2', { ...row, widget_types: Array.from({ length: 40 }, (_, i) => `widget-${i}-${'x'.repeat(24)}`) });
+		const sent = fetch.mock.calls[1][1]?.body;
+		const body = typeof sent === 'string' ? sent : '';
+		expect(new TextEncoder().encode(body).length).toBeLessThanOrEqual(1024);
+		expect(JSON.parse(body).counts).toEqual(row.counts);
+	});
+
 	test.each([
 		[429, { detail: 'Rate limit exceeded' }, 'busy'],
 		[401, { detail: 'invalid_site_key' }, 'error'],
