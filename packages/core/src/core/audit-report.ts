@@ -4,6 +4,7 @@
 //   critic. A check reports `{ check, count, items }`; a count of 0 is a pass,
 //   and a part the check could not measure is an item, never a silent pass.
 //   Thresholds are the check's options with defaults, not fields here.
+//   `warnings` and `waived` sit beside `items` and never count.
 //   Types only: this file must stay zod-free and import nothing at runtime, so
 //   `./headless/slim` and `./manifest` can reach it without pulling `/schema/`
 //   (headless/slim.imports.test.ts guards that).
@@ -17,6 +18,8 @@ export interface AuditReport<T> {
 	items: T[];
 	/** Items a host waived on purpose, kept out of `count`. */
 	waived?: T[];
+	/** Items worth a look that do not fail the check (an unknown prop), kept out of `count`. */
+	warnings?: T[];
 }
 
 /** One fault in a spec, located and worded for the model that wrote it. */
