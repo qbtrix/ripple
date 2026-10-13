@@ -22,6 +22,7 @@ import hiitWorkout from './fixtures/hiit-workout.json';
 import mealPlan from './fixtures/meal-plan.json';
 import explainer from './fixtures/explainer.json';
 import bikeGears from './fixtures/bike-gears.json';
+import rocketEngine from './fixtures/rocket-engine.json';
 import plane3d from './fixtures/plane-3d.json';
 import refundApproval from './fixtures/refund-approval.json';
 import incidentRollback from './fixtures/incident-rollback.json';
@@ -81,6 +82,9 @@ export const scenarios: Scenario[] = [
 	{ id: 'heart-pump', title: 'The heart as a pump', category: 'Learning', fixture: heartPump, prompt: 'How does the heart pump blood?', group: 'Learn' },
 	{ id: 'bike-gears', title: 'How bike gears work', category: 'Learning', fixture: bikeGears, prompt: 'How do bike gears work?', group: 'Learn' }
 ];
+
+/** Hand-built figures (the `figure` widget) shown in the /live gallery only, not as landing chips. */
+export const figureScenarios: Scenario[] = [{ id: 'rocket-engine', title: 'Inside a rocket engine', category: 'Learning', fixture: rocketEngine, group: 'Learn' }];
 
 export const chatPrompts: ChatPrompt[] = [
 	{ id: 'book-table', title: 'Book a table', prompt: 'Book a table for 4 on Saturday evening', steps: true, needsStore: true, group: 'Do' },

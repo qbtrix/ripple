@@ -15,7 +15,7 @@
 // gallery.test.ts holds all of this. Old /showcase URLs redirect here
 // (routes/showcase/[...path]).
 
-import { businessScenarios, scenarios } from './scenarios.js';
+import { businessScenarios, figureScenarios, scenarios } from './scenarios.js';
 import { isoScenarios, playScenarios } from '../pawbar/play-cards.js';
 
 export const GROUPS = ['Do', 'Learn', 'Play', 'Track', 'Flows', 'Drawings', 'For business'] as const;
@@ -82,7 +82,7 @@ export const demoItems: GalleryItem[] = [
 ];
 
 /** Every /live run: the model recordings, then the hand-written answers. */
-export const liveRuns = [...scenarios, ...playScenarios, ...isoScenarios, ...businessScenarios];
+export const liveRuns = [...scenarios, ...playScenarios, ...isoScenarios, ...figureScenarios, ...businessScenarios];
 
 const demoWidgets = new Set(demoItems.map((d) => d.widget));
 /** The first demo widget a run's spec names, else the run's own id. A business run is always its own card. */

@@ -815,7 +815,7 @@ function anchorPoints(): Array<[string, string, Point3]> {
 		['combustion-chamber', 'Combustion chamber', onRing(E, -20, 19, 0.9)],
 		['throat', 'Throat', onRing(E, THROAT_X, THROAT_R, 1.2)],
 		['nozzle', 'Nozzle', onRing(E, 65, bellR(65), 0.7)],
-		['cooling-channels', 'Cooling channels', onRing(E, 30, bellR(30), 0.2)],
+		['cooling-channels', 'Cooling channels', onRing(E, 42, bellR(42), -0.45)],
 		['gimbal', 'Gimbal', [-107, 15.5, ZE]],
 		['load-cell', 'Load cell', [-124, 0, ZE + 12.6]],
 		['plume', 'Exhaust plume', [EXIT_X + 90, 0, ZE + 20]],

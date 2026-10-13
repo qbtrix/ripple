@@ -160,6 +160,16 @@
 		"h": 600
 	},
 	{
+		"id": "live-rocket-engine",
+		"title": "Inside a rocket engine",
+		"caption": "How does a rocket engine work? Show me inside one and let me throttle it.",
+		"group": "Learn",
+		"tag": "Hand-written",
+		"href": "/live?s=rocket-engine",
+		"w": 800,
+		"h": 600
+	},
+	{
 		"id": "live-memory-match",
 		"title": "Memory match",
 		"caption": "Make me a memory match game pairing Spanish animal words with their emoji",
