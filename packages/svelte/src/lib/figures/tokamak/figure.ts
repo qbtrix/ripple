@@ -22,7 +22,7 @@
 // `tokamakSvg()` is pure (strings only). `mount()` keeps one <g data-item> per
 // part and per frame rewrites only the moving ones: particles streaming along
 // the twisted field lines, the dots circling the magnetic surfaces at the
-// plasma's end, and the heating beam. The plasma's glow is a CSS variable set
+// plasma's end, and the heating beam's dash offset. The plasma's glow is a CSS variable set
 // from the model's temperature. No DOM or work at module top level.
 
 import * as k from '@ripple-ui/core/iso';
@@ -322,11 +322,11 @@ function base(): string {
 	const out = [`<path class="iso-halo" d="${k.haloOf({ x: -BASE_R, y: -BASE_R, w: BASE_R * 2, d: BASE_R * 2, r: BASE_R }, bottom - FOOT_H, H, P)}"/>`];
 	const feet = Array.from({ length: 8 }, (_, i) => W(BASE_R - 1.4, i * 45 + 22.5, 0)).sort((a, b) => k.depthOf(a, P) - k.depthOf(b, P));
 	for (const [x, y] of feet) {
-		out.push(S(k.cylinder(x, y, 0.75, bottom - FOOT_H, 0.16, P, 28), { tone: 'lo' }));
-		out.push(S(k.cylinder(x, y, 0.56, bottom - FOOT_H + 0.16, FOOT_H - 0.16, P, 28), { tone: 'lo' }));
+		out.push(S(k.cylinder(x, y, 0.75, bottom - FOOT_H, 0.16, P, 18), { tone: 'lo' }));
+		out.push(S(k.cylinder(x, y, 0.56, bottom - FOOT_H + 0.16, FOOT_H - 0.16, P, 18), { tone: 'lo' }));
 	}
-	out.push(S(k.cylinder(0, 0, BASE_R, bottom, H, P, 120, 0.12), { tone: 'lo', inner: L(k.sideArc(0, 0, BASE_R, bottom + 0.3, P, 80), { tone: 'faint' }) }));
-	out.push(L(k.ring(0, 0, BASE_R - 0.5, BASE_TOP, P, 120), { tone: 'faint' }));
+	out.push(S(k.cylinder(0, 0, BASE_R, bottom, H, P, 72, 0.12), { tone: 'lo', inner: L(k.sideArc(0, 0, BASE_R, bottom + 0.3, P, 48), { tone: 'faint' }) }));
+	out.push(L(k.ring(0, 0, BASE_R - 0.5, BASE_TOP, P, 72), { tone: 'faint' }));
 	out.push(D(Array.from({ length: 48 }, (_, i) => at(W(BASE_R - 0.25, i * 7.5 + 3.75, BASE_TOP))), { size: 0.45 }));
 	// A ruler in metres across the open front, and a label plate beside it.
 	const z = BASE_TOP;
@@ -345,7 +345,7 @@ function staticItems(): Item[] {
 	const add = (id: string, key: number, svg: string) => items.push({ id, key, svg });
 	add('base', -1e9 + 1, base());
 	// Central solenoid: a support core inside six stacked modules, cut on the section plane.
-	add('cs', 0, S(revolve([[0, -CS.top], [CS.r1, -CS.top], [CS.r1, CS.top], [0, CS.top]], CUT, 360, 58), { tone: 'mid' }) + csSeams());
+	add('cs', 0, S(revolve([[0, -CS.top], [CS.r1, -CS.top], [CS.r1, CS.top], [0, CS.top]], CUT, 360, 29), { tone: 'mid' }) + csSeams());
 	// Toroidal field coils: D-shaped plates; the one at the cut keeps only its back half.
 	for (const th of KEPT) {
 		const s0 = th === CUT ? 0 : -COIL_T / 2;
@@ -551,11 +551,18 @@ const STREAM_LINES = 14;
 let BODY = '';
 function plasmaItems(params: TokamakParams, drive: Drive): Item[] {
 	BODY ||= S(revolve(surface(1), PLASMA_END, CUT, 4, { start: true }), { tone: 'hi', lit: true, className: 'tok-plasma' });
-	return [{ id: 'plasma', key: keyOf((PLASMA_END + CUT) / 2, PL.R), svg: BODY + fieldLines(params, drive) + plasmaFace(params, drive) }];
+	const key = keyOf((PLASMA_END + CUT) / 2, PL.R);
+	const lines = fieldLines(params, drive);
+	const face = plasmaFace(params, drive);
+	// The body, field lines and surfaces change only with the sliders; the dots move every frame.
+	return [
+		{ id: 'plasma', key, svg: `${BODY}<g class="tok-field">${lines.lines}</g><g class="tok-core-face">${face.fills}</g>` },
+		{ id: 'plasma-dots', key: key + 1, svg: `<g class="tok-field">${lines.dots}</g><g class="tok-core-face">${face.dots}</g>` }
+	];
 }
 
 /** Twisted field lines on the plasma's skin, and particles running along them. */
-function fieldLines(params: TokamakParams, drive: Drive): string {
+function fieldLines(params: TokamakParams, drive: Drive): { lines: string; dots: string } {
 	const twist = twistAt(params, 1);
 	const lines: string[] = [];
 	const dots: Flat[] = [];
@@ -587,10 +594,10 @@ function fieldLines(params: TokamakParams, drive: Drive): string {
 			if (facing(uAt(th), th)) dots.push(at(onSurface(1, uAt(th), th)));
 		}
 	}
-	return `<g class="tok-field">${lines.join('')}${D(dots, { size: 0.7, tone: 'hi' })}</g>`;
+	return { lines: lines.join(''), dots: D(dots, { size: 0.7, tone: 'hi' }) };
 }
 
-function plasmaFace(params: TokamakParams, drive: Drive): string {
+function plasmaFace(params: TokamakParams, drive: Drive): { fills: string; dots: string } {
 	const out: string[] = [];
 	[0.8, 0.6, 0.4, 0.2].forEach((rho, i) => out.push(`<path class="tok-flux" data-level="${i + 1}" d="${onSection(surface(rho), PLASMA_END)}"/>`));
 	// Dots on each surface, turning at that surface's field-line pitch: faster near the core, the magnetic shear.
@@ -605,9 +612,7 @@ function plasmaFace(params: TokamakParams, drive: Drive): string {
 			dots.push(onCut(R, z, PLASMA_END));
 		}
 	}
-	out.push(D(dots, { size: 0.6, tone: 'hi' }));
-	out.push(D([onCut(PL.R + PL.shift, 0, PLASMA_END)], { size: 0.9, tone: 'hi' }));
-	return `<g class="tok-core-face">${out.join('')}</g>`;
+	return { fills: out.join(''), dots: D(dots, { size: 0.6, tone: 'hi' }) + D([onCut(PL.R + PL.shift, 0, PLASMA_END)], { size: 0.9, tone: 'hi' }) };
 }
 
 // ---- assembly ------------------------------------------------------------------
@@ -739,9 +744,10 @@ export function mount(el: HTMLElement, { theme = 'dark', params: initial, onRead
 	el.dataset.figureHost = 'tokamak';
 	el.dataset.theme = theme;
 	el.replaceChildren(svg);
-	const plasma = svg.querySelector<SVGGElement>('[data-item="plasma"]');
+	const groups = new Map<string, SVGGElement>();
+	for (const g of svg.querySelectorAll<SVGGElement>('[data-item^="plasma"]')) groups.set(g.dataset.item!, g);
 	const beam = svg.querySelector<SVGPathElement>('[data-flow-id="beam"]');
-	let shown = '';
+	const shown = new Map<string, string>();
 
 	const win = doc.defaultView;
 	const still = win?.matchMedia?.('(prefers-reduced-motion: reduce)');
@@ -750,10 +756,12 @@ export function mount(el: HTMLElement, { theme = 'dark', params: initial, onRead
 	let lastKey = '';
 
 	function draw() {
-		const body = plasmaItems(params, drive)[0]!.svg;
-		if (plasma && body !== shown) {
-			plasma.innerHTML = body;
-			shown = body;
+		for (const item of plasmaItems(params, drive)) {
+			const g = groups.get(item.id);
+			if (g && shown.get(item.id) !== item.svg) {
+				g.innerHTML = item.svg;
+				shown.set(item.id, item.svg);
+			}
 		}
 		beam?.setAttribute('stroke-dashoffset', (-drive.beam).toFixed(1));
 		const readouts = readoutsOf(params);

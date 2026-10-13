@@ -13,6 +13,7 @@
 
 import type { Scenario } from '../live/scenarios.js';
 import { bikeScene, engineScene, heartScene } from '../../lib/widgets/composite/iso-scenes.js';
+import tokamak from '../live/fixtures/tokamak.json';
 
 const ask = (text: string) => ({ action: 'emit', target: 'ask', value: { text } });
 
@@ -274,9 +275,10 @@ export const playScenarios: Scenario[] = [
 	handWritten('heart', 'How a heart pumps', 'Learning', 'Learn', 'How does the heart pump blood? Draw an animated picture with numbered notes on the chambers and valves.', heartCard)
 ];
 
-/** Live isometric drawings (iso-scene): gallery runs only, not landing chips. */
+/** Live isometric drawings (iso-scene, and hand-built figures): gallery runs only, not landing chips. */
 export const isoScenarios: Scenario[] = [
 	handWritten('iso-bike', 'Bike drivetrain', 'Learning', 'Learn', "Show how a bike's chain drive works as a live drawing, with a cadence slider and how far one pedal turn takes you", isoCard('bike', bikeScene)),
 	handWritten('iso-heart', 'The heart as two pumps', 'Learning', 'Learn', 'Draw the heart as two pumps I can watch beating, with a heart rate slider and labels on the chambers', isoCard('heart', heartScene)),
-	handWritten('iso-engine', 'Inside a piston engine', 'Learning', 'Learn', 'Show me how a one-cylinder piston engine moves, with an engine speed slider', isoCard('engine', engineScene))
+	handWritten('iso-engine', 'Inside a piston engine', 'Learning', 'Learn', 'Show me how a one-cylinder piston engine moves, with an engine speed slider', isoCard('engine', engineScene)),
+	{ id: 'tokamak', title: 'How a fusion reactor works', category: 'Learning', group: 'Learn', fixture: tokamak }
 ];

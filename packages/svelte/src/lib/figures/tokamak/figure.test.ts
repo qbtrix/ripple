@@ -12,12 +12,11 @@ describe('tokamak figure', () => {
 	test('the viewBox holds every point it draws, at any moment', () => {
 		for (const svg of [tokamakSvg(hot, driveAt(hot, 0.7)), tokamakSvg(cold, driveAt(cold, 9.3)), tokamakSvg(hot, driveAt(hot, 40))]) {
 			const [x, y, w, h] = viewBox(svg);
-			for (const [px, py] of pointsOf(svg)) {
-				expect(px).toBeGreaterThanOrEqual(x);
-				expect(px).toBeLessThanOrEqual(x + w);
-				expect(py).toBeGreaterThanOrEqual(y);
-				expect(py).toBeLessThanOrEqual(y + h);
-			}
+			const pts = pointsOf(svg);
+			expect(Math.min(...pts.map((p) => p[0]))).toBeGreaterThanOrEqual(x);
+			expect(Math.max(...pts.map((p) => p[0]))).toBeLessThanOrEqual(x + w);
+			expect(Math.min(...pts.map((p) => p[1]))).toBeGreaterThanOrEqual(y);
+			expect(Math.max(...pts.map((p) => p[1]))).toBeLessThanOrEqual(y + h);
 		}
 	});
 
@@ -32,6 +31,6 @@ describe('tokamak figure', () => {
 	});
 
 	test('stays a reasonable size for a chat card', () => {
-		expect(tokamakSvg().length).toBeLessThan(450_000);
+		expect(tokamakSvg().length).toBeLessThan(430_000);
 	});
 });
