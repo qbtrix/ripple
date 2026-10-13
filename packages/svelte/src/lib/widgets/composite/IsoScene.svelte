@@ -2,8 +2,11 @@
   widgets/composite/IsoScene.svelte: `iso-scene` (aliases `iso`, `isometric`).
   A live isometric drawing: the model writes a parts list, motions over a few
   params, readouts and numbered labels; @ripple-ui/core/iso draws it (one
-  camera, four tones, painter's order, bevels, screws, contact shadow). No
-  model SVG, no URLs. `look`: "soft" (default) is Anatomy's near-white ramp
+  camera, four tones, painter's order, bevels, screws, contact shadow), and
+  by default (`detail: "auto"`) adds the small parts that belong to the
+  model's parts (feet, hubs, spider arms, chain links, pins, collars) so a
+  few parts read as a real machine; `detail: "none"` draws only what was
+  written. No model SVG, no URLs. `look`: "soft" (default) is Anatomy's near-white ramp
   (theme tokens ported from Anatomy's kit/iso.css, MIT, Copyright (c) 2026
   Ryan, github.com/wheresryan22/anatomy) with roles as faint tints; "color"
   fills each role with its Ripple token.
@@ -59,9 +62,11 @@
 		IDENTITY,
 		clampSpeed,
 		drawPart,
+		enrichScene,
 		fitScene,
 		flowOffsets,
 		groundParts,
+		mergeOwned,
 		movingParts,
 		normalizeScene,
 		pinPoint,
@@ -78,6 +83,7 @@
 		caption?: string;
 		scale?: number;
 		look?: 'soft' | 'color';
+		detail?: 'auto' | 'none';
 		params?: unknown;
 		parts?: unknown;
 		motions?: unknown;
@@ -87,7 +93,7 @@
 		onchange?: (value: Record<string, number>) => void;
 	}
 
-	let { id, class: className, style, title, caption, scale, look, params, parts, motions, readouts, labels, value = $bindable(), onchange }: Props = $props();
+	let { id, class: className, style, title, caption, scale, look, detail, params, parts, motions, readouts, labels, value = $bindable(), onchange }: Props = $props();
 
 	const W = 640;
 	const H = 380;
@@ -100,7 +106,7 @@
 	const heading = $derived(plainText(title, 80));
 	const note = $derived(plainText(caption, 200));
 	const paramList = $derived(toParams(params));
-	const scene = $derived(normalizeScene(parts, motions));
+	const scene = $derived(enrichScene(normalizeScene(parts, motions), detail));
 
 	// ── Params: slider edits over the bound value over the authored value ──
 	let edits = $state<Record<string, number>>({});
@@ -155,14 +161,14 @@
 		const tf = sceneTransforms(scene, time, speeds);
 		const dashes = flowOffsets(scene, time, speeds);
 		const list: IsoItem[] = scene.parts.map((p, i) => still[i] ?? drawPart(i, p, tf[i]!, P, dashes[i]));
-		return { items: sortItems(list, P), tf };
+		return { items: sortItems(mergeOwned(list, scene), P), tf };
 	});
 
 	// Contact shadows sit in their own layer under every part, so a part's shape list never shifts.
-	const halos = $derived(frame.items.filter((item) => ground[item.part] && item.shapes[0]?.cls === 'fill').map((item) => item.shapes[0]!.d));
+	const halos = $derived(frame.items.flatMap((item) => (ground[item.part] && item.halo ? [item.halo] : [])));
 
 	const pins = $derived.by(() => {
-		const byId = new Map(scene.parts.map((p, i) => [p.id, i]));
+		const byId = new Map(scene.parts.flatMap((p, i) => (p.owner < 0 ? [[p.id, i] as const] : [])));
 		return (Array.isArray(labels) ? labels : []).slice(0, ISO_LIMITS.labels).flatMap((l) => {
 			if (!l || typeof l !== 'object') return [];
 			const o = l as Record<string, unknown>;
@@ -232,11 +238,12 @@
 		</g>
 		{#each frame.items as item (item.part)}
 			<g data-role={item.role} data-part={scene.parts[item.part]?.id}>
-				{#each item.shapes as s}
+				<!-- Keyed by slot and kind: detail joins a part's list while a scene streams, and a reused path would keep stale attribute order. -->
+				{#each item.shapes as s, j (`${j}:${s.cls}:${s.band ?? ''}`)}
 					{#if s.cls === 'text'}
 						<text data-cls="text" transform={s.transform} font-size={s.size} text-anchor="middle">{s.text}</text>
 					{:else}
-						<path data-cls={s.cls} data-band={s.band} d={s.d} stroke-width={s.width} stroke-dashoffset={s.dash} />
+						<path data-cls={s.cls} data-band={s.band} d={s.d} stroke-width={s.width} stroke-dasharray={s.pattern} stroke-dashoffset={s.dash} />
 					{/if}
 				{/each}
 			</g>
@@ -377,9 +384,27 @@
 	}
 	path[data-cls='tube-edge'],
 	path[data-cls='tube'],
-	path[data-cls='tube-hi'] {
+	path[data-cls='tube-hi'],
+	path[data-cls='link-edge'],
+	path[data-cls='link'],
+	path[data-cls='pin'] {
 		fill: none;
 		vector-effect: none;
+	}
+	path[data-cls='link-edge'] {
+		stroke: var(--edge);
+		opacity: 0.75;
+	}
+	path[data-cls='link'] {
+		stroke: var(--t3);
+	}
+	path[data-cls='pin'] {
+		stroke: var(--a-mid);
+	}
+	path[data-cls='hole'] {
+		fill: var(--t0);
+		stroke: var(--a-lo);
+		stroke-width: 0.6;
 	}
 	path[data-cls='tube-edge'] {
 		stroke: var(--edge);
