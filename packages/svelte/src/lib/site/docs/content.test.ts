@@ -96,6 +96,7 @@ describe('the real docs', () => {
 			'guides/data-widgets',
 			'guides/layout-gotchas',
 			'guides/drawings',
+			'guides/coding-agents',
 			'api/core',
 			'api/svelte',
 			'architecture/overview'

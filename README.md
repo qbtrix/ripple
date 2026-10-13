@@ -69,6 +69,24 @@ the setup.
 
 That spec is a working form with two-way binding. You write no glue code for it.
 
+## Use Ripple with your coding agent
+
+The [Ripple skill](skills/ripple) teaches Claude Code, Codex or OpenCode to
+write a spec, render it at phone and desktop width in both themes, audit the
+result, look at its own screenshots and fix what is wrong, until a round comes
+back clean. It never changes your data to make a widget look right; widget
+faults go in its answer instead.
+
+```bash
+npx skills add qbtrix/ripple-iui --skill ripple
+npm i -D playwright && npx playwright install chromium   # the loop renders in a real browser
+```
+
+On six small cards the full loop scored 15.7 of 20 against 12.1 for a
+one-shot spec (n=6, one judge). The
+[coding agents guide](https://ripple.pocketpaw.xyz/docs/guides/coding-agents)
+covers the loop and the options.
+
 ## Packages
 
 | Package | What it is |
@@ -143,7 +161,9 @@ The isometric drawing kit in `packages/core/src/iso/` is ported from
 [Anatomy](https://skills.wheresryan.sh/anatomy) by Ryan
 ([source](https://github.com/wheresryan22/anatomy)), MIT License, Copyright
 (c) 2026 Ryan. The full license text, and the files it covers, are in
-[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md). The Ripple skill in
+`skills/ripple` follows Anatomy's render, audit and look method in its own
+words and code.
 
 The 3D models behind `model-viewer`'s `asset` ids are CC0 or public domain,
 except the sneaker (Shopify, CC BY 4.0). They come from Quaternius, Kenney and
