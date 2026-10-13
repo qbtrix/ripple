@@ -77,7 +77,9 @@ axe-core`, or point `RIPPLE_AXE` at an `axe.min.js`) before you call a card acce
 
 It renders through a Ripple playground. The default is the public one,
 `https://ripple-site.pawsites.workers.dev` (it moves to `https://ripple.pocketpaw.xyz` once that domain is live).
-To test against your own Ripple build, serve the site and pass `--base` or set `RIPPLE_BASE`:
+To test against your own Ripple build, serve the site and pass `--base` or set `RIPPLE_BASE`. The base must serve
+`page-audit.js` (the shared audit `render.mjs` injects); `bun run build:site` writes it, and a deployed site has it
+only after a `bun run deploy:site` that includes it:
 
 ```sh
 # in a ripple checkout
@@ -128,8 +130,8 @@ node <skill>/scripts/render.mjs <spec.json> <outdir> [--base <url>] [--widths 38
 
 It opens the playground with the spec in the link, shoots only the preview surface at 380 and 1024 wide, light and
 dark (`<outdir>/380-light.png`, `<outdir>/1024-dark.png`, ...), writes `<outdir>/audit.json`, prints the same JSON
-and exits 0 when clean, 1 when any count is non-zero, 2 on a setup error (no Playwright, no server, bad spec; the
-message says what to run; if Playwright's own Chromium build is missing, `npx playwright install chromium` or
+and exits 0 when clean, 1 when any count is non-zero, 2 on a setup error (no Playwright, no server, bad spec, or a base
+with no `page-audit.js`, which means deploying the site; the message says what to run; if Playwright's own Chromium build is missing, `npx playwright install chromium` or
 `CHROME_PATH=<a chromium binary>` fixes it; the message lists the builds it found and the one it wanted). Use a fresh `<outdir>` per round (`out/r1`, `out/r2`) so you can compare. Several runs
 can go at once; each starts its own browser and writes only to its outdir.
 
@@ -217,7 +219,8 @@ Run them one at a time over all four shots. One lens, one pass: a reviewer looki
   Widget faults.
 - A fault is inside a widget (it truncates at 360, it stacks tiles one per row, it ignores a prop): the spec cannot
   fix it without bending data; report it under Widget faults with the shot that shows it.
-- `render.mjs` exits 2: read its message. It names the install command or the server it could not reach.
+- `render.mjs` exits 2: read its message. It names the install command, the server it could not reach, or the
+  site deploy it needs (a base with no `page-audit.js`).
 
 ## Known limits
 

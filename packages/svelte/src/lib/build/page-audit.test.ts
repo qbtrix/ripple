@@ -40,6 +40,13 @@ describe('pageAudit', () => {
 		expect(res.boxes).toEqual([{ check: 'errorBoxes', node: 'n3', x: 20, y: 40, w: 300, h: 50 }]);
 	});
 
+	it('an error box nested in a parent node names the failed node, not the parent', () => {
+		const res = pageAudit(
+			mount('<div data-ripple-node="p1" data-rect="0,0,400,200"><div role="alert" data-ripple-node-error="n3" data-rect="20,40,300,50">boom</div></div>')
+		);
+		expect(res.boxes).toEqual([{ check: 'errorBoxes', node: 'n3', x: 20, y: 40, w: 300, h: 50 }]);
+	});
+
 	it('finds leaked values and raw JSON in visible text', () => {
 		const res = pageAudit(
 			mount(

@@ -62,7 +62,7 @@ export function pageAudit(root: Element, opts: PageAuditOptions = {}): PageAudit
 	const add = (check: PageCheck, el: Element, message: string) => {
 		items[check].push(message);
 		const b = el.getBoundingClientRect();
-		const node = el.closest('[data-ripple-node]')?.getAttribute('data-ripple-node') ?? el.getAttribute('data-ripple-node-error') ?? undefined;
+		const node = el.getAttribute('data-ripple-node-error') ?? el.closest('[data-ripple-node]')?.getAttribute('data-ripple-node') ?? undefined;
 		boxes.push({ check, ...(node ? { node } : {}), x: Math.round(b.left - r.left), y: Math.round(b.top - r.top), w: Math.round(b.width), h: Math.round(b.height) });
 	};
 	const where = (el: Element) => {

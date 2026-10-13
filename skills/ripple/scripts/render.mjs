@@ -126,6 +126,7 @@ function nodePaths(spec) {
 		if (!n || typeof n !== 'object') return;
 		if (typeof n.id === 'string') paths.set(n.id, p);
 		if (Array.isArray(n.children)) n.children.forEach((c, i) => walk(c, `${p}/children/${i}`));
+		if (Array.isArray(n.else_children)) n.else_children.forEach((c, i) => walk(c, `${p}/else_children/${i}`));
 	};
 	walk(spec?.ui, '/ui');
 	return paths;
