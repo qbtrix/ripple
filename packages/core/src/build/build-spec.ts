@@ -14,7 +14,7 @@
 //     pure and render audit items left after waivers; each critic issue marked
 //     `fixable: 'spec'` costs 4, 8 or 12 by severity. `widget` issues cost
 //     nothing and go to `widgetFaults`. An item a live waiver covers (same
-//     check, on the waived widget, found through the item's path) moves to its
+//     check, on the waived widget, named by the item or found through its path) moves to its
 //     report's `waived` and to `Round.waived`: out of the count, still recorded.
 //   - A round is accepted only when guard-clean and strictly better than the
 //     best, so the returned spec is never worse than the first accepted round.
@@ -258,7 +258,8 @@ function oneDataWidget(spec: unknown, widgets?: readonly SlimWidgetEntry[]): boo
 
 /**
  * Move each item a live waiver covers out of its report's count into
- * `waived`; returns the moved items. Matches by the item's path only.
+ * `waived`; returns the moved items. Matches by the item's `widget` (a
+ * render item names the widget it sits in), else the node its path points to.
  */
 function waive(reports: AuditReport<AuditItem>[], spec: unknown, list: readonly Waiver[], day: string): AuditItem[] {
 	const live = list.filter((w) => !w.until || w.until >= day);
@@ -266,7 +267,7 @@ function waive(reports: AuditReport<AuditItem>[], spec: unknown, list: readonly 
 	for (const r of reports) {
 		const keep: AuditItem[] = [];
 		for (const item of r.items) {
-			const widget = live.some((w) => w.check === r.check) ? widgetAt(spec, item.path) : undefined;
+			const widget = live.some((w) => w.check === r.check) ? (item.widget ?? widgetAt(spec, item.path)) : undefined;
 			if (widget && live.some((w) => w.check === r.check && w.widget === widget)) moved.push(item);
 			else keep.push(item);
 		}

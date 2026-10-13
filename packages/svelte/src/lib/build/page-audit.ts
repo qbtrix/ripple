@@ -9,7 +9,10 @@
 // Invariants: the item strings and their order are what render.mjs has always
 // written to audit.json, so a CLI run before and after the lift is
 // byte-identical. Every item has one box, so `counts[c]` equals the number of
-// boxes with `check: c`. Boxes are CSS px relative to `root`'s top left; the
+// boxes with `check: c`, in the same order, so a host can zip them. A box
+// names the widget type it sits in (the nearest `data-widget`): render-tier
+// waivers match on it, since most widgets drop `data-ripple-node`. Boxes are
+// CSS px relative to `root`'s top left; the
 // renderer's PNGs are shot at device scale 2. notRendered, themeNotApplied and
 // consoleErrors cannot be read from the DOM: they come back 0 and the host
 // fills them in.
@@ -24,10 +27,11 @@ export type PageCheck =
 	| 'emptyContainers'
 	| 'badText';
 
-/** One offender: where it sits on the shot, and the Ripple node id it belongs to when it has one. */
+/** One offender: where it sits on the shot, the Ripple node id it belongs to when it has one, and the widget type it sits in (nearest `data-widget`), which is what a waiver keys on. */
 export interface Box {
 	check: PageCheck;
 	node?: string;
+	widget?: string;
 	x: number;
 	y: number;
 	w: number;
@@ -63,7 +67,8 @@ export function pageAudit(root: Element, opts: PageAuditOptions = {}): PageAudit
 		items[check].push(message);
 		const b = el.getBoundingClientRect();
 		const node = el.getAttribute('data-ripple-node-error') ?? el.closest('[data-ripple-node]')?.getAttribute('data-ripple-node') ?? undefined;
-		boxes.push({ check, ...(node ? { node } : {}), x: Math.round(b.left - r.left), y: Math.round(b.top - r.top), w: Math.round(b.width), h: Math.round(b.height) });
+		const widget = el.closest('[data-widget]')?.getAttribute('data-widget') ?? undefined;
+		boxes.push({ check, ...(node ? { node } : {}), ...(widget ? { widget } : {}), x: Math.round(b.left - r.left), y: Math.round(b.top - r.top), w: Math.round(b.width), h: Math.round(b.height) });
 	};
 	const where = (el: Element) => {
 		const node = el.closest('[data-ripple-node]')?.getAttribute('data-ripple-node');

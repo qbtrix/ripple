@@ -30,4 +30,6 @@ export interface AuditItem {
 	path: string;
 	/** What is wrong, in a sentence the model can act on. */
 	message: string;
+	/** The widget type the fault sits in, when a renderer measured it (render tier); waivers match on it before `path`. */
+	widget?: string;
 }
