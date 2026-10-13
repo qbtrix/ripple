@@ -5,19 +5,12 @@
 // on the real drawing prove the checks see it.
 import { describe, expect, test } from 'vitest';
 import { auditSvg, boxShape, shapeAttr } from '@ripple-ui/core/iso';
-import { AUDIT_WAIVERS, auditSvgOf, bikeSvg } from './figure.js';
-import { clampParams } from './model.js';
-
-const moments = [
-	['still', clampParams(), {}],
-	['50x11 mid-stroke', clampParams({ ring: 50, gear: 7 }), { theta: 0.7 }],
-	['34x28 mid-shift', clampParams({ ring: 34, gear: 1 }), { theta: 2.9, pose: { ring: 0.5, cog: 2.5 } }]
-] as const;
+import { auditSvgOf, bikeSvg, review } from './figure.js';
 
 describe('bike-gears audit', () => {
-	test.each(moments)('%s: 0 faults beyond the waivers', (_, params, drive) => {
-		for (const report of auditSvg(auditSvgOf(params, drive))) {
-			const waived = AUDIT_WAIVERS.filter((w) => w.check === report.check).map((w) => w.id);
+	test.each(review.auditFrames())('%s: 0 faults beyond the waivers', (_, svg) => {
+		for (const report of auditSvg(svg)) {
+			const waived = review.waivers.filter((w) => w.check === report.check).map((w) => w.id);
 			expect(report.items.filter((i) => !waived.includes(i.id)), report.check).toEqual([]);
 			expect(waived.filter((id) => !report.items.some((i) => i.id === id)), `${report.check}: stale waivers`).toEqual([]);
 		}

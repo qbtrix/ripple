@@ -18,6 +18,10 @@
 // part, rewrites only the parts that move and reorders them only when a shift
 // changes the order. Look: the kit's Blueprint ramp, thin lines, the chain
 // in brand blue, one lit part (the cog the chain is on). No DOM or work at module top level.
+//
+// `auditSvgOf()` draws the same figure with each solid's world shape on it for
+// the iso audit (live output never carries it); `review` is what the audit test,
+// `scripts/capture-figure.ts` and `scripts/score-figure.ts` read.
 
 import * as k from '@ripple-ui/core/iso';
 import type { Flat, Point3, SolidPaths } from '@ripple-ui/core/iso';
@@ -317,7 +321,7 @@ function staticItems(): Item[] {
 		const y = side * 36;
 		const dropout = hullOfCircles([[HX, HZ, 5.2], [HX + 16, HZ - 3, 4.4], [HX + 8, HZ + 14, 3.8], ...(side > 0 ? ([[HX - 6, HZ - 14, 4.6]] as Array<[number, number, number]>) : [])]);
 		add(`dropout-${side}`, y + side * 0.5, S(plate(dropout, y - 1.3, y + 1.3), { tone: 'mid' }) + D([at(xz(HX + 12, HZ + 4, y + 1.3 * side))], { size: 0.45 }));
-		const csA: Point3 = [4, side * 13, BBZ - 1];
+		const csA: Point3 = [4, side * 11.5, BBZ - 1]; // inboard enough that the drive-side stay clears the 34T ring
 		const csB: Point3 = [HX + 16, y, HZ - 3];
 		const mid = k.add3(csA, k.mul3(k.sub3(csB, csA), 0.5));
 		const dir = k.unit3(k.sub3(csB, csA));
@@ -596,6 +600,19 @@ export function auditSvgOf(params: BikeParams = clampParams(), drive: Partial<Om
 	}
 }
 
+/** What the figure review reads: `scripts/capture-figure.ts`, `scripts/score-figure.ts` and the audit test. */
+export const review = {
+	waivers: AUDIT_WAIVERS,
+	/** Audit-mode SVGs at the still frame, top gear mid-stroke and mid-shift in the easiest gear. */
+	auditFrames: (): Array<[string, string]> => [
+		['still', auditSvgOf()],
+		['50x11 mid-stroke', auditSvgOf(clampParams({ ring: 50, gear: 7 }), { theta: 0.7 })],
+		['34x28 mid-shift', auditSvgOf(clampParams({ ring: 34, gear: 1 }), { theta: 2.9, pose: { ring: 0.5, cog: 2.5 } })]
+	],
+	svg: (theme: k.Theme) => bikeSvg(clampParams(), {}, theme),
+	points: () => reviewPointsOf()
+};
+
 /** The whole figure as an SVG string, framed to everything it draws. */
 export function bikeSvg(params: BikeParams = clampParams(), drive: Partial<Omit<DriveState, 'params'>> = {}, standalone: k.Theme | false = false): string {
 	return framed(rawSvg(params, drive, standalone), frame());
@@ -628,6 +645,24 @@ export interface Anchor {
 
 export function anchorsOf(): Anchor[] {
 	return anchorPoints().map(([id, label, p]) => ({ id, label, ...percentIn(frame(), at(p)) }));
+}
+
+/** Junctions a reviewer reads at 4x, in percent of the figure box, at the still frame. */
+export function reviewPointsOf(): Anchor[] {
+	ready();
+	const rig = rigAt(poseOf(clampParams()));
+	const top = rig.loop.segs[7]!; // the top run, cog to ring
+	const points: Array<[string, string, Point3]> = [
+		['chain-ring', 'Chain on chainring', xz(top.p1![0], top.p1![1], rig.yr)],
+		['chain-cog', 'Chain on cog', xz(top.p0![0], top.p0![1], rig.yc)],
+		['crank', 'Crank on spider', [0, 36, BBZ]],
+		['jockeys', 'Chain on jockey wheels', xz((rig.G[0] + rig.T[0]) / 2, (rig.G[1] + rig.T[1]) / 2, rig.yc)],
+		['fd-band', 'Front derailleur on seat tube', onSeatTube(70)],
+		['chainstay-dropout', 'Chainstay at dropout', [HX + 16, 36, HZ - 3]],
+		['seatstay-seat-tube', 'Seat stays at seat tube', onSeatTube(150, 8)],
+		['hanger', 'Derailleur on dropout', [HX - 6, 39, HZ - 14]]
+	];
+	return points.map(([id, label, p]) => ({ id, label, ...percentIn(frame(), at(p)) }));
 }
 
 function anchorPoints(): Array<[string, string, Point3]> {
