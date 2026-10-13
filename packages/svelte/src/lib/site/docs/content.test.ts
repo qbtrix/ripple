@@ -93,7 +93,9 @@ describe('the real docs', () => {
 			'guides/claude-api',
 			'guides/openai',
 			'guides/any-model',
+			'guides/data-widgets',
 			'guides/layout-gotchas',
+			'guides/drawings',
 			'api/core',
 			'api/svelte',
 			'architecture/overview'
