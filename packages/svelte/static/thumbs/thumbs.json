@@ -130,6 +130,16 @@
 		"h": 600
 	},
 	{
+		"id": "live-fission-reactor",
+		"title": "How a nuclear fission reactor works",
+		"caption": "How does a nuclear reactor make electricity? Show me the plant and let me move the control rods and the pump speed.",
+		"group": "Learn",
+		"tag": "Hand-written",
+		"href": "/live?s=fission-reactor",
+		"w": 800,
+		"h": 600
+	},
+	{
 		"id": "live-iso-bike",
 		"title": "Bike drivetrain",
 		"caption": "Show how a bike's chain drive works as a live drawing, with a cadence slider and how far one pedal turn takes you",
