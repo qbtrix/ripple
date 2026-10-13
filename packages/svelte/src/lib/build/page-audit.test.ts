@@ -55,7 +55,8 @@ describe('pageAudit', () => {
 			)
 		);
 		expect(res.items.badText).toEqual(['widget=text node=t1 div "Total NaN"', 'pre raw JSON "{"a": 1}"']);
-		expect(res.boxes.filter((b) => b.check === 'badText')[0]).toMatchObject({ node: 't1', w: 200, h: 20 });
+		expect(res.boxes.filter((b) => b.check === 'badText')[0]).toMatchObject({ node: 't1', widget: 'text', w: 200, h: 20 });
+		expect(res.boxes.filter((b) => b.check === 'badText')[1]).not.toHaveProperty('widget');
 		each(res.counts, res.boxes);
 	});
 

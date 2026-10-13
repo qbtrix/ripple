@@ -289,6 +289,30 @@ describe('buildSpec waivers', () => {
 		expect(res.rounds[0]).toMatchObject({ faults: 1, score: 88 });
 	});
 
+	it('matches a render item by the widget it names, before its path', async () => {
+		const { model } = fakeModel([spec]);
+		const renderer: Renderer = async () => [
+			{
+				width: 380,
+				theme: 'light',
+				png: null,
+				boxes: [],
+				audit: [
+					{
+						check: 'overflow',
+						count: 2,
+						items: [
+							{ code: 'overflow', path: '', widget: 'weather-forecast', message: 'hourly strip scrolls sideways' },
+							{ code: 'overflow', path: '/ui/children/0', widget: 'text', message: 'text spills' }
+						]
+					}
+				]
+			}
+		];
+		const res = await buildSpec({ ...W, model, renderer, limits: { rounds: 1 } });
+		expect(res.rounds[0]).toMatchObject({ faults: 1, waived: [expect.objectContaining({ widget: 'weather-forecast' })] });
+	});
+
 	it('drops a waiver past its until date', async () => {
 		const { model } = fakeModel([spec]);
 		const waivers = [{ widget: 'weather-forecast', check: 'overflow', reason: 'test', until: '2026-10-01' }];

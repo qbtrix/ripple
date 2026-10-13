@@ -1,0 +1,17 @@
+{
+	"pricing": { "ask": "What does each Quillby plan cost, and what changes if I pay yearly? Use sample prices.", "facts": [] },
+	"weather": { "ask": "What is Lisbon like now and over the next 12 hours? Sample forecast data is fine.", "facts": [] },
+	"habits": { "ask": "A habit tracker for this week with drink water, read 20 minutes and exercise, ticked per day.", "facts": [{ "value": 20, "kind": "given" }] },
+	"recipe": { "ask": "Shakshuka for 2: what do I need and what do I do?", "facts": [{ "value": 2, "kind": "given" }] },
+	"bill": {
+		"ask": "Split a 186 euro dinner bill between 4 people, with tip options of 0, 10 and 15 percent.",
+		"facts": [
+			{ "value": 186, "kind": "given" },
+			{ "value": 4, "kind": "given" },
+			{ "value": 0, "kind": "given" },
+			{ "value": 10, "kind": "given" },
+			{ "value": 15, "kind": "given" }
+		]
+	},
+	"running": { "ask": "How did my running go this month? Use sample runs.", "facts": [] }
+}

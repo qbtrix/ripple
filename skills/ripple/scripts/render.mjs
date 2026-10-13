@@ -270,9 +270,11 @@ const LISTS = ['errorBoxes', 'overflow', 'clippedText', 'emptyContainers', 'badT
  * audit.json) and returns one RenderResult per shot: `{ width, theme, png,
  * audit, boxes }`, where `audit` is one `{ check, count, items }` report per
  * audit count (axe only when axe-core is present), and `boxes` is one
- * `{ check, path?, x, y, w, h }` per page-audit item: CSS px from the shot's
- * top left (the PNG is at device scale 2), `path` a JSON Pointer to the node
- * when the node has an id.
+ * `{ check, path?, widget?, x, y, w, h }` per page-audit item: CSS px from the
+ * shot's top left (the PNG is at device scale 2), `path` a JSON Pointer to the
+ * node when the node has an id, `widget` the widget type it sits in. Each
+ * page-audit item carries its box's `path` and `widget`, so core's waivers
+ * can match it.
  * Throws SetupError on a usage or setup problem.
  */
 export async function renderer(spec, { base = process.env.RIPPLE_BASE || DEFAULT_BASE, widths = DEFAULTS.widths, themes = DEFAULTS.themes, outdir } = {}) {
@@ -281,11 +283,16 @@ export async function renderer(spec, { base = process.env.RIPPLE_BASE || DEFAULT
 	const paths = nodePaths(spec);
 	return out.shots.map((s, i) => {
 		const tag = `${s.width}-${s.theme}`;
-		const report = (check, messages) => ({
-			check,
-			count: messages.length,
-			items: messages.map((message) => ({ code: check, path: '', message }))
-		});
+		const boxes = out.boxes[i].map(({ node, ...b }) => (paths.has(node) ? { ...b, path: paths.get(node) } : b));
+		// The page audit pushes each item with its box, so the n-th item of a check is the n-th box of it.
+		const report = (check, messages) => {
+			const mine = boxes.filter((b) => b.check === check);
+			return {
+				check,
+				count: messages.length,
+				items: messages.map((message, n) => ({ code: check, path: mine[n]?.path ?? '', message, ...(mine[n]?.widget ? { widget: mine[n].widget } : {}) }))
+			};
+		};
 		const mine = (list) => list.filter((x) => x.startsWith(`[${tag}] `)).map((x) => x.slice(tag.length + 3));
 		const audit = [
 			report('notRendered', !s.rendered || !s.surfaces ? ['the card did not render (no visible surface, or the pane showed an error)'] : []),
@@ -294,7 +301,6 @@ export async function renderer(spec, { base = process.env.RIPPLE_BASE || DEFAULT
 			report('consoleErrors', mine(out.consoleErrors))
 		];
 		if (out.axeResult) audit.push(report('axeViolations', mine(out.axeResult)));
-		const boxes = out.boxes[i].map(({ node, ...b }) => (paths.has(node) ? { ...b, path: paths.get(node) } : b));
 		return { width: s.width, theme: s.theme, png: s.file, audit, boxes };
 	});
 }
