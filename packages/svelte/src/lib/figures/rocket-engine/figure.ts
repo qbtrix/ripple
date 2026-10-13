@@ -330,7 +330,7 @@ function thrustMount(): string {
 	out.push(D([[-11, -11], [11, -11], [-11, 11], [11, 11]].map(([y, z]) => at([-112.5, y!, ZE + z!])), { size: 0.5, tone: 'mid' }));
 	// Gimbal: a cross of trunnion pins in a ring between two knuckles.
 	out.push(S(turned(E, [[-112.5, 6], [-101, 6]], 40), { tone: 'mid', crease: 'none' }));
-	for (const [o, axis] of [[[-107, 0, ZE] as Point3, [0, 1, 0] as Point3]]) out.push(S(k.prismOf(k.frameAlong(k.add3(o, k.mul3(axis, -14)), axis), k.circlePolygon(2.6, 20), 0, 28, P), { tone: 'mid', crease: 'none' }));
+	out.push(S(k.prismOf(k.frameAlong([-107, -14, ZE], [0, 1, 0]), k.circlePolygon(2.6, 20), 0, 28, P), { tone: 'mid', crease: 'none' }));
 	out.push(S(turned(E, [[-110, 11], [-109, 12], [-105, 12], [-104, 11]], 56), { tone: 'mid' }));
 	out.push(S(k.prismOf(k.frameAlong([-107, 13.5, ZE], [0, 1, 0]), k.circlePolygon(3.6, 24), 0, 2, P), { tone: 'mid' }) + D([at([-107, 15.5, ZE])], { size: 0.55, tone: 'hi' }));
 	out.push(S(k.prismOf(k.frameAlong([-107, 0, ZE + 11.5], [0, 0, 1]), k.circlePolygon(3.6, 24), 0, 2.4, P), { tone: 'mid' }));
@@ -721,11 +721,11 @@ function ready() {
 export const ENGINE_CSS = `
 .iso[data-figure-host="rocket-engine"]{
   --rk-ox:#3e63dd;--rk-fuel:#c27c0e;--rk-hot:#e5484d;--rk-tint:8%;--rk-cavity:#000000;--rk-depth:16%;
-  --rk-flame:#f08c00;--rk-core:#ffb224;--rk-diamond:#fff1c2;--rk-glow:#ff8b3e;--rk-interior:#8a5634
+  --rk-sooty:#e8590c;--rk-clean:#f5a524;--rk-sooty-core:#ffa94d;--rk-clean-core:#ffe08a;--rk-diamond:#fff1c2;--rk-glow:#ff8b3e;--rk-interior:#8a5634
 }
 .iso[data-theme="dark"][data-figure-host="rocket-engine"]{
   --rk-ox:#7b9bff;--rk-fuel:#f0b54a;--rk-hot:#ff7b72;--rk-tint:16%;--rk-depth:38%;
-  --rk-flame:#ff8a2a;--rk-core:#ffd27a;--rk-diamond:#fff6dc;--rk-glow:#ff9a4d;--rk-interior:#1c100a
+  --rk-sooty:#ff7a1a;--rk-clean:#ffb347;--rk-sooty-core:#ffc078;--rk-clean-core:#fff0bf;--rk-diamond:#fff6dc;--rk-glow:#ff9a4d;--rk-interior:#1c100a
 }
 .rk-ox{--rk-c:var(--rk-ox)}
 .rk-fuel{--rk-c:var(--rk-fuel)}
@@ -744,6 +744,7 @@ ${[0, 1, 2, 3].map((n) => `:is(.rk-ox,.rk-fuel,.rk-hot)>.iso-shade[data-shade="$
 .rk-channel{stroke-opacity:.8}
 .rk-interior{fill:var(--rk-interior);stroke:none}
 .rk-glow{fill:var(--rk-glow);stroke:none;filter:blur(4px);opacity:.9}
+.rk-plume-group{--rk-flame:color-mix(in srgb,var(--rk-sooty) var(--rk-soot),var(--rk-clean));--rk-core:color-mix(in srgb,var(--rk-sooty-core) var(--rk-soot),var(--rk-clean-core))}
 .rk-plume{filter:blur(4px)}
 .rk-plume-core{filter:blur(2.5px)}
 .rk-diamond{fill:var(--rk-diamond);filter:blur(2.2px)}
