@@ -60,6 +60,7 @@
 	import { evaluateExpression, safeStyle } from '@ripple-ui/core';
 	import {
 		IDENTITY,
+		animatedParts,
 		clampSpeed,
 		drawPart,
 		enrichScene,
@@ -67,7 +68,6 @@
 		flowOffsets,
 		groundParts,
 		mergeOwned,
-		movingParts,
 		normalizeScene,
 		pinPoint,
 		sceneTransforms,
@@ -150,11 +150,10 @@
 		const k = clampNum(scale, 0.4, 2.5, 1);
 		return { ...fit, scale: fit.scale * k, origin: [W / 2 + (fit.origin[0] - W / 2) * k, H / 2 + (fit.origin[1] - H / 2) * k] as [number, number] };
 	});
-	const moving = $derived(movingParts(scene));
-	const flowing = $derived(scene.parts.map((_, i) => scene.motions.some((m) => m.kind === 'flow' && m.part === i)));
-	const animated = $derived(moving.some(Boolean) || flowing.some(Boolean));
+	const live = $derived(animatedParts(scene));
+	const animated = $derived(live.some(Boolean));
 	const ground = $derived(groundParts(scene));
-	const still = $derived(scene.parts.map((p, i) => (moving[i] || flowing[i] ? null : drawPart(i, p, IDENTITY, P))));
+	const still = $derived(scene.parts.map((p, i) => (live[i] ? null : drawPart(i, p, IDENTITY, P))));
 
 	let time = $state(0);
 	const frame = $derived.by(() => {
@@ -400,6 +399,10 @@
 	}
 	path[data-cls='pin'] {
 		stroke: var(--a-mid);
+	}
+	path[data-cls='ghost'] {
+		fill: var(--t2);
+		fill-opacity: 0.16;
 	}
 	path[data-cls='hole'] {
 		fill: var(--t0);
