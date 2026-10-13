@@ -7,7 +7,7 @@ import type { WidgetManifestEntry } from '../index.js';
 export const figureEntry: WidgetManifestEntry = {
 	type: 'figure',
 	category: 'composite',
-	description: 'A hand-built live isometric figure picked by id ("heart": how a heart pumps; "bike-gears": how bike gears work; "particle-collider": how a particle collider works), with sliders, live readouts and numbered labels on its named parts. Bind value.',
+	description: 'A hand-built live isometric figure picked by id (heart, bike-gears, particle-collider), with sliders, live readouts and numbered labels on its named parts. Bind value.',
 	props: {
 		figure: {
 			type: '"heart" | "bike-gears" | "particle-collider"',

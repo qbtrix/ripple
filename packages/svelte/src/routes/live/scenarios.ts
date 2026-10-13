@@ -9,6 +9,7 @@
 // (pawbar/play-cards.ts) import from here and this file runs in node for the
 // recorder. `groupedSuggestions` resolves it against whatever chips are on offer,
 // dropping missing ids, so a group with nothing available never renders.
+// `figureScenarios` are hand-built figure runs shown on /live only, never as chips.
 // Prompts are visitor-facing: plain words, fictional products, no dashes.
 
 import orderBurger from './fixtures/order-burger.json';
@@ -80,8 +81,7 @@ export const scenarios: Scenario[] = [
 	{ id: 'explainer', title: 'Bike gears, explained', category: 'Learning', fixture: explainer, prompt: 'How do bike gears work? Draw me an animated picture of the chain drive and explain it in a few lines.', group: 'Learn' },
 	{ id: 'plane-3d', title: 'See a plane in 3D', category: 'Learning', fixture: plane3d, prompt: 'Show me a plane in 3D and label its parts', group: 'Learn' },
 	{ id: 'heart-pump', title: 'The heart as a pump', category: 'Learning', fixture: heartPump, prompt: 'How does the heart pump blood?', group: 'Learn' },
-	{ id: 'bike-gears', title: 'How bike gears work', category: 'Learning', fixture: bikeGears, prompt: 'How do bike gears work?', group: 'Learn' },
-	{ id: 'particle-collider', title: 'How a particle collider works', category: 'Learning', fixture: particleCollider, prompt: 'How does a particle collider work?', group: 'Learn' }
+	{ id: 'bike-gears', title: 'How bike gears work', category: 'Learning', fixture: bikeGears, prompt: 'How do bike gears work?', group: 'Learn' }
 ];
 
 export const chatPrompts: ChatPrompt[] = [
@@ -270,6 +270,11 @@ export function groupedSuggestions(pool: (Scenario | ChatPrompt)[]): SuggestionC
  * come from `scenarios` and `playScenarios` only.
  */
 export const BUSINESS_GROUP = 'For business';
+/** Hand-built figure runs shown in the /live gallery only: no landing chip. */
+export const figureScenarios: Scenario[] = [
+	{ id: 'particle-collider', title: 'How a particle collider works', category: 'Learning', fixture: particleCollider, prompt: 'How does a particle collider work?', group: 'Learn' }
+];
+
 export const businessScenarios: Scenario[] = [
 	{ id: 'refund-approval', title: 'Approve a refund', category: 'Support', fixture: refundApproval, group: BUSINESS_GROUP },
 	{ id: 'incident-rollback', title: 'Roll back a bad deploy', category: 'Ops', fixture: incidentRollback, group: BUSINESS_GROUP },

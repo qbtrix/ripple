@@ -16,7 +16,7 @@ import Ripple from '$lib/Ripple.svelte';
 import { streamSpec, type StreamSpecStore } from '$lib/streaming/index.js';
 import { validateCatalog } from '$lib/widgets/validate-catalog-bound.js';
 import { replay } from './replay.js';
-import { businessScenarios, scenarios, type ScenarioFixture } from './scenarios.js';
+import { businessScenarios, figureScenarios, scenarios, type ScenarioFixture } from './scenarios.js';
 import OrderReceipt from './OrderReceipt.svelte';
 
 // Streamed mounts recompute on later ticks; under a full parallel suite that can
@@ -60,7 +60,7 @@ describe('replay()', () => {
 	});
 });
 
-describe.each([...scenarios, ...businessScenarios].map((s) => [s.id, s] as const))('scenario %s', (_id, scenario) => {
+describe.each([...scenarios, ...figureScenarios, ...businessScenarios].map((s) => [s.id, s] as const))('scenario %s', (_id, scenario) => {
 	const { fixture } = scenario;
 	const finalSpec = JSON.parse(join(fixture));
 	const hasInput = specHas(finalSpec, (n) => ['input', 'number-input'].includes(n.type ?? ''));

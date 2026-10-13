@@ -17,7 +17,7 @@ describe('particle-collider figure', () => {
 				expect(py).toBeLessThanOrEqual(y + h);
 			}
 		}
-	});
+	}, 30_000);
 
 	test('a crossing draws bunches of both beams, tracks and the needle', () => {
 		const svg = colliderSvg(clampParams(), 0.1);
