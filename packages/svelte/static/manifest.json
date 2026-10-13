@@ -1,7 +1,7 @@
 {
   "schema": "ripple.manifest/v1",
   "version": "0.8.0",
-  "generatedAt": "2026-10-13T04:38:43.880Z",
+  "generatedAt": "2026-10-13T05:53:45.107Z",
   "spec": {
     "uiField": "ui",
     "stateField": "state",
@@ -11279,12 +11279,12 @@
     {
       "type": "figure",
       "category": "composite",
-      "description": "A hand-built live isometric figure picked by id (\"heart\": how a heart pumps; \"bike-gears\": how bike gears work), with sliders, live readouts and numbered labels on its named parts. Bind value.",
+      "description": "A hand-built live isometric figure picked by id (\"heart\": how a heart pumps; \"bike-gears\": how bike gears work; \"fission-reactor\": how a nuclear fission reactor makes electricity), with sliders, live readouts and numbered labels on its named parts. Bind value.",
       "props": {
         "figure": {
-          "type": "\"heart\" | \"bike-gears\"",
+          "type": "\"heart\" | \"bike-gears\" | \"fission-reactor\"",
           "required": true,
-          "description": "Figure id. \"heart\" is a beating heart as two pumps: sliders bpm (40-180) and stroke (50-110 ml). \"bike-gears\" is a bicycle drivetrain on a stand: sliders cadence (40-120 rpm), ring (34 or 50 teeth) and gear (1-7, 1 = the 28-tooth cog, 7 = the 11); readouts gear ratio, metres per pedal turn and km/h."
+          "description": "Figure id. \"heart\" is a beating heart as two pumps: sliders bpm (40-180) and stroke (50-110 ml). \"bike-gears\" is a bicycle drivetrain on a stand: sliders cadence (40-120 rpm), ring (34 or 50 teeth) and gear (1-7, 1 = the 28-tooth cog, 7 = the 11); readouts gear ratio, metres per pedal turn and km/h. \"fission-reactor\" is a pressurised water reactor plant: sliders rods (control rods in, 0-100 %) and pump (coolant pump speed, 40-100 %); readouts thermal and electric power (MW) and the coolant temperature leaving the core."
         },
         "params": {
           "type": "Record<string, number>",
@@ -11294,7 +11294,7 @@
         "labels": {
           "type": "Array<{ anchor: string; label?: string; note?: string }>",
           "required": false,
-          "description": "Up to 10 numbered pins, plain text. heart anchors: right-atrium, right-ventricle, left-atrium, left-ventricle, tricuspid, mitral, pulmonary-valve, aortic-valve, aorta, vena-cava, pulmonary-artery, pulmonary-veins, lungs, body. bike-gears anchors: chainring, crank, pedal, chain, cassette, rear-derailleur, front-derailleur, jockey-wheels, rear-hub, wheel."
+          "description": "Up to 10 numbered pins, plain text. heart anchors: right-atrium, right-ventricle, left-atrium, left-ventricle, tricuspid, mitral, pulmonary-valve, aortic-valve, aorta, vena-cava, pulmonary-artery, pulmonary-veins, lungs, body. bike-gears anchors: chainring, crank, pedal, chain, cassette, rear-derailleur, front-derailleur, jockey-wheels, rear-hub, wheel. fission-reactor anchors: reactor-vessel, fuel, control-rods, pressuriser, steam-generator, coolant-pump, hot-leg, cold-leg, containment, steam-line, turbine, generator, condenser, feedwater-pump, cooling-tower, transformer."
         },
         "caption": {
           "type": "string",
