@@ -40,7 +40,7 @@ import { validateCatalog, type ValidateCatalogOptions } from './validate-catalog
 
 export interface SpecAuditOptions extends ValidateCatalogOptions {
 	/** The catalog with props. Turns on the props check; gives `widgetTypes` when that is omitted. */
-	widgets?: SlimWidgetEntry[];
+	widgets?: readonly SlimWidgetEntry[];
 	/** The caller's clock. Turns on the futureDate check. */
 	now?: { iso: string; tz: string };
 }
@@ -249,7 +249,7 @@ function bindItems(resolved: ResolvedNode[], where: Map<object, string>): AuditI
 }
 
 /** Missing required props (items) and props the entry does not document (warnings). */
-function propsReport(nodes: { node: Obj; at: string }[], widgets: SlimWidgetEntry[]): AuditReport<AuditItem> {
+function propsReport(nodes: { node: Obj; at: string }[], widgets: readonly SlimWidgetEntry[]): AuditReport<AuditItem> {
 	const byType = new Map(widgets.map((w) => [w.type, w]));
 	const items: AuditItem[] = [];
 	const warnings: AuditItem[] = [];
@@ -272,7 +272,7 @@ function propsReport(nodes: { node: Obj; at: string }[], widgets: SlimWidgetEntr
 }
 
 /** Two controls bound to one state path. With `widgets`, only input widgets count. */
-function twoControlsItems(resolved: ResolvedNode[], where: Map<object, string>, widgets?: SlimWidgetEntry[]) {
+function twoControlsItems(resolved: ResolvedNode[], where: Map<object, string>, widgets?: readonly SlimWidgetEntry[]) {
 	const inputs = widgets && new Set(widgets.filter((w) => w.category === 'input').map((w) => w.type));
 	const first = new Map<string, string>();
 	const items: AuditItem[] = [];
