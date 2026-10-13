@@ -67,7 +67,7 @@ The drawing kit lives in `@ripple-ui/core/iso`, so a host can use it without Sve
 
 A figure is an iso drawing we built by hand and ship by id. The model picks it, sets starting slider values in `params`, and pins labels on its named anchors. It cannot get the drawing wrong because it does not draw it.
 
-The catalog on main has one figure, `heart`: a beating heart as two pumps, with sliders for heart rate (`bpm`, 40 to 180) and stroke volume (`stroke`, 50 to 110 ml). Its anchors are `right-atrium`, `right-ventricle`, `left-atrium`, `left-ventricle`, `tricuspid`, `mitral`, `pulmonary-valve`, `aortic-valve`, `aorta`, `vena-cava`, `pulmonary-artery`, `pulmonary-veins`, `lungs` and `body`.
+The catalog has one figure so far, `heart`: a beating heart as two pumps, with sliders for heart rate (`bpm`, 40 to 180) and stroke volume (`stroke`, 50 to 110 ml). Its anchors are `right-atrium`, `right-ventricle`, `left-atrium`, `left-ventricle`, `tricuspid`, `mitral`, `pulmonary-valve`, `aortic-valve`, `aorta`, `vena-cava`, `pulmonary-artery`, `pulmonary-veins`, `lungs` and `body`.
 
 ```ripple
 {
