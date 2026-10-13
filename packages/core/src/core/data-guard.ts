@@ -9,6 +9,7 @@
 //     `data: true`, so a host widget can join).
 //     A prop that is only a state reference (`{state.days}`) is not counted
 //     again; a computed one (`{state.a * 2}`) counts as its value.
+//     The numbers inside a data prop's text ("$1,200") count as numbers too.
 //   - Compare as a multiset, not by path: every baseline number and date must
 //     still appear as often as before, so a state restructure that keeps the
 //     values passes. A missing value is still found when it shows up as a
@@ -145,7 +146,12 @@ function dataOf(spec: unknown, widgets?: readonly SlimWidgetEntry[]) {
 				const expr = typeof src === 'string' && EXPR.test(src);
 				if (expr && REF_ONLY.test((src as string).trim())) continue; // a state reference, counted in state
 				const c = classify(leaf.value);
-				if (c) data.push({ ...c, at: `${at}/props/${esc(prop)}${leaf.at}`, derived: expr });
+				const where = `${at}/props/${esc(prop)}${leaf.at}`;
+				if (c) data.push({ ...c, at: where, derived: expr });
+				// A formatted amount ("$1,200") in a data prop is still a number the user gave.
+				if (c?.kind === 'string')
+					for (const n of numberTokens(leaf.value as string))
+						data.push({ key: `n:${n}`, kind: 'number', shown: String(n), at: where, derived: expr });
 			}
 		}
 	}
@@ -158,13 +164,15 @@ function tally(leaves: readonly Leaf[]) {
 	return out;
 }
 
+const numberTokens = (t: string) => [...t.replace(ISO_DAYS, ' ').matchAll(NUMBERS)].map(([n]) => Number(n.replace(/,/g, '')));
+
 /** Number and date tokens in rendered text, as a multiset of keys. */
 function tokens(text: readonly string[]) {
 	const out = new Map<string, number>();
 	const add = (k: string) => out.set(k, (out.get(k) ?? 0) + 1);
 	for (const t of text) {
 		for (const [d] of t.matchAll(ISO_DAYS)) add(`d:${d}`);
-		for (const [n] of t.replace(ISO_DAYS, ' ').matchAll(NUMBERS)) add(`n:${Number(n.replace(/,/g, ''))}`);
+		for (const n of numberTokens(t)) add(`n:${n}`);
 	}
 	return out;
 }

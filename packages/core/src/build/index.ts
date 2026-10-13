@@ -21,3 +21,5 @@ export {
 	type StopReason
 } from './build-spec.js';
 export type { AuditItem, AuditReport } from '../core/audit-report.js';
+export type { DataGuardResult, Fact } from '../core/data-guard.js';
+export type { Waiver } from '../manifest/craft.js';

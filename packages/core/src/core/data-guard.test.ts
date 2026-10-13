@@ -92,6 +92,14 @@ describe('dataGuard', () => {
 		expect(guard(after).ok).toBe(true);
 	});
 
+	it('fails a changed amount written as text in a data prop', () => {
+		const card = (value: string) => ({ version: '1.0', state: {}, ui: { type: 'metric', props: { label: 'Revenue', value } } });
+		expect(dataGuard({ before: card('$1,200'), after: card('$1,200.00'), now }).ok).toBe(true);
+		expect(dataGuard({ before: card('$1,200'), after: card('$1,300'), now }).items).toEqual([
+			expect.objectContaining({ code: 'dataChanged', path: '/ui/props/value' })
+		]);
+	});
+
 	it('only flags a reworded string', () => {
 		const after = weather();
 		after.state.place = 'Lisbon, PT';

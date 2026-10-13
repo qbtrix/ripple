@@ -26,7 +26,7 @@ describe('craft data in the manifest', () => {
       Object.entries(w.props).filter(([, s]) => s.data).map(([p]) => `${w.type}.${p}`)
     );
     const listed = Object.entries(DATA_PROPS).flatMap(([t, props]) => props.map((p) => `${t}.${p}`));
-    expect(flagged.sort()).toEqual(listed.sort());
+    expect(flagged.toSorted()).toEqual(listed.toSorted());
     expect(manifestEntries.some((e) => Object.values(e.props).some((s) => s.data))).toBe(false); // entries stay unstamped
   });
 });
