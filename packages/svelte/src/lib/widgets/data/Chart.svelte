@@ -92,9 +92,8 @@
 		return result;
 	}
 
-	/** In order per point (one series) or per series; a single colour paints them all. */
+	/** In order: per series when points carry `series`, else per point. */
 	function getColor(i: number): string {
-		if (colors.length === 1 && colors[0]) return colors[0];
 		return colors[i] || defaultColors[i % defaultColors.length];
 	}
 
@@ -148,7 +147,8 @@
 		const tc = themeColors();
 		const labels = data.map(d => d.label);
 		const values = data.map(d => d.value ?? 0);
-		const itemColors = data.map((_, i) => getColor(i));
+		// One series: a single given colour paints every point (no rainbow bars).
+		const itemColors = data.map((_, i) => (colors.length === 1 && colors[0] ? colors[0] : getColor(i)));
 
 		// Detect multi-series: any point carries a `series` map → one ECharts series per key.
 		const seriesKeys: string[] = (() => {
