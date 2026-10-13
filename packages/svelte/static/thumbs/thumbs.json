@@ -200,12 +200,52 @@
 		"h": 600
 	},
 	{
+		"id": "live-rocket-engine",
+		"title": "Inside a rocket engine",
+		"caption": "How does a rocket engine work? Show me inside one and let me throttle it.",
+		"group": "Learn",
+		"tag": "Hand-written",
+		"href": "/live?s=rocket-engine",
+		"w": 800,
+		"h": 600
+	},
+	{
+		"id": "live-ion-thruster",
+		"title": "How a plasma thruster works",
+		"caption": "How does a plasma thruster work? Show me inside and let me change the grid voltage and the xenon flow.",
+		"group": "Learn",
+		"tag": "Hand-written",
+		"href": "/live?s=ion-thruster",
+		"w": 800,
+		"h": 600
+	},
+	{
 		"id": "live-tokamak",
 		"title": "How a fusion reactor works",
 		"caption": "How does a fusion reactor work? Show me a tokamak cut open and let me change the plasma current and the heating.",
 		"group": "Learn",
 		"tag": "Hand-written",
 		"href": "/live?s=tokamak",
+		"w": 800,
+		"h": 600
+	},
+	{
+		"id": "live-fission-reactor",
+		"title": "How a nuclear fission reactor works",
+		"caption": "How does a nuclear reactor make electricity? Show me the plant and let me move the control rods and the pump speed.",
+		"group": "Learn",
+		"tag": "Hand-written",
+		"href": "/live?s=fission-reactor",
+		"w": 800,
+		"h": 600
+	},
+	{
+		"id": "live-particle-collider",
+		"title": "How a particle collider works",
+		"caption": "How does a particle collider work? Show me the beams, the magnets and the detector, and let me change the beam energy.",
+		"group": "Learn",
+		"tag": "Hand-written",
+		"href": "/live?s=particle-collider",
 		"w": 800,
 		"h": 600
 	},

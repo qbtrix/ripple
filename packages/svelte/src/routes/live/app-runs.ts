@@ -1,12 +1,18 @@
 // routes/live/app-runs.ts — Hand-written /live runs for the app-like data widgets
 // (notes, music, weather, week schedule, agenda, places, products, posters, a map
-// route), plus the hand-built figures (a tokamak). Gallery runs only: not landing chips, so the suggestion groups never see
-// them. Each spec names no demo widget, so each run is its own card (gallery.ts
+// route), then the hand-built figure runs (figureRuns, recorded fixtures: rocket
+// engine, plasma thruster, fusion and fission reactors, particle collider).
+// Gallery runs only: not landing chips, so the suggestion groups never see them.
+// Each spec names no demo widget, so each run is its own card (gallery.ts
 // widgetOf). Public site: fictional names, sample numbers.
 
 import { handWritten } from '../pawbar/play-cards.js';
 import type { Scenario } from './scenarios.js';
+import rocketEngine from './fixtures/rocket-engine.json';
+import ionThruster from './fixtures/ion-thruster.json';
 import tokamak from './fixtures/tokamak.json';
+import fissionReactor from './fixtures/fission-reactor.json';
+import particleCollider from './fixtures/particle-collider.json';
 
 const card = (ui: object) => ({ state: {}, ui });
 
@@ -197,6 +203,17 @@ const lisbonWalk = {
 	}
 };
 
+const figure = (id: string, title: string, fixture: Scenario['fixture']): Scenario => ({ id, title, category: 'Learning', group: 'Learn', fixture });
+
+/** The hand-built figure runs, in Learn grid order. live.test.ts replays each. */
+export const figureRuns: Scenario[] = [
+	figure('rocket-engine', 'Inside a rocket engine', rocketEngine),
+	figure('ion-thruster', 'How a plasma thruster works', ionThruster),
+	figure('tokamak', 'How a fusion reactor works', tokamak),
+	figure('fission-reactor', 'How a nuclear fission reactor works', fissionReactor),
+	figure('particle-collider', 'How a particle collider works', particleCollider)
+];
+
 export const appScenarios: Scenario[] = [
 	handWritten('lisbon-walk', 'Walk to the castle', 'Travel', 'Do', 'Show me on a map a walking route from Rossio station to Sao Jorge Castle in Lisbon, with the turns (approximate)', lisbonWalk),
 	handWritten('coffee-nearby', 'Coffee nearby', 'Places', 'Do', 'Find quiet coffee shops with wifi near Baixa in Lisbon, with ratings and distance (sample places)', places),
@@ -207,5 +224,5 @@ export const appScenarios: Scenario[] = [
 	handWritten('lisbon-weather', 'Lisbon weather', 'Everyday', 'Track', 'Show me a 7-day weather forecast for Lisbon with highs, lows and chance of rain (sample data)', weather),
 	handWritten('focus-music', 'Focus music', 'Everyday', 'Play', 'Make me a focus music player with a few calm tracks', music),
 	handWritten('ocean-docs', 'Ocean documentaries', 'Learning', 'Learn', 'Recommend 6 ocean documentaries with ratings and running time (sample titles)', posters),
-	{ id: 'tokamak', title: 'How a fusion reactor works', category: 'Learning', group: 'Learn', fixture: tokamak }
+	...figureRuns
 ];
