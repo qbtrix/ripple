@@ -1,7 +1,7 @@
 {
   "schema": "ripple.manifest/v1",
   "version": "0.8.0",
-  "generatedAt": "2026-10-13T11:51:30.554Z",
+  "generatedAt": "2026-10-13T13:08:30.304Z",
   "spec": {
     "uiField": "ui",
     "stateField": "state",
@@ -3553,7 +3553,7 @@
         "currency": {
           "type": "string",
           "required": false,
-          "description": "ISO 4217 code for numeric prices. Default \"USD\". Never put a symbol in the data."
+          "description": "ISO 4217 code for numeric prices. Default \"USD\". Never put a symbol in the data. Whole prices print without cents ($1,890)."
         },
         "items": {
           "type": "Array<{ id: string; name: string; subtitle?: string; price?: number; image?: string; product_id?: string; rating?: number; actions?: EventAction | EventAction[]; learn_more?: EventAction | EventAction[]; [featureKey: string]: unknown }>",
@@ -3561,7 +3561,7 @@
           "description": "2 to 6 items. `price` is a number; feature values are keyed by feature `key`. With `product_id` the server fills name, price and image. Per item, `actions` fires on Choose and `learn_more` on Learn more."
         },
         "features": {
-          "type": "Array<{ key: string; label: string; section?: string; kind?: \"text\" | \"number\" | \"boolean\" | \"rating\" | \"icon\" | \"price\" | \"color\"; better?: \"higher\" | \"lower\"; unit?: string; icon?: \"battery\" | \"weight\" | \"display\" | \"cpu\" | \"memory\" | \"storage\" | \"camera\" | \"speed\" | \"price\" | \"ports\" | \"wifi\" | \"keyboard\" | \"audio\" | \"security\" | \"warranty\" | \"size\" | \"rating\" | \"support\"; highlight?: boolean }>",
+          "type": "Array<{ key: string; label: string; section?: string; kind?: \"text\" | \"number\" | \"boolean\" | \"rating\" | \"icon\" | \"price\" | \"color\"; better?: \"higher\" | \"lower\"; unit?: string; icon?: \"battery\" | \"weight\" | \"display\" | \"cpu\" | \"memory\" | \"storage\" | \"camera\" | \"speed\" | \"motor\" | \"power\" | \"price\" | \"ports\" | \"wifi\" | \"keyboard\" | \"audio\" | \"security\" | \"warranty\" | \"size\" | \"rating\" | \"support\"; highlight?: boolean }>",
           "required": false,
           "description": "Rows, grouped into section chips by `section`. `better` marks the best numeric cell. An `icon`-kind value is one of the `icon` words (or a list of them). `highlight` puts the row on the item card. Inferred from item keys when omitted."
         },
@@ -3588,7 +3588,7 @@
         "defaultView": {
           "type": "\"card\" | \"table\"",
           "required": false,
-          "description": "Detailed view below 720px until the visitor picks one. Default \"card\"; wider always shows the table."
+          "description": "View under the item cards below 720px until the visitor picks one. Default \"table\" (the cards above already list each item); \"card\" shows per-item cards. Wider always shows the table."
         },
         "showDiffToggle": {
           "type": "boolean",

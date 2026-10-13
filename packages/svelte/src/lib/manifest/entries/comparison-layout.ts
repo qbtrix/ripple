@@ -19,14 +19,14 @@ export const comparisonLayoutEntry: WidgetManifestEntry = {
       required: false,
       description: 'The answer up front, at most 140 chars, e.g. "Nimbus Pro 15 if you edit video; Aero 14 for battery."',
     },
-    currency: { type: 'string', required: false, description: 'ISO 4217 code for numeric prices. Default "USD". Never put a symbol in the data.' },
+    currency: { type: 'string', required: false, description: 'ISO 4217 code for numeric prices. Default "USD". Never put a symbol in the data. Whole prices print without cents ($1,890).' },
     items: {
       type: 'Array<{ id: string; name: string; subtitle?: string; price?: number; image?: string; product_id?: string; rating?: number; actions?: EventAction | EventAction[]; learn_more?: EventAction | EventAction[]; [featureKey: string]: unknown }>',
       required: true,
       description: '2 to 6 items. `price` is a number; feature values are keyed by feature `key`. With `product_id` the server fills name, price and image. Per item, `actions` fires on Choose and `learn_more` on Learn more.',
     },
     features: {
-      type: 'Array<{ key: string; label: string; section?: string; kind?: "text" | "number" | "boolean" | "rating" | "icon" | "price" | "color"; better?: "higher" | "lower"; unit?: string; icon?: "battery" | "weight" | "display" | "cpu" | "memory" | "storage" | "camera" | "speed" | "price" | "ports" | "wifi" | "keyboard" | "audio" | "security" | "warranty" | "size" | "rating" | "support"; highlight?: boolean }>',
+      type: 'Array<{ key: string; label: string; section?: string; kind?: "text" | "number" | "boolean" | "rating" | "icon" | "price" | "color"; better?: "higher" | "lower"; unit?: string; icon?: "battery" | "weight" | "display" | "cpu" | "memory" | "storage" | "camera" | "speed" | "motor" | "power" | "price" | "ports" | "wifi" | "keyboard" | "audio" | "security" | "warranty" | "size" | "rating" | "support"; highlight?: boolean }>',
       required: false,
       description: 'Rows, grouped into section chips by `section`. `better` marks the best numeric cell. An `icon`-kind value is one of the `icon` words (or a list of them). `highlight` puts the row on the item card. Inferred from item keys when omitted.',
     },
@@ -46,7 +46,7 @@ export const comparisonLayoutEntry: WidgetManifestEntry = {
       description: 'The chosen item id. Use top-level `bind` to keep it in state (e.g. `bind: "pick"`).',
     },
     primaryLabel: { type: 'string', required: false, description: 'Choose button label. Default "Choose".' },
-    defaultView: { type: '"card" | "table"', required: false, description: 'Detailed view below 720px until the visitor picks one. Default "card"; wider always shows the table.' },
+    defaultView: { type: '"card" | "table"', required: false, description: 'View under the item cards below 720px until the visitor picks one. Default "table" (the cards above already list each item); "card" shows per-item cards. Wider always shows the table.' },
     showDiffToggle: { type: 'boolean', required: false, description: 'Show the "Differences only" filter. Default true.' },
   },
   events: {

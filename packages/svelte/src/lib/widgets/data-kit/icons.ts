@@ -91,6 +91,7 @@ import MemoryStick from '@lucide/svelte/icons/memory-stick';
 import HardDrive from '@lucide/svelte/icons/hard-drive';
 import Camera from '@lucide/svelte/icons/camera';
 import Gauge from '@lucide/svelte/icons/gauge';
+import Cog from '@lucide/svelte/icons/cog';
 import Tag from '@lucide/svelte/icons/tag';
 import Usb from '@lucide/svelte/icons/usb';
 import Wifi from '@lucide/svelte/icons/wifi';
@@ -404,6 +405,8 @@ export const FEATURE_ICONS = {
 	storage: HardDrive,
 	camera: Camera,
 	speed: Gauge,
+	motor: Cog,
+	power: Zap,
 	price: Tag,
 	ports: Usb,
 	wifi: Wifi,

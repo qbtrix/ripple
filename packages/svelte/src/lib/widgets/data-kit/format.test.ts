@@ -12,6 +12,10 @@ describe('money', () => {
 		expect(money('8', 'USD', { locale: 'en-US', sign: true })).toBe('+$8.00');
 		expect(money(-700, 'USD', { locale: 'en-US', sign: true })).toBe('-$700.00');
 		expect(money(0, 'USD', { locale: 'en-US', sign: true })).toBe('$0.00');
+		// `whole` drops only a whole amount's cents.
+		expect(money(1890, 'USD', { locale: 'en-US', whole: true })).toBe('$1,890');
+		expect(money(750, 'USD', { locale: 'en-US', sign: true, whole: true })).toBe('+$750');
+		expect(money(19.5, 'USD', { locale: 'en-US', whole: true })).toBe('$19.50');
 	});
 
 	it('defaults to USD and never throws on a junk code or locale', () => {
