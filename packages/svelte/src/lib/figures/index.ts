@@ -10,7 +10,8 @@ export interface FigureEntry {
 
 export const FIGURES: Record<string, FigureEntry> = {
 	heart: { title: 'How a heart pumps', load: () => import('./heart/index.js') },
-	'bike-gears': { title: 'How bike gears work', load: () => import('./bike-gears/index.js') }
+	'bike-gears': { title: 'How bike gears work', load: () => import('./bike-gears/index.js') },
+	'particle-collider': { title: 'How a particle collider works', load: () => import('./particle-collider/index.js') }
 };
 
 export type { FigureAnchor, FigureHandle, FigureMeta, FigureModule, FigureParam, FigureReadout, FigureTheme } from './types.js';
