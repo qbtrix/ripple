@@ -33,8 +33,13 @@
 // seed() folds frames in synchronously so the landing can prerender an exchange.
 // Audit counts: a turn keeps `run_id` from `message.persisted` and stamps it, with
 // the server's card_id, on each streamed card. auditCard() (called from an idle
-// callback once a final card has mounted) runs the pure specAudit once per card
-// and hands integer counts and type names, never spec or text, to the AuditPost
+// callback once a final card has mounted) runs the pure specAudit and, given the
+// card's mounted box, the page audit (pageAudit, at the visitor's own width and
+// theme, never axe) once per card. errorBoxes is the larger of the page's error
+// boxes and the node boundaries that fired (Card.renderErrors), so a boundary is
+// counted once and still counted when the page tier is skipped (it is, for the
+// rest of the session, once one page audit took over PAGE_AUDIT_MS). It hands
+// integer counts and type names, never spec or text, to the AuditPost
 // (pawbarTransport's `audit`, fire-and-forget), keeping the row on the Card.
 // `seen_ms` is time on screen since card.final: reportSeen() (Chat.svelte calls it
 // on pagehide and when the tab is hidden) re-posts each kept row with a fresh
@@ -42,6 +47,7 @@
 // Seeded, recorded and legacy fence cards have no run or card id: never posted.
 
 import { specAudit } from '@ripple-ui/core';
+import { pageAudit, type PageCheck } from '$lib/build/page-audit.js';
 import type { RippleEvent, TerminalResult } from '$lib/index.js';
 import { streamSpec, type StreamSpecStore } from '$lib/streaming/index.js';
 import { checkout, LOCAL_HOSTS, type Pay } from '../live/checkout.js';
@@ -310,6 +316,8 @@ export class Card {
 	landedAt = 0;
 	/** The audit row last posted; reportSeen() re-posts it with a fresh `seen_ms`. */
 	auditRow: CardAudit | null = null;
+	/** Node ids whose error boundary fired on the final render (Ripple's onRenderError). */
+	readonly renderErrors = new Set<string>();
 	readonly store: StreamSpecStore;
 	#push!: ReadableStreamDefaultController<string>;
 	#open = true;
@@ -426,6 +434,10 @@ let turnSeq = 0;
 const SEEN_MAX = 86_400_000;
 const seenMs = (card: Card, now: number) => Math.min(SEEN_MAX, Math.round(now - card.landedAt));
 const MAX_RUN = 1_000_000;
+/** A page audit slower than this turns the page tier off for the session (the chat's 300 ms budget). */
+export const PAGE_AUDIT_MS = 300;
+/** Page checks the DOM cannot see (the host fills them in); left out of the post rather than sent as 0. */
+const UNMEASURED: PageCheck[] = ['themeNotApplied', 'consoleErrors'];
 
 export class ChatSession {
 	turns = $state<Turn[]>([]);
@@ -441,6 +453,8 @@ export class ChatSession {
 	#queuedSlot = false;
 	/** A card already sent a message in this task (one click). */
 	#said = false;
+	// ponytail: one slow page audit skips the tier for the session; a real p95 over a sample if it flaps.
+	#pageSlow = false;
 
 	constructor(
 		private readonly transport: Transport,
@@ -450,19 +464,34 @@ export class ChatSession {
 	) {}
 
 	/**
-	 * Runs the pure audit on a final streamed card, once, and posts its counts.
-	 * No-op without an AuditPost or a run and card id. Call it when the page is idle.
+	 * Runs the pure audit, and the page audit on `root` (the card's mounted box) when
+	 * given, on a final streamed card, once, and posts its counts. No-op without an
+	 * AuditPost or a run and card id. Call it when the page is idle.
 	 */
-	auditCard(card: Card) {
+	auditCard(card: Card, root?: Element) {
 		if (!this.audit || card.auditRow || card.status !== 'final' || !card.spec || !card.runId || !card.cardId) return;
 		const start = performance.now();
 		const reports = specAudit(card.spec, {
 			widgetTypes: [...CHAT_WIDGET_TYPES],
 			now: { iso: new Date().toISOString(), tz: Intl.DateTimeFormat().resolvedOptions().timeZone }
 		});
+		const counts: Record<string, number> = Object.fromEntries(reports.map((r) => [r.check, r.count]));
+		if (root && !this.#pageSlow) {
+			const t = performance.now();
+			try {
+				const page: Record<string, number> = { ...pageAudit(root).counts };
+				page.notRendered = root.querySelector('.ripple-root') ? 0 : 1;
+				for (const c of UNMEASURED) delete page[c];
+				Object.assign(counts, page);
+			} catch {
+				/* telemetry only */
+			}
+			if (performance.now() - t > PAGE_AUDIT_MS) this.#pageSlow = true;
+		}
+		counts.errorBoxes = Math.max(counts.errorBoxes ?? 0, card.renderErrors.size);
 		const done = performance.now();
 		card.auditRow = {
-			counts: Object.fromEntries(reports.map((r) => [r.check, r.count])),
+			counts,
 			waived: reports.reduce((n, r) => n + (r.waived?.length ?? 0), 0),
 			widget_types: widgetTypes(card.spec.ui),
 			ms: Math.round(done - start),

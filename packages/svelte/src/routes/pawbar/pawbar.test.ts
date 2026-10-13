@@ -527,6 +527,20 @@ describe('ChatSession', () => {
 		expect(JSON.parse(body).counts).toEqual(row.counts);
 	});
 
+	test('a full audit row (every spec and page check) fits 1 KB with the longest key and keeps its types', () => {
+		const fetch = vi.fn<typeof globalThis.fetch>(async () => new Response('', { status: 204 }));
+		const t = pawbarTransport({ endpoint: 'http://x', widgetId: 'w'.repeat(64), siteKey: 'k'.repeat(256), fetch, ref: () => 'visitor_123' });
+		const checks = ['schema', 'catalog', 'action', 'envelope', 'leftover', 'each', 'bind', 'expr', 'props', 'twoControls', 'size', 'futureDate'];
+		const page = ['notRendered', 'errorBoxes', 'overflow', 'clippedText', 'emptyContainers', 'badText'];
+		const counts = Object.fromEntries([...checks, ...page].map((c) => [c, 99_999]));
+		const widget_types = Array.from({ length: 6 }, (_, i) => `widget-type-${i}`);
+		t.audit('run-1', 'c1', { counts, waived: 99_999, widget_types, ms: 59_999, seen_ms: 86_400_000 });
+		const sent = fetch.mock.calls[0][1]?.body;
+		const body = typeof sent === 'string' ? sent : '';
+		expect(new TextEncoder().encode(body).length).toBeLessThanOrEqual(1024);
+		expect(JSON.parse(body).widget_types).toEqual(widget_types);
+	});
+
 	test.each([
 		[429, { detail: 'Rate limit exceeded' }, 'busy'],
 		[401, { detail: 'invalid_site_key' }, 'error'],

@@ -25,6 +25,8 @@
     change and be reverted.
   - spec.theme and the `brand` pack become CSS vars on the root; `animate`
     finds its target inside this root only.
+  - Render errors: `onRenderError` (context 'ui-render-error', inherited by a
+    nested Ripple) hears every node boundary that shows its error fallback.
   - Opt-ins: `checkCatalog` warns on out-of-catalog node types (never blocks);
     `ensureIds` fills missing node ids once per `ui` root without mutating the
     caller's spec.
@@ -76,6 +78,12 @@
      * straight from the `FlowRunner` this renderer mounts.
      */
     onComplete?: (result: TerminalResult) => void;
+    /**
+     * Called with the node id when a node's error boundary catches a throw in a
+     * plain or finished render (never mid-stream). A nested Ripple without its
+     * own handler reports to its parent's. The chat's audit counts these.
+     */
+    onRenderError?: (nodeId: string | undefined) => void;
     /**
      * RECURSION GUARD for Chain Flows. `FlowRunner` mounts one inner `<Ripple>`
      * per step with `flowHosted={true}`; a non-terminal step still carries its
@@ -129,6 +137,7 @@
     onSpecChanged,
     onStateChange,
     onComplete,
+    onRenderError,
     flowHosted = false,
     checkCatalog = false,
     extraWidgetTypes,
@@ -322,6 +331,8 @@
   // svelte-ignore state_referenced_locally
   setContext('ui-host-event', onEvent);
   setContext('ui-toasts', toastBus);
+  // svelte-ignore state_referenced_locally
+  setContext('ui-render-error', onRenderError ?? getContext('ui-render-error'));
   // 'active' while this or an enclosing streamed spec is still arriving,
   // 'done' after; undefined for a plain spec. NodeRenderer's per-node boundary
   // and SelectLayout's button hold-back read it.

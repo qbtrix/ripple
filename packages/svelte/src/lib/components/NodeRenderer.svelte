@@ -28,7 +28,8 @@
     context) the boundary retries on every new frame, and while the stream is
     open the fallback is a muted `data-ripple-node-pending` block instead: a
     half-parsed node that throws usually renders once the rest arrives. After
-    the stream ends, and for a plain spec, a throw shows ErrorState.
+    the stream ends, and for a plain spec, a throw shows ErrorState and is
+    reported to the 'ui-render-error' context (Ripple's `onRenderError`).
   - `data-ripple-node` / `data-ripple-type` are stamped last into widgetProps
     for the visual editor; they reach the DOM only where a widget forwards them.
 -->
@@ -421,8 +422,13 @@
 	 */
 	let retryBoundary: (() => void) | null = null;
 
+	const reportRenderError = getContext<((nodeId: string | undefined) => void) | undefined>('ui-render-error');
+
 	function onBoundaryError(_error: unknown, reset: () => void) {
-		if (getStreamPhase?.()) retryBoundary = reset;
+		const phase = getStreamPhase?.();
+		if (phase) retryBoundary = reset;
+		// Mid-stream a throw is a half-parsed node, not a render error.
+		if (phase !== 'active') reportRenderError?.(node.id);
 	}
 
 	$effect(() => {

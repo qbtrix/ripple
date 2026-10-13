@@ -27,7 +27,9 @@
     BookingReceipt; an order resumed from sessionStorage shows its PayCard
     above the log. A finished flow goes to session.flowComplete. A notice that
     offers a replay gets a button for session.replayRecorded. Once a final card
-    has mounted, an idle callback posts its audit once (session.auditCard);
+    has mounted, an idle callback posts its pure and page audit once
+    (session.auditCard on the card's box; the final Ripple's onRenderError
+    feeds Card.renderErrors for errorBoxes);
     pagehide or a hidden tab re-posts it with time on screen (reportSeen).
     Spec peek: the card's JSON, pretty-printed, following its newest line while
     streaming and its start once final; open only on the first card the visitor
@@ -313,8 +315,8 @@
 		return () => clearTimeout(id);
 	}
 
-	/** Once a final card has mounted, its pure audit runs when the page is idle (session.auditCard posts it once). */
-	const auditWhenIdle = (card: Card) => () => (card.status === 'final' ? whenIdle(() => session.auditCard(card)) : undefined);
+	/** Once a final card has mounted, its pure and page audits run on its box when the page is idle (session.auditCard posts once). */
+	const auditWhenIdle = (card: Card) => (el: HTMLElement) => (card.status === 'final' ? whenIdle(() => session.auditCard(card, el)) : undefined);
 
 	/** The spec root is itself a card widget, so our frame would draw a card in a card. */
 	const bare = (c: Card) =>
@@ -436,7 +438,12 @@
 			<div class="card-body" data-open={open}>
 				<div class="card-ui" {@attach auditWhenIdle(card)}>
 					{#if card.status === 'final' && card.spec}
-						<Ripple spec={card.spec} onEvent={(e) => session.hostEvent(card, e)} onComplete={(r) => session.flowComplete(card, r)} />
+						<Ripple
+							spec={card.spec}
+							onEvent={(e) => session.hostEvent(card, e)}
+							onComplete={(r) => session.flowComplete(card, r)}
+							onRenderError={(id) => card.renderErrors.add(id ?? `#${card.renderErrors.size}`)}
+						/>
 					{:else}
 						<div class="placeholder" aria-hidden="true"><span></span><span></span><span></span></div>
 						<Ripple streaming={card.store} skeleton="none" onEvent={(e) => session.hostEvent(card, e)} onComplete={(r) => session.flowComplete(card, r)} />
