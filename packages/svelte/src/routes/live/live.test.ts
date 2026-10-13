@@ -17,7 +17,7 @@ import { streamSpec, type StreamSpecStore } from '$lib/streaming/index.js';
 import { validateCatalog } from '$lib/widgets/validate-catalog-bound.js';
 import { replay } from './replay.js';
 import { businessScenarios, scenarios, type ScenarioFixture } from './scenarios.js';
-import { figureRuns } from './app-runs.js';
+import { appScenarios, figureRuns } from './app-runs.js';
 import OrderReceipt from './OrderReceipt.svelte';
 
 // Streamed mounts recompute on later ticks; under a full parallel suite that can
@@ -413,7 +413,7 @@ describe('explainer gearing', () => {
 	// 50/17 on a 2100 mm wheel: ratio 2.941, 6.176 m per pedal turn (stat tiles show 2 decimals below 10).
 	// 34/32: ratio 1.0625, 2.231 m.
 	test('after streaming, parts show their notes and the presets change the gearing', async () => {
-		const { container } = await mountStreamed(scenario('explainer'));
+		const { container } = await mountStreamed(appScenarios.find((s) => s.id === 'explainer')!.fixture);
 		expect(text(container)).toMatch(/Gear ratio\s*2\.94(?!\d)/);
 		expect(text(container)).toMatch(/Metres per pedal turn\s*6\.18(?!\d)/);
 		await fireEvent.click(button(container, '1 Pedals + crank'));

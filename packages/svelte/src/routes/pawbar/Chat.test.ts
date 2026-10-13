@@ -178,6 +178,40 @@ test('a step-by-step chip says so, and sends its prompt', async () => {
 	await waitFor(() => expect(sent).toEqual(['Help me plan a trip step by step']));
 });
 
+test('a handoff chip opens Paw OS with its prompt like typed text, marked as such, and never reaches the Paw Bar', async () => {
+	const sent: string[] = [];
+	const open = vi.fn((_url: string) => ({}));
+	const session = new ChatSession(async function* (message) {
+		sent.push(message);
+		yield { event: 'stream_end', data: { cancelled: false } };
+	});
+	const view = render(Chat, {
+		session,
+		open,
+		pawosUrl: 'https://os.example.test',
+		suggestions: [
+			{ id: 'table', title: 'Book a table', prompt: 'Book a table for 4 on Saturday evening', steps: true, handoff: true },
+			{ id: 'bill', title: 'Split the bill', prompt: 'Split it' }
+		]
+	});
+	const chip = view.getByRole('button', { name: 'Book a table step by step' });
+	expect(document.getElementById(chip.getAttribute('aria-describedby')!)?.textContent).toBe('Opens in Paw OS');
+	expect(chip.getAttribute('title')).toContain('Opens in Paw OS');
+	expect(chip.querySelector('.chip-out')).toBeTruthy();
+	const plain = view.getByRole('button', { name: 'Split the bill' });
+	expect(plain.hasAttribute('aria-describedby')).toBe(false);
+	expect(plain.querySelector('.chip-out')).toBeNull();
+
+	await fireEvent.click(chip);
+	expect(open).toHaveBeenCalledOnce();
+	const url = new URL(open.mock.calls[0][0]);
+	expect(url.origin).toBe('https://os.example.test');
+	expect(url.search).toBe('?ref=ripple');
+	expect(url.hash).toBe(`#prompt=${encodeURIComponent('Book a table for 4 on Saturday evening')}`);
+	expect(sent).toEqual([]);
+	expect(view.getByText(/Opened in Paw OS\./)).toBeTruthy();
+});
+
 test('chips render in labelled groups, in the order the groups first appear', async () => {
 	const sent: string[] = [];
 	const session = new ChatSession(async function* (message) {

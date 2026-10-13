@@ -2,8 +2,9 @@
 // the landing's suggestion chips. Each fixture is a real model stream recorded
 // offline by scripts/record-scenario.ts. Other tasks import these types and this
 // list, so the shapes below are a contract: add fields, never rename or remove.
-// `chatPrompts` are chips with no recording: the landing shows them only when the
-// live chat is on (and a store, for `needsStore`). `group` is the /live
+// `chatPrompts` are chips with no recording: live, they go to the chat (the
+// `needsStore` ones only with a store); in replay mode they open Paw OS with
+// their prompt, like typed text. `group` is the /live
 // gallery's group; on the landing, `suggestionGroups` decides which group a chip sits in, its order, its lucide icon and
 // (optionally) a shorter chip title; it names chips by id, because the play cards
 // (pawbar/play-cards.ts) import from here and this file runs in node for the
@@ -20,7 +21,6 @@ import flashcards from './fixtures/flashcards.json';
 import heartPump from './fixtures/heart-pump.json';
 import hiitWorkout from './fixtures/hiit-workout.json';
 import mealPlan from './fixtures/meal-plan.json';
-import explainer from './fixtures/explainer.json';
 import bikeGears from './fixtures/bike-gears.json';
 import plane3d from './fixtures/plane-3d.json';
 import refundApproval from './fixtures/refund-approval.json';
@@ -76,7 +76,6 @@ export const scenarios: Scenario[] = [
 	{ id: 'flashcards', title: 'Spanish flashcards', category: 'Learning', fixture: flashcards, group: 'Learn' },
 	{ id: 'hiit-workout', title: '20-minute HIIT', category: 'Fitness', fixture: hiitWorkout, group: 'Track' },
 	{ id: 'meal-plan', title: 'High-protein week', category: 'Food', fixture: mealPlan, group: 'Track' },
-	{ id: 'explainer', title: 'Bike gears, explained', category: 'Learning', fixture: explainer, prompt: 'How do bike gears work? Draw me an animated picture of the chain drive and explain it in a few lines.', group: 'Learn' },
 	{ id: 'plane-3d', title: 'See a plane in 3D', category: 'Learning', fixture: plane3d, prompt: 'Show me a plane in 3D and label its parts', group: 'Learn' },
 	{ id: 'heart-pump', title: 'The heart as a pump', category: 'Learning', fixture: heartPump, prompt: 'How does the heart pump blood?', group: 'Learn' },
 	{ id: 'bike-gears', title: 'How bike gears work', category: 'Learning', fixture: bikeGears, prompt: 'How do bike gears work?', group: 'Learn' }
@@ -104,7 +103,6 @@ export const chatPrompts: ChatPrompt[] = [
 	{ id: 'take-notes', title: 'Take notes', prompt: 'Give me a notepad for ideas with tags, start with two sample notes' },
 	{ id: 'view-calendar', title: 'View calendar', prompt: 'Show me a month calendar with a few sample events on it' },
 	{ id: 'take-quiz', title: 'Take a quiz', prompt: 'Quiz me with 5 world geography questions and show my score at the end' },
-	{ id: 'bike-gears-live', title: "Show how a bike's gears work", prompt: "Show how a bike's gears work as a live drawing: the chainring, chain and rear cog turning, with a cadence slider", group: 'Learn' },
 	{ id: 'explain-concept', title: 'Explain concept', prompt: 'Explain how compound interest works in a few lines, with a simple chart' },
 	{ id: 'skeleton-3d', title: 'Explore a skeleton in 3D', prompt: 'Show me a human skeleton in 3D and label the main bones', group: 'Learn' },
 	{ id: 'heart-3d', title: 'Explore the heart in 3D', prompt: 'Show me a human heart in 3D and label its chambers and main vessels', group: 'Learn' },
@@ -176,12 +174,9 @@ export const suggestionGroups: { label: string; chips: GroupChip[] }[] = [
 			['explain-concept', 'lightbulb'],
 			['study-plan', 'book-open'],
 			['bike-gears', 'bike'],
-			['explainer', 'bike'],
-			['bike-gears-live', 'bike'],
-			['heart', 'heart-pulse'],
+			['heart-pump', 'heart-pulse', 'How a heart pumps'],
 			['plane-3d', 'box'],
 			['heart-3d', 'box'],
-			['heart-pump', 'heart'],
 			['skeleton-3d', 'box']
 		]
 	},

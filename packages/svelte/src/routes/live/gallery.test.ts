@@ -7,7 +7,9 @@
 // Files are listed with Vite globs.
 import { expect, test } from 'vitest';
 import { demoItems, galleryItems, GROUPS, itemByKey, liveItems, liveRuns, resolveKey } from './gallery.js';
-import { businessScenarios } from './scenarios.js';
+import { businessScenarios, scenarios } from './scenarios.js';
+import { appScenarios } from './app-runs.js';
+import { playScenarios } from '../pawbar/play-cards.js';
 import { BRANDS } from './brands.js';
 import { load } from '../showcase/[...path]/+page.js';
 import manifest from '../../../static/thumbs/thumbs.json';
@@ -60,6 +62,14 @@ test('every demo has its component and opens in place on /live', () => {
 test('every live item is one run', () => {
 	expect(liveItems.map((i) => i.href)).toEqual(liveRuns.map((s) => `/live?s=${s.id}`));
 	for (const i of liveItems) expect(itemByKey(i.key)).toBe(i);
+});
+
+test('the drawings that lost their landing chip are gallery-only runs that still open', () => {
+	for (const key of ['explainer', 'heart']) {
+		expect(appScenarios.map((s) => s.id), key).toContain(key);
+		expect([...scenarios, ...playScenarios].map((s) => s.id), key).not.toContain(key);
+		expect(itemByKey(key)?.kind, key).toBe('run');
+	}
 });
 
 test('every item has a committed thumb, thumbs.json matches the grid, and no thumb is orphaned', () => {
