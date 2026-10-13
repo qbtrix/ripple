@@ -1,8 +1,9 @@
 // craft.test.ts: core's craft data against the full manifest. Every waived
-// widget and every DATA_PROPS widget and prop exists here, and the built
-// manifest carries the waivers and stamps exactly the listed props `data: true`.
+// widget, every DATA_PROPS widget and prop, and every intent's widget and key
+// prop exists here; the built manifest carries the waivers, the intents and the
+// craft rules and lenses, and stamps exactly the listed props `data: true`.
 import { describe, it, expect } from 'vitest';
-import { DATA_PROPS, waivers } from '@ripple-ui/core/manifest';
+import { DATA_PROPS, craft, intents, waivers } from '@ripple-ui/core/manifest';
 import { buildManifest, manifestEntries } from './index.js';
 
 const byType = new Map(manifestEntries.map((e) => [e.type, e]));
@@ -28,5 +29,20 @@ describe('craft data in the manifest', () => {
     const listed = Object.entries(DATA_PROPS).flatMap(([t, props]) => props.map((p) => `${t}.${p}`));
     expect(flagged.toSorted()).toEqual(listed.toSorted());
     expect(manifestEntries.some((e) => Object.values(e.props).some((s) => s.data))).toBe(false); // entries stay unstamped
+  });
+
+  it('every intent names a manifest widget and its real props or events', () => {
+    const ghosts = intents.flatMap((i) => {
+      const e = byType.get(i.widget);
+      if (!e) return [i.widget];
+      return i.props.filter((p) => !e.props[p] && !e.events?.[p]).map((p) => `${i.widget}.${p}`);
+    });
+    expect(ghosts).toEqual([]);
+  });
+
+  it('the built manifest carries the intents and the craft rules and lenses', () => {
+    const built = buildManifest();
+    expect(built.intents).toEqual(intents);
+    expect(built.craft).toEqual(craft);
   });
 });

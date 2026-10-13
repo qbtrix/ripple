@@ -8,8 +8,9 @@
 // The action grammar and spec envelope come from @ripple-ui/core/manifest
 // (they describe the engine) and are re-exported unchanged. So does the craft
 // data: buildManifest() stamps `data: true` on every prop core's DATA_PROPS
-// lists and carries core's reviewed `waivers`, so the build loop, pocketpaw
-// and the skill read one copy. The version comes from src/lib/version.ts, a
+// lists and carries core's reviewed `waivers`, its `intents` map and its
+// `craft` rules and lenses, so the build loop, pocketpaw and the skill read
+// one copy. The version comes from src/lib/version.ts, a
 // plain constant: this module is a client dependency (the visual editor), and
 // importing package.json here 500s `vite dev`.
 // Each entry may carry `staticSafe` (renders with JavaScript off) and a
@@ -22,7 +23,19 @@ import { manifestActions } from './actions.js';
 // ActionSpec, SpecEnvelope and specEnvelope moved to @ripple-ui/core/manifest on
 // 2026-09-27 (they describe the engine, not any widget). Re-exported so every
 // existing import from this module keeps working.
-import { specEnvelope, DATA_PROPS, waivers, type ActionSpec, type SpecEnvelope, type Waiver } from '@ripple-ui/core/manifest';
+import {
+  specEnvelope,
+  DATA_PROPS,
+  waivers,
+  craft,
+  intents,
+  type ActionSpec,
+  type SpecEnvelope,
+  type Waiver,
+  type CraftRule,
+  type Lens,
+  type Intent
+} from '@ripple-ui/core/manifest';
 export { specEnvelope, type ActionSpec, type SpecEnvelope };
 import { accordionEntry } from './entries/accordion.js';
 import { alertEntry } from './entries/alert.js';
@@ -346,6 +359,10 @@ export interface WidgetManifest {
   widgets: WidgetManifestEntry[];
   /** Reviewed fault exceptions by widget and check id (core's craft data). */
   waivers: readonly Waiver[];
+  /** What a visitor asks for, mapped to the widget that answers it (core's craft data). */
+  intents: readonly Intent[];
+  /** Craft rules (cited by id in prompts and critic issues) and the critic's lenses. */
+  craft: { rules: readonly CraftRule[]; lenses: readonly Lens[] };
 }
 
 
@@ -590,5 +607,7 @@ export function buildManifest(): WidgetManifest {
       return { ...entry, props };
     }),
     waivers,
+    intents,
+    craft,
   };
 }
