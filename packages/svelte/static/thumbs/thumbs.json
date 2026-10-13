@@ -200,6 +200,16 @@
 		"h": 600
 	},
 	{
+		"id": "live-tokamak",
+		"title": "How a fusion reactor works",
+		"caption": "How does a fusion reactor work? Show me a tokamak cut open and let me change the plasma current and the heating.",
+		"group": "Learn",
+		"tag": "Hand-written",
+		"href": "/live?s=tokamak",
+		"w": 800,
+		"h": 600
+	},
+	{
 		"id": "live-memory-match",
 		"title": "Memory match",
 		"caption": "Make me a memory match game pairing Spanish animal words with their emoji",

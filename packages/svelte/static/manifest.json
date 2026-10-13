@@ -1,7 +1,7 @@
 {
   "schema": "ripple.manifest/v1",
   "version": "0.8.0",
-  "generatedAt": "2026-10-13T05:31:10.642Z",
+  "generatedAt": "2026-10-13T06:28:33.073Z",
   "spec": {
     "uiField": "ui",
     "stateField": "state",
@@ -11882,12 +11882,12 @@
     {
       "type": "figure",
       "category": "composite",
-      "description": "A hand-built live isometric figure picked by id (\"heart\": how a heart pumps; \"bike-gears\": how bike gears work), with sliders, live readouts and numbered labels on its named parts. Bind value.",
+      "description": "A hand-built live isometric figure picked by id (a heart, bike gears, a fusion reactor), with sliders, live readouts and numbered labels on its named parts. Bind value.",
       "props": {
         "figure": {
-          "type": "\"heart\" | \"bike-gears\"",
+          "type": "\"heart\" | \"bike-gears\" | \"tokamak\"",
           "required": true,
-          "description": "Figure id. \"heart\" is a beating heart as two pumps: sliders bpm (40-180) and stroke (50-110 ml). \"bike-gears\" is a bicycle drivetrain on a stand: sliders cadence (40-120 rpm), ring (34 or 50 teeth) and gear (1-7, 1 = the 28-tooth cog, 7 = the 11); readouts gear ratio, metres per pedal turn and km/h."
+          "description": "Figure id. \"heart\" is a beating heart as two pumps: sliders bpm (40-180) and stroke (50-110 ml). \"bike-gears\" is a bicycle drivetrain on a stand: sliders cadence (40-120 rpm), ring (34 or 50 teeth) and gear (1-7, 1 = the 28-tooth cog, 7 = the 11); readouts gear ratio, metres per pedal turn and km/h. \"tokamak\" is a fusion reactor cut open: sliders current (5-17 MA) and heating (10-75 MW); readouts core temperature (million °C), fusion power (MW) and the gain Q."
         },
         "params": {
           "type": "Record<string, number>",
@@ -11897,7 +11897,7 @@
         "labels": {
           "type": "Array<{ anchor: string; label?: string; note?: string }>",
           "required": false,
-          "description": "Up to 10 numbered pins, plain text. heart anchors: right-atrium, right-ventricle, left-atrium, left-ventricle, tricuspid, mitral, pulmonary-valve, aortic-valve, aorta, vena-cava, pulmonary-artery, pulmonary-veins, lungs, body. bike-gears anchors: chainring, crank, pedal, chain, cassette, rear-derailleur, front-derailleur, jockey-wheels, rear-hub, wheel."
+          "description": "Up to 10 numbered pins, plain text. heart anchors: right-atrium, right-ventricle, left-atrium, left-ventricle, tricuspid, mitral, pulmonary-valve, aortic-valve, aorta, vena-cava, pulmonary-artery, pulmonary-veins, lungs, body. bike-gears anchors: chainring, crank, pedal, chain, cassette, rear-derailleur, front-derailleur, jockey-wheels, rear-hub, wheel. tokamak anchors: plasma, central-solenoid, tf-coil, pf-coil, vacuum-vessel, blanket, divertor, heating-beam, port."
         },
         "caption": {
           "type": "string",
