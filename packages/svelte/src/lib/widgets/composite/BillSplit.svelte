@@ -184,8 +184,9 @@
 		}
 	}
 
-	// Columns: two below 720px (an odd last card spans both); above, up to
-	// four, picked so the last row never holds one card alone.
+	// Columns: one below 400px, so a 20-character name fits its input (an
+	// input cannot wrap); two below 720px (an odd last card spans both);
+	// above, up to four, picked so the last row never holds one card alone.
 	const wide = (n: number) => (n <= 2 ? '@min-[720px]:grid-cols-2' : n === 3 || n === 6 || n % 4 === 1 ? '@min-[720px]:grid-cols-3' : '@min-[720px]:grid-cols-4');
 
 	const focusRing = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ripple-ring';
@@ -268,17 +269,17 @@
 				{/if}
 			</section>
 
-			<ul class={['grid grid-cols-2 gap-2', wide(result.shares.length)]} aria-label="Who pays what" data-slot="people">
+			<ul class={['grid grid-cols-1 gap-2 @min-[400px]:grid-cols-2', wide(result.shares.length)]} aria-label="Who pays what" data-slot="people">
 				{#each result.shares as s, i (`${s.id}:${i}`)}
 					<li
 						class={[
-							'flex min-w-0 flex-col gap-2 rounded-ripple border border-ripple-border bg-ripple-surface p-3',
-							i === result.shares.length - 1 && result.shares.length % 2 === 1 && 'col-span-2 @min-[720px]:col-span-1'
+							'grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-ripple border border-ripple-border bg-ripple-surface p-3 @min-[400px]:flex @min-[400px]:flex-col @min-[400px]:items-stretch',
+							i === result.shares.length - 1 && result.shares.length % 2 === 1 && '@min-[400px]:col-span-2 @min-[720px]:col-span-1'
 						]}
 						in:rise={{ index: 0 }}
 						data-person={s.id}
 					>
-						<div class="flex min-w-0 items-center gap-1">
+						<div class="col-span-2 flex min-w-0 items-center gap-1">
 							<label for="{uid}-name-{i}" class="sr-only">Name of person {i + 1}</label>
 							<input
 								id="{uid}-name-{i}"
@@ -299,7 +300,7 @@
 							</button>
 						</div>
 						<p class="text-title-2 font-semibold tabular-nums [overflow-wrap:anywhere]" data-slot="pays">{fmt(s.cents)}</p>
-						<div class="flex items-center justify-between gap-2">
+						<div class="flex items-center justify-end gap-2 @min-[400px]:justify-between">
 							<label for="{uid}-extras-{i}" class="text-footnote text-ripple-muted-foreground">{extrasWord}</label>
 							<div class={[box, 'w-24']}>
 								<input

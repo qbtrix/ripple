@@ -175,7 +175,10 @@
   )}
   style={styleString}
 >
-  <div class="flex items-center gap-2 px-2.5 py-1.5">
+  <!-- Wraps: on a narrow card the argument chip (natural width, at least
+       16ch) drops to its own line whole rather than truncating to a few
+       characters; the right-hand group is pushed right by its first ml-auto. -->
+  <div class="flex flex-wrap items-center gap-x-2 gap-y-1 px-2.5 py-1.5">
     <button
       type="button"
       aria-expanded={isOpen}
@@ -222,7 +225,7 @@
       <!-- The chip pops in on the source's chip timing. It sits on this wrapper
            rather than on the trigger: the trigger is rendered by bits-ui, so
            styling it from here would need a :global escape. -->
-      <div class="ripple-tool-pop-in min-w-0 flex-1">
+      <div class="ripple-tool-pop-in max-w-full min-w-[min(100%,16ch)]">
         <HoverCard.Root openDelay={120} closeDelay={80}>
           <!-- tabindex: the trigger renders an <a> with no href, which bits-ui
                stamps role="button" + aria-expanded and wires onfocus/onblur to.
@@ -248,18 +251,19 @@
 
     {#if duration}
       <span
-        class="inline-flex shrink-0 items-center gap-1 text-[11px] tabular-nums text-ripple-muted-foreground"
+        class="ml-auto inline-flex shrink-0 items-center gap-1 text-[11px] tabular-nums text-ripple-muted-foreground"
       >
         <ClockIcon size={11} aria-hidden="true" />{duration}
       </span>
     {/if}
     {#if time}
-      <span class="shrink-0 text-[11px] text-ripple-muted-foreground">{time}</span>
+      <span class={cn('shrink-0 text-[11px] text-ripple-muted-foreground', !duration && 'ml-auto')}>{time}</span>
     {/if}
 
     <span
       class={cn(
         'inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-medium ring-1',
+        !duration && !time && 'ml-auto',
         statusMeta.cls
       )}
     >

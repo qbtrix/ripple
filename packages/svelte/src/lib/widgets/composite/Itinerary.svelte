@@ -418,7 +418,7 @@
 									<span class="truncate text-caption-1 font-medium tracking-[0.04em] text-ripple-muted-foreground uppercase">
 										{d.label}{#if d.when}<span class="normal-case">{` · ${d.when}`}</span>{/if}
 									</span>
-									<span class="truncate text-body-emph">{d.theme || `${d.stops.length} ${d.stops.length === 1 ? 'stop' : 'stops'}`}</span>
+									<span class="text-body-emph text-pretty [overflow-wrap:anywhere]">{d.theme || `${d.stops.length} ${d.stops.length === 1 ? 'stop' : 'stops'}`}</span>
 								</span>
 								{#if d.planned > 0}
 									<span class="hidden text-callout text-ripple-muted-foreground tabular-nums @min-[720px]:inline">{money(d.planned, currency)}</span>

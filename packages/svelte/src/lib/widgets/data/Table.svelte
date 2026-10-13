@@ -4,7 +4,8 @@
 
      Layout: text cells wrap (top-aligned, overflow-wrap:anywhere, a small
      min width) so a model's sentence-long cell is never clipped mid-word; a
-     column whose values are all numbers is right-aligned and kept on one line.
+     column whose values are all numbers is right-aligned and kept on one line,
+     unless the column sets `align` (left, center, right), which always wins.
      The primitive's container still scrolls sideways when columns cannot fit.
 
      Editing is opt-in (`editable` plus a `bind`): a commit builds the FULL
@@ -45,6 +46,7 @@
          *  link to that URL (new tab). Keeps the URL out of the visible text, so a "Title"
          *  column can be clickable without showing the address. */
         href?: string;
+        align?: "left" | "center" | "right";
     }
 
     interface Props {
@@ -131,6 +133,7 @@
         sortable: boolean;
         editable: boolean;
         href?: string;
+        align?: "left" | "center" | "right";
     };
     const columns: NormalizedColumn[] = $derived.by(() => {
         const colsArr = safeArray<TableColumn | string>(rawColumns, {
@@ -154,6 +157,10 @@
                     // Carried through, not defaulted: the normalizer rebuilds the
                     // column object, so any key not listed here is silently dropped.
                     href: c.href,
+                    align:
+                        c.align === "left" || c.align === "center" || c.align === "right"
+                            ? c.align
+                            : undefined,
                     // Per-column opt-out: default editable, explicit false stays read-only.
                     editable: c.editable !== false,
                 };
@@ -183,10 +190,15 @@
         }
         return out;
     });
-    const cellClass = (key: string) =>
-        numericCols.has(key)
-            ? "text-right tabular-nums whitespace-nowrap align-top"
-            : "whitespace-normal align-top [overflow-wrap:anywhere] min-w-[8ch]";
+    const ALIGN = { left: "text-left", center: "text-center", right: "text-right" } as const;
+    /** The column's own `align`, else right for an all-number column. */
+    const alignClass = (col: NormalizedColumn) =>
+        col.align ? ALIGN[col.align] : numericCols.has(col.accessorKey) ? "text-right" : "";
+    const cellClass = (col: NormalizedColumn) =>
+        `${alignClass(col)} ` +
+        (numericCols.has(col.accessorKey)
+            ? "tabular-nums whitespace-nowrap align-top"
+            : "whitespace-normal align-top [overflow-wrap:anywhere] min-w-[8ch]");
 
     let sortKey = $state<string | null>(null);
     let sortDir = $state<"asc" | "desc">("asc");
@@ -389,7 +401,7 @@
                 <Table.Row>
                     {#each columns as col}
                         {#if col.sortable && col.accessorKey}
-                            <Table.Head class={numericCols.has(col.accessorKey) ? "text-right" : ""}>
+                            <Table.Head class={alignClass(col)}>
                                 <button
                                     type="button"
                                     onclick={() => toggleSort(col.accessorKey!)}
@@ -411,7 +423,7 @@
                                 </button>
                             </Table.Head>
                         {:else}
-                            <Table.Head class={numericCols.has(col.accessorKey) ? "text-right" : ""}>{col.header}</Table.Head>
+                            <Table.Head class={alignClass(col)}>{col.header}</Table.Head>
                         {/if}
                     {/each}
                 </Table.Row>
@@ -437,7 +449,7 @@
                                     row[col.accessorKey] !== undefined
                                         ? row[col.accessorKey]
                                         : (Object.values(row)[ci] ?? "")}
-                                <Table.Cell class={cellClass(col.accessorKey)}>
+                                <Table.Cell class={cellClass(col)}>
                                     {#if ci === 0 && statusKey && row[statusKey]}
                                         <span
                                             class="mr-1.5 inline-block size-2 rounded-full align-middle"

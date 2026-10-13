@@ -92,7 +92,9 @@
 		return result;
 	}
 
+	/** In order per point (one series) or per series; a single colour paints them all. */
 	function getColor(i: number): string {
+		if (colors.length === 1 && colors[0]) return colors[0];
 		return colors[i] || defaultColors[i % defaultColors.length];
 	}
 

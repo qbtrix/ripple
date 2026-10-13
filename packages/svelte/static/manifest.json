@@ -1,7 +1,7 @@
 {
   "schema": "ripple.manifest/v1",
   "version": "0.8.0",
-  "generatedAt": "2026-10-13T09:29:55.981Z",
+  "generatedAt": "2026-10-13T11:38:46.451Z",
   "spec": {
     "uiField": "ui",
     "stateField": "state",
@@ -1878,7 +1878,7 @@
         "colors": {
           "type": "string[]",
           "required": false,
-          "description": "Custom color palette."
+          "description": "Palette in order: one per series when points carry `series`, else one per point (bar, pie). A single colour paints every point."
         },
         "tooltip": {
           "type": "boolean",
@@ -5149,7 +5149,7 @@
         "primaryChart": {
           "type": "{ title?: string; type?: \"bar\" | \"line\" | \"area\" | \"pie\" | \"donut\" | \"radar\" | \"heatmap\"; data: DataPoint[] | Record<string, DataPoint[]>; height?: number; colors?: string[] }",
           "required": false,
-          "description": "Hero chart (left, 2/3 width when activity rail is present). `data` may be a flat array, or a record keyed by range/granularity/\"<range>|<granularity>\"; the component picks the most specific match for the active state."
+          "description": "Hero chart. `data` is an array or a record keyed by range, granularity or \"<range>|<granularity>\". `colors` is per point on one series, per series on many; one colour paints all."
         },
         "activity": {
           "type": "Array<{ id?: string; time: string; label: string; actor?: string; icon?: string; severity?: \"info\" | \"success\" | \"warning\" | \"destructive\"; category?: string; unread?: boolean; actions?: EventAction | EventAction[] }>",
@@ -8969,7 +8969,7 @@
         "shadowIntensity": {
           "type": "number",
           "required": false,
-          "description": "Strength of the contact shadow under the model (0 to 1)."
+          "description": "Strength of the contact shadow under the model (0 to 1). Default 1."
         }
       },
       "events": {
@@ -13396,20 +13396,27 @@
       "description": "Multi-tier pricing comparison cards with feature checklists, popular badge, and CTAs.",
       "props": {
         "tiers": {
-          "type": "Array<{ id: string; name: string; price: string | number; period?: string; description?: string; features?: Array<string | { label: string; included?: boolean }>; cta?: string; popular?: boolean }>",
+          "type": "Array<{ id: string; name: string; price: string | number; period?: string; description?: string; features?: Array<string | { label: string; included?: boolean }>; cta?: string; popular?: boolean; actions?: EventAction | EventAction[] }>",
           "required": true,
-          "description": "Pricing tiers."
+          "description": "Pricing tiers, 1 to 4 in a row; a narrow card stacks them. `period` is \"month\", not \"/month\". A tier's `actions` fire on its CTA instead of on_select."
         },
         "currency": {
           "type": "string",
           "required": false,
-          "description": "Currency symbol prepended to numeric prices. Default \"$\"."
+          "description": "ISO 4217 code for numeric prices (\"EUR\", \"USD\"), or a symbol written as is. Default \"$\"."
+        }
+      },
+      "events": {
+        "on_select": {
+          "type": "EventAction | EventAction[]",
+          "required": false,
+          "description": "Fires with { id, name } when the visitor clicks a tier's CTA (a tier with its own `actions` fires those instead)."
         }
       },
       "example": {
         "type": "pricing-table",
         "props": {
-          "currency": "$",
+          "currency": "USD",
           "tiers": [
             {
               "id": "free",
@@ -16171,9 +16178,9 @@
           "description": "Row objects."
         },
         "columns": {
-          "type": "Array<{ header?: string; accessorKey?: string; sortable?: boolean; href?: string }>",
+          "type": "Array<{ header?: string; accessorKey?: string; sortable?: boolean; href?: string; align?: \"left\" | \"center\" | \"right\" }>",
           "required": true,
-          "description": "Column definitions. `href` names a row field holding a URL; that column's cell text then links to it (new tab). Keep the URL in its own row field, not in the visible text."
+          "description": "Column definitions. `href` names a row field holding a URL; that column's cell text then links to it (new tab). Keep the URL in its own row field, not in the visible text. `align` overrides the default (all-number columns right)."
         },
         "variant": {
           "type": "\"default\" | \"compact\" | \"striped\" | \"minimal\"",
