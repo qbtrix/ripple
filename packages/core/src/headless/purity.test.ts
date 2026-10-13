@@ -10,7 +10,8 @@
  *
  * So the check is transitive. It walks the real import graph from
  * `headless/index.ts` (and from the pure audit modules, `core/spec-audit.ts`
- * and `core/audit-report.ts`) and asserts of every reachable file:
+ * and `core/audit-report.ts`, and the build loop, `build/index.ts`) and
+ * asserts of every reachable file:
  *
  *   1. no `.svelte` import (component or `.svelte.ts` rune module),
  *   2. no import from `svelte` or `svelte/*`,
@@ -38,10 +39,10 @@ const SOURCES = import.meta.glob('../**/*.ts', {
 }) as Record<string, string>;
 
 /**
- * Crawl roots: the headless entry, plus the pure audit modules a node host
- * runs without the headless runtime (the spec audit and its report type).
+ * Crawl roots: the headless entry, plus the pure modules a node host runs
+ * without the headless runtime (the spec audit, its report type, the build loop).
  */
-const ENTRIES = ['./index.ts', '../core/audit-report.ts', '../core/spec-audit.ts'];
+const ENTRIES = ['./index.ts', '../core/audit-report.ts', '../core/spec-audit.ts', '../build/index.ts'];
 
 /**
  * Static import/export sources: `from '...'` plus bare `import '...'`.
