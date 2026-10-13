@@ -237,6 +237,25 @@ function bench(): string {
 	return out.join('');
 }
 
+/** A soft contact shadow of a plan on the floor at height z. */
+const shadow = (plan: k.Plan, z: number, far = false) => `<path class="iso-halo fr-shadow"${far ? ' data-far=""' : ''} d="${k.haloOf(plan, z, 0.1, P)}"/>`;
+const round = (c: Flat, r: number): k.Plan => ({ x: c[0] - r, y: c[1] - r, w: r * 2, d: r * 2, r });
+
+/** Shadows under everything that stands on the pad or the bench, drawn before any of it. */
+function shadows(): Item[] {
+	const inside = [shadow(round(R, 16), 4), shadow(round(G, 17), 4, true), shadow(round(U, 13), 4, true), shadow(round(Z, 11), 4, true)].join('');
+	const outside = [
+		shadow({ ...DECK, x: DECK.x - 2, y: DECK.y - 2, w: DECK.w + 4, d: DECK.d + 4 }, 0, true),
+		shadow({ x: F[0] - 11, y: F[1] - 11, w: 22, d: 22, r: 3 }, 0),
+		shadow({ x: 112, y: 16, w: 46, d: 34, r: 3 }, 0),
+		shadow({ x: 186, y: -92, w: 64, d: 62, r: 4 }, 0)
+	].join('');
+	return [
+		{ id: 'shadows-bench', key: -1e8 - 1, svg: outside },
+		{ id: 'shadows-pad', key: -1e8 + 2, svg: inside }
+	];
+}
+
 function containment(): Item[] {
 	const pad = S(k.cylinder(C[0], C[1], 96, 0, 4, P, 96, 0.8), { tone: 'lo', inner: L(k.sideArc(C[0], C[1], 96, 2, P, 64), { tone: 'faint' }) }) + L(k.ring(C[0], C[1], 91, 4, P, 96), { tone: 'faint' });
 	const seams = [30, 62].map((z) => innerArc(C, 88, z)).join('');
@@ -559,6 +578,7 @@ function staticItems(): Item[] {
 	const push = (list: Item[]) => items.push(...list);
 	add('bench', -1e9, bench());
 	push(containment());
+	push(shadows());
 	const kR = key(R);
 	const kG = key(G);
 	const kU = key(U);
@@ -673,6 +693,8 @@ export const REACTOR_CSS = `
 .fr-hot>.iso-shade[data-shade="0"],.fr-hot>.iso-shade[data-shade="1"]{fill:color-mix(in srgb,var(--anatomy-red) calc(var(--fr-tint) * .6),var(--anatomy-shade-0))}
 .fr-cold>.iso-shade[data-shade="0"],.fr-cold>.iso-shade[data-shade="1"],.fr-water>.iso-shade[data-shade="0"],.fr-water>.iso-shade[data-shade="1"]{fill:color-mix(in srgb,var(--anatomy-blue) calc(var(--fr-tint) * .6),var(--anatomy-shade-0))}
 .fr-flow{stroke-dasharray:2 5;stroke-width:1;stroke-opacity:.75}
+.iso-halo.fr-shadow{filter:blur(2.5px);opacity:calc(var(--anatomy-halo-opacity) * .5);transform:none}
+.iso-halo.fr-shadow[data-far]{filter:blur(4px);opacity:calc(var(--anatomy-halo-opacity) * .25)}
 .fr-void{fill:color-mix(in srgb,var(--anatomy-shade-0) 55%,var(--anatomy-halo));stroke:none}
 `;
 
