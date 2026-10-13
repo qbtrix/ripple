@@ -8,12 +8,8 @@ const viewBox = (svg: string) => svg.match(/viewBox="([^"]*)"/)![1]!.split(' ').
 test('rocket-engine: the viewBox holds every point it draws, at any throttle and shaft angle', () => {
 	for (const svg of [engineSvg(clampParams({ throttle: 100, mixture: 2.2 }), { theta: 2.1, t: 3.3 }), engineSvg(clampParams({ throttle: 40, mixture: 3 }), { theta: 5, t: 0.9 })]) {
 		const [x, y, w, h] = viewBox(svg);
-		for (const [px, py] of pointsOf(svg)) {
-			expect(px).toBeGreaterThanOrEqual(x);
-			expect(px).toBeLessThanOrEqual(x + w);
-			expect(py).toBeGreaterThanOrEqual(y);
-			expect(py).toBeLessThanOrEqual(y + h);
-		}
+		// One expect over the stray points: an expect per point times out under a loaded suite.
+		expect(pointsOf(svg).filter(([px, py]) => px < x || px > x + w || py < y || py > y + h)).toEqual([]);
 	}
 });
 

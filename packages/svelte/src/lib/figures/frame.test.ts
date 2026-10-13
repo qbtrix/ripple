@@ -30,12 +30,8 @@ describe('figure framing', () => {
 	test.each(frames)('%s: the viewBox holds every point it draws, at any moment', (_, svgs) => {
 		for (const svg of svgs) {
 			const [x, y, w, h] = viewBox(svg);
-			for (const [px, py] of pointsOf(svg)) {
-				expect(px).toBeGreaterThanOrEqual(x);
-				expect(px).toBeLessThanOrEqual(x + w);
-				expect(py).toBeGreaterThanOrEqual(y);
-				expect(py).toBeLessThanOrEqual(y + h);
-			}
+			// One expect over the stray points: an expect per point is slow under a loaded suite.
+			expect(pointsOf(svg).filter(([px, py]) => px < x || px > x + w || py < y || py > y + h)).toEqual([]);
 		}
 	});
 
