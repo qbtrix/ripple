@@ -12,6 +12,7 @@ export {
 	type BuildResult,
 	type Critic,
 	type CriticIssue,
+	type CriticRules,
 	type Model,
 	type ModelRequest,
 	type Preset,
@@ -22,4 +23,5 @@ export {
 } from './build-spec.js';
 export type { AuditItem, AuditReport } from '../core/audit-report.js';
 export type { DataGuardResult, Fact } from '../core/data-guard.js';
-export type { Waiver } from '../manifest/craft.js';
+export { craft } from '../manifest/craft.js';
+export type { CraftRule, Lens, Waiver } from '../manifest/craft.js';

@@ -1,9 +1,21 @@
 // build-spec.test.ts: the build loop against a fake model and renderer. Pins
-// the stop rules (clean, no-progress, round cap, abort as cap, a parse failure
-// never ending the run, the data guard), strict-better acceptance, waivers,
-// token summing, feedback folding and that the module never reads a clock.
+// the stop rules (clean, no-progress, round cap, token cap, abort as cap, a
+// parse failure never ending the run, the data guard, the pre-gate),
+// strict-better acceptance, the critic's score and widget faults, waivers,
+// lossless fixes, token summing, feedback folding and that the module never
+// reads a clock.
 import { describe, it, expect } from 'vitest';
-import { buildSpec, parseSpecText, type Model, type ModelRequest, type RenderResult, type Renderer } from './index.js';
+import {
+	buildSpec,
+	craft,
+	parseSpecText,
+	type Critic,
+	type CriticIssue,
+	type Model,
+	type ModelRequest,
+	type RenderResult,
+	type Renderer
+} from './index.js';
 import clean from '../core/__fixtures__/audit-corpus/clean.json';
 
 // Read as text the way purity.test.ts does (no @types/node here).
@@ -214,7 +226,7 @@ describe('buildSpec data guard', () => {
 		expect(res.spec).toEqual(weather());
 		expect(res.rounds.map((r) => r.accepted)).toEqual([true, false]);
 		expect(res.rounds[1].guard).toMatchObject({ ok: false, baseline: 'round1' });
-		expect(res.widgetFaults).toEqual([expect.objectContaining({ code, fixable: 'widget', lens: 'data truth' })]);
+		expect(res.widgetFaults).toEqual([expect.objectContaining({ code, fixable: 'widget', lens: 'data-truth', rule: code === 'inventedDate' ? 'no-future-dates' : 'data-fixed' })]);
 		expect(renders).toBe(1); // a disqualified round is never rendered
 	});
 
@@ -290,5 +302,157 @@ describe('parseSpecText', () => {
 		expect(parseSpecText('Here:\n```json\n{"a":1}\n```\nDone')).toEqual({ spec: { a: 1 } });
 		expect(parseSpecText('Sure! {"a":{"b":2}} hope it helps')).toEqual({ spec: { a: { b: 2 } } });
 		expect(parseSpecText('no')).toHaveProperty('error');
+	});
+
+	it('forgives trailing commas outside strings and nothing else', () => {
+		expect(parseSpecText('{"a":[1,2,],"b":"x, ]",}')).toEqual({ spec: { a: [1, 2], b: 'x, ]' }, fixed: 'dropped trailing commas' });
+		expect(parseSpecText('{"a":1,,}')).toHaveProperty('error');
+	});
+});
+
+/** A critic that returns `issues(round)` and costs `tokens` per look. */
+function fakeCritic(issues: (n: number) => Partial<CriticIssue>[] = () => [], tokens = 10) {
+	const calls: Parameters<Critic>[0][] = [];
+	const critic: Critic = async (req) => {
+		calls.push(req);
+		const list = issues(calls.length).map(
+			(i): CriticIssue => ({ code: 'look', path: '', message: 'looks off', lens: 'layout', severity: 1, fixable: 'spec', ...i })
+		);
+		return { issues: list, tokens };
+	};
+	return { critic, calls };
+}
+
+/** A card of one data widget (a stat) inside a single-child wrapper. */
+const ONE_STAT = JSON.stringify({ version: '1.0', state: {}, ui: { type: 'card', children: [{ type: 'stat', props: { label: 'Visits', value: 42 } }] } });
+const S = { ...base, widgetTypes: ['card', 'text', 'stat'] };
+
+describe('buildSpec critic, score and caps', () => {
+	it('prices spec critic issues 4, 8 and 12 by severity and feeds them back with lens and rule', async () => {
+		const { model, calls } = fakeModel([CLEAN]);
+		const { critic } = fakeCritic((n) =>
+			n === 1
+				? [
+						{ severity: 1, rule: 'reads-at-phone' },
+						{ severity: 2, lens: 'hierarchy' },
+						{ severity: 3, lens: 'numbers', rule: 'money-has-currency', path: '/ui' }
+					]
+				: []
+		);
+		const res = await buildSpec({ ...base, model, renderer: fakeRenderer(), critic });
+		expect(res.rounds[0]).toMatchObject({ faults: 0, penalty: 24, score: 76, accepted: true });
+		expect(calls[1].feedback).toContain('[layout, rule:reads-at-phone] looks off');
+		expect(calls[1].feedback).toContain('/ui (money-has-currency): [numbers, rule:money-has-currency]');
+		expect(calls[1].feedback).toContain('spec (look): [hierarchy] looks off');
+		expect(res.stopped).toBe('clean');
+		expect(res.rounds[1].score).toBe(100);
+	});
+
+	it('does not stop clean while a spec critic issue stands', async () => {
+		const { model } = fakeModel([CLEAN]);
+		const { critic } = fakeCritic(() => [{ severity: 1 }]);
+		const res = await buildSpec({ ...base, model, renderer: fakeRenderer(), critic });
+		expect(res.stopped).toBe('no-progress');
+		expect(res.rounds.map((r) => r.accepted)).toEqual([true, false]);
+	});
+
+	it('never lowers the score for a widget issue, and files it under widgetFaults with its rule and widget', async () => {
+		const { model } = fakeModel([JSON.stringify(weather([]))]);
+		const { critic } = fakeCritic(() => [
+			{ fixable: 'widget', severity: 3, lens: 'layout', rule: 'designed-scroll', path: '/ui/children/0', message: 'hours cut' }
+		]);
+		const res = await buildSpec({ ...W, model, renderer: fakeRenderer(), critic });
+		expect(res.rounds[0]).toMatchObject({ score: 100, penalty: 0, feedback: '' });
+		expect(res.stopped).toBe('clean');
+		expect(res.widgetFaults).toEqual([
+			expect.objectContaining({ rule: 'designed-scroll', widget: 'weather-forecast', message: 'hours cut', fixable: 'widget' })
+		]);
+	});
+
+	it('hands the critic the renders and the craft rules and lenses', async () => {
+		const { model } = fakeModel([CLEAN]);
+		const { critic, calls } = fakeCritic();
+		await buildSpec({ ...base, model, renderer: fakeRenderer(), critic });
+		expect(calls[0].rules).toBe(craft);
+		expect(calls[0].rules.lenses).toHaveLength(11);
+		expect(calls[0].renders).toHaveLength(1);
+		expect(calls[0].prompt).toBe('a card');
+	});
+
+	it('stops cap when a model call crosses the token cap, never rendering that round', async () => {
+		const { model } = fakeModel([UNKNOWN, CLEAN], 90_000);
+		const { critic, calls } = fakeCritic(() => [], 30_000);
+		let renders = 0;
+		const renderer: Renderer = async (spec) => (renders++, fakeRenderer()(spec));
+		const res = await buildSpec({ ...base, model, renderer, critic });
+		expect(res.stopped).toBe('cap');
+		expect(res.tokens).toBe(210_000);
+		expect(renders).toBe(1);
+		expect(calls).toHaveLength(1);
+		expect(res.rounds.map((r) => r.accepted)).toEqual([true, false]);
+		expect(res.spec).toEqual(JSON.parse(UNKNOWN));
+	});
+
+	it('stops cap after a critic call crosses the cap, keeping that round when it is better', async () => {
+		const { model } = fakeModel([UNKNOWN, TWO_UNKNOWN, CLEAN], 10);
+		const { critic } = fakeCritic(() => [], 60);
+		const res = await buildSpec({ ...base, model, renderer: fakeRenderer(), critic, limits: { tokens: 50 } });
+		expect(res).toMatchObject({ stopped: 'cap', tokens: 70 });
+		expect(res.rounds).toHaveLength(1);
+		expect(res.spec).toEqual(JSON.parse(UNKNOWN));
+	});
+
+	it('stops clean, not cap, when the round that crosses the cap is clean', async () => {
+		const { model } = fakeModel([CLEAN], 10);
+		const { critic } = fakeCritic(() => [], 60);
+		const res = await buildSpec({ ...base, model, renderer: fakeRenderer(), critic, limits: { tokens: 50 } });
+		expect(res.stopped).toBe('clean');
+	});
+
+	it('pre-gate: one clean data widget gets one critic look, then stops', async () => {
+		const { model, calls } = fakeModel([ONE_STAT, CLEAN]);
+		const { critic, calls: looks } = fakeCritic(() => [{ severity: 1, lens: 'answer' }]);
+		const res = await buildSpec({ ...S, model, renderer: fakeRenderer(), critic });
+		expect(res.stopped).toBe('no-progress');
+		expect(res.rounds).toHaveLength(1);
+		expect(res.rounds[0]).toMatchObject({ preGate: true, accepted: true, score: 96 });
+		expect(calls).toHaveLength(1);
+		expect(looks).toHaveLength(1);
+		expect(res.spec).toEqual(JSON.parse(ONE_STAT));
+	});
+
+	it('pre-gate stops clean when the critic is quiet', async () => {
+		const { model } = fakeModel([ONE_STAT]);
+		const res = await buildSpec({ ...S, model, renderer: fakeRenderer(), critic: fakeCritic().critic });
+		expect(res).toMatchObject({ stopped: 'clean', rounds: [expect.objectContaining({ preGate: true })] });
+	});
+
+	it('skips the pre-gate for a card with more than the data widget, or with audit faults', async () => {
+		const withText = JSON.stringify({
+			version: '1.0',
+			state: {},
+			ui: { type: 'card', children: [{ type: 'text', props: { text: 'Visits' } }, { type: 'stat', props: { label: 'Visits', value: 42 } }] }
+		});
+		for (const [first, faults] of [
+			[withText, 0],
+			[ONE_STAT, 1]
+		] as const) {
+			const { model, calls } = fakeModel([first, ONE_STAT]);
+			const { critic } = fakeCritic((n) => (n === 1 ? [{ severity: 1 }] : []));
+			const res = await buildSpec({ ...S, model, renderer: fakeRenderer((n) => (n === 1 ? faults : 0)), critic });
+			expect(res.rounds[0].preGate).toBeUndefined();
+			expect(calls).toHaveLength(2);
+			expect(res.stopped).toBe('clean');
+		}
+	});
+
+	it('moves a lone envelope alias to ui before the audit, and records the fix', async () => {
+		const { root, ...rest } = { ...clean.spec, root: clean.spec.ui };
+		const aliased = JSON.stringify({ ...rest, ui: undefined, root });
+		const { model } = fakeModel([aliased]);
+		const res = await buildSpec({ ...base, model, renderer: fakeRenderer() });
+		expect(res.stopped).toBe('clean');
+		expect(res.rounds[0].fixed).toEqual(['moved `root` to `ui`']);
+		expect(res.spec).toEqual(clean.spec);
 	});
 });
