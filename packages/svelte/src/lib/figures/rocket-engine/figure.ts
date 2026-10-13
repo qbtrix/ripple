@@ -1,5 +1,5 @@
 // figures/rocket-engine/figure.ts: a liquid-fuel rocket engine firing on a
-// horizontal test stand, drawn the Anatomy way with the @ripple-ui/core/iso
+// horizontal test stand, drawn with the @ripple-ui/core/iso
 // kit. World: x along the engine toward the nozzle exit, y toward the viewer,
 // z up; 1 unit is about 1 cm. The engine hangs from a load cell on a pylon
 // through its gimbal and fires off the end of the bed; the tanks stand at the
@@ -20,7 +20,6 @@
 
 import * as k from '@ripple-ui/core/iso';
 import type { Flat, Frame, Point3, SolidPaths } from '@ripple-ui/core/iso';
-import { PAPER_CSS } from '../paper.js';
 import { frameOf, framed, percentIn, type FrameBox } from '../frame.js';
 import { clampParams, describe, plumeOf, readoutsOf, shaftSpeedOf, stateOf, type EngineParams } from './model.js';
 
@@ -720,23 +719,23 @@ function ready() {
 
 export const ENGINE_CSS = `
 .iso[data-figure-host="rocket-engine"]{
-  --rk-ox:#3e63dd;--rk-fuel:#c27c0e;--rk-hot:#e5484d;--rk-tint:8%;--rk-cavity:#000000;--rk-depth:16%;
+  --rk-ox:var(--iso-blue);--rk-fuel:#c27c0e;--rk-hot:#e5484d;--rk-tint:8%;--rk-cavity:#000000;--rk-depth:16%;
   --rk-sooty:#e8590c;--rk-clean:#f5a524;--rk-sooty-core:#ffa94d;--rk-clean-core:#ffe08a;--rk-diamond:#fff1c2;--rk-glow:#ff8b3e;--rk-interior:#8a5634
 }
 .iso[data-theme="dark"][data-figure-host="rocket-engine"]{
-  --rk-ox:#7b9bff;--rk-fuel:#f0b54a;--rk-hot:#ff7b72;--rk-tint:16%;--rk-depth:38%;
+  --rk-fuel:#f0b54a;--rk-hot:#ff7b72;--rk-tint:16%;--rk-depth:38%;
   --rk-sooty:#ff7a1a;--rk-clean:#ffb347;--rk-sooty-core:#ffc078;--rk-clean-core:#fff0bf;--rk-diamond:#fff6dc;--rk-glow:#ff9a4d;--rk-interior:#1c100a
 }
 .rk-ox{--rk-c:var(--rk-ox)}
 .rk-fuel{--rk-c:var(--rk-fuel)}
 .rk-hot{--rk-c:var(--rk-hot)}
-${[0, 1, 2, 3].map((n) => `:is(.rk-ox,.rk-fuel,.rk-hot)>.iso-shade[data-shade="${n}"]{fill:color-mix(in srgb,var(--rk-c) calc(var(--rk-tint) * ${(0.7 + n * 0.1).toFixed(1)}),var(--anatomy-shade-${n}));stroke:none}
-:is(.rk-ox,.rk-fuel,.rk-hot)[data-seamless]>.iso-shade[data-shade="${n}"]{stroke:color-mix(in srgb,var(--rk-c) calc(var(--rk-tint) * ${(0.7 + n * 0.1).toFixed(1)}),var(--anatomy-shade-${n}))}
-.rk-cut>.iso-shade[data-shade="${n}"]{fill:color-mix(in srgb,var(--rk-cavity) var(--rk-depth),var(--anatomy-shade-${n}))}`).join('\n')}
-:is(.rk-ox,.rk-fuel,.rk-hot)>.iso-top{fill:color-mix(in srgb,var(--rk-c) var(--rk-tint),var(--anatomy-top))}
-:is(.rk-ox,.rk-fuel,.rk-hot)[data-seamless]>.iso-top{stroke:color-mix(in srgb,var(--rk-c) var(--rk-tint),var(--anatomy-top))}
-.rk-cut>.iso-top{fill:color-mix(in srgb,var(--rk-cavity) var(--rk-depth),var(--anatomy-top))}
-.rk-cutface{fill:var(--anatomy-top);stroke:none}
+${[0, 1, 2, 3].map((n) => `:is(.rk-ox,.rk-fuel,.rk-hot)>.iso-shade[data-shade="${n}"]{fill:color-mix(in srgb,var(--rk-c) calc(var(--rk-tint) * ${(0.7 + n * 0.1).toFixed(1)}),var(--iso-shade-${n}));stroke:none}
+:is(.rk-ox,.rk-fuel,.rk-hot)[data-seamless]>.iso-shade[data-shade="${n}"]{stroke:color-mix(in srgb,var(--rk-c) calc(var(--rk-tint) * ${(0.7 + n * 0.1).toFixed(1)}),var(--iso-shade-${n}))}
+.rk-cut>.iso-shade[data-shade="${n}"]{fill:color-mix(in srgb,var(--rk-cavity) var(--rk-depth),var(--iso-shade-${n}))}`).join('\n')}
+:is(.rk-ox,.rk-fuel,.rk-hot)>.iso-top{fill:color-mix(in srgb,var(--rk-c) var(--rk-tint),var(--iso-top))}
+:is(.rk-ox,.rk-fuel,.rk-hot)[data-seamless]>.iso-top{stroke:color-mix(in srgb,var(--rk-c) var(--rk-tint),var(--iso-top))}
+.rk-cut>.iso-top{fill:color-mix(in srgb,var(--rk-cavity) var(--rk-depth),var(--iso-top))}
+.rk-cutface{fill:var(--iso-top);stroke:none}
 .rk-flow{stroke-dasharray:2 5;stroke-width:1;stroke-opacity:.85}
 .rk-flow-ox{stroke:var(--rk-ox)}
 .rk-flow-fuel{stroke:var(--rk-fuel)}
@@ -748,7 +747,7 @@ ${[0, 1, 2, 3].map((n) => `:is(.rk-ox,.rk-fuel,.rk-hot)>.iso-shade[data-shade="$
 .rk-plume{filter:blur(4px)}
 .rk-plume-core{filter:blur(2.5px)}
 .rk-diamond{fill:var(--rk-diamond);filter:blur(2.2px)}
-.iso-halo.rk-shadow{filter:blur(2.5px);opacity:calc(var(--anatomy-halo-opacity) * .5);transform:none}
+.iso-halo.rk-shadow{filter:blur(2.5px);opacity:calc(var(--iso-halo-opacity) * .5);transform:none}
 `;
 
 export const LABEL = 'A liquid-fuel rocket engine firing on a test stand: two propellant tanks, a cut-open turbopump on top, the preburner, injector, combustion chamber and bell nozzle, hung from a load cell through its gimbal.';
@@ -776,7 +775,7 @@ function rawSvg(params: EngineParams, drive: Partial<DriveState>, standalone: k.
 		STATIC.front.replace('data-needle=""', `data-needle="" d="${needlePath(stateOf(params).chamberBar)}"`) +
 		`<g data-item="plume">${plumeSvg(params, d.t)}</g>`;
 	const svg = k.figureSvg({ width: WIDTH, height: HEIGHT, label: LABEL, body, standalone });
-	return standalone ? svg.replace('</style>', `${PAPER_CSS}${ENGINE_CSS}</style>`).replace('class="iso-svg iso"', 'class="iso-svg iso" data-figure-host="rocket-engine"') : svg;
+	return standalone ? svg.replace('</style>', `${ENGINE_CSS}</style>`).replace('class="iso-svg iso"', 'class="iso-svg iso" data-figure-host="rocket-engine"') : svg;
 }
 
 let FRAME: FrameBox | null = null;
@@ -848,7 +847,7 @@ export function mount(el: HTMLElement, { theme = 'dark', params: initial, onRead
 	if (!doc.getElementById(STYLE_ID)) {
 		const style = doc.createElement('style');
 		style.id = STYLE_ID;
-		style.textContent = k.ISO_CSS + PAPER_CSS + ENGINE_CSS;
+		style.textContent = k.ISO_CSS + ENGINE_CSS;
 		doc.head.appendChild(style);
 	}
 	let params = clampParams(initial);

@@ -1,5 +1,5 @@
 // figures/particle-collider/figure.ts: a cutaway piece of a circular collider
-// drawn the Anatomy way with the @ripple-ui/core/iso kit. World: x along the
+// drawn with the @ripple-ui/core/iso kit. World: x along the
 // straight section, y toward the viewer, z up. The ring is a straight section
 // (|s| <= S0) with an arc of radius R on each side that curves toward the
 // viewer, so we look from inside the ring. Every magnet is a straight body on
@@ -21,7 +21,6 @@
 
 import * as k from '@ripple-ui/core/iso';
 import type { Flat, Point3, SolidPaths } from '@ripple-ui/core/iso';
-import { PAPER_CSS } from '../paper.js';
 import { frameOf, framed, percentIn, type FrameBox } from '../frame.js';
 import { bunchesAt, burstsAt, clampParams, describe, fieldOf, readoutsOf, stillTime, type Burst, type ColliderParams } from './model.js';
 
@@ -642,27 +641,27 @@ function burstSvg(params: ColliderParams, t: number): string {
 // ---- svg -------------------------------------------------------------------------
 
 export const COLLIDER_CSS = `
-.pc-bunch[data-beam="1"]{fill:var(--anatomy-blue)}
-.pc-bunch[data-beam="2"]{fill:var(--anatomy-red)}
+.pc-bunch[data-beam="1"]{fill:var(--iso-blue)}
+.pc-bunch[data-beam="2"]{fill:var(--iso-red)}
 .pc-bunch.pc-glow{opacity:.22}
-.pc-flash{fill:var(--anatomy-lit);opacity:.9}
+.pc-flash{fill:var(--iso-lit);opacity:.9}
 .pc-track{stroke-width:1}
-.pc-layer{stroke:none;fill:var(--anatomy-shade-2)}
-.pc-layer[data-l="tracker"]{fill:var(--anatomy-top)}
-.pc-layer[data-l="ecal"]{fill:var(--anatomy-shade-3)}
-.pc-layer[data-l="hcal"]{fill:var(--anatomy-shade-2)}
-.pc-layer[data-l="solenoid"]{fill:var(--anatomy-lit-top)}
-.pc-layer[data-l="yoke"]{fill:var(--anatomy-shade-0)}
-.pc-layer[data-l="chamber"]{fill:var(--anatomy-shade-3)}
-.pc-void{fill:var(--anatomy-shade-0)}
-.pc-yoke{fill:var(--anatomy-shade-1)}
-.pc-collar{fill:var(--anatomy-shade-3)}
-.pc-coil{fill:var(--anatomy-top)}
+.pc-layer{stroke:none;fill:var(--iso-shade-2)}
+.pc-layer[data-l="tracker"]{fill:var(--iso-top)}
+.pc-layer[data-l="ecal"]{fill:var(--iso-shade-3)}
+.pc-layer[data-l="hcal"]{fill:var(--iso-shade-2)}
+.pc-layer[data-l="solenoid"]{fill:var(--iso-lit-top)}
+.pc-layer[data-l="yoke"]{fill:var(--iso-shade-0)}
+.pc-layer[data-l="chamber"]{fill:var(--iso-shade-3)}
+.pc-void{fill:var(--iso-shade-0)}
+.pc-yoke{fill:var(--iso-shade-1)}
+.pc-collar{fill:var(--iso-shade-3)}
+.pc-coil{fill:var(--iso-top)}
 .pc-cavity>.iso-edge{transition:stroke .25s}
-.pc-cavity[data-on="1"]>.iso-edge{stroke:var(--anatomy-blue)}
-.pc-cavity[data-on="2"]>.iso-edge{stroke:var(--anatomy-red)}
-.iso-halo.pc-shadow{filter:blur(2.5px);opacity:calc(var(--anatomy-halo-opacity) * .5);transform:none}
-.iso-halo.pc-shadow[data-far]{filter:blur(4px);opacity:calc(var(--anatomy-halo-opacity) * .3)}
+.pc-cavity[data-on="1"]>.iso-edge{stroke:var(--iso-blue)}
+.pc-cavity[data-on="2"]>.iso-edge{stroke:var(--iso-red)}
+.iso-halo.pc-shadow{filter:blur(2.5px);opacity:calc(var(--iso-halo-opacity) * .5);transform:none}
+.iso-halo.pc-shadow[data-far]{filter:blur(4px);opacity:calc(var(--iso-halo-opacity) * .3)}
 @media (prefers-reduced-motion:reduce){.pc-cavity>.iso-edge{transition:none}}
 `;
 
@@ -681,7 +680,7 @@ function rawSvg(params: ColliderParams, t: number, standalone: k.Theme | false):
 	body = body.replace('data-needle=""', `data-needle="" d="${needlePath(fieldOf(params))}"`);
 	for (const id of cavitiesOn(params, t)) body = body.replace(`data-cavity="${id}"`, `data-cavity="${id}" data-on="${id[0]}"`);
 	const svg = k.figureSvg({ width: WIDTH, height: HEIGHT, label: LABEL, body, standalone });
-	return standalone ? svg.replace('</style>', `${PAPER_CSS}${COLLIDER_CSS}</style>`).replace('class="iso-svg iso"', 'class="iso-svg iso" data-figure-host="particle-collider"') : svg;
+	return standalone ? svg.replace('</style>', `${COLLIDER_CSS}</style>`).replace('class="iso-svg iso"', 'class="iso-svg iso" data-figure-host="particle-collider"') : svg;
 }
 
 let FRAME: FrameBox | null = null;
@@ -755,7 +754,7 @@ export function mount(el: HTMLElement, { theme = 'dark', params: initial, onRead
 	if (!doc.getElementById(STYLE_ID)) {
 		const style = doc.createElement('style');
 		style.id = STYLE_ID;
-		style.textContent = k.ISO_CSS + PAPER_CSS + COLLIDER_CSS;
+		style.textContent = k.ISO_CSS + COLLIDER_CSS;
 		doc.head.appendChild(style);
 	}
 	let params = clampParams(initial);

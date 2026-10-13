@@ -1,4 +1,4 @@
-// figures/bike-gears/figure.ts: a bicycle drivetrain drawn the Anatomy way, as
+// figures/bike-gears/figure.ts: a bicycle drivetrain drawn in the iso kit, as
 // the back half of a bike clamped on a bench stand, with the @ripple-ui/core/iso
 // kit. World: x toward the front of the bike, y toward the viewer (the drive
 // side), z up; 1 unit is half a millimetre, so the 6.35-unit chain pitch is a
@@ -16,12 +16,11 @@
 //
 // `bikeSvg()` is pure (strings only). `mount()` keeps one <g data-item> per
 // part, rewrites only the parts that move and reorders them only when a shift
-// changes the order. Look: Anatomy's four-tone neutral ramp, thin lines, one
-// lit part (the cog the chain is on). No DOM or work at module top level.
+// changes the order. Look: the kit's Blueprint ramp, thin lines, the chain
+// in brand blue, one lit part (the cog the chain is on). No DOM or work at module top level.
 
 import * as k from '@ripple-ui/core/iso';
 import type { Flat, Point3, SolidPaths } from '@ripple-ui/core/iso';
-import { PAPER_CSS } from '../paper.js';
 import { frameOf, framed, percentIn, type FrameBox } from '../frame.js';
 import { clampParams, crankSpeedOf, describe, poseAt, poseOf, ratioOf, readoutsOf, ringTeethAt, teethAt, CASSETTE, RINGS, type BikeParams, type Pose } from './model.js';
 
@@ -542,9 +541,9 @@ function itemsOf(state: DriveState): Item[] {
 export const STILL = { theta: -1.05, chain: 0, wheel: 0.4 };
 
 export const BIKE_CSS = `
-.bike-chain .iso-edge{stroke-opacity:.7}
-.bike-tread{fill:var(--anatomy-lo)}
-.iso-halo.bike-shadow{filter:blur(2.5px);opacity:calc(var(--anatomy-halo-opacity) * .5);transform:none}
+.bike-chain .iso-edge{stroke:var(--iso-blue)}
+.bike-tread{fill:var(--iso-lo)}
+.iso-halo.bike-shadow{filter:blur(2.5px);opacity:calc(var(--iso-halo-opacity) * .5);transform:none}
 `;
 
 export const LABEL = 'A bicycle drivetrain on a bench stand: crank, two chainrings, chain, a seven-cog cassette, both derailleurs and part of the rear wheel.';
@@ -560,7 +559,7 @@ function rawSvg(params: BikeParams, drive: Partial<Omit<DriveState, 'params'>>, 
 	ready();
 	const state: DriveState = { params, pose: drive.pose ?? poseOf(params), theta: drive.theta ?? STILL.theta, chain: drive.chain ?? STILL.chain, wheel: drive.wheel ?? STILL.wheel };
 	const svg = k.figureSvg({ width: WIDTH, height: HEIGHT, label: LABEL, body: itemsOf(state).map(wrap).join(''), standalone });
-	return standalone ? svg.replace('</style>', `${PAPER_CSS}${BIKE_CSS}</style>`).replace('class="iso-svg iso"', 'class="iso-svg iso" data-figure-host="bike-gears"') : svg;
+	return standalone ? svg.replace('</style>', `${BIKE_CSS}</style>`).replace('class="iso-svg iso"', 'class="iso-svg iso" data-figure-host="bike-gears"') : svg;
 }
 
 let FRAME: FrameBox | null = null;
@@ -628,7 +627,7 @@ export function mount(el: HTMLElement, { theme = 'dark', params: initial, onRead
 	if (!doc.getElementById(STYLE_ID)) {
 		const style = doc.createElement('style');
 		style.id = STYLE_ID;
-		style.textContent = k.ISO_CSS + PAPER_CSS + BIKE_CSS;
+		style.textContent = k.ISO_CSS + BIKE_CSS;
 		doc.head.appendChild(style);
 	}
 	let params = clampParams(initial);

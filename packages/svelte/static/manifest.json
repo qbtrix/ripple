@@ -1,7 +1,7 @@
 {
   "schema": "ripple.manifest/v1",
   "version": "0.8.0",
-  "generatedAt": "2026-10-13T06:42:11.500Z",
+  "generatedAt": "2026-10-13T09:29:55.981Z",
   "spec": {
     "uiField": "ui",
     "stateField": "state",
@@ -11170,7 +11170,7 @@
         "look": {
           "type": "\"soft\" | \"color\"",
           "required": false,
-          "description": "soft (default): near-white parts in four soft tones, colors as faint tints. color: saturated fills."
+          "description": "soft (default): Blueprint look, blue-grey parts in four soft tones, navy ink (white in dark), flows in brand blue, colors as faint tints. color: saturated fills."
         },
         "detail": {
           "type": "\"auto\" | \"none\"",

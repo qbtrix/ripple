@@ -1,4 +1,4 @@
-// figures/ion-thruster/figure.ts: a gridded ion thruster drawn the Anatomy way,
+// figures/ion-thruster/figure.ts: a gridded ion thruster drawn
 // cut in half on a thrust stand, with the @ripple-ui/core/iso kit. World: x
 // along the thruster axis (the beam leaves toward +x), y toward the viewer, z
 // up; 1 unit is about 5 mm, so the grids are a 30 cm thruster's.
@@ -21,7 +21,6 @@
 
 import * as k from '@ripple-ui/core/iso';
 import type { Flat, Point3, SolidPaths } from '@ripple-ui/core/iso';
-import { PAPER_CSS } from '../paper.js';
 import { frameOf, framed, percentIn, type FrameBox } from '../frame.js';
 import { beamSpeedOf, clampParams, densityOf, describe, readoutsOf, thrustOf, DRIFT, STILL_T, type IonParams } from './model.js';
 
@@ -542,14 +541,14 @@ function frame(): FrameBox {
 }
 
 export const ION_CSS = `
-.iso[data-figure-host]{--ion-glow:var(--anatomy-blue)}
+.iso[data-figure-host]{--ion-glow:var(--iso-blue)}
 .ion-plasma{fill:var(--ion-glow);stroke:none;filter:blur(5px);mix-blend-mode:normal}
 .ion-beam{fill:url(#ion-beam-fade);stroke:none;filter:blur(4px)}
 .ion-dots circle{fill:var(--ion-glow)}
-.ion-dots[data-dots="electrons"] circle{fill:var(--anatomy-hi)}
+.ion-dots[data-dots="electrons"] circle{fill:var(--iso-hi)}
 .ion-orifice{fill:var(--ion-glow);stroke:none}
 .ion-xenon{stroke-dasharray:1.6 4.4;stroke-width:.9;stroke-opacity:.8}
-.iso-halo.ion-shadow{filter:blur(2.5px);opacity:calc(var(--anatomy-halo-opacity) * .5);transform:none}
+.iso-halo.ion-shadow{filter:blur(2.5px);opacity:calc(var(--iso-halo-opacity) * .5);transform:none}
 `;
 
 export const LABEL = 'A gridded ion thruster cut in half on a thrust stand, with its xenon tank, flow controller and power unit.';
@@ -605,7 +604,7 @@ export function mount(el: HTMLElement, { theme = 'dark', params: initial, onRead
 	if (!doc.getElementById(STYLE_ID)) {
 		const style = doc.createElement('style');
 		style.id = STYLE_ID;
-		style.textContent = k.ISO_CSS + PAPER_CSS + ION_CSS;
+		style.textContent = k.ISO_CSS + ION_CSS;
 		doc.head.appendChild(style);
 	}
 	let params = clampParams(initial);

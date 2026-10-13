@@ -23,15 +23,16 @@ Files derived from it:
 
 - `packages/core/src/iso/kit.ts`: the camera, projection, extruded solids,
   outlines and SVG helpers are ported from `kit/iso-kit.ts`; the `ISO_CSS`
-  selector structure is ported from `kit/iso.css`.
+  selector structure is ported from `kit/iso.css` (the colour tokens are
+  Ripple's own).
 - `packages/core/src/iso/solids.ts`: frame, light, band, hull, prism and
   sphere are ported from `kit/lathe.mjs` (cone and gear ring are new).
 - `packages/core/src/iso/scene.ts` and `packages/core/src/iso/enrich.ts` are
   new code built on the two files above; `enrich.ts` follows Anatomy's craft
   rules for detail.
-- `packages/svelte/src/lib/widgets/composite/IsoScene.svelte`: the `soft`
-  look's theme tokens are taken from `kit/iso.css`.
-- `packages/svelte/src/lib/figures/*` draw with the kit above.
+- `packages/svelte/src/lib/figures/*` and
+  `packages/svelte/src/lib/widgets/composite/IsoScene.svelte` draw with the
+  kit above.
 
 ```
 MIT License

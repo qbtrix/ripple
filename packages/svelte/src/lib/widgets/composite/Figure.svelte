@@ -218,13 +218,13 @@
 
 <style>
 	.ripple-figure-stage {
-		background: var(--anatomy-card, transparent);
+		background: var(--iso-card, transparent);
 	}
 	.ripple-figure-stage :global(.iso-svg) {
 		width: 100%;
 		height: auto;
 	}
 	.ripple-figure-stage:global(.iso) {
-		--anatomy-paper: var(--anatomy-card);
+		--iso-paper: var(--iso-card);
 	}
 </style>

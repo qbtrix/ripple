@@ -1,4 +1,4 @@
-// figures/tokamak/figure.ts: a tokamak fusion reactor drawn the Anatomy way,
+// figures/tokamak/figure.ts: a tokamak fusion reactor drawn
 // as a scale model on a display plate, with the @ripple-ui/core/iso kit.
 // World: metres, z up, the machine's axis at the origin and its midplane at
 // z = 0. Angles `th` are degrees round the axis from the viewer's side
@@ -27,7 +27,6 @@
 
 import * as k from '@ripple-ui/core/iso';
 import type { Flat, Point3, SolidPaths } from '@ripple-ui/core/iso';
-import { PAPER_CSS } from '../paper.js';
 import { frameOf, framed, percentIn, type FrameBox } from '../frame.js';
 import { beamSpeedOf, clampParams, describe, glowOf, readoutsOf, solve, streamSpeedOf, twistAt, type TokamakParams } from './model.js';
 
@@ -637,20 +636,20 @@ export const TOKAMAK_CSS = `
 .iso[data-figure-host]{--tok-plasma:#d4357f;--tok-cavity:#d2d2cd;--tok-heat:.85}
 .iso[data-theme="dark"][data-figure-host]{--tok-plasma:#ff74c0;--tok-cavity:#141412}
 .tok-face{stroke:none}
-.tok-cut{fill:var(--anatomy-top)}
-.tok-case{fill:var(--anatomy-shade-1)}
-.tok-wp{fill:var(--anatomy-shade-2)}
-.tok-shield{fill:var(--anatomy-shade-3)}
-.tok-core{fill:var(--anatomy-shade-0)}
-.tok-blanket{fill:var(--anatomy-shade-2)}
-.tok-div{fill:var(--anatomy-shade-0)}
+.tok-cut{fill:var(--iso-top)}
+.tok-case{fill:var(--iso-shade-1)}
+.tok-wp{fill:var(--iso-shade-2)}
+.tok-shield{fill:var(--iso-shade-3)}
+.tok-core{fill:var(--iso-shade-0)}
+.tok-blanket{fill:var(--iso-shade-2)}
+.tok-div{fill:var(--iso-shade-0)}
 .tok-cavity{fill:var(--tok-cavity)}
-.iso-solid.tok-plasma>.iso-fill,.iso-solid.tok-plasma[data-lit]>.iso-shade,.iso-solid.tok-plasma[data-lit]>.iso-top{fill:color-mix(in srgb,var(--tok-plasma) calc(var(--tok-heat) * 34%),var(--anatomy-paper))}
-.iso-solid.tok-plasma[data-lit]>.iso-shade[data-shade="0"],.iso-solid.tok-plasma[data-lit]>.iso-shade[data-shade="1"]{fill:color-mix(in srgb,var(--tok-plasma) calc(var(--tok-heat) * 48%),var(--anatomy-paper))}
+.iso-solid.tok-plasma>.iso-fill,.iso-solid.tok-plasma[data-lit]>.iso-shade,.iso-solid.tok-plasma[data-lit]>.iso-top{fill:color-mix(in srgb,var(--tok-plasma) calc(var(--tok-heat) * 34%),var(--iso-paper))}
+.iso-solid.tok-plasma[data-lit]>.iso-shade[data-shade="0"],.iso-solid.tok-plasma[data-lit]>.iso-shade[data-shade="1"]{fill:color-mix(in srgb,var(--tok-plasma) calc(var(--tok-heat) * 48%),var(--iso-paper))}
 .iso-solid.tok-plasma[data-lit]>.iso-shade,.iso-solid.tok-plasma[data-lit]>.iso-top{stroke:none}
-.iso-solid.tok-plasma[data-lit]>.iso-edge{stroke:color-mix(in srgb,var(--tok-plasma) 70%,var(--anatomy-hi))}
+.iso-solid.tok-plasma[data-lit]>.iso-edge{stroke:color-mix(in srgb,var(--tok-plasma) 70%,var(--iso-hi))}
 .tok-flux{fill:color-mix(in srgb,var(--tok-plasma) calc(var(--tok-heat) * 28%),transparent);stroke:color-mix(in srgb,var(--tok-plasma) 60%,transparent);stroke-width:.5}
-.tok-field{--anatomy-lit:color-mix(in srgb,var(--tok-plasma) 75%,var(--anatomy-hi))}
+.tok-field{--iso-lit:color-mix(in srgb,var(--tok-plasma) 75%,var(--iso-hi))}
 .tok-field .iso-line{stroke-opacity:.6}
 .tok-field .iso-dots circle,.tok-core-face .iso-dots circle{fill:#fff;opacity:.9}
 .tok-legs .iso-line{stroke:var(--tok-plasma);stroke-opacity:.8}
@@ -673,7 +672,7 @@ function rawSvg(params: TokamakParams, drive: Drive, standalone: k.Theme | false
 	const svg = k.figureSvg({ width: WIDTH, height: HEIGHT, label: LABEL, body: itemsOf(params, drive).map(wrap).join(''), standalone });
 	if (!standalone) return svg;
 	return svg
-		.replace('</style>', `${PAPER_CSS}${TOKAMAK_CSS}</style>`)
+		.replace('</style>', `${TOKAMAK_CSS}</style>`)
 		.replace('class="iso-svg iso"', `class="iso-svg iso" data-figure-host="tokamak" style="--tok-heat:${heatOf(params)};--beam-at:${(-drive.beam).toFixed(1)}"`)
 		.replace('data-flow-id="beam"', `data-flow-id="beam" stroke-dashoffset="${(-drive.beam).toFixed(1)}"`);
 }
@@ -735,7 +734,7 @@ export function mount(el: HTMLElement, { theme = 'dark', params: initial, onRead
 	if (!doc.getElementById(STYLE_ID)) {
 		const style = doc.createElement('style');
 		style.id = STYLE_ID;
-		style.textContent = k.ISO_CSS + PAPER_CSS + TOKAMAK_CSS;
+		style.textContent = k.ISO_CSS + TOKAMAK_CSS;
 		doc.head.appendChild(style);
 	}
 	let params = clampParams(initial);
