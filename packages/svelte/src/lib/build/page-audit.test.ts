@@ -13,7 +13,7 @@ function mount(html: string) {
 beforeEach(() => {
 	vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
 		const [x, y, w, h] = (this.getAttribute('data-rect') ?? '0,0,0,0').split(',').map(Number);
-		return { x, y, left: x, top: y, width: w, height: h, right: x + w, bottom: y + h, toJSON() {} } as DOMRect;
+		return { x, y, left: x, top: y, width: w, height: h, right: x + w, bottom: y + h, toJSON() {} };
 	});
 });
 afterEach(() => {

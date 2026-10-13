@@ -4,8 +4,11 @@
 // It compares this render.mjs against a baseline copy from git
 // (RENDER_BASELINE_REF, default origin/main) on the same specs: same exit
 // code, same stderr on a usage error, same audit.json. It also checks that
-// renderer() reports the same counts as the CLI. The render cases skip when
-// Playwright, Chromium or the site is not reachable (the CLI exits 2).
+// renderer() reports the same counts as the CLI, and that it returns an
+// offender box for each page-audit item (an overflowing row). The render cases
+// skip when Playwright, Chromium or the site is not reachable (the CLI exits
+// 2). The site must serve page-audit.js: point RIPPLE_BASE at a local
+// `bun run build:site` preview until the deployed site ships it.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync, execFileSync } from 'node:child_process';
@@ -13,7 +16,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { renderer } from './render.mjs';
+import { renderer, SetupError } from './render.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const NEW = join(here, 'render.mjs');
@@ -28,6 +31,17 @@ const audit = (dir) => readFileSync(join(dir, 'audit.json'), 'utf8').replaceAll(
 const CLEAN = join(here, '../references/examples/bill-splitter.json');
 const FAULTY = join(tmp, 'faulty.json');
 writeFileSync(FAULTY, JSON.stringify({ version: '1.0', ui: { type: 'card', children: [{ type: 'lsit' }] }, state: {} }));
+// Four metrics in a row that does not wrap: wider than a phone.
+const metric = (id, label, value) => ({ id, type: 'metric', props: { label, value } });
+const OVERFLOW = {
+	version: '1.0',
+	state: {},
+	ui: {
+		type: 'flex',
+		props: { direction: 'row', gap: '16px', wrap: false },
+		children: [metric('m1', 'Revenue this quarter', '$1,234,567'), metric('m2', 'Customers active', '12,345'), metric('m3', 'Churn rate monthly', '3.4%'), metric('m4', 'Net promoter score', '72')]
+	}
+};
 
 test('usage error: same exit 2 and the same message', () => {
 	const a = cli(OLD, []);
@@ -61,3 +75,20 @@ for (const [name, spec, code] of [
 		assert.ok(results.every((r) => r.png && Array.isArray(r.boxes)));
 	});
 }
+
+test('renderer() returns a box for every page-audit item on an overflowing row', async (t) => {
+	let results;
+	try {
+		results = await renderer(OVERFLOW, { widths: [380], themes: ['light'], outdir: join(tmp, 'overflow') });
+	} catch (e) {
+		if (e instanceof SetupError) return t.skip(`cannot render here: ${e.message.split('\n')[0]}`);
+		throw e;
+	}
+	const [r] = results;
+	const overflow = r.audit.find((x) => x.check === 'overflow');
+	assert.ok(overflow.count > 0, 'the row overflows at 380');
+	const boxes = r.boxes.filter((b) => b.check === 'overflow');
+	assert.equal(boxes.length, overflow.count);
+	assert.ok(boxes.every((b) => b.w > 0 && b.h > 0 && Number.isFinite(b.x) && Number.isFinite(b.y)));
+	assert.ok(boxes.some((b) => b.path?.startsWith('/ui/children/')), 'an offender maps to its node');
+});
