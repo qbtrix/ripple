@@ -11,6 +11,11 @@ import { expectStreamParity } from '$lib/streaming/__fixtures__/stream-parity.js
 import { getWidget, hasWidget } from '../index.js';
 import { DEFAULT_BIND_CONTRACT, _resetBindContractWarnings, getBindContract, warnUnregisteredBindContract } from '@ripple-ui/core';
 import WordGuess, { keyStates, parseAnswer, score, shareText, type Feedback } from './WordGuess.svelte';
+import { playCue } from '$lib/sound/index.js';
+
+vi.mock('$lib/sound/index.js', () => ({ playCue: vi.fn() }));
+const cues = () => vi.mocked(playCue).mock.calls.map((c) => c[0]);
+
 
 afterEach(() => {
 	cleanup();
@@ -261,5 +266,16 @@ describe('word-guess: streaming', () => {
 		await expectStreamParity({
 			ui: { type: 'word-guess', props: { title: 'Kitchen words', answer: 'whisk', hint: 'You beat eggs with it', max_guesses: 5 } }
 		});
+	});
+});
+
+describe('word-guess: sound', () => {
+	it('chimes on a solve only', async () => {
+		vi.mocked(playCue).mockClear();
+		const { container } = render(WordGuess, { props: { answer: 'crane' } });
+		await typeWord(container, 'nacre');
+		expect(playCue).not.toHaveBeenCalled();
+		await typeWord(container, 'crane');
+		expect(cues()).toEqual(['win']);
 	});
 });
