@@ -25,6 +25,13 @@ const OLD = join(tmp, 'render.old.mjs');
 const ref = process.env.RENDER_BASELINE_REF || 'origin/main';
 writeFileSync(OLD, execFileSync('git', ['show', `${ref}:skills/ripple/scripts/render.mjs`], { cwd: here }));
 
+// Until the deployed site ships page-audit.js, the render cases skip there (NEW
+// would exit 2 while OLD renders) instead of failing on an ordering gap.
+const BASE = (process.env.RIPPLE_BASE || 'https://ripple-site.pawsites.workers.dev').replace(/\/$/, '');
+const NO_AUDIT = (await fetch(`${BASE}/page-audit.js`, { signal: AbortSignal.timeout(5000) }).then((r) => r.ok, () => false))
+	? null
+	: `${BASE}/page-audit.js is missing: run bun run build:site && bunx vite preview in packages/svelte and set RIPPLE_BASE`;
+
 const cli = (script, args) => spawnSync(process.execPath, [script, ...args], { encoding: 'utf8' });
 const audit = (dir) => readFileSync(join(dir, 'audit.json'), 'utf8').replaceAll(dir, 'OUT');
 
@@ -56,6 +63,7 @@ for (const [name, spec, code] of [
 	['faulty', FAULTY, 1]
 ]) {
 	test(`${name} spec: same exit code and the same audit.json as ${ref}`, async (t) => {
+		if (NO_AUDIT) return t.skip(NO_AUDIT);
 		const oldDir = join(tmp, `${name}-old`);
 		const newDir = join(tmp, `${name}-new`);
 		const a = cli(OLD, [spec, oldDir]);
@@ -77,6 +85,7 @@ for (const [name, spec, code] of [
 }
 
 test('renderer() returns a box for every page-audit item on an overflowing row', async (t) => {
+	if (NO_AUDIT) return t.skip(NO_AUDIT);
 	let results;
 	try {
 		results = await renderer(OVERFLOW, { widths: [380], themes: ['light'], outdir: join(tmp, 'overflow') });
