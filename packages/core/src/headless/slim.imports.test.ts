@@ -113,6 +113,11 @@ describe('@ripple-ui/core/headless/slim imports', () => {
 		expect(manifest.filter((k) => k.endsWith('/event-dispatcher.ts') || k.includes('/schema/'))).toEqual([]);
 	});
 
+	it('keeps the audit report type free of the schema, so slim hosts may share it', () => {
+		const reached = [...crawl('../core/audit-report.ts')];
+		expect(reached).toEqual(['../core/audit-report.ts']);
+	});
+
 	it('does count a value import, so an erased type import is the only exemption', () => {
 		expect(runtimeSpecifiers("import { EventDispatcher } from '../core/event-dispatcher.js';")).toEqual([
 			'../core/event-dispatcher.js'
