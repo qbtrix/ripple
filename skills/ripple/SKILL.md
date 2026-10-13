@@ -60,6 +60,7 @@ Paths are relative to this skill's folder (`<skill>` below: where this file live
 | `references/craft.md` | Before writing, and again when the audit or a screenshot shows a fault. |
 | `references/examples/` | Open the closest one first. Five specs that render clean, each with one line on why. |
 | `scripts/render.mjs` | Every round. Renders, shoots, audits. `node <skill>/scripts/render.mjs --help` for options. |
+| `scripts/build.mjs` | For a kept card (a pocket, a saved widget, a gallery entry). Runs the whole loop below as one script. |
 
 ## Setup, once
 
@@ -90,6 +91,19 @@ node <skill>/scripts/render.mjs card.json out --base http://localhost:4790
 ## The build loop
 
 Work in this order. Most of the quality is decided in steps 1 and 2, before any JSON.
+
+For a card that will be kept (a pocket, a saved widget, a gallery entry), you can hand the whole loop to
+`build.mjs` instead of driving it by hand. It writes, renders, audits, has a critic look at the screenshots,
+and stops clean, at no progress, at 4 rounds, at 200k tokens or at 300 s. It never keeps a round that
+changed the user's data. Run it from the same folder as `render.mjs`:
+
+```bash
+node <skill>/scripts/build.mjs "<the ask>" <outdir> [--base <url>] [--model <alias>]
+```
+
+It uses the local `claude` CLI by default (`--model-cmd` swaps in any command). Read `<outdir>/result.json`:
+`stopped`, the best round's `faults`, and `widgetFaults` for step 8. The steps below are what it does, and
+what you do when you drive the loop yourself.
 
 ### 1. Understand the ask
 
