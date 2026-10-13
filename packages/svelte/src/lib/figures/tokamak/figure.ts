@@ -44,7 +44,7 @@ const COILS = Array.from({ length: 18 }, (_, i) => 10 + 20 * i); // th of each T
 const KEPT = COILS.filter((th) => th >= CUT); // 70 (cut through its middle) .. 350
 const BASE_TOP = -8.6;
 const BASE_R = 12.4;
-const PLATE = { x: -13.5, y: -13.5, w: 31.5, d: 27, r: 0.8 };
+const PLATE = { x: -13.5, y: -13.5, w: 30, d: 27.5, r: 0.8 };
 const PLATE_TOP = BASE_TOP - 0.9;
 const PLATE_H = 0.7;
 const FOOT_H = 0.5;
@@ -473,8 +473,8 @@ function divertorFace(): string {
 
 // ---- heating beam injector -----------------------------------------------------
 
-/** The beam runs tangent to a circle of radius BEAM.rt round the axis, entering through the port between the coils at th 270 and 290. */
-const BEAM = { rt: 5.3, psi: 221.6, port: 9.3, valve: 10.9, box: 12.4, end: 15.6, w: 1.1, h: 1.4 };
+/** The beam runs tangent to a circle of radius BEAM.rt round the axis, entering through the port between the coils at th 290 and 310. */
+const BEAM = { rt: 5.3, psi: 241.6, port: 9.3, valve: 10.9, box: 12.4, end: 15.6, w: 1.1, h: 1.4 };
 const beamS = (r: number) => Math.sqrt(r * r - BEAM.rt * BEAM.rt);
 const beamFrame = (): k.Frame => ({ o: k.mul3(eR(BEAM.psi), BEAM.rt), a: ePhi(BEAM.psi), u: eR(BEAM.psi), v: [0, 0, 1] });
 const beamAt = (r: number, u = 0, v = 0) => k.pointOf(beamFrame(), beamS(r), u, v);
@@ -490,7 +490,7 @@ function injector(): Item[] {
 	const bellows: string[] = [];
 	for (let i = 0; i < 4; i++) bellows.push(S(plate(F, box2(BEAM.w + 0.22, BEAM.h + 0.22), s1 + 0.55 + i * 0.28, s1 + 0.67 + i * 0.28), { tone: 'mid', crease: 'none' }));
 	const neck = S(plate(F, box2(BEAM.w, BEAM.h), s1 + 0.35, s2), { tone: 'mid', crease: 'none' });
-	items.push({ id: 'nbi-duct', key: keyOf(280, 11.9), svg: duct + flange + valve + neck + bellows.join('') + beamLine() });
+	items.push({ id: 'nbi-duct', key: keyOf(300, 11.9), svg: duct + flange + valve + neck + bellows.join('') + beamLine() });
 	// The beam box (neutraliser and ion dump) on a stand, and the ion source can at its back.
 	const BOX = { w: 2.6, h: 2.8 };
 	const legs: string[] = [];
@@ -505,8 +505,8 @@ function injector(): Item[] {
 	const lid = S(plate(F, box2(BOX.w + 0.24, 0.16, BOX.h / 2 + 0.08), s2 - 0.12, s3 + 0.12), { tone: 'mid' });
 	const can = S(k.prismOf(F, k.circlePolygon(0.95, 28), s3, s3 + 1.1, P), { tone: 'mid' }) + S(k.prismOf(F, k.circlePolygon(1.12, 28), s3 + 1.1, s3 + 1.3, P), { tone: 'mid' });
 	const bolts = Array.from({ length: 10 }, (_, i) => at(k.pointOf(F, s3 + 1.3, 0.98 * Math.cos((i / 10) * TAU), 0.98 * Math.sin((i / 10) * TAU))));
-	items.push({ id: 'nbi-stand', key: keyOf(300, 13.9), svg: legs.join('') });
-	items.push({ id: 'nbi-box', key: keyOf(300, 14), svg: box + seams + lid + can + D(bolts, { size: 0.45 }) });
+	items.push({ id: 'nbi-stand', key: keyOf(310, 13.9), svg: legs.join('') });
+	items.push({ id: 'nbi-box', key: keyOf(310, 14), svg: box + seams + lid + can + D(bolts, { size: 0.45 }) });
 	return items;
 }
 
@@ -579,7 +579,7 @@ function fieldLines(params: TokamakParams, drive: Drive): string {
 		const uAt = (th: number) => u0 + (th - PLASMA_END) * DEG * twist;
 		let run: Flat[] = [];
 		const flush = () => {
-			if (run.length > 1) lines.push(k.pathOf(run));
+			if (run.length > 1) lines.push(k.fadeLineSvg(run, { fade: [1.5, 1.5], tone: 'lit' }));
 			run = [];
 		};
 		for (let j = 0; j <= steps; j++) {
@@ -594,7 +594,7 @@ function fieldLines(params: TokamakParams, drive: Drive): string {
 			if (facing(uAt(th), th)) dots.push(at(onSurface(1, uAt(th), th)));
 		}
 	}
-	return `<g class="tok-field">${L(lines.join(''), { tone: 'lit' })}${D(dots, { size: 0.7, tone: 'hi' })}</g>`;
+	return `<g class="tok-field">${lines.join('')}${D(dots, { size: 0.7, tone: 'hi' })}</g>`;
 }
 
 function plasmaFace(params: TokamakParams, drive: Drive): string {
@@ -626,7 +626,7 @@ function ready() {
 	P = k.fitProjection(probe, WIDTH, HEIGHT, { pad: 14, azimuth: AZIMUTH });
 	V = k.viewOf(P);
 	LIGHT = k.lightOf(P);
-	STATIC = [...staticItems(), ...injector(), ...KEPT.slice(0, -1).map((th) => th + 10).filter((th) => th !== 280).map(port)];
+	STATIC = [...staticItems(), ...injector(), ...KEPT.slice(0, -1).map((th) => th + 10).filter((th) => th !== 300).map(port)];
 }
 
 function itemsOf(params: TokamakParams, drive: Drive): Item[] {
@@ -651,8 +651,9 @@ export const TOKAMAK_CSS = `
 .iso-solid.tok-plasma[data-lit]>.iso-shade,.iso-solid.tok-plasma[data-lit]>.iso-top{stroke:none}
 .iso-solid.tok-plasma[data-lit]>.iso-edge{stroke:color-mix(in srgb,var(--tok-plasma) 70%,var(--anatomy-hi))}
 .tok-flux{fill:color-mix(in srgb,var(--tok-plasma) calc(var(--tok-heat) * 28%),transparent);stroke:color-mix(in srgb,var(--tok-plasma) 60%,transparent);stroke-width:.5}
-.tok-field .iso-line{stroke:color-mix(in srgb,var(--tok-plasma) 75%,var(--anatomy-hi));stroke-opacity:.55}
-.tok-field .iso-dots circle,.tok-core-face .iso-dots circle{fill:color-mix(in srgb,var(--tok-plasma) 30%,var(--anatomy-lit))}
+.tok-field{--anatomy-lit:color-mix(in srgb,var(--tok-plasma) 75%,var(--anatomy-hi))}
+.tok-field .iso-line{stroke-opacity:.6}
+.tok-field .iso-dots circle,.tok-core-face .iso-dots circle{fill:color-mix(in srgb,var(--tok-plasma) 30%,var(--anatomy-hi))}
 .tok-legs .iso-line{stroke:var(--tok-plasma);stroke-opacity:.8}
 .tok-legs .iso-dots circle{fill:var(--tok-plasma)}
 .tok-beam{stroke:var(--tok-plasma);stroke-dasharray:1.6 3;stroke-width:1}
@@ -708,7 +709,7 @@ function anchorPoints(): Array<[string, string, Point3]> {
 		['blanket', 'Blanket', W(8.6, CUT, 1.8)],
 		['divertor', 'Divertor', W(5.9, CUT, -5.1)],
 		['heating-beam', 'Heating beam', beamAt((BEAM.box + BEAM.end) / 2, 0, 1.4)],
-		['port', 'Port', W(10.35, 320, 0)]
+		['port', 'Port', W(10.35, 340, 0)]
 	];
 }
 
