@@ -138,7 +138,11 @@ async function mountStreamed(fixture: ScenarioFixture) {
 	const onStateChange = vi.fn();
 	const onEvent = vi.fn();
 	const { container } = render(Ripple, { props: { streaming: store, onStateChange, onEvent } });
-	await waitFor(() => expect(store.done).toBe(true), { timeout: 5000 });
+	// Every recorded chunk (up to 416, meal-plan) re-renders the tree, and the
+	// model's own chunking is what this file tests, so it is not coalesced. That
+	// can pass 5 s under a full parallel suite; the cap only needs to sit inside
+	// the 20 s test budget.
+	await waitFor(() => expect(store.done).toBe(true), { timeout: 15_000 });
 	await tick();
 	return { store, container, onStateChange, onEvent };
 }

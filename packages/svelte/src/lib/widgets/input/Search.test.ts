@@ -3,12 +3,18 @@
 //   whose listbox opens while you type, "No results" included, result icons
 //   from the lazily loaded Lucide barrel) and `mode="filter"`: a plain search
 //   box that never opens a listbox, plus the aria-label, autocomplete and
-//   spellcheck passthroughs.
-import { describe, it, expect, vi, afterEach } from 'vitest';
+//   spellcheck passthroughs. The Lucide barrel is imported once up front so the
+//   icon test waits on Search, not on loading ~1,600 modules.
+import { describe, it, expect, vi, afterEach, beforeAll } from 'vitest';
 import { render, cleanup, fireEvent, waitFor } from '@testing-library/svelte';
 import Search from './Search.svelte';
 
 afterEach(cleanup);
+
+// Search's own import('@lucide/svelte') then resolves from the module cache. The
+// barrel is ~1,600 Svelte modules: seconds alone, far more under a full parallel
+// suite, so this one-off load gets its own generous budget.
+beforeAll(() => import('@lucide/svelte'), 60_000);
 
 describe('Search', () => {
   it('suggest mode (default) is a combobox that opens "No results" while typing', async () => {
@@ -63,10 +69,15 @@ describe('Search', () => {
     expect(input.hasAttribute('spellcheck')).toBe(false);
   });
 
-  // The barrel is ~1,600 Svelte modules, so its first import under vitest takes seconds.
   it('suggest mode draws a result icon named by slug once the icon set loads', async () => {
-    const { container } = render(Search, { value: 'in', results: [{ id: 1, label: 'Inbox', icon: 'inbox' }] });
+    const { container } = render(Search, {
+      value: 'in',
+      results: [
+        { id: 1, label: 'Inbox', icon: 'inbox' },
+        { id: 2, label: 'Invite', icon: 'calendar-days' }
+      ]
+    });
     await fireEvent.focus(container.querySelector('input')!);
-    await waitFor(() => expect(container.querySelector('[role="option"] svg')).not.toBeNull(), { timeout: 25000 });
-  }, 30000);
+    await waitFor(() => expect(container.querySelectorAll('[role="option"] svg')).toHaveLength(2));
+  });
 });
