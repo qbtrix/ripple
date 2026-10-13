@@ -105,6 +105,8 @@ async function main() {
 				await page.reload({ waitUntil: 'load' });
 				await el.waitFor({ state: 'visible', timeout: 15_000 });
 			});
+			// Map tiles and other late images: wait for the network to go quiet (capped).
+			await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
 			await page.evaluate(() => document.fonts.ready);
 			// Park the element under the sticky top bar, then let late layout settle.
 			await el.evaluate((node) => window.scrollTo(0, node.getBoundingClientRect().top + window.scrollY - 80));

@@ -30,6 +30,36 @@
 		"h": 600
 	},
 	{
+		"id": "live-lisbon-walk",
+		"title": "Walk to the castle",
+		"caption": "Show me on a map a walking route from Rossio station to Sao Jorge Castle in Lisbon, with the turns (approximate)",
+		"group": "Do",
+		"tag": "Hand-written",
+		"href": "/live?s=lisbon-walk",
+		"w": 800,
+		"h": 600
+	},
+	{
+		"id": "live-coffee-nearby",
+		"title": "Coffee nearby",
+		"caption": "Find quiet coffee shops with wifi near Baixa in Lisbon, with ratings and distance (sample places)",
+		"group": "Do",
+		"tag": "Hand-written",
+		"href": "/live?s=coffee-nearby",
+		"w": 800,
+		"h": 600
+	},
+	{
+		"id": "live-desk-deals",
+		"title": "Desk gear deals",
+		"caption": "Show me deals on home office gear I can filter and compare (sample products)",
+		"group": "Do",
+		"tag": "Hand-written",
+		"href": "/live?s=desk-deals",
+		"w": 800,
+		"h": 600
+	},
+	{
 		"id": "booking",
 		"title": "Table booking",
 		"caption": "Party, day and time, then book.",
@@ -150,6 +180,16 @@
 		"h": 600
 	},
 	{
+		"id": "live-ocean-docs",
+		"title": "Ocean documentaries",
+		"caption": "Recommend 6 ocean documentaries with ratings and running time (sample titles)",
+		"group": "Learn",
+		"tag": "Hand-written",
+		"href": "/live?s=ocean-docs",
+		"w": 800,
+		"h": 600
+	},
+	{
 		"id": "live-memory-match",
 		"title": "Memory match",
 		"caption": "Make me a memory match game pairing Spanish animal words with their emoji",
@@ -186,6 +226,16 @@
 		"group": "Play",
 		"tag": "Hand-written",
 		"href": "/live?s=tic-tac-toe",
+		"w": 800,
+		"h": 600
+	},
+	{
+		"id": "live-focus-music",
+		"title": "Focus music",
+		"caption": "Make me a focus music player with a few calm tracks",
+		"group": "Play",
+		"tag": "Hand-written",
+		"href": "/live?s=focus-music",
 		"w": 800,
 		"h": 600
 	},
@@ -236,6 +286,46 @@
 		"group": "Track",
 		"tag": "Hand-written",
 		"href": "/live?s=focus-timer",
+		"w": 800,
+		"h": 600
+	},
+	{
+		"id": "live-idea-notes",
+		"title": "Idea notes",
+		"caption": "Give me a notepad for ideas with tags, start with a few sample notes",
+		"group": "Track",
+		"tag": "Hand-written",
+		"href": "/live?s=idea-notes",
+		"w": 800,
+		"h": 600
+	},
+	{
+		"id": "live-my-week",
+		"title": "My week",
+		"caption": "Lay out my week on a calendar: work blocks, the gym three times and family dinner on Sunday",
+		"group": "Track",
+		"tag": "Hand-written",
+		"href": "/live?s=my-week",
+		"w": 800,
+		"h": 600
+	},
+	{
+		"id": "live-team-sync",
+		"title": "Team sync agenda",
+		"caption": "Draft a 30-minute weekly team meeting agenda starting at 10:00, with timed items and owners",
+		"group": "Track",
+		"tag": "Hand-written",
+		"href": "/live?s=team-sync",
+		"w": 800,
+		"h": 600
+	},
+	{
+		"id": "live-lisbon-weather",
+		"title": "Lisbon weather",
+		"caption": "Show me a 7-day weather forecast for Lisbon with highs, lows and chance of rain (sample data)",
+		"group": "Track",
+		"tag": "Hand-written",
+		"href": "/live?s=lisbon-weather",
 		"w": 800,
 		"h": 600
 	},
