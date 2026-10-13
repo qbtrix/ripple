@@ -8,3 +8,4 @@
 export * from './kit.js';
 export * from './solids.js';
 export * from './scene.js';
+export * from './enrich.js';

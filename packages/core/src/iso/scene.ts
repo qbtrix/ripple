@@ -41,11 +41,21 @@ export interface IsoPart {
 	to: Point3;
 	label: string;
 	color: IsoRole;
-	/** `knurl` rings a cylinder's side; plates and slabs may carry a top texture. */
-	detail: '' | 'knurl';
+	/**
+	 * `knurl` rings a cylinder's side, `none` opts the part out of automatic
+	 * detail; `bolt` (a slot) and `ruler` (ticks) are set on derived parts only.
+	 */
+	detail: '' | 'knurl' | 'none' | 'bolt' | 'ruler';
 	texture: '' | 'guilloche' | 'ribs';
 	/** Parent part index, or -1. */
 	on: number;
+	/** Set by `enrichScene`: draw this part's own detail strokes (gear holes, box seam and label plate). */
+	rich: boolean;
+	/** Part of a chain drive: a tube drawn as links, or the chainring that gets spider arms. */
+	chain: boolean;
+	/** Derived parts only: the model part this detail belongs to (-1 for a model part), drawn under or over it. */
+	owner: number;
+	under: boolean;
 }
 
 export interface IsoMotion {
@@ -64,11 +74,13 @@ export interface IsoScene {
 }
 
 export interface IsoShape {
-	cls: 'halo' | 'fill' | 'shade' | 'top' | 'rim' | 'bevel' | 'detail' | 'screw' | 'texture' | 'crease' | 'edge' | 'tube-edge' | 'tube' | 'tube-hi' | 'line' | 'flow' | 'text';
+	cls: 'halo' | 'fill' | 'shade' | 'top' | 'rim' | 'bevel' | 'detail' | 'screw' | 'hole' | 'texture' | 'crease' | 'edge' | 'tube-edge' | 'tube' | 'tube-hi' | 'link-edge' | 'link' | 'pin' | 'line' | 'flow' | 'text';
 	d: string;
 	band?: number;
 	width?: number;
 	dash?: number;
+	/** stroke-dasharray in screen px (chain links); its period divides 240 so flow offsets wrap cleanly. */
+	pattern?: string;
 	text?: string;
 	transform?: string;
 	size?: number;
@@ -82,6 +94,8 @@ export interface IsoItem {
 	box: [Point3, Point3];
 	screen: [number, number, number, number];
 	shapes: IsoShape[];
+	/** The part's own silhouette, for the host's contact shadow. */
+	halo?: string;
 }
 
 export interface Affine {
@@ -146,9 +160,13 @@ export function normalizeScene(rawParts: unknown, rawMotions?: unknown): IsoScen
 			to: to ?? [0, 0, 0],
 			label: plainText(raw.label, 24),
 			color: (ISO_ROLES as readonly string[]).includes(raw.color as string) ? (raw.color as IsoRole) : kind === 'gear' || kind === 'rod' ? 'metal' : 'neutral',
-			detail: raw.detail === 'knurl' ? 'knurl' : '',
+			detail: raw.detail === 'knurl' || raw.detail === 'knob' ? 'knurl' : raw.detail === 'none' ? 'none' : '',
 			texture: raw.texture === 'guilloche' || raw.texture === 'ribs' ? raw.texture : '',
-			on: -1
+			on: -1,
+			rich: false,
+			chain: false,
+			owner: -1,
+			under: false
 		});
 		parents.push(raw.on);
 	}
@@ -324,7 +342,7 @@ function insetPoly(poly: Flat[], by: number): Flat[] {
 /** Parts resting on the scene's lowest level: the host draws a soft contact shadow under them (their fill, blurred). */
 export function groundParts(scene: IsoScene): boolean[] {
 	const unit: Projection = { origin: [0, 0], scale: 1 };
-	const lows = scene.parts.map((p, i) => drawPart(i, p, IDENTITY, unit).box[0][2]);
+	const lows = scene.parts.map((p, i) => (p.owner < 0 ? drawPart(i, p, IDENTITY, unit).box[0][2] : Infinity));
 	const floor = Math.min(...lows);
 	return lows.map((z) => z <= floor + 0.5);
 }
@@ -376,6 +394,18 @@ function capDetail(p: IsoPart, F: Frame, poly: Flat[], s0: number, s1: number, P
 		});
 		out.push({ cls: 'texture', d: loops.join(''), band: 1 });
 	}
+	if (p.detail === 'bolt') out.push({ cls: 'detail', d: pathOf([at(-p.r * 0.62, -p.r * 0.2), at(p.r * 0.62, p.r * 0.2)]) });
+	if (p.detail === 'ruler') {
+		// Ticks hang from the strip's outer edge: every 5th long, the rest short.
+		const count = Math.min(48, Math.floor(p.w / 2.5));
+		const y0 = Math.sign(dot3(F.v, V) || 1) * (p.d / 2);
+		const ticks: string[] = [];
+		for (let i = 1; i < count; i++) {
+			const x = -p.w / 2 + (p.w * i) / count;
+			ticks.push(pathOf([at(x, y0), at(x, y0 * (i % 5 === 0 ? 0.1 : 0.45))]));
+		}
+		out.push({ cls: 'detail', d: ticks.join('') });
+	}
 	if (p.detail === 'knurl' && (p.kind === 'cylinder' || p.kind === 'disc')) {
 		const count = Math.round(Math.min(48, Math.max(16, p.r * 2.5)));
 		const lines: string[] = [];
@@ -412,7 +442,8 @@ export function drawPart(index: number, p: IsoPart, A: Affine, P: Projection, da
 		case 'slab':
 		case 'plate': {
 			const r = p.kind === 'box' ? 0 : p.kind === 'plate' ? 1 : Math.min(p.r, p.w / 2, p.d / 2);
-			prism(axisFrame(p.at, 'z'), roundedPlan({ x: -p.w / 2, y: -p.d / 2, w: p.w, d: p.d, r }, 6), -p.h / 2, p.h / 2);
+			const F = prism(axisFrame(p.at, 'z'), roundedPlan({ x: -p.w / 2, y: -p.d / 2, w: p.w, d: p.d, r }, 6), -p.h / 2, p.h / 2);
+			if (p.kind === 'box' && p.rich) shapes.splice(shapes.length - 1, 0, ...boxDetail(p, F, P));
 			if (p.kind === 'plate' && p.label) {
 				const c = applyAffine(A, p.at);
 				const size = Math.min(p.d * 0.45, (p.w / Math.max(p.label.length, 1)) * 1.6, 9);
@@ -430,9 +461,22 @@ export function drawPart(index: number, p: IsoPart, A: Affine, P: Projection, da
 			const ring = (rr: number) =>
 				circlePolygon(rr, 40).map(([x, y]) => add3(add3(add3(F.o, mul3(F.a, front)), mul3(F.u, x)), mul3(F.v, y)));
 			shapes.splice(shapes.length - 1, 0, { cls: 'crease', d: pathOf(ring(p.r * 0.62).map((q) => iso(q, P)), true) + pathOf(ring(p.r * 0.18).map((q) => iso(q, P)), true) });
-			// Spokes make the turn visible.
-			const spokes = [0, 1, 2, 3, 4].map((i) => [ring(p.r * 0.18)[i * 8]!, ring(p.r * 0.62)[i * 8]!]);
-			shapes.splice(shapes.length - 1, 0, { cls: 'crease', d: spokes.map((s) => pathOf(s.map((q) => iso(q, P)))).join('') });
+			const holes = p.rich && !p.chain && p.r >= 14;
+			if (p.rich) shapes.splice(shapes.length - 1, 0, { cls: 'crease', d: pathOf(ring(p.r - Math.min(p.r * 0.18, 6)).map((q) => iso(q, P)), true) });
+			if (holes) {
+				// Lightening holes between the hub and the web ring, more on a bigger gear.
+				const n = p.r >= 30 ? 6 : p.r >= 20 ? 5 : 4;
+				const d = Array.from({ length: n }, (_, i) => {
+					const a = ((i + 0.5) / n) * TAU;
+					const pts = circlePolygon(p.r * 0.12, 16).map(([x, y]) => add3(add3(add3(F.o, mul3(F.a, front)), mul3(F.u, x + p.r * 0.4 * Math.cos(a))), mul3(F.v, y + p.r * 0.4 * Math.sin(a))));
+					return pathOf(pts.map((q) => iso(q, P)), true);
+				}).join('');
+				shapes.splice(shapes.length - 1, 0, { cls: 'hole', d });
+			} else {
+				// Spokes make the turn visible.
+				const spokes = [0, 1, 2, 3, 4].map((i) => [ring(p.r * 0.18)[i * 8]!, ring(p.r * 0.62)[i * 8]!]);
+				shapes.splice(shapes.length - 1, 0, { cls: 'crease', d: spokes.map((s) => pathOf(s.map((q) => iso(q, P)))).join('') });
+			}
 			break;
 		}
 		case 'cone': {
@@ -478,6 +522,11 @@ export function drawPart(index: number, p: IsoPart, A: Affine, P: Projection, da
 			const d = pathOf(pts.map((q) => iso(q, P)));
 			shapes.push({ cls: 'tube-edge', d, width: width + 1.4 });
 			shapes.push({ cls: 'tube', d, width });
+			points = pts;
+			if (p.chain) {
+				shapes.push(...chainLinks(d, width, Number.isNaN(dash) ? 0 : dash));
+				break;
+			}
 			const lift = p.r * k * kScreen * 0.38;
 			shapes.push({ cls: 'tube-hi', d: pathOf(pts.map((q) => iso(q, P)).map(([x, y]) => [x - lift * 0.3, y - lift] as Flat)), width: width * 0.32 });
 			if (!Number.isNaN(dash)) shapes.push({ cls: 'flow', d, dash });
@@ -491,7 +540,89 @@ export function drawPart(index: number, p: IsoPart, A: Affine, P: Projection, da
 	const xs = flat.map((q) => q[0]);
 	const ys = flat.map((q) => q[1]);
 	const centre = mul3(add3(box[0], box[1]), 0.5);
-	return { part: index, role: p.color, depth: depthOf(centre, P), box, screen: [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)], shapes };
+	const halo = shapes[0]?.cls === 'fill' ? shapes[0].d : undefined;
+	return { part: index, role: p.color, depth: depthOf(centre, P), box, screen: [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)], shapes, halo };
+}
+
+/** A box's seam round its two visible sides near the top, and a label plate with rule lines on its wider visible side. */
+function boxDetail(p: IsoPart, F: Frame, P: Projection): IsoShape[] {
+	if (p.h < 8 || Math.max(p.w, p.d) < 16) return [];
+	const V = viewOf(P);
+	const su = dot3(F.u, V) >= 0 ? 1 : -1;
+	const sv = dot3(F.v, V) >= 0 ? 1 : -1;
+	const [hw, hd, z0] = [p.w / 2, p.d / 2, -p.h / 2];
+	const zs = p.h / 2 - Math.min(4, p.h * 0.22);
+	const at = (s: number, x: number, y: number) => iso(pointOf(F, s, x, y), P);
+	// Corner to corner, so the seam ends on the outline.
+	const out: IsoShape[] = [{ cls: 'detail', d: pathOf([at(zs, -su * hw, sv * hd), at(zs, su * hw, sv * hd), at(zs, su * hw, -sv * hd)]) }];
+	const alongX = p.w >= p.d;
+	const faceW = alongX ? p.w : p.d;
+	const pw = Math.min(faceW * 0.55, 44);
+	const ph = Math.min((zs - z0) * 0.55, 14);
+	if (pw < 12 || ph < 6) return out;
+	const sc = (z0 + zs) / 2;
+	const on = (t: number, s: number) => (alongX ? at(s, t, sv * hd) : at(s, su * hw, -t * sv * su));
+	const x0 = -pw / 2;
+	out.push({ cls: 'top', d: pathOf([on(x0, sc - ph / 2), on(-x0, sc - ph / 2), on(-x0, sc + ph / 2), on(x0, sc + ph / 2)], true) });
+	const rules = [0.7, 0.5, 0.6].map((k, i) => {
+		const s = sc + ph / 2 - (ph * (i + 1)) / 4;
+		return pathOf([on(x0 + pw * 0.15, s), on(x0 + pw * (0.15 + k * 0.7), s)]);
+	});
+	out.push({ cls: 'detail', d: rules.join('') + pathOf([on(x0, sc - ph / 2), on(-x0, sc - ph / 2), on(-x0, sc + ph / 2), on(x0, sc + ph / 2)], true) });
+	return out;
+}
+
+/** Divisors of the 240 px flow wrap, so dashed links never jump when the offset wraps. */
+const PITCHES = [6, 8, 10, 12, 15, 16, 20, 24, 30, 40, 48, 60];
+
+/** A chain as outer plates (dashes) over the inner plates (the tube), with a pin at each plate end. */
+function chainLinks(d: string, width: number, offset: number): IsoShape[] {
+	const plate = width * 1.15;
+	const pitch = PITCHES.find((n) => n >= width * 2.2) ?? 60;
+	const len = Math.max(0.1, pitch * 0.62 - plate);
+	const pattern = `${len.toFixed(2)} ${(pitch - len).toFixed(2)}`;
+	return [
+		{ cls: 'link-edge', d, width: plate + 1.4, pattern, dash: offset },
+		{ cls: 'link', d, width: plate, pattern, dash: offset },
+		{ cls: 'pin', d, width: width * 0.4, pattern: `0 ${len.toFixed(2)} 0 ${(pitch - len).toFixed(2)}`, dash: offset }
+	];
+}
+
+/**
+ * Fold every derived part's shapes into its owner's item: `under` ones before
+ * the owner's own shapes, the rest after, each group in emission order. The
+ * owner's box grows to cover them, so detail always sorts with its owner.
+ */
+export function mergeOwned(items: IsoItem[], scene: IsoScene): IsoItem[] {
+	const byPart = new Map(items.map((it) => [it.part, it]));
+	const under = new Map<number, IsoShape[]>();
+	const over = new Map<number, IsoShape[]>();
+	const grow = new Map<number, IsoItem[]>();
+	for (const it of items) {
+		const p = scene.parts[it.part];
+		if (!p || p.owner < 0 || !byPart.has(p.owner)) continue;
+		const bucket = p.under ? under : over;
+		bucket.set(p.owner, [...(bucket.get(p.owner) ?? []), ...it.shapes]);
+		grow.set(p.owner, [...(grow.get(p.owner) ?? []), it]);
+	}
+	const out: IsoItem[] = [];
+	for (const it of items) {
+		const p = scene.parts[it.part];
+		if (p && p.owner >= 0 && byPart.has(p.owner)) continue;
+		const extra = grow.get(it.part);
+		if (!extra) {
+			out.push(it);
+			continue;
+		}
+		const all = [it, ...extra];
+		const box: [Point3, Point3] = [
+			[0, 1, 2].map((k) => Math.min(...all.map((x) => x.box[0][k]!))) as Point3,
+			[0, 1, 2].map((k) => Math.max(...all.map((x) => x.box[1][k]!))) as Point3
+		];
+		const screen = [0, 1, 2, 3].map((k) => (k < 2 ? Math.min : Math.max)(...all.map((x) => x.screen[k]!))) as IsoItem['screen'];
+		out.push({ ...it, box, screen, shapes: [...(under.get(it.part) ?? []), ...it.shapes, ...(over.get(it.part) ?? [])] });
+	}
+	return out;
 }
 
 /**
@@ -556,7 +687,10 @@ export function sortItems(items: IsoItem[], P: Projection): IsoItem[] {
 /** Draw every part at rest-or-time-t and return them in painter's order. */
 export function drawScene(scene: IsoScene, P: Projection, transforms: Affine[], dashes: number[] = []): IsoItem[] {
 	return sortItems(
-		scene.parts.map((p, i) => drawPart(i, p, transforms[i] ?? IDENTITY, P, dashes[i] ?? NaN)),
+		mergeOwned(
+			scene.parts.map((p, i) => drawPart(i, p, transforms[i] ?? IDENTITY, P, dashes[i] ?? NaN)),
+			scene
+		),
 		P
 	);
 }
