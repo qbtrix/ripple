@@ -1,0 +1,65 @@
+{
+ "id": "bike-gears",
+ "title": "How bike gears work",
+ "prompt": "How do bike gears work? Show me the drivetrain and let me change the gear and my cadence.",
+ "model": "hand-written",
+ "recordedAt": "2026-10-13T12:00:00.000Z",
+ "chunks": [
+  {
+   "t": 0,
+   "text": "{\"version\":\"1.0\",\"state\":{\"figure\":null},\"ui\":{\"type\":\"figure\",\""
+  },
+  {
+   "t": 18,
+   "text": "bind\":\"{state.figure}\",\"props\":{\"figure\":\"bike-gears\",\"params\":{"
+  },
+  {
+   "t": 36,
+   "text": "\"cadence\":85,\"ring\":50,\"gear\":4},\"labels\":[{\"anchor\":\"chainring\""
+  },
+  {
+   "t": 54,
+   "text": ",\"note\":\"The pedals turn this ring. The 50 pulls more chain each"
+  },
+  {
+   "t": 72,
+   "text": " turn than the 34.\"},{\"anchor\":\"cassette\",\"note\":\"The chain turn"
+  },
+  {
+   "t": 90,
+   "text": "s one of these cogs on the back wheel. A smaller cog means more "
+  },
+  {
+   "t": 108,
+   "text": "wheel turns.\"},{\"anchor\":\"rear-derailleur\",\"note\":\"Lifts the cha"
+  },
+  {
+   "t": 126,
+   "text": "in from cog to cog and keeps it tight.\"},{\"anchor\":\"front-derail"
+  },
+  {
+   "t": 144,
+   "text": "leur\",\"note\":\"Pushes the chain between the two rings.\"},{\"anchor"
+  },
+  {
+   "t": 162,
+   "text": "\":\"wheel\",\"note\":\"Every wheel turn rolls about 2.1 m of road.\"}]"
+  },
+  {
+   "t": 180,
+   "text": ",\"caption\":\"The gear ratio is ring teeth over cog teeth: each pe"
+  },
+  {
+   "t": 198,
+   "text": "dal turn spins the wheel that many times. Change the gear and th"
+  },
+  {
+   "t": 216,
+   "text": "e cadence and watch the speed. Drawn at a quarter of real speed."
+  },
+  {
+   "t": 234,
+   "text": "\"}}}"
+  }
+ ]
+}

@@ -1,7 +1,7 @@
 {
   "schema": "ripple.manifest/v1",
   "version": "0.8.0",
-  "generatedAt": "2026-10-13T04:47:45.050Z",
+  "generatedAt": "2026-10-13T05:18:12.716Z",
   "spec": {
     "uiField": "ui",
     "stateField": "state",
@@ -11857,12 +11857,12 @@
     {
       "type": "figure",
       "category": "composite",
-      "description": "A hand-built live isometric figure picked by id (\"heart\": how a heart pumps), with sliders, live readouts and numbered labels on its named parts. Bind value.",
+      "description": "A hand-built live isometric figure picked by id (\"heart\": how a heart pumps; \"bike-gears\": how bike gears work), with sliders, live readouts and numbered labels on its named parts. Bind value.",
       "props": {
         "figure": {
-          "type": "\"heart\"",
+          "type": "\"heart\" | \"bike-gears\"",
           "required": true,
-          "description": "Figure id. \"heart\" is a beating heart as two pumps: sliders bpm (40-180) and stroke (50-110 ml)."
+          "description": "Figure id. \"heart\" is a beating heart as two pumps: sliders bpm (40-180) and stroke (50-110 ml). \"bike-gears\" is a bicycle drivetrain on a stand: sliders cadence (40-120 rpm), ring (34 or 50 teeth) and gear (1-7, 1 = the 28-tooth cog, 7 = the 11); readouts gear ratio, metres per pedal turn and km/h."
         },
         "params": {
           "type": "Record<string, number>",
@@ -11872,7 +11872,7 @@
         "labels": {
           "type": "Array<{ anchor: string; label?: string; note?: string }>",
           "required": false,
-          "description": "Up to 10 numbered pins, plain text. heart anchors: right-atrium, right-ventricle, left-atrium, left-ventricle, tricuspid, mitral, pulmonary-valve, aortic-valve, aorta, vena-cava, pulmonary-artery, pulmonary-veins, lungs, body."
+          "description": "Up to 10 numbered pins, plain text. heart anchors: right-atrium, right-ventricle, left-atrium, left-ventricle, tricuspid, mitral, pulmonary-valve, aortic-valve, aorta, vena-cava, pulmonary-artery, pulmonary-veins, lungs, body. bike-gears anchors: chainring, crank, pedal, chain, cassette, rear-derailleur, front-derailleur, jockey-wheels, rear-hub, wheel."
         },
         "caption": {
           "type": "string",
