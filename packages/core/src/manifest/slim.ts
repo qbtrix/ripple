@@ -9,10 +9,8 @@
  * anything else is skipped at runtime, and only the widgets that host
  * actually registers. So this manifest is the spec envelope, the
  * `BASE_ACTIONS` subset of the action grammar, and the widgets the host
- * passes in.
- *
- * @changes
- *   - 2026-09-27: created with the slim runtime.
+ * passes in. A prop field may carry `data: true` (it holds the user's data),
+ * which the build loop's data guard reads.
  */
 
 import { BASE_ACTIONS } from '../core/base-dispatcher.js';
@@ -24,6 +22,8 @@ export interface SlimWidgetField {
 	type: string;
 	required: boolean;
 	description: string;
+	/** The prop carries the user's data (values, rows, amounts, dates); the build loop's data guard compares it. */
+	data?: boolean;
 }
 
 /**

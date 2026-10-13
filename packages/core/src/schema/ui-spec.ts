@@ -233,7 +233,13 @@ export const UISpec = z.object({
 	meta: z
 		.object({
 			title: z.string().optional(),
-			description: z.string().optional()
+			description: z.string().optional(),
+			/**
+			 * The card shows made-up data on purpose (a demo, a template), and says
+			 * so in visible "Sample" text. The spec audit then skips its check for
+			 * dates after today.
+			 */
+			sample: z.boolean().optional()
 		})
 		.optional()
 });

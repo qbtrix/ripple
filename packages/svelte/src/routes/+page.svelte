@@ -97,13 +97,9 @@
 	const store = { storeUrl: STORE_URL };
 	// Live: the Paw Bar API, with the recordings as the in-place fallback when it
 	// is unavailable. Default build: the recordings answer directly.
-	const session = LIVE
-		? new ChatSession(
-				pawbarTransport({ endpoint: ENDPOINT, widgetId: WIDGET_ID, siteKey: SITE_KEY }).send,
-				recorded('Here is a saved answer that fits.'),
-				store
-			)
-		: new ChatSession(recorded());
+	// Live cards also post their audit counts (session.auditCard).
+	const live = LIVE ? pawbarTransport({ endpoint: ENDPOINT, widgetId: WIDGET_ID, siteKey: SITE_KEY }) : null;
+	const session = live ? new ChatSession(live.send, recorded('Here is a saved answer that fits.'), store, live.audit) : new ChatSession(recorded());
 	const bill = chatScenarios.find((s) => s.id === 'bill-splitter');
 	if (bill) session.seed(bill.fixture.prompt, recordedExchange(bill, intro(bill.fixture.prompt)));
 	// The suggestion panel's chips, grouped and ordered by suggestionGroups. Live:

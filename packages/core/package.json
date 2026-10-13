@@ -58,6 +58,11 @@
       "types": "./dist/iso/index.d.ts",
       "default": "./dist/iso/index.js"
     },
+    "./build": {
+      "source": "./src/build/index.ts",
+      "types": "./dist/build/index.d.ts",
+      "default": "./dist/build/index.js"
+    },
     "./motion": {
       "source": "./src/motion/engine.ts",
       "types": "./dist/motion/engine.d.ts",

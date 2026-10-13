@@ -10,14 +10,20 @@
 // Chips render in labelled groups; Escape folds the open panel, focus back on its
 // toggle. A card's raw spec never shows as chat text:
 // not from a restarted fence, not from a leak the server let through.
+// The audit: a final card posts its pure and page counts once from an idle
+// callback; a node whose boundary fires counts as an errorBox; axe never runs.
 
 import { fireEvent, render } from '@testing-library/svelte';
 import { expect, test, vi } from 'vitest';
 import Chat from './Chat.svelte';
-import { ChatSession } from './session.svelte.js';
+import { Card, ChatSession } from './session.svelte.js';
 import { laptopFlowCard, tripFlowCard } from './flow-cards.js';
 import liveTripCard from './fixtures/trip-flow-card.json';
 import heartReply from './fixtures/restart-fence-heart.json';
+import { registerWidget, resetRegistry } from '$lib/widgets/index.js';
+import ThrowingWidget from '$lib/components/__fixtures__/ThrowingWidget.svelte';
+import chatSource from './Chat.svelte?raw';
+import sessionSource from './session.svelte.ts?raw';
 
 const waitFor = <T>(fn: () => T | Promise<T>) => vi.waitFor(fn, { timeout: 5000 });
 vi.setConfig({ testTimeout: 20_000 });
@@ -471,4 +477,143 @@ test('Escape folds the open panel and hands focus from a chip back to the toggle
 	await fireEvent.keyDown(window, { key: 'Escape' });
 	expect(toggle.getAttribute('aria-expanded')).toBe('false');
 	await waitFor(() => expect(document.activeElement).toBe(toggle));
+});
+
+test('a final card with faults posts its audit counts once, from an idle callback', async () => {
+	const faulty = {
+		state: { due: '2099-03-01' },
+		ui: {
+			type: 'flex',
+			props: { direction: 'column' },
+			children: [
+				{ type: 'heading', props: { text: 'Due {state.due}' } },
+				{ type: 'text', props: { text: 'Total: {state.total}' } }
+			]
+		}
+	};
+	const audit = vi.fn();
+	const session = new ChatSession(
+		async function* () {
+			yield { event: 'message.persisted', data: { run_id: 'run-1', client_message_id: 'm-1' } };
+			yield { event: 'card.start', data: { card_id: 'c1' } };
+			yield { event: 'card.delta', data: { card_id: 'c1', text: JSON.stringify(faulty) } };
+			yield { event: 'card.final', data: { card_id: 'c1', card: faulty } };
+			yield { event: 'stream_end', data: { assistant_message_id: 'm', cancelled: false } };
+		},
+		undefined,
+		undefined,
+		audit
+	);
+	const view = render(Chat, { session, suggestions: [{ id: 'due', title: 'Due date', prompt: 'When is it due' }] });
+
+	await fireEvent.click(view.getByRole('button', { name: 'Due date' }));
+	await waitFor(() => expect(audit).toHaveBeenCalledTimes(1));
+	const [runId, cardId, row] = audit.mock.calls[0];
+	expect([runId, cardId]).toEqual(['run-1', 'c1']);
+	expect(row.counts).toEqual({
+		schema: 0,
+		catalog: 0,
+		action: 0,
+		envelope: 0,
+		leftover: 1,
+		each: 0,
+		bind: 0,
+		expr: 0,
+		twoControls: 0,
+		size: 0,
+		futureDate: 1,
+		// The page tier (jsdom has no layout, so only the DOM-only checks can fire).
+		notRendered: 0,
+		errorBoxes: 0,
+		overflow: 0,
+		clippedText: 0,
+		emptyContainers: 0,
+		badText: 0
+	});
+	expect(row.waived).toBe(0);
+	expect(row.widget_types).toEqual(['flex', 'heading', 'text']);
+	expect(Number.isInteger(row.ms) && row.ms >= 0).toBe(true);
+	expect(Number.isInteger(row.seen_ms) && row.seen_ms >= 0).toBe(true);
+	// Only integers and type names leave the page.
+	expect(JSON.stringify(row)).not.toContain('Total');
+
+	// Later renders of the same card (a re-render, another turn) never post it again.
+	await new Promise((r) => setTimeout(r, 50));
+	expect(audit).toHaveBeenCalledTimes(1);
+
+	// Leaving the page re-posts the same row with the time on screen so far.
+	window.dispatchEvent(new Event('pagehide'));
+	expect(audit).toHaveBeenCalledTimes(2);
+	const [runId2, cardId2, row2] = audit.mock.calls[1];
+	expect([runId2, cardId2]).toEqual(['run-1', 'c1']);
+	expect({ ...row2, seen_ms: 0 }).toEqual({ ...row, seen_ms: 0 });
+	expect(Number.isInteger(row2.seen_ms) && row2.seen_ms >= Math.max(row.seen_ms, 50)).toBe(true);
+});
+
+test('a card with no run id (seeded, recorded) is never audited', async () => {
+	const audit = vi.fn();
+	const session = new ChatSession(async function* () {}, undefined, undefined, audit);
+	session.seed('Make me a lamp switch', [
+		{ event: 'card.start', data: { card_id: 'c1' } },
+		{ event: 'card.final', data: { card_id: 'c1', card } }
+	]);
+	const view = render(Chat, { session });
+	await waitFor(() => expect(view.getByText('Lamp off')).toBeTruthy());
+	await new Promise((r) => setTimeout(r, 50));
+	expect(audit).not.toHaveBeenCalled();
+});
+
+test('a card whose node throws posts errorBoxes from its boundary, and the idle audit never runs axe', async () => {
+	vi.spyOn(console, 'error').mockImplementation(() => {});
+	vi.spyOn(console, 'warn').mockImplementation(() => {});
+	// A chat widget type that throws, so the card passes the card policy and fails in render.
+	registerWidget('badge', ThrowingWidget);
+	const axe = { run: vi.fn() };
+	(globalThis as { axe?: unknown }).axe = axe;
+	const broken = { ui: { type: 'flex', children: [{ type: 'text', props: { text: 'Hi' } }, { type: 'badge', id: 'bad-node', props: { text: 'New' } }] } };
+	const audit = vi.fn();
+	const session = new ChatSession(
+		async function* () {
+			yield { event: 'message.persisted', data: { run_id: 'run-1', client_message_id: 'm-1' } };
+			yield { event: 'card.start', data: { card_id: 'c1' } };
+			yield { event: 'card.delta', data: { card_id: 'c1', text: JSON.stringify(broken) } };
+			yield { event: 'card.final', data: { card_id: 'c1', card: broken } };
+			yield { event: 'stream_end', data: { assistant_message_id: 'm', cancelled: false } };
+		},
+		undefined,
+		undefined,
+		audit
+	);
+	try {
+		const view = render(Chat, { session, suggestions: [{ id: 'b', title: 'Broken', prompt: 'Break it' }] });
+		await fireEvent.click(view.getByRole('button', { name: 'Broken' }));
+		await waitFor(() => expect(audit).toHaveBeenCalledTimes(1));
+		const row = audit.mock.calls[0][2];
+		expect(row.counts.errorBoxes).toBeGreaterThanOrEqual(1);
+		// The final Ripple's boundary reported the node (so the count survives a skipped page tier).
+		const part = session.turns.at(-1)!.parts.find((p) => p.kind === 'card');
+		expect(part?.kind === 'card' && [...part.card.renderErrors]).toEqual(['bad-node']);
+		expect(row.counts.notRendered).toBe(0);
+		// Unmeasured page checks stay out of the post rather than claiming 0.
+		expect('themeNotApplied' in row.counts || 'consoleErrors' in row.counts).toBe(false);
+		expect(axe.run).not.toHaveBeenCalled();
+		expect(`${chatSource}\n${sessionSource}`).not.toMatch(/axe-core|\baxe\.run\b/);
+	} finally {
+		delete (globalThis as { axe?: unknown }).axe;
+		resetRegistry();
+		vi.restoreAllMocks();
+	}
+});
+
+test('a boundary error still counts when the page tier has no box to audit', () => {
+	const audit = vi.fn();
+	const session = new ChatSession(async function* () {}, undefined, undefined, audit);
+	const c = new Card();
+	Object.assign(c, { runId: 'run-1', cardId: 'c1' });
+	c.status = 'final';
+	c.spec = { ui: { type: 'text', props: { text: 'x' } } };
+	c.renderErrors.add('n1');
+	session.auditCard(c);
+	expect(audit.mock.calls[0][2].counts.errorBoxes).toBe(1);
+	expect('overflow' in audit.mock.calls[0][2].counts).toBe(false);
 });

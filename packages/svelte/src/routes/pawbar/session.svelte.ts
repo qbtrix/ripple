@@ -1,50 +1,53 @@
 // routes/pawbar/session.svelte.ts — The landing chat: one visitor, one conversation.
-// A ChatSession sends a message through a Transport (the Paw Bar HTTP API, or
-// the recorded fallback when the site has no endpoint configured) and folds
-// the returned frames into turns. A turn is an ordered list of parts, text and
-// cards, because text and card events interleave in stream order.
-// Cards: `card.start` opens a Card whose `card.delta` text (`{"ui":…,"state":…}`)
-// is pushed, with `"version":"1.0",` spliced in after the first `{`, into a
-// streamSpec store; `card.final` swaps in the validated spec; `card.rejected`
-// (or a turn that ends first: "truncated") drops it for a short note, except
-// reason `restarted` (the model started the card over), which drops it with no
-// note, like a restarted legacy fence. The
-// When the live answer is unavailable (limit, busy, unreachable) and the
-// session has a `fallback` transport, the notice carries `replay`, and
-// replayRecorded() plays the closest recorded answer into that same turn.
-// legacy ```pawbar-card fence in chunk text is re-split on every chunk and
-// fed through the same Card. Every partial spec and the final card pass
-// card-policy.ts first; a refused card is dropped like a rejected one. Host
-// events are inert until final. With a StoreHost (the landing passes one), a
-// final card's `emit checkout` (menu-order's Cart) goes to live/checkout.ts, and
-// the payment link it returns becomes the card's `pay` (a PayCard under the
-// card, which polls the order and turns into tracking; retryCheckout() starts
-// a new one after a cancel). The page never navigates. While a card's order is
-// pending or paid, another checkout from it opens no new session: it nudges
-// the pay card into view (payNudge); only `cancelled` frees it. The open order
-// is kept in sessionStorage (pay/resume.ts) and resume() brings it back as
-// `resumed`, for a pay link that navigated this tab away. `emit book` (booking's request) goes to
-// book.ts, and the answer is patched into the booking node's props (`notice`,
-// `confirmed`, fresh `days`) with a BookingReceipt under the card on 201. A
-// booking the store does not back (no `on_book`) is wired to BOOK_CHAT at final:
-// it asks for no contact details, its request becomes the visitor's next
-// message (slotMessage, the card's own labels only; once queued, no newer card
-// message replaces it) and the node gets `sent`, once per booking node. One
-// checkout or booking in flight per session. A final card's `emit ask` ({text})
-// and a finished flow (flowComplete: a `chat` onComplete, plus the visitor's
-// answers as plain sentences, see flowMessage) become the visitor's next message,
-// sent exactly as the transcript shows it, now or right after the answer in
-// flight (one waits; one per click). Any other host event, and every store event
-// without a StoreHost, is only recorded for display.
-// Text the visitor TYPES does not go to the Paw Bar: handoff() opens Paw OS
-// (pawosHandoffUrl: the prompt rides in the fragment, never the query, capped at
-// HANDOFF_MAX) and leaves a host note with a fallback link. Chips, card asks and
-// flow submits still go through send(); Chat.svelte makes that split.
-// Local state actions never reach the host, so they work while streaming.
-// Model text is stored as plain strings; the component never uses {@html}.
-// seed() folds a frame list in synchronously, so the landing can prerender a
-// finished exchange through the same path (card policy included).
+// A ChatSession sends a message through a Transport (the Paw Bar HTTP API, or the
+// recorded fallback when no endpoint is configured) and folds the frames into
+// turns: ordered lists of text and card parts, as they interleave in the stream.
+// Cards: `card.start` opens a Card whose `card.delta` text is pushed, with
+// `"version":"1.0",` spliced in after the first `{`, into a streamSpec store;
+// `card.final` swaps in the validated spec; `card.rejected` (or a turn that ends
+// first: "truncated") drops it for a short note, except `restarted`, dropped
+// silently like a restarted legacy fence. A legacy ```pawbar-card fence in chunk
+// text is re-split on every chunk through the same Card. Every partial spec and
+// the final card pass card-policy.ts first; a refused card drops like a rejected one.
+// Unavailable (limit, busy, unreachable) with a `fallback` transport: the notice
+// carries `replay`, and replayRecorded() plays the closest recording into that turn.
+// Host events are inert until final. With a StoreHost, `emit checkout` goes to
+// live/checkout.ts and its payment link becomes the card's `pay` (a PayCard that
+// polls into tracking; retryCheckout() after a cancel). The page never navigates.
+// A pending or paid order nudges its pay card (payNudge) instead of a second
+// session; only `cancelled` frees it. The open order is kept in sessionStorage
+// (pay/resume.ts) and resume() restores it as `resumed`. `emit book` goes to
+// book.ts and the answer is patched into the booking node (`notice`, `confirmed`,
+// fresh `days`), with a BookingReceipt on 201. A booking the store does not back
+// is wired to BOOK_CHAT at final: its request becomes the visitor's next message
+// (slotMessage, the card's own labels; a queued slot is never replaced) and the
+// node gets `sent`, once per node. One checkout or booking in flight per session.
+// `emit ask` ({text}) and a finished flow (flowComplete: a `chat` onComplete plus
+// the answers as sentences, see flowMessage) become the visitor's next message,
+// now or after the answer in flight (one waits; one per click). Any other host
+// event, and every store event without a StoreHost, is only recorded for display.
+// Typed text does not go to the Paw Bar: handoff() opens Paw OS (the prompt in the
+// fragment, never the query, capped at HANDOFF_MAX) and leaves a note with a
+// fallback link; Chat.svelte makes that split. Local state actions never reach the
+// host, so they work while streaming. Model text stays plain strings, no {@html}.
+// seed() folds frames in synchronously so the landing can prerender an exchange.
+// Audit counts: a turn keeps `run_id` from `message.persisted` and stamps it, with
+// the server's card_id, on each streamed card. auditCard() (called from an idle
+// callback once a final card has mounted) runs the pure specAudit and, given the
+// card's mounted box, the page audit (pageAudit, at the visitor's own width and
+// theme, never axe) once per card. errorBoxes is the larger of the page's error
+// boxes and the node boundaries that fired (Card.renderErrors), so a boundary is
+// counted once and still counted when the page tier is skipped (it is, for the
+// rest of the session, once one page audit took over PAGE_AUDIT_MS). It hands
+// integer counts and type names, never spec or text, to the AuditPost
+// (pawbarTransport's `audit`, fire-and-forget), keeping the row on the Card.
+// `seen_ms` is time on screen since card.final: reportSeen() (Chat.svelte calls it
+// on pagehide and when the tab is hidden) re-posts each kept row with a fresh
+// `seen_ms`, the same counts, no second audit; the server replaces the card's row.
+// Seeded, recorded and legacy fence cards have no run or card id: never posted.
 
+import { specAudit } from '@ripple-ui/core';
+import { pageAudit, type PageCheck } from '$lib/build/page-audit.js';
 import type { RippleEvent, TerminalResult } from '$lib/index.js';
 import { streamSpec, type StreamSpecStore } from '$lib/streaming/index.js';
 import { checkout, LOCAL_HOSTS, type Pay } from '../live/checkout.js';
@@ -53,6 +56,7 @@ import type { Phase } from '../pay/watch.svelte.js';
 import { book, bookingProps, patchBooking, reloadDays, slotMessage, toBookingRequest, wireSlotToChat, type Booked } from './book.js';
 import { ASK_MAX, BOOK_CHAT, refuseCard, textRefusal } from './card-policy.js';
 import { parseSSE, readText, segments, type SSEFrame } from './sse.js';
+import { CHAT_WIDGET_TYPES } from './widget-types.js';
 
 export const BYOK_URL = 'https://os.pocketpaw.xyz/?ref=ripple';
 export const PAWOS_URL = 'https://os.pocketpaw.xyz';
@@ -207,9 +211,34 @@ export interface PawbarConfig {
 	ref?: () => string;
 }
 
-export function pawbarTransport(cfg: PawbarConfig): { send: Transport; conversationId: () => string | undefined } {
+/** One chat card's audit counts as posted: integers and widget type names, no spec, no text. */
+export interface CardAudit {
+	counts: Record<string, number>;
+	waived: number;
+	widget_types: string[];
+	ms: number;
+	seen_ms: number;
+}
+export type AuditPost = (runId: string, cardId: string, audit: CardAudit) => void;
+/** The server refuses a bigger audit body. */
+export const AUDIT_BODY_MAX = 1024;
+
+export function pawbarTransport(cfg: PawbarConfig): { send: Transport; conversationId: () => string | undefined; audit: AuditPost } {
 	let conversationId: string | undefined;
 	const doFetch = cfg.fetch ?? ((...a: Parameters<typeof fetch>) => fetch(...a));
+	/** Fire-and-forget: a refused or failed post (a 404 before the route ships) is dropped. */
+	const audit: AuditPost = (runId, cardId, row) => {
+		const types = [...row.widget_types];
+		const body = () =>
+			JSON.stringify({ widget_id: cfg.widgetId, signed_key: cfg.siteKey, customer_ref: (cfg.ref ?? customerRef)(), ...row, widget_types: types });
+		while (types.length && new TextEncoder().encode(body()).length > AUDIT_BODY_MAX) types.pop();
+		const url = `${cfg.endpoint.replace(/\/$/, '')}/api/v1/paw-bar/cards/${encodeURIComponent(runId)}/${encodeURIComponent(cardId)}/audit`;
+		try {
+			void doFetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, credentials: 'omit', keepalive: true, body: body() }).catch(() => {});
+		} catch {
+			/* telemetry only */
+		}
+	};
 	async function* send(message: string, signal: AbortSignal): AsyncGenerator<SSEFrame> {
 		const res = await doFetch(`${cfg.endpoint.replace(/\/$/, '')}/api/v1/paw-bar/chat`, {
 			method: 'POST',
@@ -240,7 +269,20 @@ export function pawbarTransport(cfg: PawbarConfig): { send: Transport; conversat
 			yield frame;
 		}
 	}
-	return { send, conversationId: () => conversationId };
+	return { send, conversationId: () => conversationId, audit };
+}
+
+/** The distinct widget types in a card's tree (children and else_children, as specAudit walks it), at most 16. */
+function widgetTypes(ui: unknown): string[] {
+	const out = new Set<string>();
+	const todo = [ui];
+	for (let n = 0; todo.length && n < 2000 && out.size < 16; n++) {
+		const node = todo.pop();
+		if (!isRecord(node)) continue;
+		if (typeof node.type === 'string' && /^[a-z0-9-]{1,40}$/.test(node.type)) out.add(node.type);
+		for (const kids of [node.children, node.else_children]) if (Array.isArray(kids)) todo.push(...kids);
+	}
+	return [...out].sort();
 }
 
 let cardSeq = 0;
@@ -267,6 +309,15 @@ export class Card {
 	cart: unknown = null;
 	/** The card's JSON text as received so far (the spec peek shows it). */
 	text = $state('');
+	/** The run and the server's card id (`card.start`), for the audit post; '' when there is none. */
+	runId = '';
+	cardId = '';
+	/** performance.now() at card.final, for `seen_ms`. */
+	landedAt = 0;
+	/** The audit row last posted; reportSeen() re-posts it with a fresh `seen_ms`. */
+	auditRow: CardAudit | null = null;
+	/** Node ids whose error boundary fired on the final render (Ripple's onRenderError). */
+	readonly renderErrors = new Set<string>();
 	readonly store: StreamSpecStore;
 	#push!: ReadableStreamDefaultController<string>;
 	#open = true;
@@ -310,6 +361,7 @@ export class Card {
 		const why = refuseCard(card);
 		if (why) return this.reject(why);
 		this.spec = wireSlotToChat({ version: '1.0', ui: card.ui, ...(card.state === undefined ? {} : { state: card.state }) });
+		this.landedAt = performance.now();
 		this.status = 'final';
 		this.#close();
 	}
@@ -373,10 +425,19 @@ interface TurnState {
 	legacy: Card[];
 	/** Unavailable notices in this turn may offer the recorded answer. */
 	replay: boolean;
+	/** From `message.persisted`; '' until it arrives. */
+	runId: string;
 }
 
 let turnSeq = 0;
+/** The server's `seen_ms` ceiling (one day); a tab left open longer posts the cap, not a 422. */
+const SEEN_MAX = 86_400_000;
+const seenMs = (card: Card, now: number) => Math.min(SEEN_MAX, Math.round(now - card.landedAt));
 const MAX_RUN = 1_000_000;
+/** A page audit slower than this turns the page tier off for the session (the chat's 300 ms budget). */
+export const PAGE_AUDIT_MS = 300;
+/** Page checks the DOM cannot see (the host fills them in); left out of the post rather than sent as 0. */
+const UNMEASURED: PageCheck[] = ['themeNotApplied', 'consoleErrors'];
 
 export class ChatSession {
 	turns = $state<Turn[]>([]);
@@ -392,12 +453,64 @@ export class ChatSession {
 	#queuedSlot = false;
 	/** A card already sent a message in this task (one click). */
 	#said = false;
+	// ponytail: one slow page audit skips the tier for the session; a real p95 over a sample if it flaps.
+	#pageSlow = false;
 
 	constructor(
 		private readonly transport: Transport,
 		private readonly fallback?: Transport,
-		readonly store?: StoreHost
+		readonly store?: StoreHost,
+		private readonly audit?: AuditPost
 	) {}
+
+	/**
+	 * Runs the pure audit, and the page audit on `root` (the card's mounted box) when
+	 * given, on a final streamed card, once, and posts its counts. No-op without an
+	 * AuditPost or a run and card id. Call it when the page is idle.
+	 */
+	auditCard(card: Card, root?: Element) {
+		if (!this.audit || card.auditRow || card.status !== 'final' || !card.spec || !card.runId || !card.cardId) return;
+		const start = performance.now();
+		const reports = specAudit(card.spec, {
+			widgetTypes: [...CHAT_WIDGET_TYPES],
+			now: { iso: new Date().toISOString(), tz: Intl.DateTimeFormat().resolvedOptions().timeZone }
+		});
+		const counts: Record<string, number> = Object.fromEntries(reports.map((r) => [r.check, r.count]));
+		if (root && !this.#pageSlow) {
+			const t = performance.now();
+			try {
+				const page: Record<string, number> = { ...pageAudit(root).counts };
+				page.notRendered = root.querySelector('.ripple-root') ? 0 : 1;
+				for (const c of UNMEASURED) delete page[c];
+				Object.assign(counts, page);
+			} catch {
+				/* telemetry only */
+			}
+			if (performance.now() - t > PAGE_AUDIT_MS) this.#pageSlow = true;
+		}
+		counts.errorBoxes = Math.max(counts.errorBoxes ?? 0, card.renderErrors.size);
+		const done = performance.now();
+		card.auditRow = {
+			counts,
+			waived: reports.reduce((n, r) => n + (r.waived?.length ?? 0), 0),
+			widget_types: widgetTypes(card.spec.ui),
+			ms: Math.round(done - start),
+			seen_ms: seenMs(card, done)
+		};
+		this.audit(card.runId, card.cardId, card.auditRow);
+	}
+
+	/** Re-posts every audited card's row with `seen_ms` = time on screen so far. Call on pagehide or a hidden tab. */
+	reportSeen() {
+		if (!this.audit) return;
+		const now = performance.now();
+		for (const turn of this.turns)
+			for (const p of turn.parts) {
+				if (p.kind !== 'card' || !p.card.auditRow) continue;
+				p.card.auditRow = { ...p.card.auditRow, seen_ms: seenMs(p.card, now) };
+				this.audit(p.card.runId, p.card.cardId, p.card.auditRow);
+			}
+	}
 
 	async send(message: string) {
 		const text = message.trim();
@@ -442,7 +555,7 @@ export class ChatSession {
 		this.turns.push({ id: ++turnSeq, role: 'user', parts: [{ kind: 'text', text: message }], notice: null, pending: false });
 		this.turns.push({ id: ++turnSeq, role: 'assistant', parts: [], notice: null, pending: false });
 		const turn = this.turns[this.turns.length - 1];
-		const st: TurnState = { cards: new Map(), run: '', runStart: 0, legacy: [], replay: false };
+		const st: TurnState = { cards: new Map(), run: '', runStart: 0, legacy: [], replay: false, runId: '' };
 		for (const frame of frames) if (this.#apply(turn, st, frame)) break;
 		this.#flushRun(turn, st, true);
 		for (const card of st.cards.values()) card.reject('truncated');
@@ -462,7 +575,7 @@ export class ChatSession {
 
 	async #run(turn: Turn, text: string, transport: Transport) {
 		const replay = this.fallback != null && transport !== this.fallback;
-		const st: TurnState = { cards: new Map(), run: '', runStart: 0, legacy: [], replay };
+		const st: TurnState = { cards: new Map(), run: '', runStart: 0, legacy: [], replay, runId: '' };
 		this.busy = true;
 		const abort = (this.#abort = new AbortController());
 		try {
@@ -636,6 +749,9 @@ export class ChatSession {
 					this.#flushRun(turn, st, false);
 				}
 				return false;
+			case 'message.persisted':
+				st.runId = str(d.run_id);
+				return false;
 			case 'card.start': {
 				// Close what is open: held-back text, a legacy fence never closed,
 				// a card already started under this id.
@@ -643,6 +759,8 @@ export class ChatSession {
 				for (const open of st.legacy) open.reject('truncated');
 				st.cards.get(id)?.reject('truncated');
 				const card = new Card(str(d.title));
+				card.runId = st.runId;
+				card.cardId = id;
 				st.cards.set(id, card);
 				turn.parts.push({ kind: 'card', card });
 				st.run = '';
@@ -694,7 +812,7 @@ export class ChatSession {
 				if (d.cancelled) turn.notice ??= { kind: 'stopped', text: 'Stopped.' };
 				return true;
 			default:
-				return false; // message.persisted, sources, action: nothing to show here yet
+				return false; // sources, action: nothing to show here yet
 		}
 	}
 

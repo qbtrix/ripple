@@ -1,0 +1,125 @@
+{
+  "date": "2026-10-13",
+  "model": "claude -p (default model: claude-opus-5-5), model and critic",
+  "base": "local build:site preview of feat/cl-8",
+  "args": [
+    "--base",
+    "<local preview>"
+  ],
+  "gate": {
+    "meanFaults": 0.6666666666666666,
+    "clean": 5,
+    "guardHits": 0,
+    "maxSeconds": 147.6,
+    "maxTokens": 104159,
+    "errors": 0,
+    "pass": true
+  },
+  "judge": null,
+  "tasks": [
+    {
+      "name": "pricing",
+      "faults": 0,
+      "clean": true,
+      "seconds": 147.6,
+      "tokens": 104159,
+      "rounds": 4,
+      "stopped": "no-progress",
+      "guardHits": 0,
+      "guardRejects": 0,
+      "waived": 0,
+      "widgetFaults": [],
+      "judge": null
+    },
+    {
+      "name": "weather",
+      "faults": 0,
+      "clean": true,
+      "seconds": 36.5,
+      "tokens": 24321,
+      "rounds": 1,
+      "stopped": "clean",
+      "guardHits": 0,
+      "guardRejects": 0,
+      "waived": 4,
+      "widgetFaults": [
+        "designed-scroll: The hourly strip scrolls sideways and clips a column mid-glyph at both widths (18:00 at 380 px, 23:00 at 1024 px) with no fade or scroll cue, so the 22:00\u201300:00 rain the note promises is hidden off-screen on a phone; the widget should show a scroll affordance or fade at the edge.",
+        "words-not-bent: The widget's generated footer reads \"Rain likely on Today.\", which is ungrammatical; it should say \"Rain likely today.\" when the day label is \"Today\"."
+      ],
+      "judge": null
+    },
+    {
+      "name": "habits",
+      "faults": 0,
+      "clean": true,
+      "seconds": 56.4,
+      "tokens": 45835,
+      "rounds": 2,
+      "stopped": "clean",
+      "guardHits": 0,
+      "guardRejects": 0,
+      "waived": 0,
+      "widgetFaults": [
+        "data-agrees: The status line says '3 of 3 habits on track this week' while every habit shows 0/7 with Monday already missed against a 7-per-week target, so it should report 0 of 3 on track, or none started yet.",
+        "reads-at-phone: At 380 px the edit and delete icons crowd the name column, so 'Read 20 minutes' wraps onto two lines while the other rows stay on one; giving the name more width keeps the rows consistent."
+      ],
+      "judge": null
+    },
+    {
+      "name": "recipe",
+      "faults": 0,
+      "clean": true,
+      "seconds": 34.7,
+      "tokens": 25498,
+      "rounds": 1,
+      "stopped": "no-progress",
+      "guardHits": 0,
+      "guardRejects": 0,
+      "waived": 0,
+      "widgetFaults": [
+        "every-element-bound: The header icon is a generic target glyph that carries no data, so it reads as placeholder filler beside the title."
+      ],
+      "judge": null
+    },
+    {
+      "name": "bill",
+      "faults": 0,
+      "clean": true,
+      "seconds": 51.6,
+      "tokens": 45935,
+      "rounds": 2,
+      "stopped": "clean",
+      "guardHits": 0,
+      "guardRejects": 0,
+      "waived": 0,
+      "widgetFaults": [
+        "money-has-currency: The 'Bill before tip' input shows a bare 186 and each 'Drinks' input shows a bare 0, with no \u20ac sign or prefix, even though every other amount on the card carries the euro.",
+        "choice-once: The custom tip field repeats the selected 10% chip's value, so the same choice shows twice; leave the custom field empty unless a non-preset tip is entered."
+      ],
+      "judge": null
+    },
+    {
+      "name": "running",
+      "faults": 4,
+      "clean": false,
+      "seconds": 74.6,
+      "tokens": 42814,
+      "rounds": 2,
+      "stopped": "guard",
+      "guardHits": 0,
+      "guardRejects": 1,
+      "waived": 0,
+      "widgetFaults": [
+        "tile-rows-wrap: At 380 px the Run type and Week filter chip rows run past the card edge ('Long', 'Intervals' and 'Week of Oct 13' are cut off) instead of wrapping.",
+        "no-truncation: At 380 px the day chart's x-axis labels are truncated to 'Oc\u2026', so the bars can't be dated.",
+        "data-fixed: the number 5.96 is gone or changed; the user's data is not yours to change, keep it exactly",
+        "data-fixed: the number 6.33 is gone or changed; the user's data is not yours to change, keep it exactly",
+        "data-fixed: the number 5.71 is gone or changed; the user's data is not yours to change, keep it exactly",
+        "data-fixed: the number 6.14 is gone or changed; the user's data is not yours to change, keep it exactly",
+        "data-fixed: the number 6.04 is gone or changed; the user's data is not yours to change, keep it exactly",
+        "data-fixed: the number 5.38 is gone or changed; the user's data is not yours to change, keep it exactly"
+      ],
+      "judge": null
+    }
+  ]
+}

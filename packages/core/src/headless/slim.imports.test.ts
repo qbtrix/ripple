@@ -109,8 +109,15 @@ describe('@ripple-ui/core/headless/slim imports', () => {
 
 	it('keeps the manifest entry free of the full dispatcher and the schema too', () => {
 		const manifest = [...crawl('../manifest/index.ts')];
-		expect(manifest).toEqual(expect.arrayContaining(['../manifest/index.ts', '../manifest/slim.ts', '../manifest/actions.ts']));
+		expect(manifest).toEqual(
+			expect.arrayContaining(['../manifest/index.ts', '../manifest/slim.ts', '../manifest/actions.ts', '../manifest/craft.ts'])
+		);
 		expect(manifest.filter((k) => k.endsWith('/event-dispatcher.ts') || k.includes('/schema/'))).toEqual([]);
+	});
+
+	it('keeps the audit report type free of the schema, so slim hosts may share it', () => {
+		const reached = [...crawl('../core/audit-report.ts')];
+		expect(reached).toEqual(['../core/audit-report.ts']);
 	});
 
 	it('does count a value import, so an erased type import is the only exemption', () => {

@@ -60,6 +60,7 @@ Paths are relative to this skill's folder (`<skill>` below: where this file live
 | `references/craft.md` | Before writing, and again when the audit or a screenshot shows a fault. |
 | `references/examples/` | Open the closest one first. Five specs that render clean, each with one line on why. |
 | `scripts/render.mjs` | Every round. Renders, shoots, audits. `node <skill>/scripts/render.mjs --help` for options. |
+| `scripts/build.mjs` | For a kept card (a pocket, a saved widget, a gallery entry). Runs the whole loop below as one script. |
 
 ## Setup, once
 
@@ -77,7 +78,9 @@ axe-core`, or point `RIPPLE_AXE` at an `axe.min.js`) before you call a card acce
 
 It renders through a Ripple playground. The default is the public one,
 `https://ripple-site.pawsites.workers.dev` (it moves to `https://ripple.pocketpaw.xyz` once that domain is live).
-To test against your own Ripple build, serve the site and pass `--base` or set `RIPPLE_BASE`:
+To test against your own Ripple build, serve the site and pass `--base` or set `RIPPLE_BASE`. The base must serve
+`page-audit.js` (the shared audit `render.mjs` injects); `bun run build:site` writes it, and a deployed site has it
+only after a `bun run deploy:site` that includes it:
 
 ```sh
 # in a ripple checkout
@@ -88,6 +91,19 @@ node <skill>/scripts/render.mjs card.json out --base http://localhost:4790
 ## The build loop
 
 Work in this order. Most of the quality is decided in steps 1 and 2, before any JSON.
+
+For a card that will be kept (a pocket, a saved widget, a gallery entry), you can hand the whole loop to
+`build.mjs` instead of driving it by hand. It writes, renders, audits, has a critic look at the screenshots,
+and stops clean, at no progress, at 4 rounds, at 200k tokens or at 300 s. It never keeps a round that
+changed the user's data. Run it from the same folder as `render.mjs`:
+
+```bash
+node <skill>/scripts/build.mjs "<the ask>" <outdir> [--base <url>] [--model <alias>]
+```
+
+It uses the local `claude` CLI by default (`--model-cmd` swaps in any command). Read `<outdir>/result.json`:
+`stopped`, the best round's `faults`, and `widgetFaults` for step 8. The steps below are what it does, and
+what you do when you drive the loop yourself.
 
 ### 1. Understand the ask
 
@@ -128,8 +144,8 @@ node <skill>/scripts/render.mjs <spec.json> <outdir> [--base <url>] [--widths 38
 
 It opens the playground with the spec in the link, shoots only the preview surface at 380 and 1024 wide, light and
 dark (`<outdir>/380-light.png`, `<outdir>/1024-dark.png`, ...), writes `<outdir>/audit.json`, prints the same JSON
-and exits 0 when clean, 1 when any count is non-zero, 2 on a setup error (no Playwright, no server, bad spec; the
-message says what to run; if Playwright's own Chromium build is missing, `npx playwright install chromium` or
+and exits 0 when clean, 1 when any count is non-zero, 2 on a setup error (no Playwright, no server, bad spec, or a base
+with no `page-audit.js`, which means deploying the site; the message says what to run; if Playwright's own Chromium build is missing, `npx playwright install chromium` or
 `CHROME_PATH=<a chromium binary>` fixes it; the message lists the builds it found and the one it wanted). Use a fresh `<outdir>` per round (`out/r1`, `out/r2`) so you can compare. Several runs
 can go at once; each starts its own browser and writes only to its outdir.
 
@@ -217,7 +233,8 @@ Run them one at a time over all four shots. One lens, one pass: a reviewer looki
   Widget faults.
 - A fault is inside a widget (it truncates at 360, it stacks tiles one per row, it ignores a prop): the spec cannot
   fix it without bending data; report it under Widget faults with the shot that shows it.
-- `render.mjs` exits 2: read its message. It names the install command or the server it could not reach.
+- `render.mjs` exits 2: read its message. It names the install command, the server it could not reach, or the
+  site deploy it needs (a base with no `page-audit.js`).
 
 ## Known limits
 
