@@ -37,7 +37,7 @@
 
 	const combinedStyle = $derived.by(() => {
 		const s: string[] = ['display:grid'];
-		if (typeof columns === 'number') s.push(`grid-template-columns:repeat(${columns},1fr)`);
+		if (typeof columns === 'number') s.push(`grid-template-columns:repeat(${columns},minmax(0,1fr))`);
 		else s.push(`grid-template-columns:${columns}`);
 		if (rows) {
 			if (typeof rows === 'number') s.push(`grid-template-rows:repeat(${rows},1fr)`);
@@ -62,4 +62,10 @@
 
 <style>
 	.rgrid { min-width: 0; }
+	/* Metric and stat children read as tiles inside a grid. */
+	.rgrid > :global([data-ripple-tile]) {
+		border: 1px solid var(--ripple-border);
+		border-radius: var(--ripple-radius);
+		padding: 12px 14px;
+	}
 </style>

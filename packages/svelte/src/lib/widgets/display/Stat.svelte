@@ -9,7 +9,7 @@
 <script lang="ts">
   import { tv } from 'tailwind-variants';
   import { cn } from '$lib/utils.js';
-  import { ArrowUp, ArrowDown, Minus } from '@lucide/svelte';
+  import Delta from '$lib/widgets/data-kit/Delta.svelte';
 
   type DirectionInput = 'up' | 'down' | 'neutral' | 'auto' | 'up-good' | 'down-good';
   type DirectionResolved = 'up' | 'down' | 'neutral';
@@ -158,24 +158,13 @@
   });
 
   const valueCls = tv({
-    base: 'font-semibold font-mono tabular-nums leading-tight',
+    base: 'font-semibold tabular-nums leading-tight',
     variants: {
-      size: { sm: 'text-sm', md: 'text-xl', lg: 'text-3xl' },
+      size: { sm: 'text-body', md: 'text-title-3', lg: 'text-title-2' },
     },
     defaultVariants: { size: 'md' },
   });
 
-  const deltaCls = tv({
-    base: 'inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[11px] font-medium tabular-nums',
-    variants: {
-      sentiment: {
-        positive: 'text-ripple-success-text bg-ripple-success/10',
-        negative: 'text-ripple-error-text bg-ripple-error/10',
-        neutral: 'text-muted-foreground bg-muted',
-      },
-    },
-    defaultVariants: { sentiment: 'neutral' },
-  });
 
   const iconSize = $derived(size === 'sm' ? 12 : size === 'lg' ? 14 : 12);
 </script>
@@ -190,19 +179,10 @@
   {#if label}
     <span class={labelCls({ size })}>{label}</span>
   {/if}
-  <div class="flex items-center gap-2 min-w-0">
-    <span class={valueCls({ size })}>{displayValue}</span>
+  <div data-ripple-tile-value class="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0">
+    <span data-slot="stat-value" class={valueCls({ size })}>{displayValue}</span>
     {#if hasDelta}
-      <span data-slot="stat-delta" class={deltaCls({ sentiment: resolved.sentiment })}>
-        {#if resolved.dir === 'up'}
-          <ArrowUp size={iconSize} strokeWidth={2.5} />
-        {:else if resolved.dir === 'down'}
-          <ArrowDown size={iconSize} strokeWidth={2.5} />
-        {:else}
-          <Minus size={iconSize} strokeWidth={2.5} />
-        {/if}
-        <span>{displayDelta}</span>
-      </span>
+      <Delta text={displayDelta} dir={resolved.dir} sentiment={resolved.sentiment} size={iconSize} slot="stat-delta" />
     {/if}
   </div>
 </div>

@@ -97,9 +97,11 @@
   // assembled from a template variable is a class that compiles to nothing.
   const skin =
     'h-6! w-10! border-2 duration-200 ease-ripple-out ' +
-    'data-[state=unchecked]:bg-ripple-border dark:data-[state=unchecked]:bg-ripple-border ' +
+    'data-[state=unchecked]:bg-ripple-track dark:data-[state=unchecked]:bg-ripple-track ' +
     '[&_[data-slot=switch-thumb]]:bg-ripple-accent-foreground! ' +
-    '[&_[data-slot=switch-thumb]]:data-[state=unchecked]:bg-ripple-muted-foreground! ' +
+    '[&_[data-slot=switch-thumb]]:data-[state=unchecked]:bg-white! ' +
+    '[&_[data-slot=switch-thumb]]:data-[state=unchecked]:ring-1 [&_[data-slot=switch-thumb]]:data-[state=unchecked]:ring-ripple-control-border ' +
+    '[&_[data-slot=switch-thumb]]:shadow-sm ' +
     '[&_[data-slot=switch-thumb]]:size-5! ' +
     '[&_[data-slot=switch-thumb]]:data-[state=checked]:translate-x-4! ' +
     '[&_[data-slot=switch-thumb]]:rtl:data-[state=checked]:-translate-x-4! ' +

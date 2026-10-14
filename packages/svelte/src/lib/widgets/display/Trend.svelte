@@ -1,9 +1,6 @@
 <!-- src/lib/widgets/display/Trend.svelte -->
 <script lang="ts">
-  import { cn } from '$lib/utils.js';
-  import ArrowUpIcon from '@lucide/svelte/icons/arrow-up';
-  import ArrowDownIcon from '@lucide/svelte/icons/arrow-down';
-  import MinusIcon from '@lucide/svelte/icons/minus';
+  import Delta from '$lib/widgets/data-kit/Delta.svelte';
 
   type Format = 'percent' | 'number' | 'currency';
 
@@ -32,11 +29,6 @@
 
   const sign = $derived(numeric > 0 ? 'up' : numeric < 0 ? 'down' : 'flat');
 
-  const toneClass = $derived(
-    sign === 'up' ? 'text-emerald-600 dark:text-emerald-400'
-    : sign === 'down' ? 'text-rose-600 dark:text-rose-400'
-    : 'text-muted-foreground'
-  );
 
   const formatted = $derived.by(() => {
     const abs = Math.abs(numeric);
@@ -56,15 +48,4 @@
   });
 </script>
 
-<span {id} class={cn('inline-flex items-center gap-0.5 text-xs font-medium tabular-nums', toneClass, className)} style={styleString}>
-  {#if arrow}
-    {#if sign === 'up'}
-      <ArrowUpIcon size={12} />
-    {:else if sign === 'down'}
-      <ArrowDownIcon size={12} />
-    {:else}
-      <MinusIcon size={12} />
-    {/if}
-  {/if}
-  <span>{formatted}</span>
-</span>
+<Delta text={formatted} dir={sign === 'flat' ? 'neutral' : sign} {arrow} class={className} {id} style={styleString} />

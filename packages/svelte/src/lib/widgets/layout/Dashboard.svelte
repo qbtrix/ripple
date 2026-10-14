@@ -10,7 +10,7 @@
     id?: string;
     class?: string;
     children?: Snippet;
-    /** Min column width — grid auto-fills based on container */
+    /** Target min column width; a column may shrink to 80% of it so a row of three never leaves a lone orphan. */
     columnMin?: string;
     gap?: string;
   }
@@ -24,7 +24,7 @@
 <div
   {id}
   class={cn('rdash', className)}
-  style={safeStyle(`display:grid; grid-template-columns:repeat(auto-fill,minmax(${columnMin},1fr)); gap:${gap};`)}
+  style={safeStyle(`display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,calc(${columnMin} * 0.8)),1fr)); gap:${gap};`)}
 >
   {@render children?.()}
 </div>
@@ -33,5 +33,11 @@
   .rdash {
     width: 100%;
     align-content: start;
+  }
+  /* Metric and stat children read as tiles. */
+  .rdash > :global([data-ripple-tile]) {
+    border: 1px solid var(--ripple-border);
+    border-radius: var(--ripple-radius);
+    padding: 12px 14px;
   }
 </style>
