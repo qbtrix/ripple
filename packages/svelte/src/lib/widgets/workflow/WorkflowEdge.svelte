@@ -8,7 +8,8 @@
   fan-out or fan-in at its own height) and drops into the target; the chip
   sits just under the exit. A loop (a back edge, or one that skips a column or
   row) runs in its own outside lane layout.ts reserved for it, so it never
-  crosses a node or a label; a back edge is dashed. Chips are one line, clamped
+  crosses a node or a label; in TB the lane sits beside the spine and the line
+  turns straight into the target's side. A back edge is dashed. Chips are one line, clamped
   with the full text on hover. Colours come from the --xy-* tokens Workflow.svelte
   maps to ripple tokens; an animated edge marks live flow in the accent and stops
   under reduced motion.
@@ -27,8 +28,9 @@
     const s = { x: sourceX, y: sourceY };
     const t = { x: targetX, y: targetY };
     if (edge.loop) {
-      const r = loopRoute(dir, s, t, edge.lane, edge.chan, edge.turn, edge.chipY);
-      return { path: roundedPath(r.points), x: r.label.x, y: r.label.y };
+      const r = loopRoute(dir, s, t, edge.lane, edge.chan, edge.turn, edge.chipY, edge.sideExit);
+      const at = edge.at ?? r.label;
+      return { path: roundedPath(r.points), x: at.x, y: at.y };
     }
     if (dir === 'LR' && targetX > sourceX + edge.chan + 4) {
       const r = stepRoute(s, t, edge.chan);

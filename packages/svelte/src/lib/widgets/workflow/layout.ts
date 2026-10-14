@@ -6,23 +6,24 @@
 // Below 480px: one top-to-bottom spine at zoom 1, so labels keep their design
 // size at phone width. From 480px: the first of standard columns, compact
 // columns, or rows with same-depth siblings side by side that fits at the
-// readable floor (MIN_ZOOM); when none fits, the reader pans whichever shows
-// the most at the floor. Zoom never goes above 1 or below the floor. A reader
-// who cannot pan (interactive false) gets a canvas that grows instead. The
-// minimap and zoom pill sit in a strip under the graph, never over a node.
+// readable floor (MIN_ZOOM); when none fits, the centred spine, panning top to
+// bottom. Zoom never goes above 1 or below the floor. A reader who cannot pan
+// (interactive false) gets a canvas that grows instead. When the graph fits,
+// the canvas keeps a strip under it for the minimap and zoom pill.
 //
 // Edges: back edges (cycles) are found by DFS before layering, so a loop never
 // inflates depths. An edge to the very next column/row draws as a plain step;
 // any other edge (a back edge, or one that skips a column/row) is a "loop" that
-// runs in an outside lane (below the graph in LR, right of the spine in TB) and
-// comes back in through the target's normal entry, so it never crosses a node.
-// Every loop gets its own lane (shorter spans inside), so no two loops share a
-// line. In LR each edge of a fan-out (or fan-in) turns in its own channel of the
-// column gap, so siblings never run on top of each other. A condition spreads its
-// exits across its exit side: plain exits first, loops last (toward their lane);
-// within those, yes-like labels first, no-like second, the rest after.
-// Unlabelled first and second branches read "Yes" and "No", later ones their
-// number, so every exit carries a one-line chip.
+// runs in an outside lane so it never crosses a node. LR: lanes below the graph,
+// back in through the target's entry. TB: lanes beside the spine, entering the
+// target's side, so each line visibly ends in its own node: back edges and a
+// condition's later skips on the right, a single-exit step's skips (fan-ins) and
+// a condition's skips that rank before its plain exits on the left, so fan-outs
+// and fan-ins never cross. Every loop gets its own lane per side (shorter spans
+// inside). In LR each edge of a fan-out (or fan-in) turns in its own channel of
+// the column gap. A condition orders its exits yes-like, no-like, the rest (in
+// LR plain exits before loops, toward their lane). Unlabelled first and second
+// branches read "Yes" and "No"; later unlabelled ones carry no chip.
 import { asText } from '$lib/widgets/text-coerce';
 import type { Direction, WfEdge, WfNode, WorkflowNodeStatus, WorkflowNodeType } from './types.js';
 
@@ -41,7 +42,7 @@ const TB_WIDE_MAX = 360; // layered rows in a wide card
 const TB_MIN_W = 160;
 const TB_COL_GAP = 24; // between siblings in a layered row
 const TB_GAP = 24; // between rows
-const CHIP_H = 16; // a one-line chip, border included
+const CHIP_H = 18; // a one-line chip, border included, plus a hair
 const TB_CHIP = 16; // first chip centre below its exit: 8px clear of the handle
 const LANE0 = 14; // first outside lane from the graph
 const LANE_STEP = 8; // between lanes
@@ -117,6 +118,11 @@ export interface PlacedEdge extends WfEdge {
   targetHandle: string;
   /** Enters the target from the outside lane (back edge or skip). */
   loop: boolean;
+  /** TB loop: the lane's side, and whether it leaves from the source's side (no turn below). */
+  side: 'L' | 'R';
+  sideExit: boolean;
+  /** Absolute chip centre, when the layout places it (a side-exit loop's chip, in a row gap on its lane). */
+  at?: { x: number; y: number };
   /** A back edge closes a cycle. */
   back: boolean;
   /** A loop's outside lane: y below the nodes in LR, x right of the spine in TB. */
@@ -168,7 +174,6 @@ function analyse(nodes: WfNode[], rawEdges: WfEdge[]): Graph {
       if (list.length >= 2) {
         if (!list[0].label) list[0].label = 'Yes';
         if (!list[1].label) list[1].label = 'No';
-        list.forEach((e, i) => (e.label ||= String(i + 1)));
       }
       list.forEach((e, i) => slot.set(e, { i, k: list.length }));
     } else list.forEach((e) => slot.set(e, { i: 0, k: 1 }));
@@ -277,30 +282,49 @@ export function layoutWorkflow(
   const { rank, cross } = usePositions ? { rank: new Map<string, number>(), cross: new Map<string, number>() } : place(g, spine);
   const isLoop = (e: WfEdge) => !usePositions && (g.back.has(e) || rank.get(e.to)! - rank.get(e.from)! !== 1);
 
-  // One lane per loop: shortest spans innermost; loops whose rank spans overlap never share.
+  // TB lane side: right for back edges and a condition's skips that rank with or
+  // after its plain exits; left for a single-exit step's skips (fan-ins) and a
+  // condition's skips that rank before every plain exit (so yes stays first).
+  const multi = (e: WfEdge) => g.slot.get(e)!.k > 1;
+  const plainMin = new Map<string, number>();
+  for (const e of g.edges) if (!isLoop(e)) plainMin.set(e.from, Math.min(plainMin.get(e.from) ?? 9, branchRank(e.label)));
+  const sideOf = (e: WfEdge): 'L' | 'R' =>
+    dir === 'LR' || g.back.has(e) ? 'R' : !multi(e) ? 'L' : branchRank(e.label) < (plainMin.get(e.from) ?? -1) ? 'L' : 'R';
+
+  // One lane per loop and side: shortest spans innermost; loops whose rank spans overlap never share.
   const span = (e: WfEdge) => {
     const a = rank.get(e.from) ?? 0, b = rank.get(e.to) ?? 0;
     return [Math.min(a, b), Math.max(a, b)] as const;
   };
   const laneIdx = new Map<WfEdge, number>();
-  const taken: (readonly [number, number])[][] = [];
+  const taken = { L: [] as (readonly [number, number])[][], R: [] as (readonly [number, number])[][] };
   for (const e of g.edges.filter(isLoop).sort((a, b) => span(a)[1] - span(a)[0] - (span(b)[1] - span(b)[0]))) {
     const [lo, hi] = span(e);
+    const t = taken[sideOf(e)];
     let L = 0;
-    while (taken[L]?.some(([a, b]) => a <= hi && lo <= b)) L++;
-    (taken[L] ??= []).push([lo, hi]);
+    while (t[L]?.some(([a, b]) => a <= hi && lo <= b)) L++;
+    (t[L] ??= []).push([lo, hi]);
     laneIdx.set(e, L);
   }
-  const laneRoom = taken.length ? LANE0 + LANE_STEP * (taken.length - 1) + 8 : 0;
+  const roomOf = (n: number) => (n ? LANE0 + LANE_STEP * (n - 1) + 8 : 0);
+  const laneRoom = roomOf(taken.L.length) + roomOf(taken.R.length);
 
-  // Exit slots: a condition's plain exits first, then its loops, inner lane
-  // first, so a loop never crosses a sibling exit on its way out to its lane.
+  // Exit slots. LR: a condition's plain exits first, then its loops, inner lane
+  // first, so a loop never crosses a sibling exit on its way to the lane below.
+  // TB: yes-like, no-like, the rest; within a rank, left loops (outer lane
+  // first), plain exits, right loops (inner lane first), so no exit crosses another.
+  const group = (e: WfEdge) => (!isLoop(e) ? 1 : sideOf(e) === 'L' ? 0 : 2);
   const exit = new Map<WfEdge, { i: number; k: number }>();
   for (const list of g.out.values()) {
     if (list.length < 2 || g.slot.get(list[0])!.k < 2) list.forEach((e) => exit.set(e, { i: 0, k: 1 }));
-    else {
+    else if (dir === 'LR') {
       const loops = list.filter(isLoop).sort((a, b) => laneIdx.get(a)! - laneIdx.get(b)!);
       [...list.filter((e) => !isLoop(e)), ...loops].forEach((e, i) => exit.set(e, { i, k: list.length }));
+    } else {
+      const lane = (e: WfEdge) => (group(e) === 0 ? -laneIdx.get(e)! : group(e) === 2 ? laneIdx.get(e)! : 0);
+      list
+        .toSorted((a, b) => branchRank(a.label) - branchRank(b.label) || group(a) - group(b) || lane(a) - lane(b))
+        .forEach((e, i) => exit.set(e, { i, k: list.length }));
     }
   }
 
@@ -315,12 +339,17 @@ export function layoutWorkflow(
 
   const placedEdges: PlacedEdge[] = g.edges.map((e, i) => {
     const x = exit.get(e)!;
+    const tbLoop = dir === 'TB' && isLoop(e);
+    const side = sideOf(e);
+    const sideExit = tbLoop && x.k === 1;
     return {
       ...e,
       id: `e-${e.from}-${e.to}-${i}`,
-      sourceHandle: x.k > 1 ? `out-${x.i}` : 'out',
-      targetHandle: 'in',
+      sourceHandle: sideExit ? `out-${side.toLowerCase()}` : x.k > 1 ? `out-${x.i}` : 'out',
+      targetHandle: tbLoop ? `in-${side.toLowerCase()}` : 'in',
       loop: isLoop(e),
+      side,
+      sideExit,
       back: g.back.has(e),
       lane: 0,
       chan: CHAN0,
@@ -352,21 +381,33 @@ export function layoutWorkflow(
       return Math.abs(colX(e.to) + w / 2 - (colX(e.from) + (w * (s.i + 1)) / (s.k + 1)));
     };
     for (const id of g.out.keys()) {
-      const mine = all.filter((i) => placedEdges[i].from === id);
-      for (const i of mine) {
+      const mine = all.filter((i) => placedEdges[i].from === id && !placedEdges[i].sideExit);
+      // Chips sit just under their exits; one that would overlap the chip to its
+      // left drops a full chip height (plus a gap) below it.
+      let prev: { c: number; half: number; low: boolean } | undefined;
+      for (const i of mine.toSorted((a, b) => slotOf(a).i - slotOf(b).i)) {
         const s = slotOf(i), e = placedEdges[i];
         const c = (w * (s.i + 1)) / (s.k + 1);
-        e.chipY = TB_CHIP + (s.k >= 2 && s.i % 2 ? CHIP_H : 0);
         e.chip = s.k > 1 ? Math.max(28, Math.min(Math.floor((2 * w) / (s.k + 1)) - 6, 2 * Math.min(c, w - c) + 16)) : Math.min(220, w - 24);
+        if (!e.label) continue;
+        const half = Math.min(e.chip, e.label.length * 6 + 12) / 2;
+        const low = !!prev && !prev.low && c - prev.c < prev.half + half + 4;
+        e.chipY = TB_CHIP + (low ? CHIP_H + 4 : 0);
+        prev = { c, half, low };
       }
       const chipBottom = Math.max(0, ...mine.filter((i) => placedEdges[i].label).map((i) => placedEdges[i].chipY + CHIP_H / 2));
+      // Loops turn below the chips: right-going ones leftmost lowest, left-going ones leftmost highest.
       const loops = mine.filter((i) => placedEdges[i].loop).sort((a, b) => slotOf(a).i - slotOf(b).i);
+      const left = loops.filter((i) => placedEdges[i].side === 'L');
+      const right = loops.filter((i) => placedEdges[i].side === 'R');
       const base = Math.max(14, chipBottom + 6);
-      loops.forEach((i, j) => (placedEdges[i].turn = base + 6 * (loops.length - 1 - j)));
+      left.forEach((i, j) => (placedEdges[i].turn = base + 6 * j));
+      right.forEach((i, j) => (placedEdges[i].turn = base + 6 * (right.length - 1 - j)));
+      const band = Math.max(left.length, right.length);
       for (const i of mine) {
         if (placedEdges[i].loop) continue;
         const grp = groupOf(i, dx);
-        if (placedEdges[i].label || grp.length > 1) placedEdges[i].turn = base + 6 * loops.length + 2 + 6 * grp.indexOf(i);
+        if (placedEdges[i].label || grp.length > 1) placedEdges[i].turn = base + 6 * band + 2 + 6 * grp.indexOf(i);
       }
       const r = rank.get(id);
       if (r !== undefined) gapAfter[r] = Math.max(gapAfter[r] ?? TB_GAP, ...mine.map((i) => (placedEdges[i].turn ? placedEdges[i].turn + 18 : TB_GAP)));
@@ -383,17 +424,30 @@ export function layoutWorkflow(
 
   // Handles: an exit per condition slot (or one) and one entry, only where an edge uses them.
   const handles = new Map<string, PlacedHandle[]>(nodes.map((n) => [n.id, []]));
+  const SIDE = { L: 'left', R: 'right' } as const;
   placedEdges.forEach((e, i) => {
     const s = slotOf(i);
     const src = handles.get(e.from)!;
     if (!src.some((x) => x.id === e.sourceHandle))
-      src.push({ id: e.sourceHandle, type: 'source', side: dir === 'TB' ? 'bottom' : 'right', pct: ((s.i + 1) / (s.k + 1)) * 100 });
+      src.push(
+        e.sideExit
+          ? { id: e.sourceHandle, type: 'source', side: SIDE[e.side], pct: 50 }
+          : { id: e.sourceHandle, type: 'source', side: dir === 'TB' ? 'bottom' : 'right', pct: ((s.i + 1) / (s.k + 1)) * 100 },
+      );
     const tgt = handles.get(e.to)!;
+    if (tgt.some((x) => x.id === e.targetHandle)) return;
+    if (e.targetHandle !== 'in') return void tgt.push({ id: e.targetHandle, type: 'target', side: SIDE[e.side], pct: 50 });
     // On the spine a step with one way in enters straight below its exit, so it
     // never reads as the continuation of a sibling branch.
-    const only = spine && !e.loop && placedEdges.filter((x) => x.to === e.to).length === 1;
-    if (!tgt.some((x) => x.id === 'in')) tgt.push({ id: 'in', type: 'target', side: dir === 'TB' ? 'top' : 'left', pct: only ? ((s.i + 1) / (s.k + 1)) * 100 : 50 });
+    const only = spine && placedEdges.filter((x) => x.to === e.to && x.targetHandle === 'in').length === 1;
+    tgt.push({ id: 'in', type: 'target', side: dir === 'TB' ? 'top' : 'left', pct: only ? ((s.i + 1) / (s.k + 1)) * 100 : 50 });
   });
+  // A side with both a way in and a way out: in above, out below.
+  for (const list of handles.values())
+    for (const side of ['left', 'right'] as const) {
+      const on = list.filter((x) => x.side === side);
+      if (on.some((x) => x.type === 'source') && on.some((x) => x.type === 'target')) on.forEach((x) => (x.pct = x.type === 'target' ? 30 : 70));
+    }
 
   const placed: PlacedNode[] = nodes.map((n) => {
     const r = rank.get(n.id)!;
@@ -425,17 +479,30 @@ export function layoutWorkflow(
 
   // Bounds, then each loop's own outside lane: below the graph in LR, right of it in TB.
   const edge = (f: (n: PlacedNode) => number, pick: (...v: number[]) => number) => (placed.length ? pick(...placed.map(f)) : 0);
-  const x0 = edge((n) => n.x, Math.min);
+  let x0 = edge((n) => n.x, Math.min);
   const y0 = edge((n) => n.y, Math.min);
   let x1 = edge((n) => n.x + n.w, Math.max);
   let y1 = edge((n) => n.y + n.h, Math.max);
-  const [right, bottom] = [x1, y1];
+  const [left, right, bottom] = [x0, x1, y1];
+  const at = new Map(placed.map((n) => [n.id, n]));
   placedEdges.forEach((e, i) => {
     if (!e.loop) return;
     const offset = LANE0 + LANE_STEP * laneIdx.get(g.edges[i])!;
     if (dir === 'TB') {
-      e.lane = right + offset;
-      x1 = Math.max(x1, e.lane + 4);
+      e.lane = e.side === 'L' ? left - offset : right + offset;
+      let reach = 4;
+      if (e.sideExit && e.label) {
+        // The chip rides its lane in the row gap nearest the middle of the run.
+        const [a, b] = [at.get(e.from)!.y, at.get(e.to)!.y].sort((p, q) => p - q);
+        const gaps = start.slice(1).map((y, r) => y - (gapAfter[r] ?? TB_GAP) / 2).filter((y) => y > a + h && y < b);
+        const mid = (a + b + h) / 2;
+        const y = gaps.length ? gaps.reduce((p, q) => (Math.abs(q - mid) < Math.abs(p - mid) ? q : p)) : mid;
+        e.at = { x: e.lane, y };
+        e.chip = 112;
+        reach = Math.min(e.chip, e.label.length * 6 + 12) / 2 + 2;
+      }
+      if (e.side === 'L') x0 = Math.min(x0, e.lane - reach);
+      else x1 = Math.max(x1, e.lane + reach);
     } else {
       e.lane = bottom + offset;
       y1 = Math.max(y1, e.lane + 12);
@@ -484,19 +551,30 @@ export function dropRoute(s: { x: number; y: number }, t: { x: number; y: number
 /**
  * A loop's route from the exit point to the entry point through its lane, and
  * where its label chip sits. LR: out to its channel, down to the lane below,
- * along it, up the gap before the target. TB: down to its turn, across to the
- * lane on the right, down it, back across the gap above the target.
+ * along it, up the gap before the target. TB: down to its turn (or straight out
+ * of a side exit), across to its lane beside the spine, along it, and straight
+ * into the target's side.
  */
-export function loopRoute(dir: Direction, s: { x: number; y: number }, t: { x: number; y: number }, lane: number, chan: number, turn: number, chipY = TB_CHIP) {
+export function loopRoute(
+  dir: Direction,
+  s: { x: number; y: number },
+  t: { x: number; y: number },
+  lane: number,
+  chan: number,
+  turn: number,
+  chipY = TB_CHIP,
+  sideExit = false,
+) {
   if (dir === 'LR') {
     const out = s.x + chan;
     const into = t.x - 12;
     const pts = [s, { x: out, y: s.y }, { x: out, y: lane }, { x: into, y: lane }, { x: into, y: t.y }, t];
     return { points: pts, label: { x: (out + into) / 2, y: lane } };
   }
+  // TB: the target is entered from its side, so the line ends in its own node.
+  if (sideExit) return { points: [s, { x: lane, y: s.y }, { x: lane, y: t.y }, t], label: { x: lane, y: (s.y + t.y) / 2 } };
   const down = s.y + turn;
-  const into = t.y - 12;
-  const pts = [s, { x: s.x, y: down }, { x: lane, y: down }, { x: lane, y: into }, { x: t.x, y: into }, t];
+  const pts = [s, { x: s.x, y: down }, { x: lane, y: down }, { x: lane, y: t.y }, t];
   return { points: pts, label: { x: s.x, y: s.y + chipY } };
 }
 
@@ -541,27 +619,20 @@ export function planWorkflow(
   } else {
     // A wide card takes the first of these that fits at the readable floor:
     // standard columns, compact columns, then rows with siblings side by side.
-    // When none fits, the reader pans the one that shows the most at the floor;
-    // a reader who cannot pan gets the spine, which grows instead.
+    // When none fits, the centred spine, which pans top to bottom (or grows when
+    // the reader cannot pan); siblings stack, so nothing crops sideways.
     const options: [Direction, () => ReturnType<typeof layoutWorkflow>][] = [
       ['LR', () => lr],
       ['LR', () => layoutWorkflow(nodes, edges, 'LR', { lr: LR_COMPACT })],
       ['TB', () => layoutWorkflow(nodes, edges, 'TB', { tbWidth: avail, layered: true })],
     ];
-    const shown = (l: ReturnType<typeof layoutWorkflow>) =>
-      Math.min(1, avail / (l.bounds.w * MIN_ZOOM)) * Math.min(1, (MAX_H - 2 * PAD) / (l.bounds.h * MIN_ZOOM));
-    let best: { d: Direction; l: ReturnType<typeof layoutWorkflow>; v: number } | undefined;
-    for (const [d, make] of options) {
-      const l = make();
-      if (fitOf(l) >= MIN_ZOOM) {
-        best = { d, l, v: 2 };
-        break;
-      }
-      if (!best || shown(l) > best.v) best = { d, l, v: shown(l) };
+    const fits = options.map(([d, make]) => [d, make()] as const).find(([, l]) => fitOf(l) >= MIN_ZOOM);
+    if (fits) (dir = fits[0]), (layout = fits[1]), (zoom = fitOf(layout));
+    else {
+      dir = 'TB';
+      layout = layoutWorkflow(nodes, edges, 'TB', { tbWidth: avail });
+      if (opts.interactive) zoom = Math.max(MIN_ZOOM, fitOf(layout));
     }
-    if (best!.v === 2) (dir = best!.d), (layout = best!.l), (zoom = fitOf(layout));
-    else if (opts.interactive) (dir = best!.d), (layout = best!.l), (zoom = MIN_ZOOM);
-    else (dir = 'TB'), (layout = layoutWorkflow(nodes, edges, 'TB', { tbWidth: avail }));
     // fitView false: draw at design size and let the reader pan.
     if (dir === 'LR' && !opts.fitView && opts.interactive) zoom = 1;
   }

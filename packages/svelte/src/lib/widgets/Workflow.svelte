@@ -6,11 +6,12 @@
   the drawing for the measured card width: columns left to right at 480px and
   up (panning at the 0.8 floor when they do not fit), one top-to-bottom spine
   below that, canvas height following the graph (120 to 560px; it grows instead
-  when the reader cannot pan). The plan also decides the overlays and reserves
-  a strip under the graph for them: the flow is clipped above the strip and
-  the panels sit in it, so the minimap (a big graph in a wide card) and the
-  zoom pill (only when something does not fit) never cover a node. No frame of its own: the dot grid marks the canvas, and only
-  when the graph does not fit at zoom 1. Theming is the --xy-* to --ripple-*
+  when the reader cannot pan). The plan also decides the overlays: the minimap
+  (a big graph in a wide card) and the zoom pill (only when something does not
+  fit). The flow fills the whole canvas and the overlays sit inside it; a graph
+  that fits keeps a strip under it so they cover no node, and one that pans
+  opens with its top in view. No frame of its own: the dot grid marks the
+  canvas, and only when the graph does not fit at zoom 1. Theming is the --xy-* to --ripple-*
   token map shared in spirit with the C4 diagram, so it follows the host's
   light or dark theme; colorMode is never set. Wheel and touch scroll the page,
   nodes do not drag. The title row carries a status count in place of a legend.
@@ -126,41 +127,38 @@
     class="wf-canvas"
     class:wf-static={interactive === false}
     style:height="{plan.height}px"
-    style:--wf-gutter="{plan.gutter}px"
     bind:clientWidth={width}
   >
-    <div class="wf-flow">
-      <SvelteFlow
-        nodes={flowNodes}
-        edges={flowEdges}
-        {nodeTypes}
-        {edgeTypes}
-        bind:viewport
-        fitViewOptions={{ padding: '16px', minZoom: MIN_ZOOM, maxZoom: 1 }}
-        panOnDrag={interactive !== false}
-        panOnScroll={false}
-        zoomOnScroll={false}
-        preventScrolling={false}
-        zoomOnPinch={interactive !== false}
-        zoomOnDoubleClick={false}
-        nodesDraggable={false}
-        nodesConnectable={false}
-        elementsSelectable={false}
-        minZoom={0.5}
-        maxZoom={1.5}
-        proOptions={{ hideAttribution: true }}
-      >
-        {#if !plan.fitsAtOne}
-          <Background variant={BackgroundVariant.Dots} gap={20} size={1.25} />
-        {/if}
-        {#if plan.showControls}
-          <Controls showLock={false} position="bottom-right" orientation="horizontal" />
-        {/if}
-        {#if plan.showMinimap}
-          <MiniMap position="bottom-left" width={120} height={80} nodeBorderRadius={4} />
-        {/if}
-      </SvelteFlow>
-    </div>
+    <SvelteFlow
+      nodes={flowNodes}
+      edges={flowEdges}
+      {nodeTypes}
+      {edgeTypes}
+      bind:viewport
+      fitViewOptions={{ padding: '16px', minZoom: MIN_ZOOM, maxZoom: 1 }}
+      panOnDrag={interactive !== false}
+      panOnScroll={false}
+      zoomOnScroll={false}
+      preventScrolling={false}
+      zoomOnPinch={interactive !== false}
+      zoomOnDoubleClick={false}
+      nodesDraggable={false}
+      nodesConnectable={false}
+      elementsSelectable={false}
+      minZoom={0.5}
+      maxZoom={1.5}
+      proOptions={{ hideAttribution: true }}
+    >
+      {#if !plan.fitsAtOne}
+        <Background variant={BackgroundVariant.Dots} gap={20} size={1.25} />
+      {/if}
+      {#if plan.showControls}
+        <Controls showLock={false} position="bottom-right" orientation="horizontal" />
+      {/if}
+      {#if plan.showMinimap}
+        <MiniMap position="bottom-left" width={120} height={80} nodeBorderRadius={4} />
+      {/if}
+    </SvelteFlow>
   </div>
 </div>
 
@@ -225,10 +223,11 @@
     width: 100%;
     position: relative;
     overflow: hidden;
-    /* An opaque ground for things that sit on the canvas (cards, chips,
-       controls) over a possibly translucent host card; cards lift one step. */
-    --wf-ground: oklch(from var(--ripple-surface-foreground) calc(1.13 - l * 0.96) calc(c * 0.5) h);
-    --wf-card: linear-gradient(color-mix(in oklab, var(--ripple-surface) 86%, white) 0 0), var(--wf-ground);
+    /* Opaque fills derived from the ink, so they hold over any host card:
+       a ground for chips and controls, and a card fill one step above the
+       canvas (near white in light, a lifted grey in dark). */
+    --wf-ground: oklch(from var(--ripple-surface-foreground) calc(1.2 - l * 1.02) calc(c * 0.5) h);
+    --wf-card: oklch(from var(--ripple-surface-foreground) calc(1.18 - l * 0.92) calc(c * 0.5) h);
     --xy-background-pattern-color: color-mix(in oklab, var(--ripple-surface-foreground) 8%, transparent);
     --xy-edge-stroke: var(--ripple-control-border);
     --xy-edge-stroke-width: 1.5;
@@ -262,22 +261,8 @@
     --xy-resize-background-color: var(--ripple-accent);
   }
 
-  /* The flow stops above the overlay strip; its panels hang down into it. */
-  .wf-flow {
-    height: calc(100% - var(--wf-gutter, 0px));
-  }
-
-  .wf-canvas :global(.svelte-flow) {
-    overflow: visible;
-  }
-
-  .wf-canvas :global(.svelte-flow__zoom) {
-    overflow: hidden;
-  }
-
   .wf-canvas :global(.svelte-flow__panel.bottom) {
-    margin: 0 4px;
-    bottom: calc(4px - var(--wf-gutter, 0px));
+    margin: 4px;
   }
 
   .wf-canvas :global(.svelte-flow),

@@ -7,7 +7,7 @@
   colour alone. The icon comes from closed maps (workflowIcon): a model-written
   icon string is never printed. Only the trigger's tile wears the accent; a
   running step adds an accent ring. Handles are the ones layout.ts placed (an
-  exit per condition branch, one entry), drawn as small hollow rings.
+  exit per condition branch, entries), drawn as small dots under the line ends.
 -->
 <script lang="ts">
   import { Handle, Position } from '@xyflow/svelte';
@@ -153,15 +153,20 @@
     .wf-node { transition: none; }
   }
 
-  /* Hollow rings: anchors for edges, not connectors (nothing is connectable). */
+  /* Anchors for edges, not connectors (nothing is connectable): a 4px dot where
+     a line leaves, nothing where it arrives, so a connector reads as one line. */
   .wf-node :global(.wf-handle) {
-    width: 7px;
-    height: 7px;
+    width: 4px;
+    height: 4px;
     min-width: 0;
     min-height: 0;
-    background: var(--wf-ground);
-    border: 1.5px solid var(--ripple-control-border);
+    background: var(--ripple-control-border);
+    border: 0;
     border-radius: 999px;
     cursor: default;
+  }
+
+  .wf-node :global(.wf-handle.target) {
+    opacity: 0;
   }
 </style>
