@@ -598,6 +598,18 @@
 				<Self node={child} {loopContext} />
 			{/each}
 		{/snippet}
+		<!-- Only slots that have children are passed, after the props spread. An
+		     empty slot passes nothing, so a model's data prop of the same name
+		     (invoice-layout's `actions` array) reaches the widget intact. Widgets
+		     that type a slot name as a Snippet guard with typeof before render.
+		     `children` is always set, so a model prop of that name never lands. -->
+		{@const slotProps = {
+			...(headerKids.length > 0 && { header: headerSnippet }),
+			...(footerKids.length > 0 && { footer: footerSnippet }),
+			...(sidebarKids.length > 0 && { sidebar: sidebarSnippet }),
+			...(topbarKids.length > 0 && { topbar: topbarSnippet }),
+			...(actionsKids.length > 0 && { actions: actionsSnippet })
+		}}
 		<svelte:boundary failed={nodeFailed} onerror={onBoundaryError}>
 			<!-- RCR-4: per-node error boundary. A widget that throws during
 			     render shows an inline ErrorState for THIS node while its siblings
@@ -614,22 +626,14 @@
 			<div data-ripple-motion data-ripple-node={node.id} class="block" use:withMotion={node.motion}>
 				<WidgetComponent
 					{...widgetProps}
-					header={headerKids.length > 0 ? headerSnippet : undefined}
-					footer={footerKids.length > 0 ? footerSnippet : undefined}
-					sidebar={sidebarKids.length > 0 ? sidebarSnippet : undefined}
-					topbar={topbarKids.length > 0 ? topbarSnippet : undefined}
-					actions={actionsKids.length > 0 ? actionsSnippet : undefined}
+					{...slotProps}
 					children={defaultKids.length > 0 ? defaultSnippet : undefined}
 				/>
 			</div>
 		{:else}
 			<WidgetComponent
 				{...widgetProps}
-				header={headerKids.length > 0 ? headerSnippet : undefined}
-				footer={footerKids.length > 0 ? footerSnippet : undefined}
-				sidebar={sidebarKids.length > 0 ? sidebarSnippet : undefined}
-				topbar={topbarKids.length > 0 ? topbarSnippet : undefined}
-				actions={actionsKids.length > 0 ? actionsSnippet : undefined}
+				{...slotProps}
 				children={defaultKids.length > 0 ? defaultSnippet : undefined}
 			/>
 		{/if}

@@ -73,7 +73,7 @@
   );
 
   const isInteractive = $derived(interactive && typeof onclick === 'function');
-  const showHeader = $derived(Boolean(title || description || header));
+  const showHeader = $derived(Boolean(title || description || typeof header === 'function'));
 
   function onKeydown(e: KeyboardEvent) {
     if (!isInteractive) return;
@@ -116,7 +116,7 @@
           {/if}
         </div>
       {/if}
-      {#if header}
+      {#if typeof header === 'function'}
         <div class="shrink-0">{@render header()}</div>
       {/if}
     </div>
@@ -128,7 +128,7 @@
     </div>
   {/if}
 
-  {#if footer}
+  {#if typeof footer === 'function'}
     <div data-slot="card-footer" class="mt-auto pt-2 border-t border-ripple-border/60">
       {@render footer()}
     </div>
