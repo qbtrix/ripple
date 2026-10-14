@@ -1,4 +1,7 @@
-<!-- src/lib/widgets/input/TimePicker.svelte -->
+<!-- src/lib/widgets/input/TimePicker.svelte
+     Segmented time field (hours, minutes, optional seconds, optional AM/PM).
+     Output is always 24-hour "HH:MM[:SS]". An unset value renders as --:--
+     placeholders in muted ink; it never pretends to be 00:00 / 12:00 AM. -->
 <script lang="ts">
   import { cn } from '$lib/utils.js';
   import ClockIcon from '@lucide/svelte/icons/clock';
@@ -58,6 +61,8 @@
   }
 
   const parsed = $derived(parse(value));
+  // No value is "not set", shown as --:-- in muted ink, never as midnight.
+  const empty = $derived(!value);
 
   function emit(h: number, m: number, s: number) {
     onchange?.(format(h, m, s));
@@ -156,11 +161,12 @@
       {disabled}
       role="spinbutton"
       aria-label="Hours"
-      aria-valuenow={use12Hour ? Number(displayHour) : parsed.h}
+      aria-valuenow={empty ? undefined : use12Hour ? Number(displayHour) : parsed.h}
       aria-valuemin={use12Hour ? 1 : 0}
       aria-valuemax={use12Hour ? 12 : 23}
-      class="w-7 bg-transparent text-center tabular-nums outline-none"
-      value={displayHour}
+      class="w-7 bg-transparent text-center tabular-nums outline-none placeholder:text-muted-foreground"
+      placeholder="--"
+      value={empty ? '' : displayHour}
       oninput={(e) => setHour((e.target as HTMLInputElement).value)}
       onkeydown={(e) => onSegmentKey(e, 'h')}
     />
@@ -173,11 +179,12 @@
       {disabled}
       role="spinbutton"
       aria-label="Minutes"
-      aria-valuenow={parsed.m}
+      aria-valuenow={empty ? undefined : parsed.m}
       aria-valuemin={0}
       aria-valuemax={59}
-      class="w-7 bg-transparent text-center tabular-nums outline-none"
-      value={String(parsed.m).padStart(2, '0')}
+      class="w-7 bg-transparent text-center tabular-nums outline-none placeholder:text-muted-foreground"
+      placeholder="--"
+      value={empty ? '' : String(parsed.m).padStart(2, '0')}
       oninput={(e) => setMinute((e.target as HTMLInputElement).value)}
       onkeydown={(e) => onSegmentKey(e, 'm')}
     />
@@ -191,11 +198,12 @@
         {disabled}
         role="spinbutton"
         aria-label="Seconds"
-        aria-valuenow={parsed.s}
+        aria-valuenow={empty ? undefined : parsed.s}
         aria-valuemin={0}
         aria-valuemax={59}
-        class="w-7 bg-transparent text-center tabular-nums outline-none"
-        value={String(parsed.s).padStart(2, '0')}
+        class="w-7 bg-transparent text-center tabular-nums outline-none placeholder:text-muted-foreground"
+      placeholder="--"
+        value={empty ? '' : String(parsed.s).padStart(2, '0')}
         oninput={(e) => setSecond((e.target as HTMLInputElement).value)}
         onkeydown={(e) => onSegmentKey(e, 's')}
       />
@@ -205,10 +213,10 @@
       <button
         type="button"
         {disabled}
-        class="ml-1 rounded px-1.5 py-0.5 text-xs font-medium hover:bg-muted transition-colors"
+        class={cn('ml-1 rounded px-1.5 py-0.5 text-xs font-medium hover:bg-muted transition-colors', empty && 'text-muted-foreground')}
         onclick={toggleAmPm}
       >
-        {ampm}
+        {empty ? '--' : ampm}
       </button>
     {/if}
   </div>
