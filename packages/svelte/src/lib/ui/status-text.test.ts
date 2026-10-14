@@ -357,3 +357,46 @@ test('the accent atoms paint text with --ripple-accent-text, never the fill toke
   expect(offenders).toEqual([]);
   expect(await read('src/lib/theme.css')).not.toContain('--primary-ink');
 });
+
+// Heatmap cells: the accent (and a warm oklch arm below zero) mixed into the
+// card on heatmap-scale.ts's HEAT (HEAT_DARK on dark cards). In-cell values are
+// the surface ink in light and --ripple-accent-foreground (white) on the ramp in
+// dark, and the surface ink on the --ripple-track zero cell. Every pair reaches
+// 4.5:1; the lowest step reaches 1.3:1 and the top step 3:1 against the card
+// (WCAG 1.4.11), and the empty cell's outline 1.5:1.
+test('heatmap steps read on the card and carry their in-cell ink, both themes', async () => {
+  const { HEAT, HEAT_DARK } = await import('../widgets/data/heatmap-scale.js');
+  const src = await read('src/lib/widgets/data/Heatmap.svelte');
+  const warmDecl = src.match(/--hm-hue:\s*oklch\(([\d.]+) ([\d.]+) ([\d.]+)\)/);
+  expect(warmDecl, 'warm arm literal').not.toBeNull();
+  const warm = oklch(...(warmDecl!.slice(1).map(Number) as [number, number, number]));
+  const outline = Number(src.match(/inset 0 0 0 1px color-mix\(in oklab, var\(--ripple-surface-foreground\) (\d+)%/)?.[1] ?? 0) / 100;
+  const track = Number((await read('src/lib/theme.css')).match(/--ripple-track:[^;]*?(\d+)%/)?.[1] ?? 0) / 100;
+  const white = toRgb(oklch(1, 0, 0));
+  const cards: Record<string, { fg: Lab; ground: Lab; accent: Lab; ramp: readonly number[]; dark: boolean }> = {
+    'site light': { fg: oklch(0.2, 0.01, 95), ground: fromHex('#efeee8'), accent: fromHex('#1877f2'), ramp: HEAT, dark: false },
+    'site dark': { fg: oklch(0.95, 0.005, 260), ground: fromHex('#1d1d1a'), accent: fromHex('#1877f2'), ramp: HEAT_DARK, dark: true },
+    'pe light': { fg: HOSTS.light.fg, ground: HOSTS.light.ground, accent: oklch(0.62, 0.21, 256), ramp: HEAT, dark: false },
+    'pe dark': { fg: HOSTS['dark, --destructive'].fg, ground: HOSTS['dark, --destructive'].ground, accent: oklch(0.66, 0.2, 256), ramp: HEAT_DARK, dark: true },
+  };
+  const failures: string[] = [];
+  for (const [name, c] of Object.entries(cards)) {
+    const card = toRgb(c.ground);
+    const fg = toRgb(c.fg);
+    const zero = over(fg, track, card);
+    if (contrast(fg, zero) < 4.5) failures.push(`ink on zero, ${name}`);
+    const empty = contrast(over(fg, outline, card), card);
+    if (empty < 1.5) failures.push(`empty outline on ${name}: ${empty.toFixed(2)}`);
+    for (const [arm, hue] of [['accent', c.accent], ['warm', warm]] as const) {
+      c.ramp.forEach((p, i) => {
+        const cell = toRgb(mix(hue, c.ground, p / 100));
+        const ink = contrast(c.dark ? white : fg, cell);
+        if (ink < 4.5) failures.push(`${arm} ink at ${p}% on ${name}: ${ink.toFixed(2)}`);
+        const edge = contrast(cell, card);
+        if (i === 0 && edge < 1.3) failures.push(`${arm} step 1 on ${name}: ${edge.toFixed(2)}`);
+        if (i === c.ramp.length - 1 && edge < 3) failures.push(`${arm} top step on ${name}: ${edge.toFixed(2)}`);
+      });
+    }
+  }
+  expect(failures).toEqual([]);
+});

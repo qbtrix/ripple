@@ -2954,9 +2954,9 @@
           const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
           const hours = ['9', '10', '11', '12', '13', '14', '15', '16', '17'];
           const out: Array<{ x: string; y: string; value: number }> = [];
-          for (const d of days) for (const h of hours) {
-            out.push({ x: d, y: h, value: Math.floor(Math.random() * 12) });
-          }
+          days.forEach((d, i) => hours.forEach((h, j) => {
+            out.push({ x: d, y: h, value: (i * 7 + j * 5 + i * j) % 12 });
+          }));
           return out;
         })(),
         xLabels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
