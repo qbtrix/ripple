@@ -56,8 +56,8 @@
   async function run() {
     if (steps.length === 0) return;
     const mod = await import('driver.js');
-    // Driver.js ships its CSS too — same pattern as gantt: skip since SSR-strict
-    // doesn't expose the path. Vendor a minimal core in the style block below.
+    // Driver.js ships its CSS too, but SSR-strict resolution doesn't expose
+    // the path. Vendor a minimal core in the style block below.
     const { driver } = mod as any;
     if (driverInstance) {
       try { driverInstance.destroy(); } catch {}
@@ -117,8 +117,8 @@
 {/if}
 
 <!--
-  Vendored driver.js core styles. Same trick as GanttChart: the package's
-  exports don't list the CSS deep-path, so we inline the minimum needed
+  Vendored driver.js core styles. The package's exports don't list the
+  CSS deep-path, so we inline the minimum needed
   for the popover + overlay rather than fight Vite SSR resolution.
 -->
 <style>

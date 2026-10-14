@@ -6311,7 +6311,7 @@
         "height": {
           "type": "string",
           "required": false,
-          "description": "Container height. Default \"320px\"."
+          "description": "Max height. Default \"320px\"."
         }
       },
       "example": {
