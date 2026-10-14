@@ -179,7 +179,15 @@ export function thin(labels: string[], colW: number, measure?: Measure): { i: nu
 	const n = colW > 0 ? Math.max(1, Math.ceil((want + gap) / (colW + gap))) : 1;
 	const out: { i: number; span: number }[] = [];
 	for (let i = 0; i < labels.length; i += n) out.push({ i, span: Math.min(n, labels.length - i) });
+	// A clipped last span that cannot hold its label is dropped, not ellipsized.
+	const last = out.at(-1);
+	if (measure && last && out.length > 1 && measure(labels[last.i]) > last.span * (colW + gap) - gap) out.pop();
 	return out;
+}
+
+/** Y labels show every Nth row once the row pitch is under a 13px label line; each spans its N rows. */
+export function rowStep(cellH: number, gap: number): number {
+	return cellH + gap >= 13 ? 1 : Math.ceil((13 + gap) / (cellH + gap));
 }
 
 /**

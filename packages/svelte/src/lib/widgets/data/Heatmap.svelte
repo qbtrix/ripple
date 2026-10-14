@@ -4,11 +4,13 @@
   classes, label thinning, number format); this file lays it out and handles
   the readout.
 
-  Anatomy: optional title (two lines, then ellipsis), a sticky x label row
-  above the grid, y labels in a capped left column (container query: 34% up to
-  96px under 480px, 30% up to 140px above), the cells, a one-line legend (low
-  figure, stepped swatches, high figure, "No data" when a position is empty), a
-  one-line readout and, when entries had no row or column, a footnote.
+  Anatomy: optional title (wraps, never clipped), a sticky x label row above
+  the grid, y labels in a capped left column (container query: 34% up to 96px
+  under 480px, 30% up to 140px above; ellipsis, full text in `title`), the
+  cells, a one-line legend (low figure, stepped swatches, high figure, "No
+  data" when a position is empty), a readout that wraps rather than clips and,
+  when entries had no row or column, a footnote. X labels thin to every Nth
+  column; y labels thin to every Nth row once rows are under a label line.
 
   Size: the column width is measured (grid width minus the label column), cell
   height follows it (heatmap-scale `cellHeight`), and `height` caps the body,
@@ -44,6 +46,7 @@
 		cellHeight,
 		gapFor,
 		thin,
+		rowStep,
 		valuesFit,
 		type Measure,
 		type Tone
@@ -109,6 +112,7 @@
 	const cellH = $derived(cellHeight(colW, showValues));
 	const radius = $derived(Math.min(4, 0.25 * Math.min(colW || 4, cellH)));
 	const xShown = $derived(thin(grid.xs, colW, measure));
+	const yStep = $derived(colW > 0 ? rowStep(cellH, gap) : 1);
 
 	const tone = (v: number | undefined): Tone | undefined => (v === undefined || !sc ? undefined : sc.tone(v));
 	const toneClass = (t: Tone | undefined) => (!t ? 'hm-e' : t.arm === 'zero' ? 'hm-z' : t.arm === 'warm' ? 'hm-w' : 'hm-a');
@@ -117,6 +121,7 @@
 	let hover: Pos | null = $state(null);
 	let kb: Pos = $state({ r: 0, c: 0 });
 	let focused = $state(false);
+	let scrolled = $state(false);
 	const active = $derived(!live ? null : (hover ?? (focused ? kb : null)));
 	const isActive = (r: number, c: number) => active?.r === r && active?.c === c;
 
@@ -159,10 +164,7 @@
 </script>
 
 {#snippet seg(key: string, p: Pos, v: number)}
-	<span class="hm-seg"><span class="hm-muted">{key}</span>
-		<span class="hm-lbl hm-muted">{grid.ys[p.r]} · {grid.xs[p.c]}</span><span class="hm-muted">,</span>
-		<span class="hm-v">{fmt(v)}</span></span
-	>
+	<span class="hm-seg"><span class="hm-muted hm-key">{key}{' '}</span><span class="hm-lbl hm-muted">{grid.ys[p.r]} · {grid.xs[p.c]}</span><span class="hm-v"><span class="hm-muted">,</span> {fmt(v)}</span></span>
 {/snippet}
 
 {#snippet swatch(t: Tone)}
@@ -182,7 +184,7 @@
 	{#if !sc || !ext}
 		<div class="hm-empty text-callout">No data to show</div>
 	{:else}
-		<div class="hm-frame" style:max-height="{maxH}px">
+		<div class="hm-frame" class:is-scrolled={scrolled} style:max-height="{maxH}px" onscroll={(e) => (scrolled = e.currentTarget.scrollTop > 0)}>
 			<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 			<div
 				bind:this={gridEl}
@@ -216,13 +218,25 @@
 					</div>
 				{/each}
 				{#each grid.ys as y, r (y)}
-					<div class="hm-y text-footnote" style:grid-row={r + 2} style:grid-column="1" title={y} aria-hidden="true">{y}</div>
+					{#if r % yStep === 0}
+						<div
+							class="hm-y text-footnote"
+							class:is-span={yStep > 1}
+							style:grid-row="{r + 2} / span {Math.min(yStep, nr - r)}"
+							style:grid-column="1"
+							title={y}
+							aria-hidden="true"
+						>
+							{y}
+						</div>
+					{/if}
 					{#each grid.xs as x, c (x)}
 						{@const v = grid.values[r][c]}
 						{@const t = tone(v)}
 						<div
 							class="hm-cell text-footnote {toneClass(t)}"
 							class:is-active={isActive(r, c)}
+							style:grid-row={r + 2}
 							style:--hm-m={t ? `${HEAT[t.step]}%` : undefined}
 							style:--hm-md={t ? `${HEAT_DARK[t.step]}%` : undefined}
 							data-r={r}
@@ -251,10 +265,7 @@
 		<div class="hm-readout text-callout" aria-live="polite">
 			{#if active}
 				{@const v = cellAt(active)}
-				<span class="hm-seg"
-					><span class="hm-lbl hm-muted">{grid.ys[active.r]} · {grid.xs[active.c]}</span><span class="hm-muted">:</span>
-					<span class="hm-v">{v === undefined ? 'No data' : full(v)}</span></span
-				>
+				<span class="hm-seg"><span class="hm-lbl hm-muted">{grid.ys[active.r]} · {grid.xs[active.c]}</span><span class="hm-v"><span class="hm-muted">:</span> {v === undefined ? 'No data' : full(v)}</span></span>
 			{:else if sc.mode === 'div'}
 				{@render seg('Lowest:', ext.lo, ext.lo.v)}<span class="hm-muted hm-dot">·</span>{@render seg('Highest:', ext.hi, ext.hi.v)}
 			{:else}
@@ -262,7 +273,8 @@
 			{/if}
 		</div>
 
-		<table class="sr-only">
+		<div class="sr-only">
+		<table>
 			<caption>{heading || 'Heatmap'}</caption>
 			<thead>
 				<tr><td></td>{#each grid.xs as x (x)}<th scope="col">{x}</th>{/each}</tr>
@@ -276,6 +288,7 @@
 				{/each}
 			</tbody>
 		</table>
+		</div>
 	{/if}
 
 	{#if grid.skipped}
@@ -294,11 +307,6 @@
 		color: var(--ripple-surface-foreground);
 	}
 	.hm-title {
-		display: -webkit-box;
-		-webkit-line-clamp: 2;
-		line-clamp: 2;
-		-webkit-box-orient: vertical;
-		overflow: hidden;
 		overflow-wrap: anywhere;
 	}
 	.hm-empty {
@@ -331,6 +339,9 @@
 		position: sticky;
 		top: 0;
 		z-index: 2;
+	}
+	/* Opaque only while rows scroll under the labels, so at rest they sit on whatever the card paints. */
+	.is-scrolled :is(.hm-corner, .hm-x) {
 		background: var(--ripple-surface);
 	}
 	.hm-x,
@@ -348,6 +359,10 @@
 	}
 	.hm-x.is-span {
 		text-align: start;
+	}
+	.hm-y.is-span {
+		align-self: start;
+		margin-top: max(0px, calc(var(--hm-h) / 2 - 6.5px));
 	}
 	.hm-y {
 		align-self: center;
@@ -438,24 +453,17 @@
 
 	.hm-readout {
 		display: flex;
+		flex-wrap: wrap;
 		align-items: baseline;
-		gap: 6px;
+		column-gap: 6px;
 		min-width: 0;
-		height: var(--lh-callout, 16px);
-		overflow: hidden;
-		white-space: nowrap;
+		min-height: var(--lh-callout, 16px);
+		overflow-wrap: anywhere;
 		font-variant-numeric: tabular-nums;
 	}
-	.hm-seg {
-		display: inline-flex;
-		align-items: baseline;
-		gap: 4px;
-		min-width: 0;
-	}
-	.hm-lbl {
-		min-width: 0;
-		overflow: hidden;
-		text-overflow: ellipsis;
+	.hm-key,
+	.hm-v {
+		white-space: pre;
 	}
 	.hm-muted {
 		color: var(--ripple-muted-foreground);

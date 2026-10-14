@@ -3,7 +3,7 @@
 // count, colour classes (sequential, zero swatch, diverging), label thinning,
 // in-cell value fitting, number formats and height parsing.
 import { describe, expect, test } from 'vitest';
-import { sanitize, scale, extremes, fmt, full, maxHeight, cellHeight, thin, valuesFit, gapFor, HEAT, DIV_STEPS } from './heatmap-scale.js';
+import { sanitize, scale, extremes, fmt, full, maxHeight, cellHeight, thin, rowStep, valuesFit, gapFor, HEAT, DIV_STEPS } from './heatmap-scale.js';
 
 // Spec 05 of the polish brief.
 const HOSTILE = [
@@ -141,6 +141,15 @@ describe('sizing', () => {
 		// A wide measured label asks for more room, up to 64px.
 		expect(thin(['September 2026', 'October 2026'], 40, (s) => s.length * 6)[0].span).toBe(2);
 		expect(thin(hours, 0)).toHaveLength(24);
+	});
+	test('a clipped last x label that cannot fit is dropped', () => {
+		const weeks = Array.from({ length: 53 }, (_, i) => `W${i + 1}`);
+		const t = thin(weeks, 5, (s) => s.length * 6);
+		expect(t.at(-1)).toEqual({ i: 45, span: 5 });
+		expect(thin(weeks, 12, (s) => s.length * 6).at(-1)).toEqual({ i: 51, span: 2 });
+	});
+	test('y labels thin once rows are shorter than a label line', () => {
+		expect([rowStep(20, 2), rowStep(12, 2), rowStep(5, 1)]).toEqual([1, 1, 3]);
 	});
 	test('in-cell values are all or nothing', () => {
 		const g = sanitize([{ x: 'a', y: 'r', value: 5 }, { x: 'b', y: 'r', value: 120 }]);
