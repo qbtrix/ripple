@@ -1,10 +1,11 @@
 // Chart.redraw.test.ts — the echarts-backed data widgets (chart, heatmap,
-// treemap, sankey, funnel) and the frappe-gantt one redraw when their props
-// change after mount: state behind `data` changes, a streamed spec delivers
+// sankey, funnel), the frappe-gantt one and the DOM treemap redraw when their
+// props change after mount: state behind `data` changes, a streamed spec delivers
 // title/data in later chunks, or type/title are swapped on the live component.
 // The chart libs are mocked (jsdom has no canvas), so every assertion reads the
 // option handed to the instance's update call. The instance itself must be
-// created once and updated in place, then disposed on unmount.
+// created once and updated in place, then disposed on unmount. The treemap
+// draws DOM tiles, so its check reads the rendered tile text instead.
 
 import { render, fireEvent } from '@testing-library/svelte';
 import { tick } from 'svelte';
@@ -139,7 +140,6 @@ describe('chart', () => {
 
 describe.each([
 	['heatmap', Heatmap, { cells: [{ x: 'a', y: 'r', value: 1 }] }, { cells: [{ x: 'a', y: 'r', value: 9 }] }, (o: any) => o.series[0].data, [[0, 0, 9]]],
-	['treemap', Treemap, { data: [{ name: 'a', value: 1 }] }, { data: [{ name: 'b', value: 9 }] }, (o: any) => o.series[0].data.map((d: any) => d.name), ['b']],
 	[
 		'sankey',
 		Sankey,
@@ -156,6 +156,17 @@ describe.each([
 		await rerender(after);
 		await vi.waitFor(() => expect(read(lastOption())).toEqual(expected));
 		expect(ec.init).toHaveBeenCalledTimes(1);
+	});
+});
+
+describe('treemap', () => {
+	test('redraws its tiles when its data prop changes after mount', async () => {
+		const { container, rerender } = render(Treemap, { props: { data: [{ name: 'a', value: 1 }] } });
+		const names = () => [...container.querySelectorAll('.tm-name')].map((n) => n.textContent);
+		expect(names()).toEqual(['a']);
+		await rerender({ data: [{ name: 'b', value: 9 }] });
+		expect(names()).toEqual(['b']);
+		expect(ec.init).not.toHaveBeenCalled();
 	});
 });
 

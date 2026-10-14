@@ -188,3 +188,45 @@ test('checkbox and radio rims use the control border, not the host --input', asy
     expect(src, f).not.toMatch(/"border-input /);
   }
 });
+
+// Treemap tiles: the accent mixed into the card on treemap.ts's RAMP, plus
+// LIFT on hover. Tile ink is the surface ink; the value line is that ink at
+// INK_ALPHA. Both must reach 4.5:1 on every step at rest and on hover, on the
+// site's cards and on paw-enterprise's grounds. Brand blue #1877f2 in oklab.
+test('treemap label ink reaches 4.5:1 on every ramp step, at rest and on hover', async () => {
+  const { RAMP, LIFT, INK_ALPHA } = await import('../widgets/data/treemap.js');
+  const css = await read('src/routes/site.css');
+  expect(css).toMatch(/--primary:\s*#1877f2/i);
+  const blue: Lab = [0.58913, -0.04266, -0.19833];
+  const hexLab = (hex: string): Lab => {
+    const dec = (v: number) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+    const [r, g, b] = [1, 3, 5].map((i) => dec(parseInt(hex.slice(i, i + 2), 16) / 255));
+    const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+    const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+    const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+    return [
+      0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s,
+      1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s,
+      0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s,
+    ];
+  };
+  const cards: Record<string, { fg: Lab; ground: Lab }> = {
+    'site light #efeee8': { fg: oklch(0.2, 0.01, 95), ground: hexLab('#efeee8') },
+    'site dark #1d1d1a': { fg: oklch(0.95, 0.005, 260), ground: hexLab('#1d1d1a') },
+    'pe light': { fg: HOSTS.light.fg, ground: HOSTS.light.ground },
+    'pe dark': { fg: HOSTS['dark, --destructive'].fg, ground: HOSTS['dark, --destructive'].ground },
+  };
+  const failures: string[] = [];
+  for (const step of RAMP) {
+    for (const p of [step, step + LIFT]) {
+      for (const [name, c] of Object.entries(cards)) {
+        const tile = toRgb(mix(blue, c.ground, p / 100));
+        const ink = contrast(toRgb(c.fg), tile);
+        const meta = contrast(over(toRgb(c.fg), INK_ALPHA / 100, tile), tile);
+        if (ink < 4.5) failures.push(`ink at ${p}% on ${name}: ${ink.toFixed(2)}`);
+        if (meta < 4.5) failures.push(`value line at ${p}% on ${name}: ${meta.toFixed(2)}`);
+      }
+    }
+  }
+  expect(failures).toEqual([]);
+});
