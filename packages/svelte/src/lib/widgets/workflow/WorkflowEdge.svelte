@@ -17,6 +17,7 @@
   under reduced motion.
 -->
 <script lang="ts">
+  import { safeStyle } from '@ripple-ui/core';
   import { BaseEdge, EdgeLabel, getSmoothStepPath, type EdgeProps } from '@xyflow/svelte';
   import { dropRoute, loopRoute, roundedPath, stepRoute, type PlacedEdge } from './layout.js';
   import type { Direction } from './types.js';
@@ -70,7 +71,7 @@
   class={['wf-edge', edge.back && 'wf-back', edge.animated && 'wf-live'].filter(Boolean).join(' ')}
 />
 {#if edge.label}
-  <EdgeLabel x={route.x} y={route.y} class="wf-chip" style="max-width:{edge.chip}px" title={edge.label}>
+  <EdgeLabel x={route.x} y={route.y} class="wf-chip" style={safeStyle(`max-width:${edge.chip}px`)} title={edge.label}>
     <span>{edge.label}</span>
   </EdgeLabel>
 {/if}

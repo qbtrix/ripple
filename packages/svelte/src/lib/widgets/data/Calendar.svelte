@@ -188,7 +188,7 @@
 	function scrollAgenda(day: number | null, fallback = true): boolean {
 		const el = agendaEl;
 		if (!el || el.scrollHeight <= el.clientHeight) return false;
-		const group = day === null ? null : el.querySelector<HTMLElement>(`[data-agenda-day="${day}"]`);
+		const group = day === null ? null : [...el.querySelectorAll<HTMLElement>('[data-agenda-day]')].find((g) => g.dataset.agendaDay === String(day)) ?? null;
 		if (!group && !fallback) return false;
 		// ponytail: 24px is the top fade (1.5rem at the default root size); keeps the group head clear of it.
 		el.scrollTo({ top: group ? Math.max(0, group.offsetTop - 24) : 0, behavior: 'auto' });
@@ -239,11 +239,11 @@
 		focusDay = next;
 		if (!inPeriod(next)) go(period(next, mode)[0]);
 		await tick();
-		rootEl?.querySelector<HTMLElement>(`[data-day="${next}"]`)?.focus();
+		[...(rootEl?.querySelectorAll<HTMLElement>('[data-day]') ?? [])].find((d) => d.dataset.day === String(next))?.focus();
 	}
 
 	const segStyle = (col: number, span: number, lane: number, color: string) =>
-		safeStyle(`grid-column:${col + 1} / span ${span};grid-row:${lane + 2};--ev:${color}`);
+		`grid-column:${col + 1} / span ${span};grid-row:${lane + 2};--ev:${color}`;
 	const focusRing = 'focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ripple-ring';
 </script>
 
@@ -317,7 +317,7 @@
 									<button
 										type="button"
 										class={['cal-chip', focusRing, s.span > 1 && 'cal-chip--bar', s.before && 'cal-chip--before', s.after && 'cal-chip--after']}
-										style={segStyle(s.col, s.span, s.lane, s.ev.color)}
+										style={safeStyle(segStyle(s.col, s.span, s.lane, s.ev.color))}
 										title={s.ev.time && s.ev.end === s.ev.start ? `${s.ev.time} ${titleOf(s.ev)}` : nameOf(s.ev)}
 										aria-label={nameOf(s.ev)}
 										onclick={() => select(s.ev)}

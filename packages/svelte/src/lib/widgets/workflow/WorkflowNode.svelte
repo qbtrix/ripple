@@ -10,6 +10,7 @@
   exit per condition branch, entries), drawn as small dots under the line ends.
 -->
 <script lang="ts">
+  import { safeStyle } from '@ripple-ui/core';
   import { Handle, Position } from '@xyflow/svelte';
   import CircleCheck from '@lucide/svelte/icons/circle-check';
   import OctagonAlert from '@lucide/svelte/icons/octagon-alert';
@@ -55,7 +56,7 @@
       position={SIDE[h.side]}
       isConnectable={false}
       class="wf-handle"
-      style={h.side === 'top' || h.side === 'bottom' ? `left:${h.pct}%` : `top:${h.pct}%`}
+      style={safeStyle(h.side === 'top' || h.side === 'bottom' ? `left:${h.pct}%` : `top:${h.pct}%`)}
     />
   {/each}
 </div>

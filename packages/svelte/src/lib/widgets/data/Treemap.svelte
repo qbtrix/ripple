@@ -246,7 +246,9 @@
 		const x = r.x0 > W / 2 ? `right:${Math.max(0, W - r.x1)}px` : `left:${Math.max(0, r.x0)}px`;
 		if (plotH - r.y1 >= 72) return `${x};top:${r.y1 + 4}px`;
 		if (r.y0 >= 72) return `${x};bottom:${plotH - r.y0 + 4}px`;
-		const label = plotEl?.querySelector<HTMLElement>(`[data-tm-id="${r.id}"] [data-tm-label]:not([data-fit='none'])`);
+		const label = [...(plotEl?.querySelectorAll<HTMLElement>('[data-tm-id]') ?? [])]
+			.find((t) => t.dataset.tmId === String(r.id))
+			?.querySelector<HTMLElement>("[data-tm-label]:not([data-fit='none'])");
 		const under = r.y0 + (label ? label.offsetTop + label.offsetHeight : 0) + 4;
 		return `${x};top:${Math.max(0, Math.min(under, plotH - 72))}px`;
 	}
@@ -303,7 +305,7 @@
 		<div
 			bind:this={plotEl}
 			class="tm-plot"
-			style="height:{plotH}px"
+			style:height="{plotH}px"
 			onkeydown={onKey}
 			onpointerleave={() => (active = null)}
 			onfocusout={(e) => {
@@ -320,7 +322,10 @@
 								<button
 									type="button"
 									class={['tm-caption', active === r.id && 'is-active']}
-									style="left:{pct(r.x0)};top:{r.y0}px;width:{pct(r.x1 - r.x0)};height:{r.captionH}px"
+									style:left={pct(r.x0)}
+									style:top="{r.y0}px"
+									style:width={pct(r.x1 - r.x0)}
+									style:height="{r.captionH}px"
 									aria-label={aria(r)}
 									onclick={() => onTile(r)}
 									onpointerenter={() => (active = r.id)}
@@ -335,7 +340,7 @@
 							<button
 								type="button"
 								class={['tm-tile', active === r.id && 'is-active']}
-								style={tileStyle(r)}
+								style={safeStyle(tileStyle(r))}
 								data-tm-id={r.id}
 								aria-label={aria(r)}
 								onclick={() => onTile(r)}
@@ -344,7 +349,7 @@
 							>
 								{#if tier !== 'none'}
 									<span data-tm-label class="tm-label" aria-hidden="true" data-tier={tier} data-fit={tier}>
-										<span class="tm-name" data-tm-name style="max-height:{Math.min(MAX_NAME_LINES, lines) * NAME_LINE}px">{r.name}</span>
+										<span class="tm-name" data-tm-name style:max-height="{Math.min(MAX_NAME_LINES, lines) * NAME_LINE}px">{r.name}</span>
 										<span class="tm-meta" data-tm-meta
 											><span class="tm-v">{num(r.value, { compact: true })}</span><span class="tm-v">{' · '}</span><span
 												>{share(r.value, total)}</span
@@ -359,7 +364,7 @@
 			{/key}
 
 			{#if tooltip && activeRect}
-				<div class="tm-readout text-callout" role="tooltip" style={readoutStyle(activeRect)}>
+				<div class="tm-readout text-callout" role="tooltip" style={safeStyle(readoutStyle(activeRect))}>
 					<div class="tm-readout-name">{activeRect.name}</div>
 					<div class="tm-readout-row">{num(activeRect.value)} · {ofTotal(activeRect)}</div>
 					{#if activeRect.parentName && activeRect.parentValue}
@@ -375,7 +380,7 @@
 					<button
 						type="button"
 						class={['tm-more-item', active === r.id && 'is-active']}
-						style={tint(r)}
+						style={safeStyle(tint(r))}
 						onclick={() => onTile(r)}
 						onpointerenter={() => (active = r.id)}
 						onpointerleave={() => (active = null)}

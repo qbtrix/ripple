@@ -269,25 +269,26 @@
 	<span class="g-track">
 		{#if narrow && r.start !== undefined}
 			{#each scale?.lines ?? [] as l (l.x)}
-				<span class={['g-line', !l.major && 'g-line--minor']} style="left: {l.x * 100}%"></span>
+				<span class={['g-line', !l.major && 'g-line--minor']} style:left="{l.x * 100}%"></span>
 			{/each}
 		{/if}
 		{#if today !== undefined && (!narrow || r.start !== undefined)}
-			<span class={['g-today', gapAt[i] && 'g-today--gap']} style="left: {today * 100}%"></span>
+			<span class={['g-today', gapAt[i] && 'g-today--gap']} style:left="{today * 100}%"></span>
 		{/if}
 		{#if r.start === undefined || r.end === undefined}
 			<span class="g-chip text-callout">No dates</span>
 		{:else if r.milestone}
-			<span class="g-diamond" style="left: {pos(r.start)}%"></span>
+			<span class="g-diamond" style:left="{pos(r.start)}%"></span>
 		{:else}
 			{@const left = pos(r.start)}
 			{@const w = pos(r.end) - left}
 			<span
 				class={['g-bar', r.progress !== undefined && r.progress >= 100 && 'g-bar--done']}
-				style="left: min({left}%, calc(100% - 4px)); width: {w}%"
+				style:left="min({left}%, calc(100% - 4px))"
+				style:width="{w}%"
 			>
 				{#if r.progress !== undefined && r.progress > 0 && r.progress < 100}
-					<span class="g-done" style="width: {r.progress}%"></span>
+					<span class="g-done" style:width="{r.progress}%"></span>
 				{/if}
 				{#if r.progress !== undefined && r.progress >= 100 && (w / 100) * width >= 28}
 					<span class="g-check"><Check size={12} strokeWidth={3} aria-hidden="true" /></span>
@@ -296,7 +297,7 @@
 		{/if}
 		{#if ends[i] && r.start !== undefined && r.end !== undefined}
 			{@const e = ends[i]!}
-			<span class="g-end" aria-hidden="true" style="left: calc({pos(r.end)}% + {endGap(r)}px)">{e.text}</span>
+			<span class="g-end" aria-hidden="true" style:left="calc({pos(r.end)}% + {endGap(r)}px)">{e.text}</span>
 		{/if}
 	</span>
 {/snippet}
@@ -311,23 +312,23 @@
 				<span class="g-pad"></span>
 				<div class="g-axis" bind:this={axisEl}>
 					{#each stubs as l (l.x)}
-						<span class="g-stub" style="left: {l.x * 100}%"></span>
+						<span class="g-stub" style:left="{l.x * 100}%"></span>
 					{/each}
 					{#each scale?.labels ?? [] as l (l.x)}
-						<span class={['g-tick', l.end && 'g-tick--end']} style="left: {l.x * 100}%">{l.text}</span>
+						<span class={['g-tick', l.end && 'g-tick--end']} style:left="{l.x * 100}%">{l.text}</span>
 					{/each}
 					{#if today !== undefined}
-						<span class="g-today-label g-today--{align}" style="left: {today * 100}%">Today</span>
+						<span class="g-today-label g-today--{align}" style:left="{today * 100}%">Today</span>
 					{/if}
 				</div>
 			</div>
 		</div>
 		<div class="g-scroll" class:g-gutter={overflowing} bind:this={scrollEl}>
-			<div class="g-body" role="list" style="--row-h: {rowH}px">
+			<div class="g-body" role="list" style:--row-h="{rowH}px">
 				<div class="g-grid" aria-hidden="true">
 					{#if !narrow}
 						{#each trackLines as l (l.x)}
-							<span class={['g-line', !l.major && 'g-line--minor']} style="left: {l.x * 100}%"></span>
+							<span class={['g-line', !l.major && 'g-line--minor']} style:left="{l.x * 100}%"></span>
 						{/each}
 					{/if}
 					{#if links.line}
