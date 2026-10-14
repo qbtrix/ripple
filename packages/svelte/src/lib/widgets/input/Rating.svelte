@@ -54,11 +54,17 @@
         class={cn(
           'inline-flex items-center justify-center rounded-md p-0.5 transition-colors',
           'hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60',
-          'active:scale-90 disabled:cursor-not-allowed disabled:opacity-50',
-          filled ? 'text-ripple-warning' : 'text-ripple-control-border'
+          'active:scale-90 disabled:cursor-not-allowed disabled:opacity-50'
         )}
       >
-        <StarIcon size={iconSize} strokeWidth={1.5} fill={filled ? 'currentColor' : 'none'} />
+        <!-- Stars are graphics, not text: gold fill+stroke when filled, a
+             control-border outline when empty (3:1 non-text contrast). -->
+        <StarIcon
+          size={iconSize}
+          strokeWidth={1.5}
+          fill="none"
+          class={filled ? 'fill-ripple-warning stroke-ripple-warning' : 'stroke-ripple-control-border'}
+        />
       </button>
     {/each}
     {#if showValue}
