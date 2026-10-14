@@ -16,7 +16,8 @@ import {
 	parseEvents,
 	rangeLabel,
 	readDay,
-	weeksOf
+	weeksOf,
+	words
 } from './calendar-layout.js';
 import { PALETTE } from '../composite/week-schedule.js';
 import { contrast, mix, oklch, toRgb, type Lab, type Rgb } from '../../ui/__fixtures__/contrast.js';
@@ -213,24 +214,27 @@ function hexLab(hex: string): Lab {
 }
 
 // The Ripple site's cards (routes/site.css) and the library defaults (styles.css).
-const CARDS: Record<string, { surface: Lab; ink: Lab }> = {
-	'site light': { surface: hexLab('#efeee8'), ink: oklch(0.2, 0.01, 95) },
-	'site dark': { surface: hexLab('#1d1d1a'), ink: oklch(0.95, 0.005, 260) },
-	'site light page': { surface: hexLab('#f7f6f2'), ink: oklch(0.2, 0.01, 95) },
-	'site dark page': { surface: hexLab('#262621'), ink: oklch(0.95, 0.005, 260) },
-	'lib light': { surface: hexLab('#ffffff'), ink: hexLab('#0a0a0a') },
-	'lib dark': { surface: hexLab('#0a0a0a'), ink: hexLab('#fafafa') }
+// `tint` is the chip's --cal-tint in that theme (16% light, 26% dark).
+const CARDS: Record<string, { surface: Lab; ink: Lab; tint: number }> = {
+	'site light': { surface: hexLab('#efeee8'), ink: oklch(0.2, 0.01, 95), tint: 0.16 },
+	'site dark': { surface: hexLab('#1d1d1a'), ink: oklch(0.95, 0.005, 260), tint: 0.26 },
+	'site light page': { surface: hexLab('#f7f6f2'), ink: oklch(0.2, 0.01, 95), tint: 0.16 },
+	'site dark page': { surface: hexLab('#262621'), ink: oklch(0.95, 0.005, 260), tint: 0.26 },
+	'lib light': { surface: hexLab('#ffffff'), ink: hexLab('#0a0a0a'), tint: 0.16 },
+	'lib dark': { surface: hexLab('#0a0a0a'), ink: hexLab('#fafafa'), tint: 0.26 }
 };
 const COLOURS = [...Object.values(PALETTE), '#0a0', '#3b82f6', '#8b5cf6', '#22c55e', '#f59e0b', '#a855f7', '#ec4899'];
 
 describe('event colour contrast', () => {
-	it('chip ink 4.5:1 on its tint; edge and dot 3:1 on the card', () => {
+	// The chip's time figures use the same ink as its title (no opacity, no
+	// muted token), so this one measurement covers both.
+	it('chip ink (title and time) 4.5:1 on its tint; edge and dot 3:1 on the card', () => {
 		const fails: string[] = [];
-		for (const [name, { surface, ink }] of Object.entries(CARDS)) {
+		for (const [name, { surface, ink, tint: share }] of Object.entries(CARDS)) {
 			const card: Rgb = toRgb(surface);
 			for (const hex of COLOURS) {
 				const ev = hexLab(hex);
-				const tint = toRgb(mix(ev, surface, 0.16));
+				const tint = toRgb(mix(ev, surface, share));
 				const text = toRgb(mix(ev, ink, 0.4));
 				const mark = toRgb(mix(ev, ink, 0.7));
 				const t = contrast(text, tint);
@@ -240,5 +244,17 @@ describe('event colour contrast', () => {
 			}
 		}
 		expect(fails).toEqual([]);
+	});
+});
+
+describe('words', () => {
+	it('reads in the locale, English otherwise', () => {
+		const de = words('de-DE');
+		expect([de.today, de.count(1), de.count(7), de.allDay]).toEqual(['Heute', '1 Termin', '7 Termine', 'Ganztägig']);
+		const en = words(undefined);
+		expect([en.today, en.count(1), en.count(3), en.allDay]).toEqual(['Today', '1 event', '3 events', 'All day']);
+		expect(words('xx_bad!').today).toBe('Today');
+		// A language with no table row stays all English, never half translated.
+		expect([words('ja').today, words('ja').count(2)]).toEqual(['Today', '2 events']);
 	});
 });

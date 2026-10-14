@@ -13,18 +13,21 @@
   - wide (the base, what jsdom sees): only the weeks the month touches; each
     week row is as tall as its lanes (cap 3 in month view, then "+N more"),
     single-day events are chips, multi-day events one bar per week segment;
-  - narrow: 40px rows with up to 3 colour dots per day, and an agenda under
-    the grid listing every event in the shown period, grouped by day. The
-    agenda opens scrolled to the selected day's group, else today's, and
-    fades its top edge whenever rows sit above the fold.
+  - narrow: 40px rows with up to 3 colour dots per day, then a hairline and
+    an agenda listing every event in the shown period, grouped by day. The
+    agenda opens with the selected day's group, else today's, flush at its
+    top edge (never a cut row there); only the bottom edge fades.
 
   Chips are one line with an ellipsis, in month and week view alike: timed
-  events lead with the time in muted tabular figures ("9:30 Design review"),
-  date-only events and spans show the title alone. A span segment that
-  continues from an earlier week has no colour edge, squared left corners and
-  a small leading chevron;
-  one that runs on has squared right corners. Chips and bars sit above the
-  day hairlines (z-index), so a span reads as one bar per week.
+  events lead with the time in the chip's own ink, lighter and in tabular
+  figures ("9:30 Design review"); when columns are under about 110px a
+  whole-hour time drops its ":00". Date-only events and spans show the title
+  alone. A span segment that continues from an earlier week has squared left
+  corners and a leading chevron; one that runs on has squared right corners
+  and a trailing chevron. Chips and bars sit above the day hairlines.
+  Weekday label, numeral and chip text share one left inset (--cal-inset).
+
+  UI words ("Today", the count, "All day") come from words() in the locale.
 
   Invariants:
   - Structure is an APG grid: gridcells hold a day button and, beside it,
@@ -58,6 +61,7 @@
 		shiftPeriod,
 		weekday,
 		weeksOf,
+		words,
 		MAX_EVENTS,
 		type CalEvent
 	} from './calendar-layout.js';
@@ -136,14 +140,15 @@
 	const SUNDAY = 20485;
 	const weekdays = $derived([0, 1, 2, 3, 4, 5, 6].map((i) => ({ short: F.short(SUNDAY + i), narrow: F.narrow(SUNDAY + i) })));
 	const heading = $derived(mode === 'month' ? F.month(anchor) : rangeLabel(range[0], range[1], loc, true));
-	const countLabel = $derived(count ? `${count} ${count === 1 ? 'event' : 'events'}` : 'No events');
+	const W = $derived(words(loc));
+	const countLabel = $derived(count ? W.count(count) : W.none);
 	const plural = (n: number) => `${n} ${n === 1 ? 'event' : 'events'}`;
 
 	const titleOf = (e: CalEvent) => e.title || 'Untitled event';
 	const whenOf = (e: CalEvent) =>
 		e.end > e.start ? rangeLabel(e.start, e.end, loc) : `${F.md(e.start)}${e.time ? ` at ${e.time}` : ''}`;
 	const nameOf = (e: CalEvent) => `${titleOf(e)}, ${whenOf(e)}`;
-	const metaOf = (e: CalEvent) => (e.end > e.start ? rangeLabel(e.start, e.end, loc) : e.time ?? 'All day');
+	const metaOf = (e: CalEvent) => (e.end > e.start ? rangeLabel(e.start, e.end, loc) : e.time ?? W.allDay);
 	const undatedLine = $derived.by(() => {
 		const u = parsed.undated;
 		if (!u.length) return '';
@@ -159,10 +164,6 @@
 	// ── Actions ─────────────────────────────────────────────────────────────
 	let rootEl: HTMLDivElement | undefined = $state();
 	let agendaEl: HTMLElement | undefined = $state();
-	/** Rows sit above the agenda's fold: fade its top edge. */
-	let agendaScrolled = $state(false);
-	/** Height of the agenda's edge fades; a scrolled-to group lands just below the top one. */
-	const FADE = 24;
 	let focusDay = $state<number | null>(null);
 	const tabDay = $derived.by(() => {
 		for (const d of [focusDay, selected, today]) if (d !== null && inPeriod(d)) return d;
@@ -182,7 +183,15 @@
 		const el = agendaEl;
 		if (!el || el.scrollHeight <= el.clientHeight) return false;
 		const group = day === null ? null : el.querySelector<HTMLElement>(`[data-agenda-day="${day}"]`);
-		if (group || fallback) el.scrollTo({ top: group ? Math.max(0, group.offsetTop - FADE) : 0, behavior: 'auto' });
+		if (!group && !fallback) return false;
+		let top = group ? group.offsetTop : 0;
+		// Near the end the pane cannot scroll that far: stop on a row edge so no cut row sits under the hairline.
+		const max = el.scrollHeight - el.clientHeight;
+		if (top > max) {
+			const edges = [...el.querySelectorAll<HTMLElement>('[data-agenda-day], .cal-row')].map((n) => n.offsetTop);
+			top = Math.max(0, ...edges.filter((t) => t <= max));
+		}
+		el.scrollTo({ top, behavior: 'auto' });
 		return !!group;
 	}
 
@@ -191,7 +200,6 @@
 		if (!agendaEl) return;
 		const [sel, t] = untrack(() => [selected, today]);
 		if (!scrollAgenda(sel, false)) scrollAgenda(t, false);
-		agendaScrolled = agendaEl.scrollTop > 0;
 	});
 
 	async function pick(day: number) {
@@ -249,7 +257,7 @@
 		</div>
 		<div class="cal-nav">
 			{#if !showsToday}
-				<button type="button" class={['cal-today text-callout', focusRing]} onclick={() => go(period(today, mode)[0])}>Today</button>
+				<button type="button" class={['cal-today text-callout', focusRing]} onclick={() => go(period(today, mode)[0])}>{W.today}</button>
 			{/if}
 			<button type="button" class={['cal-icon', focusRing]} onclick={() => shift(-1)} aria-label={mode === 'month' ? 'Previous month' : 'Previous week'}>
 				<ChevronLeftIcon size={16} aria-hidden="true" />
@@ -289,7 +297,7 @@
 									style={safeStyle(`grid-column:${c + 1}`)}
 									tabindex={tabDay === day ? 0 : -1}
 									data-day={day}
-									aria-label="{F.long(day)}, {dayEvents.length ? plural(dayEvents.length) : 'no events'}"
+									aria-label="{F.long(day)}, {dayEvents.length ? W.count(dayEvents.length) : W.none}"
 									aria-current={today === day ? 'date' : undefined}
 									onclick={() => pick(day)}
 									onkeydown={(e) => onDayKey(e, day)}
@@ -308,7 +316,7 @@
 										title={s.ev.time && s.ev.end === s.ev.start ? `${s.ev.time} ${titleOf(s.ev)}` : nameOf(s.ev)}
 										aria-label={nameOf(s.ev)}
 										onclick={() => select(s.ev)}
-									>{#if s.before}<ChevronLeftIcon size={12} class="cal-cont" aria-hidden="true" />{/if}{#if s.ev.time && s.ev.end === s.ev.start}<span class="cal-time tabular-nums">{s.ev.time}</span>{' '}{/if}<span class={['cal-chip-title', !s.ev.title && 'cal-untitled']}>{titleOf(s.ev)}</span></button>
+									>{#if s.before}<ChevronLeftIcon size={12} class="cal-cont" aria-hidden="true" />{/if}{#if s.ev.time && s.ev.end === s.ev.start}{@const [h, mm] = s.ev.time.split(':')}<span class="cal-time tabular-nums">{h}<span class={mm === '00' ? 'cal-min0' : undefined}>:{mm}</span></span>{' '}{/if}<span class={['cal-chip-title', !s.ev.title && 'cal-untitled']}>{titleOf(s.ev)}</span>{#if s.after}<ChevronRightIcon size={12} class="cal-cont cal-cont--end" aria-hidden="true" />{/if}</button>
 								{/each}
 								{#if L.more[c]}
 									<button
@@ -325,19 +333,14 @@
 				{/each}
 			</div>
 
-			<div
-				class={['cal-agenda', agendaScrolled && 'cal-agenda--scrolled']}
-				bind:this={agendaEl}
-				data-slot="agenda"
-				onscroll={(e) => (agendaScrolled = e.currentTarget.scrollTop > 0)}
-			>
+			<div class="cal-agenda" bind:this={agendaEl} data-slot="agenda">
 				{#if selected !== null && inPeriod(selected) && !agendaDays.some((g) => g.day === selected && g.events.length)}
 					<p class="cal-nothing text-callout text-ripple-muted-foreground">Nothing on {F.head(selected)}</p>
 				{/if}
 				{#each agendaDays as g (g.day)}
 					<section class={['cal-group', selected === g.day && 'cal-group--sel']} data-agenda-day={g.day}>
 						<h3 class={['cal-group-head text-callout', g.day === today ? 'text-ripple-accent-text' : 'text-ripple-muted-foreground']}>
-							{g.day === today ? 'Today' : F.head(g.day)}{#if !g.events.length}<span class="cal-group-empty">{g.continuing.length ? `${titleOf(g.continuing[0])} continues` : 'No events'}</span>{/if}
+							{g.day === today ? W.today : F.head(g.day)}{#if !g.events.length}<span class="cal-group-empty">{g.continuing.length ? `${titleOf(g.continuing[0])} continues` : 'No events'}</span>{/if}
 						</h3>
 						{#if g.events.length}
 							<ul>
@@ -380,7 +383,9 @@
 	.cal {
 		/* Chip tint; dark surfaces need more of the event colour to read. */
 		--cal-tint: 16%;
-		container-type: inline-size;
+		/* One left inset for weekday label, numeral and chip text. */
+		--cal-inset: 0.5rem;
+		container: cal / inline-size;
 		display: flex;
 		flex-direction: column;
 		gap: 0.5rem;
@@ -441,7 +446,7 @@
 		grid-template-columns: repeat(7, minmax(0, 1fr));
 	}
 	.cal-weekdays > div {
-		padding: 0 0 0.25rem 0.375rem;
+		padding: 0 0 0.25rem var(--cal-inset);
 	}
 	.cal-wd-narrow {
 		display: none;
@@ -475,16 +480,18 @@
 		display: flex;
 		align-items: center;
 		justify-content: flex-start;
-		padding: 0.125rem 0.25rem 0;
+		padding: 0.125rem 0.25rem 0 var(--cal-inset);
 		border-radius: 2px;
 		font-size: var(--text-callout);
 		line-height: 1;
 	}
+	/* Digits sit on the inset; the pill padding hangs outside it. */
 	.cal-num {
 		display: grid;
 		place-items: center;
-		min-width: 1.375rem;
 		height: 1.375rem;
+		padding-inline: 0.25rem;
+		margin-left: -0.25rem;
 		border-radius: 999px;
 		transition: background-color 150ms var(--ripple-ease-out);
 	}
@@ -496,6 +503,9 @@
 	}
 	.cal-day--today .cal-num,
 	.cal-day--today:hover .cal-num {
+		min-width: 1.375rem;
+		padding-inline: 0.125rem;
+		margin-left: -0.3125rem;
 		background: var(--ripple-accent);
 		color: var(--ripple-accent-foreground);
 		font-weight: 600;
@@ -509,7 +519,7 @@
 		gap: 0.25rem;
 		min-width: 0;
 		margin-inline: 2px;
-		padding: 0 0.3125rem 0 0.375rem;
+		padding: 0 0.3125rem 0 calc(var(--cal-inset) - 2px);
 		border-radius: 4px;
 		font-size: var(--text-caption-2);
 		line-height: 1.25rem;
@@ -533,10 +543,14 @@
 		border-bottom-left-radius: 0;
 		box-shadow: none;
 	}
-	.cal-chip--before :global(.cal-cont) {
+	.cal-chip :global(.cal-cont) {
 		flex-shrink: 0;
 		margin-left: -0.125rem;
-		opacity: 0.6;
+		opacity: 0.8;
+	}
+	.cal-chip :global(.cal-cont--end) {
+		margin-left: auto;
+		margin-right: -0.125rem;
 	}
 	.cal-chip--after {
 		margin-right: 0;
@@ -548,9 +562,15 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 	}
+	/* Same ink as the title (4.5:1, measured); set apart by weight only. */
 	.cal-time {
 		flex-shrink: 0;
-		opacity: 0.75;
+		font-weight: 400;
+	}
+	@container cal (max-width: 779px) {
+		.cal-min0 {
+			display: none;
+		}
 	}
 	.cal-untitled {
 		font-style: italic;
@@ -576,12 +596,12 @@
 		max-height: 18rem;
 		overflow-y: auto;
 		overscroll-behavior: contain;
-		/* Fade the cut row; the padding lets the last row scroll clear of it. */
+		/* A hairline under the grid; groups scroll flush to it. Only the
+		   bottom fades, and its padding lets the last row clear the fade. */
+		padding-top: 0.25rem;
 		padding-bottom: 1.5rem;
+		border-top: 1px solid var(--ripple-border);
 		mask-image: linear-gradient(to bottom, #000 calc(100% - 1.5rem), transparent);
-	}
-	.cal-agenda--scrolled {
-		mask-image: linear-gradient(to bottom, transparent, #000 1.5rem, #000 calc(100% - 1.5rem), transparent);
 	}
 	.cal-nothing {
 		padding: 0.25rem 0.5rem 0.5rem;
@@ -647,6 +667,9 @@
 		min-width: 0;
 		margin-top: 0.25rem;
 	}
+	.cal-foot p {
+		text-wrap: pretty;
+	}
 	.cal-link {
 		color: var(--ripple-accent-text);
 		font-weight: 500;
@@ -656,7 +679,7 @@
 	}
 
 	/* ── Narrow: dots in the grid, agenda below ──────────────────────────── */
-	@container (max-width: 519px) {
+	@container cal (max-width: 519px) {
 		.cal-wd-short {
 			display: none;
 		}
@@ -687,9 +710,12 @@
 			gap: 3px;
 			padding: 0.125rem 0 0;
 		}
-		.cal-num {
+		.cal-num,
+		.cal-day--today .cal-num {
 			width: 1.75rem;
 			height: 1.75rem;
+			margin-left: 0;
+			padding-inline: 0;
 		}
 		.cal-dots {
 			display: flex;
@@ -701,6 +727,9 @@
 			height: 6px;
 			border-radius: 999px;
 			background: color-mix(in oklab, var(--ev) 70%, var(--ripple-surface-foreground));
+		}
+		.cal-body {
+			gap: 0.75rem;
 		}
 		.cal-agenda {
 			display: block;

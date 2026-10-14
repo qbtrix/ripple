@@ -13,6 +13,8 @@
 // - Colours are a 3- or 6-digit hex or a palette constant; any other model
 //   text falls back to the title hash, so model text never reaches CSS.
 // - Weeks start on Sunday for every locale.
+// - UI words follow the locale: "Today" from Intl, the event count and
+//   "All day" from a small table with an English fallback.
 import { plain } from '../data-kit/format.js';
 import { colorOf } from '../composite/week-schedule.js';
 import { uniqueKeys } from '$lib/utils/safe-props.js';
@@ -275,4 +277,44 @@ export function rangeLabel(start: number, end: number, locale?: string, year = f
 		const out = `${md(start)} to ${sameMonth ? fmt(locale, { day: 'numeric' })(end) : md(end)}`;
 		return year ? `${out}, ${fmt(locale, { year: 'numeric' })(end)}` : out;
 	}
+}
+
+// ── UI words ────────────────────────────────────────────────────────────────
+type Words = { one: string; other: string; none: string; allDay: string };
+const EN: Words = { one: 'event', other: 'events', none: 'No events', allDay: 'All day' };
+// ponytail: a handful of languages; add a row when a card needs another.
+const WORDS: Record<string, Words> = {
+	en: EN,
+	de: { one: 'Termin', other: 'Termine', none: 'Keine Termine', allDay: 'Ganztägig' },
+	fr: { one: 'événement', other: 'événements', none: 'Aucun événement', allDay: 'Toute la journée' },
+	es: { one: 'evento', other: 'eventos', none: 'Sin eventos', allDay: 'Todo el día' },
+	it: { one: 'evento', other: 'eventi', none: 'Nessun evento', allDay: 'Tutto il giorno' },
+	pt: { one: 'evento', other: 'eventos', none: 'Sem eventos', allDay: 'Dia inteiro' },
+	nl: { one: 'afspraak', other: 'afspraken', none: 'Geen afspraken', allDay: 'Hele dag' }
+};
+
+/** The card's words in the locale's language; English when the locale is unknown or bad. */
+export function words(locale?: string) {
+	let lang = 'en';
+	let today = 'Today';
+	let plural = (n: number): string => (n === 1 ? 'one' : 'other');
+	try {
+		const rt = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+		lang = rt.resolvedOptions().locale.split('-')[0];
+		const t = rt.format(0, 'day');
+		today = t.charAt(0).toLocaleUpperCase(locale) + t.slice(1);
+		const pr = new Intl.PluralRules(locale);
+		plural = (n) => pr.select(n);
+	} catch {
+		/* bad locale: English */
+	}
+	const w = WORDS[lang];
+	if (!w) today = 'Today';
+	const W = w ?? EN;
+	return {
+		today,
+		allDay: W.allDay,
+		none: W.none,
+		count: (n: number) => `${n} ${plural(n) === 'one' ? W.one : W.other}`
+	};
 }
