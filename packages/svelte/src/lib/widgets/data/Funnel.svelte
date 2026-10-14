@@ -6,20 +6,23 @@
   Frame: optional title (text-headline), one muted summary line, then an <ol>
   of stages split by hairlines. No inner panel; the card is the only frame.
   Height: the widget is as tall as its content. Only a model-set `height` caps
-  it; then the list scrolls under the fixed title, summary and caption, its
-  height snapped to whole rows (no glyph is ever sliced), and a muted
-  `+N more stages, scroll` line under it counts the rows still below.
+  it; then the list scrolls under the fixed title, summary and caption. Its
+  height snaps to whole rows plus a short peek of the next one, and while rows
+  remain below, a bottom fade mask over that peek signals the overflow.
 
   Layout follows the root's own width (container query at 480px):
   - wide: one grid for every row (name | bar track | count | rate of previous),
-    a caption over the two number columns, and the worst step's clause on the
-    summary line;
+    a caption over the two number columns, and the worst step's clause on its
+    own line under the summary;
   - narrow: each stage is name + count, then a full-width bar, with the step
     rate as a connector line (`62% of previous`) between two stages. Its arrow
     points down, or up when the stage grew, so it never reads as the opposite.
+  When n/a rows sit between a rate and its base, the base is named instead of
+  `previous`: `0% of Stage 4` (narrow), `0%` over a muted `vs Stage 4` (wide).
 
   Bars share a left baseline and scale to the widest stage (3px floor above 0,
-  a 2px tick at 0, nothing for `n/a`). Behind each bar the previous stage's
+  a 2px neutral-ink tick at 0 so nothing never looks like a little, nothing
+  for `n/a`). Behind each bar the previous stage's
   length shows as an accent tint (the ghost), so the gap is the loss. One hue:
   bars are --ripple-accent; the worst step's rate is the only accent ink.
   The ghost starts 2px past the bar's end, so the bar always meets the card.
@@ -32,7 +35,17 @@
 	import { cn } from '$lib/utils.js';
 	import { safeArray, uniqueKeys } from '$lib/utils/safe-props.js';
 	import { plain } from '../data-kit/format.js';
-	import { funnelRows, funnelSummary, countFormat, formatRate, rowName, parseHeight, parseSort } from './funnel-math.js';
+	import {
+		funnelRows,
+		funnelSummary,
+		countFormat,
+		formatRate,
+		rowName,
+		rateBase,
+		capName,
+		parseHeight,
+		parseSort
+	} from './funnel-math.js';
 
 	interface Props {
 		id?: string;
@@ -60,43 +73,37 @@
 	const maxH = $derived(parseHeight(height));
 	const dense = $derived(rows.length > 10);
 	const rated = $derived(rows.some((r) => r.rate !== undefined));
-	// Cue line under a capped list: caption-1 line height plus its top padding.
-	const CUE_H = 17;
+	// Peek of the next row under a capped list; the fade mask covers it.
+	const PEEK = 16;
 	let topEl = $state<HTMLElement>();
 	let listEl = $state<HTMLOListElement>();
 	let listMax = $state<number>();
-	let hidden = $state(0);
+	let more = $state(false);
 
-	/** Rows whose bottom sits below the visible edge of the list. */
-	function countHidden(visible: number) {
-		if (!listEl) return;
-		const edge = listEl.scrollTop + visible + 1;
-		hidden = [...listEl.children].filter((li) => {
-			const el = li as HTMLElement;
-			return el.offsetTop + el.offsetHeight > edge;
-		}).length;
+	/** Rows remain below the visible edge. */
+	function checkMore() {
+		more = !!listEl && listEl.scrollTop + listEl.clientHeight < listEl.scrollHeight - 1;
 	}
 
-	/** Snap the capped list to whole rows; no cap when everything fits. */
+	/** Snap the capped list to whole rows plus a peek; no cap when everything fits. */
 	function fit() {
 		if (maxH === undefined || !listEl) {
 			listMax = undefined;
-			hidden = 0;
+			more = false;
 			return;
 		}
 		const bottoms = [...listEl.children].map((li) => (li as HTMLElement).offsetTop + (li as HTMLElement).offsetHeight);
 		const top = topEl?.offsetHeight ?? 0;
 		if (!bottoms.length || top + bottoms[bottoms.length - 1] <= maxH) {
 			listMax = undefined;
-			hidden = 0;
+			more = false;
 			return;
 		}
-		const room = maxH - top - CUE_H;
+		const room = maxH - top;
 		let k = 1;
-		while (k < bottoms.length && bottoms[k] <= room) k++;
-		const h = bottoms[k - 1];
-		listMax = h;
-		countHidden(h);
+		while (k < bottoms.length && bottoms[k] + PEEK <= room) k++;
+		listMax = Math.min(room, bottoms[k - 1] + PEEK);
+		queueMicrotask(checkMore);
 	}
 
 	$effect(() => {
@@ -128,9 +135,8 @@
 				<h3 class="fn-title text-headline">{heading}</h3>
 			{/if}
 			{#if summary}
-				<p class="fn-summary text-callout">
-					{summary.text}{#if summary.drop}<span class="fn-drop">{` · ${summary.drop}`}</span>{/if}
-				</p>
+				<p class="fn-summary text-callout">{summary.text}</p>
+				{#if summary.drop}<p class="fn-summary fn-drop text-callout">{summary.drop}</p>{/if}
 			{/if}
 			{#if rated}
 				<div class="fn-caption text-caption-1" aria-hidden="true">
@@ -145,16 +151,16 @@
 	{:else}
 		<ol
 			bind:this={listEl}
-			class={cn('fn-list', dense && 'is-dense')}
+			class={cn('fn-list', dense && 'is-dense', more && 'has-more')}
 			aria-label={heading || 'Funnel'}
 			style:max-height={listMax === undefined ? undefined : `${listMax}px`}
-			onscroll={() => countHidden(listEl?.clientHeight ?? 0)}
+			onscroll={checkMore}
 		>
 			{#each rows as r, i (keys[i])}
 				<li class={cn('fn-row', r.worst && 'is-worst')} aria-label={rowName(r, count)}>
 					{#if r.rate !== undefined}
 						<span class="fn-conn text-caption-1" aria-hidden="true">
-							{#if r.rate > 1}<ArrowUp size={12} aria-hidden="true" />{:else}<ArrowDown size={12} aria-hidden="true" />{/if}{formatRate(r.rate)} of previous
+							{#if r.rate > 1}<ArrowUp size={12} aria-hidden="true" />{:else}<ArrowDown size={12} aria-hidden="true" />{/if}{formatRate(r.rate)} of {r.skipped ? capName(r.from!) : 'previous'}
 						</span>
 					{/if}
 					<span class={cn('fn-name', r.unnamed && 'is-unnamed')} title={r.label} aria-hidden="true">{r.label}</span>
@@ -169,15 +175,12 @@
 						{/if}
 					</span>
 					<span class={cn('fn-count', r.value === undefined && 'is-na')} aria-hidden="true">{count(r.value)}</span>
-					<span class="fn-rate" aria-hidden="true">{r.rate !== undefined ? formatRate(r.rate) : ''}</span>
+					<span class="fn-rate" aria-hidden="true" title={r.skipped ? `${formatRate(r.rate!)} of ${rateBase(r)}` : undefined}
+						>{r.rate !== undefined ? formatRate(r.rate) : ''}{#if r.skipped}<span class="fn-vs text-caption-1">vs {r.from}</span>{/if}</span
+					>
 				</li>
 			{/each}
 		</ol>
-		{#if listMax !== undefined}
-			<p class="fn-more text-caption-1" aria-hidden="true">
-				{hidden ? `+${hidden} more ${hidden === 1 ? 'stage' : 'stages'}, scroll` : ''}
-			</p>
-		{/if}
 	{/if}
 </div>
 
@@ -236,12 +239,9 @@
 		flex-direction: column;
 		gap: 6px;
 	}
-	.fn-more {
-		flex: none;
-		margin: 0;
-		padding-top: 4px;
-		min-height: 17px;
-		color: var(--ripple-muted-foreground);
+	/* Rows remain below: fade the peek of the next row. */
+	.fn-list.has-more {
+		mask-image: linear-gradient(to bottom, #000 calc(100% - 16px), transparent);
 	}
 	.fn-row {
 		display: grid;
@@ -329,10 +329,11 @@
 		transition: width 240ms var(--ripple-ease-out);
 		animation: fn-grow 240ms var(--ripple-ease-out) both;
 	}
+	/* Zero is nothing, not a little: neutral ink, never the bar's accent. */
 	.fn-tick {
 		width: 2px;
 		border-radius: 1px;
-		background: var(--ripple-accent);
+		background: var(--ripple-muted-foreground);
 	}
 	@keyframes fn-grow {
 		from {
@@ -351,7 +352,7 @@
 	   list scrolls. */
 	@container (min-width: 480px) {
 		.fn-drop {
-			display: inline;
+			display: block;
 		}
 		.fn-caption,
 		.fn-list {
@@ -416,6 +417,13 @@
 			white-space: nowrap;
 			color: var(--ripple-muted-foreground);
 			font-variant-numeric: tabular-nums;
+		}
+		.fn-vs {
+			display: block;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			color: var(--ripple-muted-foreground);
+			font-weight: var(--weight-regular, 400);
 		}
 	}
 </style>

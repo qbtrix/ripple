@@ -8,7 +8,8 @@
 //   only when two or more rates exist.
 // - Rates, ghosts, the worst step and the summary are computed on the
 //   DISPLAYED order. A row without a number (`n/a`) is skipped by all of them:
-//   the next numbered stage compares to the last numbered one before it.
+//   the next numbered stage compares to the last numbered one before it, and
+//   is marked `skipped` so the UI names that base instead of `previous`.
 // - A rate exists only when both values are numbers and the previous one is
 //   above 0; otherwise it is undefined, never NaN or Infinity.
 // - Bar and ghost widths are percent of the largest drawn value, unclamped
@@ -26,6 +27,8 @@ export type FunnelRow = {
 	rate?: number;
 	/** Label of that previous numbered stage, set with `rate`. */
 	from?: string;
+	/** True when `from` is not the row directly above (n/a rows sit between). */
+	skipped?: boolean;
 	/** The lowest step rate under 100% (earliest on ties), when two or more rates exist. */
 	worst: boolean;
 	/** Bar width, percent of the widest stage. */
@@ -75,6 +78,7 @@ export function funnelRows(data: readonly unknown[], sort: FunnelSort = 'none'):
 	const pctOf = (v: number) => (max > 0 ? Math.round((v / max) * 100_000) / 1000 : 0);
 	let prev: number | undefined;
 	let prevLabel = '';
+	let prevAt = -1;
 	const rows: FunnelRow[] = stages.map((s, i) => {
 		const row: FunnelRow = {
 			label: s.label || `Stage ${i + 1}`,
@@ -87,10 +91,12 @@ export function funnelRows(data: readonly unknown[], sort: FunnelSort = 'none'):
 			if (prev !== undefined && prev > 0) {
 				row.rate = s.value / prev;
 				row.from = prevLabel;
+				if (prevAt !== i - 1) row.skipped = true;
 			}
 			if (prev !== undefined && prev > s.value) row.ghostPct = pctOf(prev);
 			prev = s.value;
 			prevLabel = row.label;
+			prevAt = i;
 		}
 		return row;
 	});
@@ -129,12 +135,17 @@ export function countFormat(rows: readonly FunnelRow[]): (v: number | undefined)
 	return (v) => (v === undefined ? 'n/a' : num(v, compact ? { compact: true } : {}));
 }
 
-/** At most NAME_CAP characters, cut at the last word boundary when there is one. */
+// Words a cut name should not end on (`Saw the poster at the…` reads `Saw the poster…`).
+const TAIL = /\s+(?:a|an|and|at|by|for|from|in|of|on|or|the|to|with)$/i;
+
+/** At most NAME_CAP characters, cut at the last word boundary when there is one, never on a small joining word. */
 export function capName(s: string): string {
 	if (s.length <= NAME_CAP) return s;
 	const cut = s.slice(0, NAME_CAP - 1);
 	const space = cut.lastIndexOf(' ');
-	return `${(space > 0 ? cut.slice(0, space) : cut).replace(/[\s,;:.-]+$/, '')}…`;
+	let out = (space > 0 ? cut.slice(0, space) : cut).replace(/[\s,;:.-]+$/, '');
+	while (TAIL.test(out)) out = out.replace(TAIL, '');
+	return `${out}…`;
 }
 
 /**
@@ -166,11 +177,16 @@ export function funnelSummary(rows: readonly FunnelRow[]): { text: string; drop?
 		: { text };
 }
 
+/** The rate's base in words: `previous`, or the stage's name when n/a rows sit between. */
+export function rateBase(r: FunnelRow): string {
+	return r.skipped ? r.from! : 'previous';
+}
+
 /** Accessible name per row: `Proposal, 280, 45 percent of previous, biggest drop`. */
 export function rowName(r: FunnelRow, count: (v: number | undefined) => string): string {
 	if (r.value === undefined) return `${r.label}, no count`;
 	const parts = [r.label, count(r.value)];
-	if (r.rate !== undefined) parts.push(`${spokenRate(r.rate)} of previous`);
+	if (r.rate !== undefined) parts.push(`${spokenRate(r.rate)} of ${rateBase(r)}`);
 	if (r.worst) parts.push('biggest drop');
 	return parts.join(', ');
 }

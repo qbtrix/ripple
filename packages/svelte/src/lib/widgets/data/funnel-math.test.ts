@@ -92,6 +92,9 @@ describe('rows', () => {
 		// n/a has no rate; Paid compares to Stage 4; after a 0 there is no rate.
 		expect(rows[4].rate).toBeUndefined();
 		expect(rows[5].rate).toBe(0);
+		// Paid's base is named, since the row above it has no count.
+		expect(rows[5].skipped).toBe(true);
+		expect(rows.filter((r) => r.skipped).length).toBe(1);
 		expect(rows[6].rate).toBeUndefined();
 		expect(rows.find((r) => r.worst)?.label).toBe('Paid');
 	});
@@ -162,7 +165,8 @@ describe('words', () => {
 	});
 
 	test('summary names are capped at 24 characters', () => {
-		expect(capName('Saw the poster at the library')).toBe('Saw the poster at the…');
+		// A cut never ends on a small joining word.
+		expect(capName('Saw the poster at the library')).toBe('Saw the poster…');
 		expect(capName('Saw it at the library, then left')).toBe('Saw it at the library…');
 		expect(capName('Supercalifragilisticexpialidocious')).toBe('Supercalifragilisticexp…');
 		expect(capName('Came back')).toBe('Came back');
@@ -175,6 +179,7 @@ describe('words', () => {
 		expect(rowName(rows[3], count)).toBe('Closed, 105, 38 percent of previous, biggest drop');
 		expect(rowName(rows[0], count)).toBe('Leads, 1,000');
 		expect(rowName(funnelRows(messy)[4], count)).toBe('Started trial, no count');
+		expect(rowName(funnelRows(messy)[5], count)).toBe('Paid, 0, 0 percent of Stage 4, biggest drop');
 	});
 });
 
@@ -186,6 +191,10 @@ describe('Funnel DOM', () => {
 		expect(container.querySelectorAll('.fn-count')[4].textContent).toBe('n/a');
 		expect(items[4].querySelector('.fn-bar, .fn-tick')).toBeNull();
 		expect(items[5].querySelector('.fn-tick')).not.toBeNull();
+		// After an n/a row the rate names its base instead of `previous`.
+		expect(items[5].querySelector('.fn-conn')!.textContent).toContain('0% of Stage 4');
+		expect(items[5].querySelector('.fn-vs')!.textContent).toBe('vs Stage 4');
+		expect(items[3].querySelector('.fn-conn')!.textContent).toContain('of previous');
 		expect(container.textContent).not.toMatch(/NaN|Infinity|undefined|\*\*/);
 		expect(container.querySelector<HTMLElement>('.fn-root')!.style.maxHeight).toBe('300px');
 		// Without a model-set height the widget fits its content.
