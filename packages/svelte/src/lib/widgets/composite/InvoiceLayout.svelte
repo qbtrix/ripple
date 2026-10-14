@@ -144,6 +144,9 @@
     return issued ? `Issued ${issued}` : '';
   });
 
+  /** Emails break after `@` and before each `.`, not inside a word. */
+  const breakable = (s: string) => (/^\S+@\S+$/.test(s) ? s.split(/(?<=@)|(?=\.)/) : [s]);
+
   type PartyView = { label: string; name: string; logo: string; rows: string[] };
   function party(label: string, p: Partial<Party> | undefined, withLogo = false): PartyView | undefined {
     const name = t(p?.name);
@@ -228,7 +231,7 @@
                 <img src={safeUrl(p.logo, { kind: 'resource' })} alt={p.name} class="rinv-logo" />
               {/if}
               {#if p.name}<div class="rinv-name">{p.name}</div>{/if}
-              {#each p.rows as row, i (i)}<div class="rinv-line">{row}</div>{/each}
+              {#each p.rows as row, i (i)}<div class="rinv-line">{#each breakable(row) as seg, j (j)}{#if j}<wbr />{/if}{seg}{/each}</div>{/each}
             </div>
           {/each}
         </div>
@@ -287,8 +290,7 @@
           data-action-id={a.id}
           onclick={() => fireAction(a)}
         >
-          {#if a.icon}<Icon name={a.icon} size={14} />{/if}
-          <span>{a.label}</span>
+          <span class="rinv-btn-label">{#if a.icon}<span class="rinv-btn-icon"><Icon name={a.icon} size={14} /></span>{/if}{a.label}</span>
         </button>
       {/each}
     </div>
@@ -432,17 +434,16 @@
     font-size: 12px;
     overflow-wrap: anywhere;
   }
+  /* Under 480: a label column and a value column, values on one left edge
+     so a wrapping value never goes ragged. */
   .rinv-meta {
     margin: 0;
     display: grid;
-    gap: 6px;
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: 6px 16px;
   }
   .rinv-pair {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 16px;
-    min-width: 0;
+    display: contents;
   }
   .rinv-pair dt {
     flex: none;
@@ -452,7 +453,6 @@
   .rinv-pair dd {
     margin: 0;
     min-width: 0;
-    text-align: right;
     font-weight: 500;
     overflow-wrap: break-word;
   }
@@ -505,19 +505,31 @@
     gap: 8px;
   }
   .rinv-btn {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
     min-height: 36px;
     padding: 7px 14px;
     border: 1px solid transparent;
     border-radius: calc(var(--ripple-radius) - 2px);
     font: inherit;
     font-weight: 500;
-    text-align: center;
     cursor: pointer;
     transition: background-color 0.15s, border-color 0.15s;
+  }
+  /* The icon is inline at the start of the label, so a wrapped label keeps
+     it beside its first line and both centre as one run of text. */
+  .rinv-btn-label {
+    min-width: 0;
+    text-align: center;
+    text-wrap: balance;
+  }
+  .rinv-btn-icon {
+    display: inline-flex;
+    width: 14px;
+    height: 14px;
+    margin-right: 8px;
+    vertical-align: -2px;
   }
   .rinv-btn:focus-visible {
     outline: 2px solid var(--ripple-ring);
@@ -559,24 +571,24 @@
     .rinv > .rinv-lines {
       padding-top: 0;
     }
-    .rinv-parties {
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    /* Parties and meta share one 3-track grid so every label starts on a
+       column edge used above it. */
+    .rinv-parties,
+    .rinv-meta {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      column-gap: 24px;
     }
     .rinv-meta {
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 12px 24px;
+      row-gap: 12px;
     }
     .rinv-pair {
+      display: flex;
       flex-direction: column;
-      align-items: flex-start;
-      justify-content: flex-start;
       gap: 2px;
+      min-width: 0;
     }
     .rinv-pair dt {
       font-size: 12px;
-    }
-    .rinv-pair dd {
-      text-align: left;
     }
     .rinv-bottom {
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
