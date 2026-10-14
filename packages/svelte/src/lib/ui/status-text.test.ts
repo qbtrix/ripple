@@ -358,24 +358,28 @@ test('the accent atoms paint text with --ripple-accent-text, never the fill toke
   expect(await read('src/lib/theme.css')).not.toContain('--primary-ink');
 });
 
-// Heatmap cells: the accent (and a warm oklch arm below zero) mixed into the
-// card on heatmap-scale.ts's HEAT (HEAT_DARK on dark cards, the accent's oklch
-// lightness capped at 0.59 there). In-cell values are the surface ink in light
-// and --ripple-accent-foreground (white) on the ramp in dark, and the surface
-// ink on the zero cell (half --ripple-track in light, all of it in dark). Every
-// pair reaches 4.5:1. Step 1 reaches 1.3:1 and the top step 3:1 (WCAG 1.4.11)
-// against the card and the page ground the card may sit on (the playground
-// paints --background), since cells mix into --ripple-surface whatever is
-// painted. Accent step 1 also differs from the zero cell: 1.15:1 in light, 1.12:1 in
-// dark. The empty cell's outline reaches 1.5:1.
+// Heatmap cells. Light: the accent (and a warm oklch arm below zero) mixed into
+// the card on heatmap-scale.ts's HEAT. Dark: each hue at HEAT_DARK alpha over
+// whatever ground is painted (the accent's oklch lightness capped at 0.59, the
+// warm arm on its own dark literal), so cells and the zero wash climb from the
+// same ground. In-cell values are the surface ink in light and
+// --ripple-accent-foreground (white) on the ramp in dark, and the surface ink
+// on the zero cell (a --ripple-track wash: half in light, a third in dark).
+// Every ink pair reaches 4.5:1. Step 1 reaches 1.3:1 and the top step 3:1 (WCAG
+// 1.4.11) against the card and the page ground the card may sit on (the
+// playground paints --background). Zero sits below step 1 on every ground and
+// apart from it by 1.15:1, and each ramp climbs in order from zero, so the
+// legend reads quiet to loud. The empty cell's outline reaches 1.5:1.
 test('heatmap steps read on the card and carry their in-cell ink, both themes', async () => {
   const { HEAT, HEAT_DARK } = await import('../widgets/data/heatmap-scale.js');
   const src = await read('src/lib/widgets/data/Heatmap.svelte');
-  const warmDecl = src.match(/--hm-hue:\s*oklch\(([\d.]+) ([\d.]+) ([\d.]+)\)/);
-  expect(warmDecl, 'warm arm literal').not.toBeNull();
-  const warm = oklch(...(warmDecl!.slice(1).map(Number) as [number, number, number]));
+  const warms = [...src.matchAll(/--hm-hue:\s*oklch\(([\d.]+) ([\d.]+) ([\d.]+)\)/g)].map((m) =>
+    oklch(...(m.slice(1).map(Number) as [number, number, number]))
+  );
+  expect(warms, 'warm arm literals, light then dark').toHaveLength(2);
   const cap = Number(src.match(/oklch\(from var\(--ripple-accent\) min\(l, ([\d.]+)\) c h\)/)?.[1] ?? 1);
-  const zeroLight = Number(src.match(/\.hm-z \{\s*background-color: color-mix\(in oklab, var\(--ripple-track\) (\d+)%/)?.[1] ?? 100) / 100;
+  const zeros = [...src.matchAll(/\.hm-z \{\s*background-color: color-mix\(in oklab, var\(--ripple-track\) (\d+)%, transparent\)/g)].map((m) => Number(m[1]) / 100);
+  expect(zeros, 'zero wash, light then dark').toHaveLength(2);
   const outline = Number(src.match(/inset 0 0 0 1px color-mix\(in oklab, var\(--ripple-surface-foreground\) (\d+)%/)?.[1] ?? 0) / 100;
   const track = Number((await read('src/lib/theme.css')).match(/--ripple-track:[^;]*?(\d+)%/)?.[1] ?? 0) / 100;
   const white = toRgb(oklch(1, 0, 0));
@@ -396,25 +400,30 @@ test('heatmap steps read on the card and carry their in-cell ink, both themes', 
   for (const [name, c] of Object.entries(cards)) {
     const fg = toRgb(c.fg);
     const accent = c.dark ? capped(c.accent) : c.accent;
+    const warm = warms[c.dark ? 1 : 0];
     for (const [gi, groundLab] of [c.surface, ...c.grounds].entries()) {
       const at = `${name}${gi ? ' (page ground)' : ''}`;
       const ground = toRgb(groundLab);
-      const zero = over(fg, track * (c.dark ? 1 : zeroLight), ground);
+      const zero = over(fg, track * zeros[c.dark ? 1 : 0], ground);
+      const zeroEdge = contrast(zero, ground);
       if (contrast(fg, zero) < 4.5) failures.push(`ink on zero, ${at}`);
       const empty = contrast(over(fg, outline, ground), ground);
       if (empty < 1.5) failures.push(`empty outline on ${at}: ${empty.toFixed(2)}`);
       for (const [arm, hue] of [['accent', accent], ['warm', warm]] as const) {
+        let prev = zeroEdge;
         c.ramp.forEach((p, i) => {
-          const cell = toRgb(mix(hue, c.surface, p / 100));
+          const cell = c.dark ? over(toRgb(hue), p / 100, ground) : toRgb(mix(hue, c.surface, p / 100));
           const ink = contrast(c.dark ? white : fg, cell);
-          if (gi === 0 && ink < 4.5) failures.push(`${arm} ink at ${p}% on ${name}: ${ink.toFixed(2)}`);
+          if ((c.dark || gi === 0) && ink < 4.5) failures.push(`${arm} ink at ${p}% on ${at}: ${ink.toFixed(2)}`);
           const edge = contrast(cell, ground);
           if (i === 0 && edge < 1.3) failures.push(`${arm} step 1 on ${at}: ${edge.toFixed(2)}`);
           if (i === c.ramp.length - 1 && edge < 3) failures.push(`${arm} top step on ${at}: ${edge.toFixed(2)}`);
-          // Sequential data's class 1 against zero (R01's sparse calendar); diverging
-          // neighbours of zero differ by hue as well, so they are not held to this.
+          // Zero first, then every step louder than the one before (the legend order).
+          if (edge <= prev) failures.push(`${arm} step ${i + 1} not above ${i ? `step ${i}` : 'zero'} on ${at}: ${edge.toFixed(2)} vs ${prev.toFixed(2)}`);
+          prev = edge;
+          // Sequential data's class 1 against zero (R01's sparse calendar).
           const apart = contrast(cell, zero);
-          if (arm === 'accent' && i === 0 && apart < (c.dark ? 1.12 : 1.15)) failures.push(`${arm} step 1 vs zero on ${at}: ${apart.toFixed(2)}`);
+          if (arm === 'accent' && i === 0 && apart < 1.15) failures.push(`${arm} step 1 vs zero on ${at}: ${apart.toFixed(2)}`);
         });
       }
     }

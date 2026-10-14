@@ -16,18 +16,21 @@
 // by magnitude; when the smallest magnitude is 0, zero is its own neutral class
 // and the five cover (0, max]. Data crossing zero gets seven classes symmetric
 // around 0 (edges at E/7, 3E/7, 5E/7 of E = max |v|), the negative arm warm.
-// HEAT/HEAT_DARK are the percent of the hue mixed into --ripple-surface;
-// status-text.test.ts measures them against both inks, the card and the page
-// ground, and step 1 against the zero swatch, so change them only with that test.
+// HEAT is the percent of the hue mixed into --ripple-surface in light; HEAT_DARK
+// is the hue's alpha over whatever ground the card paints in dark, so cells and
+// the zero swatch climb from the same ground. status-text.test.ts measures them
+// against both inks, the card and the page ground, and keeps zero below step 1
+// and every ramp in order, so change them only with that test.
 //
 // Labels: x labels thin to every Nth column, N grown until the shown labels fit
 // whole (or a 120px box), and each sits centred on its own column, clamped to
-// the grid and to its left neighbour. Display figures use a true minus sign.
+// the grid and to its left neighbour. Display figures use a true minus sign
+// and, when any value is a fraction under 10, a fixed 2 decimals (`fixed2`).
 import { finite, num, plain } from '../data-kit/format.js';
 import { safeArray } from '../../utils/safe-props.js';
 
 export const HEAT = [32, 48, 64, 79, 94] as const;
-export const HEAT_DARK = [32, 47, 62, 76, 90] as const;
+export const HEAT_DARK = [28, 46, 62, 78, 94] as const;
 /** HEAT indexes used by the three diverging classes on each arm. */
 export const DIV_STEPS = [1, 2, 4] as const;
 /** Minimum x label pitch in px. */
@@ -114,8 +117,17 @@ export function extremes(g: Grid): { lo: Spot; hi: Spot } | undefined {
 /** A display figure with a true minus sign (U+2212) in place of the hyphen. */
 export const minus = (s: string) => s.replace('-', '\u2212');
 
-/** In-cell and legend figures: 2 decimals under 10, 1 above, compact past 9,999, true minus. */
-export function fmt(v: number): string {
+/** Whether figures under 10 print a fixed 2 decimals: some value there is a fraction. */
+export function fixed2(g: Grid): boolean {
+	return spots(g).some((s) => Math.abs(s.v) < 10 && !Number.isInteger(s.v));
+}
+
+/**
+ * In-cell and legend figures: 2 decimals under 10 (fixed with `fixed`, so a
+ * column of 0.30 and 0.38 lines up), 1 above, compact past 9,999, true minus.
+ */
+export function fmt(v: number, fixed = false): string {
+	if (fixed && Math.abs(v) < 10) return minus(v.toFixed(2));
 	if (Number.isInteger(v)) return minus(Math.abs(v) > 9999 ? num(v, { compact: true }) : num(v, { digits: 0 }));
 	return minus(num(v, { digits: Math.abs(v) < 10 ? 2 : 1 }));
 }
@@ -130,6 +142,7 @@ export function scale(g: Grid): Scale | undefined {
 	if (!vals.length) return undefined;
 	const min = Math.min(...vals);
 	const max = Math.max(...vals);
+	const f = (v: number) => fmt(v, fixed2(g));
 	if (min < 0 && max > 0) {
 		const E = Math.max(-min, max);
 		const tone = (v: number): Tone => {
@@ -143,8 +156,8 @@ export function scale(g: Grid): Scale | undefined {
 			mode: 'div',
 			tone,
 			swatches: [...arm('warm').toReversed(), { arm: 'zero', step: 0, mark: '0' }, ...arm('accent')],
-			low: fmt(-E),
-			high: fmt(E)
+			low: f(-E),
+			high: f(E)
 		};
 	}
 	// Sequential by magnitude, so all-negative data darkens away from zero too.
@@ -160,7 +173,7 @@ export function scale(g: Grid): Scale | undefined {
 		return { arm: 'accent', step: Math.min(4, Math.floor(((a - lo) / (hi - lo)) * 5)) };
 	};
 	const ramp = HEAT.map((_, step) => ({ arm: 'accent' as const, step }));
-	const sign = (n: number) => fmt(neg ? -n : n);
+	const sign = (n: number) => f(neg ? -n : n);
 	if (hi === lo) return { mode: 'seq', tone, swatches: [tone(min)], low: sign(lo), high: '' };
 	return { mode: 'seq', tone, swatches: zero ? [{ arm: 'zero', step: 0 }, ...ramp] : ramp, low: sign(lo), high: sign(hi) };
 }
@@ -232,6 +245,11 @@ export function fitHeight(h: number, withValues: boolean, rows: number, gap: num
 	return Math.max(floor, Math.min(h, Math.floor((room + gap) / rows - gap)));
 }
 
+/** Whether `rows` fit `room` px at the 28px in-cell value floor; if not, values drop so rows can shrink. */
+export function valueRowsFit(rows: number, gap: number, room: number): boolean {
+	return room <= 0 || rows * (28 + gap) <= room + gap;
+}
+
 /** Y labels show every Nth row once the row pitch is under a label line, so N rows hold one line. */
 export function rowStep(cellH: number, gap: number): number {
 	return cellH + gap >= LINE ? 1 : Math.ceil(LINE / (cellH + gap));
@@ -245,5 +263,6 @@ export function rowStep(cellH: number, gap: number): number {
 export function valuesFit(g: Grid, colW: number, show: unknown, measure?: Measure): boolean {
 	if (show === false || colW <= 0 || !measure) return false;
 	if (show !== true && (colW < 40 || cellHeight(colW, true) < 28)) return false;
-	return spots(g).every((s) => measure(fmt(s.v)) <= colW - 8);
+	const fixed = fixed2(g);
+	return spots(g).every((s) => measure(fmt(s.v, fixed)) <= colW - 8);
 }

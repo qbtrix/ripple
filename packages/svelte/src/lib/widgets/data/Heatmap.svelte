@@ -4,13 +4,15 @@
   classes, label thinning and placement, number format); this file lays it out
   and handles the readout.
 
-  Anatomy: optional title (wraps, never clipped), a sticky x label row above
+  Anatomy: optional title (two lines, then an ellipsis; full text in `title`), a sticky x label row above
   the grid, y labels in a capped left column (container query: 34% up to 96px
   under 480px, 30% up to 140px above; ellipsis, full text in `title`), the
   cells, a one-line legend (low figure, stepped swatches, high figure, "No
-  data" when a position is empty), a one-line readout (labels ellipsize,
-  figures never; aria-hidden, a visually hidden live line speaks it whole)
-  and, when entries had no row or column, a footnote.
+  data" when a position is empty), a readout (one line; diverging data under
+  480px gets two fixed lines, lowest then highest, at rest and on hover; labels
+  over 6 characters ellipsize longest first, figures never; aria-hidden, a
+  visually hidden live line speaks it whole) and, when entries had no row or
+  column, a footnote.
   X labels thin to every Nth column and sit centred on their own column. Y
   labels sit in their own row track (rows are fixed `grid-auto-rows`, so a
   label taller than its row overflows evenly instead of stretching it) and
@@ -18,22 +20,25 @@
 
   Size: the column width is measured (grid width minus the label column), cell
   height follows it (heatmap-scale `cellHeight`), then shrinks toward a floor
-  so the rows fit `height` (`fitHeight`). Past that the body scrolls under the
-  sticky label row, its height snapped to whole rows, with a bottom fade and a
-  "Rows a to b of n" line while rows are hidden. Never scrolls sideways.
+  so the rows fit `height` (`fitHeight`). In-cell values hold rows at 28px, so
+  when that floor would overflow `height` the values drop and rows shrink
+  instead (`valueRowsFit`). Past the 12px floor the body scrolls under the
+  sticky label row, its height snapped to whole rows, with a "Rows a to b of n"
+  line while rows are hidden. Never scrolls sideways.
 
-  Colour: --ripple-accent (warm oklch arm below zero) mixed into
-  --ripple-surface at HEAT, or HEAT_DARK under .dark / data-theme="dark", the
-  same switch Treemap uses; in dark the accent's lightness is capped at 0.59 so
-  a light host accent still carries white ink. Zero is half --ripple-track in
-  light (lighter than step 1) and --ripple-track in dark, no data is an
-  outlined empty cell. `colorRange` is ignored. status-text.test.ts measures
-  every pair.
+  Colour: in light, --ripple-accent (warm oklch arm below zero) mixed into
+  --ripple-surface at HEAT. Under .dark / data-theme="dark" (the switch Treemap
+  uses) the hue goes over whatever the card paints at HEAT_DARK alpha, the
+  accent's lightness capped at 0.59 so a light host accent still carries white
+  ink, and the warm arm takes a cleaner dark literal. Zero is a thin
+  --ripple-track wash (half in light, a third in dark), always quieter than
+  step 1; no data is an outlined empty cell. `colorRange` is ignored.
+  status-text.test.ts measures every pair and the ramp order.
 
   Interaction: hover, tap or keyboard focus sets the readout and rings the
-  cell. The grid is one tab stop; arrows rove, Home/End jump within a row.
-  Cells are aria-hidden; a visually hidden table carries every value.
-  `tooltip: false` turns the hover readout off and keeps the peak line.
+  cell. The grid is one tab stop (ring on its frame); arrows rove, Home/End
+  jump within a row. Cells are aria-hidden; a visually hidden table carries
+  every value. `tooltip: false` drops the hover readout, keeps the peak line.
   The root forwards `id` and data-ripple-node.
 -->
 <script lang="ts">
@@ -57,6 +62,8 @@
 		thin,
 		rowStep,
 		valuesFit,
+		valueRowsFit,
+		fixed2,
 		LINE,
 		type Measure,
 		type Tone
@@ -119,7 +126,8 @@
 		return Math.max(0, w(gapFor(w(2))));
 	});
 	const gap = $derived(gapFor(colW));
-	const showValues = $derived(valuesFit(grid, colW, showLabels, measure));
+	const fx = $derived(fixed2(grid));
+	const showValues = $derived(valuesFit(grid, colW, showLabels, measure) && valueRowsFit(nr, gap, maxH - headH - gap));
 	const cellH = $derived(fitHeight(cellHeight(colW, showValues), showValues, nr, gap, maxH - headH - gap));
 	const pitch = $derived(cellH + gap);
 	const radius = $derived(Math.min(4, 0.25 * Math.min(colW || 4, cellH)));
@@ -195,12 +203,17 @@
 	});
 </script>
 
+<!-- Labels over 6 characters ellipsize, the longer one first (shrink weight grows with length). -->
+{#snippet lbl(t: string)}
+	<span class="hm-lbl hm-muted" class:hm-long={t.length > 6} style:flex-shrink={t.length > 6 ? t.length : 0}>{t}</span>
+{/snippet}
+
 {#snippet where(p: Pos)}
-	<span class="hm-lbl hm-muted">{grid.ys[p.r]}</span><span class="hm-key hm-muted">{' · '}</span><span class="hm-lbl hm-muted">{grid.xs[p.c]}</span>
+	{@render lbl(grid.ys[p.r])}<span class="hm-key hm-muted">{' · '}</span>{@render lbl(grid.xs[p.c])}
 {/snippet}
 
 {#snippet seg(key: string, p: Pos, v: number)}
-	<span class="hm-seg"><span class="hm-muted hm-key">{key}{' '}</span>{@render where(p)}<span class="hm-v"><span class="hm-muted">,</span> {fmt(v)}</span></span>
+	<span class="hm-seg"><span class="hm-muted hm-key">{key}{' '}</span>{@render where(p)}<span class="hm-v"><span class="hm-muted">,</span> {fmt(v, fx)}</span></span>
 {/snippet}
 
 {#snippet swatch(t: Tone)}
@@ -223,7 +236,6 @@
 		<div
 			class="hm-frame"
 			class:is-scrolled={scrolled}
-			class:is-more={lastRow < nr}
 			style:max-height="{frameH}px"
 			style:scroll-padding-top="{headH}px"
 			onscroll={(e) => (scrollTop = e.currentTarget.scrollTop)}
@@ -276,7 +288,7 @@
 							data-value={v}
 							aria-hidden="true"
 						>
-							{#if showValues && v !== undefined}{fmt(v)}{/if}
+							{#if showValues && v !== undefined}{fmt(v, fx)}{/if}
 						</div>
 					{/each}
 				{/each}
@@ -299,7 +311,7 @@
 		</div>
 
 		<div class="sr-only" aria-live="polite">{spoken}</div>
-		<div class="hm-readout text-callout" aria-hidden="true">
+		<div class="hm-readout text-callout" class:is-div={sc.mode === 'div'} aria-hidden="true">
 			{#if active}
 				{@const v = cellAt(active)}
 				<span class="hm-seg">{@render where(active)}<span class="hm-v"><span class="hm-muted">:</span> {v === undefined ? 'No data' : minus(full(v))}</span></span>
@@ -344,6 +356,11 @@
 		color: var(--ripple-surface-foreground);
 	}
 	.hm-title {
+		display: -webkit-box;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+		line-clamp: 2;
+		overflow: hidden;
 		overflow-wrap: anywhere;
 	}
 	.hm-empty {
@@ -356,10 +373,12 @@
 		overflow-x: hidden;
 		overflow-y: auto;
 		min-width: 0;
+		border-radius: 4px;
 	}
-	/* Rows hidden below: fade the bottom edge so the cut reads as "more". */
-	.hm-frame.is-more {
-		mask-image: linear-gradient(to bottom, black calc(100% - 16px), transparent);
+	/* The ring sits on the frame: the frame's overflow would clip a ring on the grid. */
+	.hm-frame:has(> .hm-grid:focus-visible) {
+		outline: 2px solid var(--ripple-ring);
+		outline-offset: 2px;
 	}
 	.hm-more {
 		color: var(--ripple-muted-foreground);
@@ -377,9 +396,6 @@
 		.hm-grid {
 			--hm-cap: min(30%, 140px);
 		}
-	}
-	.hm-grid:focus-visible {
-		box-shadow: 0 0 0 2px var(--ripple-ring);
 	}
 	.hm-head,
 	.hm-x {
@@ -451,11 +467,16 @@
 	:global([data-theme='dark']) .hm-a {
 		--hm-hue: oklch(from var(--ripple-accent) min(l, 0.59) c h);
 	}
+	:global(.dark) .hm-w,
+	:global([data-theme='dark']) .hm-w {
+		--hm-hue: oklch(0.6 0.17 45);
+	}
+	/* Dark: the hue at HEAT_DARK alpha over whatever the card paints, the same ground the zero wash sits on. */
 	:global(.dark) .hm-a,
 	:global(.dark) .hm-w,
 	:global([data-theme='dark']) .hm-a,
 	:global([data-theme='dark']) .hm-w {
-		background-color: color-mix(in oklab, var(--hm-hue) var(--hm-md), var(--ripple-surface));
+		background-color: color-mix(in oklab, var(--hm-hue) var(--hm-md), transparent);
 		color: var(--ripple-accent-foreground);
 	}
 	.hm-z {
@@ -463,7 +484,7 @@
 	}
 	:global(.dark) .hm-z,
 	:global([data-theme='dark']) .hm-z {
-		background-color: var(--ripple-track);
+		background-color: color-mix(in oklab, var(--ripple-track) 33%, transparent);
 	}
 	.hm-e {
 		box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--ripple-surface-foreground) 30%, transparent);
@@ -529,6 +550,22 @@
 		min-width: 0;
 		overflow: hidden;
 		text-overflow: ellipsis;
+	}
+	.hm-lbl.hm-long {
+		min-width: 6ch;
+	}
+	/* Narrow diverging readout: lowest and highest each get a line, reserved at rest and on hover. */
+	@container (max-width: 479px) {
+		.hm-readout.is-div {
+			flex-wrap: wrap;
+			height: calc(2 * var(--lh-callout, 15px));
+		}
+		.hm-readout.is-div > .hm-seg {
+			flex-basis: 100%;
+		}
+		.hm-readout.is-div > .hm-dot {
+			display: none;
+		}
 	}
 	.hm-key,
 	.hm-v {

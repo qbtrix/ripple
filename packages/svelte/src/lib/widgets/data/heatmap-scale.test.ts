@@ -3,7 +3,7 @@
 // count, colour classes (sequential, zero swatch, diverging), label thinning
 // and placement, row fitting, in-cell value fitting, number formats and height parsing.
 import { describe, expect, test } from 'vitest';
-import { sanitize, scale, extremes, fmt, full, minus, maxHeight, cellHeight, fitHeight, thin, rowStep, valuesFit, gapFor, HEAT, DIV_STEPS, LINE } from './heatmap-scale.js';
+import { sanitize, scale, extremes, fmt, full, minus, maxHeight, cellHeight, fitHeight, thin, rowStep, valuesFit, valueRowsFit, fixed2, gapFor, HEAT, DIV_STEPS, LINE } from './heatmap-scale.js';
 
 // Spec 05 of the polish brief.
 const HOSTILE = [
@@ -101,7 +101,7 @@ describe('scale', () => {
 		expect(s.tone(-0.94)).toEqual({ arm: 'warm', step: DIV_STEPS[2] });
 		expect(s.swatches.map((w) => w.arm)).toEqual(['warm', 'warm', 'warm', 'zero', 'accent', 'accent', 'accent']);
 		expect(s.swatches[3].mark).toBe('0');
-		expect([s.low, s.high]).toEqual(['\u22121', '1']);
+		expect([s.low, s.high]).toEqual(['\u22121.00', '1.00']);
 	});
 	test('all-negative data darkens away from zero', () => {
 		const s = seq([-50, -10, 0]);
@@ -118,6 +118,13 @@ describe('scale', () => {
 describe('format', () => {
 	test('cells: 2 decimals under 10, 1 above, compact past 9,999, true minus', () => {
 		expect([fmt(0.846647), fmt(-0.94), fmt(12.345), fmt(25), fmt(12800), fmt(4800)]).toEqual(['0.85', '\u22120.94', '12.3', '25', '12.8K', '4,800']);
+	});
+	test('a grid with a fraction under 10 prints every figure under 10 with 2 fixed decimals', () => {
+		const g = sanitize([{ x: 'a', y: 'r', value: 0.295964 }, { x: 'b', y: 'r', value: -0.904022 }, { x: 'c', y: 'r', value: 1 }, { x: 'd', y: 'r', value: 12.5 }]);
+		const f = fixed2(g);
+		expect(f).toBe(true);
+		expect([0.295964, -0.904022, 1, 12.5].map((v) => fmt(v, f))).toEqual(['0.30', '\u22120.90', '1.00', '12.5']);
+		expect(fixed2(sanitize([{ x: 'a', y: 'r', value: 3 }, { x: 'b', y: 'r', value: 12.5 }]))).toBe(false);
 	});
 	test('full precision keeps a hyphen for the hidden table; the readout swaps in the minus', () => {
 		expect(full(0.846647)).toBe('0.846647');
@@ -177,6 +184,13 @@ describe('sizing', () => {
 		expect(fitHeight(44, true, 10, 2, 263)).toBe(28);
 		expect(fitHeight(44, false, 2, 2, 263)).toBe(44);
 		expect(fitHeight(5, false, 7, 1, 263)).toBe(5);
+	});
+	test('in-cell values drop when their 28px rows would overflow, so rows shrink instead of scrolling', () => {
+		// R06: 10 rows, 2px gap, about 254px under the label row.
+		expect(valueRowsFit(10, 2, 254)).toBe(false);
+		expect(fitHeight(44, false, 10, 2, 254)).toBeGreaterThanOrEqual(12);
+		expect(valueRowsFit(7, 2, 254)).toBe(true);
+		expect(valueRowsFit(10, 2, 0)).toBe(true);
 	});
 	test('y labels thin once rows are shorter than a label line, N rows holding one line', () => {
 		expect([rowStep(20, 2), rowStep(12, 2), rowStep(5, 1), rowStep(4.5, 1)]).toEqual([1, 1, 3, 3]);
