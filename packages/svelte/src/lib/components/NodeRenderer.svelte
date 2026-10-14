@@ -599,6 +599,16 @@
 				<Self node={child} {loopContext} />
 			{/each}
 		{/snippet}
+		<!-- Filled slots only (see above). Widgets that type a slot name as a
+		     Snippet guard with typeof before render. `children` is always set,
+		     so a model prop of that name never lands. -->
+		{@const slotProps = {
+			...(headerKids.length > 0 && { header: headerSnippet }),
+			...(footerKids.length > 0 && { footer: footerSnippet }),
+			...(sidebarKids.length > 0 && { sidebar: sidebarSnippet }),
+			...(topbarKids.length > 0 && { topbar: topbarSnippet }),
+			...(actionsKids.length > 0 && { actions: actionsSnippet })
+		}}
 		<svelte:boundary failed={nodeFailed} onerror={onBoundaryError}>
 			<!-- RCR-4: per-node error boundary. A widget that throws during
 			     render shows an inline ErrorState for THIS node while its siblings
@@ -615,22 +625,14 @@
 			<div data-ripple-motion data-ripple-node={node.id} class="block" use:withMotion={node.motion}>
 				<WidgetComponent
 					{...widgetProps}
-					{...(headerKids.length > 0 ? { header: headerSnippet } : {})}
-					{...(footerKids.length > 0 ? { footer: footerSnippet } : {})}
-					{...(sidebarKids.length > 0 ? { sidebar: sidebarSnippet } : {})}
-					{...(topbarKids.length > 0 ? { topbar: topbarSnippet } : {})}
-					{...(actionsKids.length > 0 ? { actions: actionsSnippet } : {})}
+					{...slotProps}
 					children={defaultKids.length > 0 ? defaultSnippet : undefined}
 				/>
 			</div>
 		{:else}
 			<WidgetComponent
 				{...widgetProps}
-				{...(headerKids.length > 0 ? { header: headerSnippet } : {})}
-				{...(footerKids.length > 0 ? { footer: footerSnippet } : {})}
-				{...(sidebarKids.length > 0 ? { sidebar: sidebarSnippet } : {})}
-				{...(topbarKids.length > 0 ? { topbar: topbarSnippet } : {})}
-				{...(actionsKids.length > 0 ? { actions: actionsSnippet } : {})}
+				{...slotProps}
 				children={defaultKids.length > 0 ? defaultSnippet : undefined}
 			/>
 		{/if}

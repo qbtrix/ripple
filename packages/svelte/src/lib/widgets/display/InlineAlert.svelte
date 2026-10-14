@@ -101,7 +101,7 @@
     {:else if description}
       <p class="text-ripple-surface-foreground">{description}</p>
     {/if}
-    {#if actions}
+    {#if typeof actions === 'function'}
       <div data-inline-alert-actions class="mt-2 flex flex-wrap items-center gap-2">{@render actions()}</div>
     {/if}
   </div>

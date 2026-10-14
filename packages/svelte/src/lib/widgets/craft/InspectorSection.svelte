@@ -56,7 +56,7 @@
     {:else}
       <h3 class="flex min-w-0 flex-1 items-center gap-2">{@render heading()}</h3>
     {/if}
-    {#if actions}<div class="flex shrink-0 items-center gap-0.5">{@render actions()}</div>{/if}
+    {#if typeof actions === 'function'}<div class="flex shrink-0 items-center gap-0.5">{@render actions()}</div>{/if}
   </div>
   {#if shown}
     <div class="flex flex-col gap-1">{@render children?.()}</div>

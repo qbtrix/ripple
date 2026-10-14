@@ -116,12 +116,12 @@
   data-density={density}
   class={cn('flex size-full min-h-0 flex-col overflow-hidden text-ripple-surface-foreground', className)}
 >
-  {#if title || topbar}
+  {#if title || typeof topbar === 'function'}
     <div data-slot="editor-topbar" class="flex {quick ? 'min-h-12 px-3' : 'min-h-10 px-2'} shrink-0 items-center gap-2 border-b border-ripple-border bg-ripple-surface">
       {#if title}
         <div data-slot="editor-title" class="flex shrink-0 items-center">{@render title()}</div>
       {/if}
-      {#if topbar}
+      {#if typeof topbar === 'function'}
         <div data-slot="editor-tools" class="flex min-w-0 flex-1 items-center overflow-x-auto [scrollbar-width:thin] [&>*]:flex-1">{@render topbar()}</div>
       {/if}
     </div>

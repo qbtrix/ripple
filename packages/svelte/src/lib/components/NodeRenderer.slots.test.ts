@@ -134,3 +134,41 @@ describe('slot snippets never clobber data props', () => {
 		expect(c.textContent).toContain('New project');
 	});
 });
+
+// An empty slot passes nothing, so a data prop that shares a slot's name
+// (invoice-layout's `actions` array) reaches the widget instead of being
+// overwritten with undefined.
+test('an actions array prop survives when the node has no actions-slot children', () => {
+  const { container } = renderSpec({
+    type: 'invoice-layout',
+    props: {
+      from: { name: 'Sender' },
+      billTo: { name: 'Buyer' },
+      invoiceNumber: 'N-1',
+      issueDate: 'May 1, 2026',
+      lines: [{ description: 'Work', total: 10 }],
+      actions: [{ id: 'pay', label: 'Pay invoice' }],
+    },
+  });
+  const buttons = [...container.querySelectorAll('button')].map((b) => b.textContent?.trim());
+  expect(buttons).toContain('Pay invoice');
+});
+
+test('actions-slot children still win over nothing and render as the snippet', () => {
+  const { container } = renderSpec({
+    type: 'page-header',
+    props: { title: 'Title' },
+    children: [{ type: 'text', props: { text: 'slot action' }, slot: 'actions' }],
+  });
+  expect(container.textContent).toContain('slot action');
+});
+
+test('a slot-named array on a snippet widget renders without an error box', () => {
+  const { container } = renderSpec({
+    type: 'empty-state',
+    id: 'es',
+    props: { title: 'Nothing here', actions: [{ label: 'x' }] },
+  });
+  expect(container.textContent).toContain('Nothing here');
+  expect(container.querySelector('[data-ripple-node-error]')).toBeNull();
+});

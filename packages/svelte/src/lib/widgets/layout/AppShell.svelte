@@ -34,21 +34,21 @@
   )}
   style={styleString}
 >
-  {#if topbar}
+  {#if typeof topbar === 'function'}
     <header class={cn('col-span-full row-start-1 border-b border-border bg-card/40 px-4 py-2')}>
       {@render topbar()}
     </header>
   {/if}
-  {#if sidebar}
-    <div class={cn(topbar ? 'row-start-2' : 'row-start-1', 'col-start-1')}>
+  {#if typeof sidebar === 'function'}
+    <div class={cn(typeof topbar === 'function' ? 'row-start-2' : 'row-start-1', 'col-start-1')}>
       {@render sidebar()}
     </div>
   {/if}
   <main
     class={cn(
       'p-4 overflow-auto',
-      topbar ? 'row-start-2' : 'row-start-1',
-      sidebar ? 'col-start-2' : 'col-start-1'
+      typeof topbar === 'function' ? 'row-start-2' : 'row-start-1',
+      typeof sidebar === 'function' ? 'col-start-2' : 'col-start-1'
     )}
   >
     {@render children?.()}
