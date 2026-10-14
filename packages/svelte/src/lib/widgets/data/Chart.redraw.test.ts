@@ -1,11 +1,11 @@
-// Chart.redraw.test.ts: the echarts-backed data widgets (chart, sankey,
-// funnel), the native gantt and heatmap, and the DOM treemap redraw when their
+// Chart.redraw.test.ts: the echarts-backed data widgets (chart, sankey), the
+// native gantt and heatmap, and the DOM treemap and funnel redraw when their
 // props change after mount: state behind `data` changes, a streamed spec delivers
 // title/data in later chunks, or type/title are swapped on the live component.
 // The chart libs are mocked (jsdom has no canvas), so every echarts assertion
 // reads the option handed to the instance's update call. The instance itself
 // must be created once and updated in place, then disposed on unmount. The DOM
-// widgets (treemap, heatmap, gantt) are checked by reading what they render.
+// widgets (treemap, funnel, heatmap, gantt) are checked by reading what they render.
 
 import { render, fireEvent } from '@testing-library/svelte';
 import { tick } from 'svelte';
@@ -135,8 +135,7 @@ describe.each([
 		{ nodes: [{ name: 'a' }, { name: 'b' }], links: [{ source: 'a', target: 'b', value: 9 }] },
 		(o: any) => o.series[0].links.map((l: any) => l.value),
 		[9]
-	],
-	['funnel', Funnel, { data: [{ label: 'a', value: 1 }] }, { data: [{ label: 'a', value: 9 }] }, (o: any) => o.series[0].data.map((d: any) => d.value), [9]]
+	]
 ] as const)('%s', (_name, Widget, before, after, read, expected) => {
 	test('redraws when its data prop changes after mount', async () => {
 		const { rerender } = render(Widget as any, { props: before });
@@ -167,6 +166,17 @@ describe('heatmap', () => {
 		expect(values()).toEqual(['1']);
 		await rerender({ cells: [{ x: 'a', y: 'r', value: 9 }, { x: 'b', y: 'r', value: 4 }] });
 		expect(values()).toEqual(['9', '4']);
+		expect(ec.init).not.toHaveBeenCalled();
+	});
+});
+
+describe('funnel', () => {
+	test('redraws its rows when its data prop changes after mount', async () => {
+		const { container, rerender } = render(Funnel, { props: { data: [{ label: 'a', value: 1 }] } });
+		const counts = () => [...container.querySelectorAll('.fn-count')].map((n) => n.textContent);
+		expect(counts()).toEqual(['1']);
+		await rerender({ data: [{ label: 'a', value: 9 }] });
+		expect(counts()).toEqual(['9']);
 		expect(ec.init).not.toHaveBeenCalled();
 	});
 });
