@@ -1,7 +1,7 @@
 {
   "schema": "ripple.manifest/v1",
   "version": "0.8.0",
-  "generatedAt": "2026-10-14T09:34:15.214Z",
+  "generatedAt": "2026-10-14T14:49:44.254Z",
   "spec": {
     "uiField": "ui",
     "stateField": "state",
@@ -1092,7 +1092,7 @@
         "groupBy": {
           "type": "\"none\" | \"day\" | \"week\"",
           "required": false,
-          "description": "Group entries by their timestamp granularity. Default \"none\". Requires parsable `timestamp` strings."
+          "description": "Group by timestamp day or week. Default \"none\"."
         },
         "showFilters": {
           "type": "boolean",

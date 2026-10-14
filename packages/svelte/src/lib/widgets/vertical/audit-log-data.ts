@@ -155,14 +155,14 @@ export function weekHeading(monday: string): string {
 	return dayRange(monday, addDays(monday, 6));
 }
 
-/** A plain object (not an array, not null) or undefined. */
-function record(v: unknown): Record<string, unknown> | undefined {
-	return v !== null && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : undefined;
+/** A plain object: not an array, not null. */
+function isRecord(v: unknown): v is Record<string, unknown> {
+	return v !== null && typeof v === 'object' && !Array.isArray(v);
 }
 
 const ACRONYMS = new Set(['id', 'ip', 'url', 'uri', 'api', 'sso', 'mfa', 'ssh', 'dns', 'sku']);
 
-/** `approvedBy` → "Approved by", `request_id` → "Request ID". */
+/** `approvedBy` → "Approved by", `request_id` → "Request ID", `api` → "API". Detail labels and types. */
 export function humanizeKey(k: string): string {
 	const words = k
 		.replace(/([a-z0-9])([A-Z])/g, '$1 $2')
@@ -179,10 +179,10 @@ function scalar(v: unknown): v is string | number | boolean | null {
 	return v === null || ['string', 'number', 'boolean'].includes(typeof v);
 }
 
-function show(v: string | number | boolean | null): string {
+function show(v: unknown): string {
 	if (v === null) return 'None';
 	if (typeof v === 'boolean') return v ? 'Yes' : 'No';
-	return String(v);
+	return typeof v === 'string' || typeof v === 'number' ? String(v) : json(v);
 }
 
 /** The details shape, or undefined when there is nothing to show. */
@@ -191,18 +191,18 @@ export function toDetails(v: unknown): Details | undefined {
 	if (typeof v === 'string') return v.trim() ? { kind: 'text', text: v.trim() } : undefined;
 	if (typeof v === 'number' || typeof v === 'boolean') return { kind: 'text', text: String(v) };
 	if (Array.isArray(v)) return v.length ? { kind: 'json', text: json(v) } : undefined;
-	const o = record(v);
-	if (!o) return undefined;
+	if (!isRecord(v)) return undefined;
+	const o = v;
 	const keys = Object.keys(o);
 	if (!keys.length) return undefined;
 	if (!keys.every((k) => scalar(o[k]))) return { kind: 'json', text: json(o) };
 	const pair = 'from' in o && 'to' in o ? ['from', 'to'] : 'before' in o && 'after' in o ? ['before', 'after'] : undefined;
 	const change = pair
-		? { from: show(o[pair[0]] as string | number | boolean | null), to: show(o[pair[1]] as string | number | boolean | null) }
+		? { from: show(o[pair[0]]), to: show(o[pair[1]]) }
 		: undefined;
 	const fields = keys
 		.filter((k) => !pair?.includes(k))
-		.map((k) => [humanizeKey(k), show(o[k] as string | number | boolean | null)] as [string, string]);
+		.map((k) => [humanizeKey(k), show(o[k])] satisfies [string, string]);
 	return { kind: 'fields', change, fields };
 }
 
@@ -217,13 +217,14 @@ function json(v: unknown): string {
 const BOT_NAME = /^(system|automation|scheduler)$|bot$/i;
 
 export function actorIconKey(name: string, explicit: unknown): ActorIconKey | undefined {
-	if (typeof explicit === 'string' && (ACTOR_ICON_KEYS as readonly string[]).includes(explicit)) return explicit as ActorIconKey;
+	const known = ACTOR_ICON_KEYS.find((k) => k === explicit);
+	if (known) return known;
 	return BOT_NAME.test(name) ? 'bot' : undefined;
 }
 
 /** Model entries in, renderable rows out. Non-object items are skipped. */
 export function normalizeEntries(raw: unknown): Row[] {
-	const items = safeArray(raw, { widget: 'audit-log', key: 'entries' }).filter(record) as Record<string, unknown>[];
+	const items = safeArray(raw, { widget: 'audit-log', key: 'entries' }).filter(isRecord);
 	const keys = uniqueKeys(items, (e, i) => (e.id === undefined || e.id === null || e.id === '' ? `row-${i}` : e.id));
 	return items.map((e, i) => {
 		const actor = plain(e.actor);
@@ -248,11 +249,6 @@ export function facets(values: string[]): string[] {
 	const seen = new Map<string, string>();
 	for (const v of values) if (v && !seen.has(v.toLowerCase())) seen.set(v.toLowerCase(), v);
 	return [...seen.values()];
-}
-
-/** "Auth" from "auth". */
-export function capitalize(s: string): string {
-	return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 export type GroupBy = 'none' | 'day' | 'week';

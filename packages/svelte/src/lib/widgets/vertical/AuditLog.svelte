@@ -34,7 +34,7 @@
 		SEVERITY_STATUS,
 		SEVERITY_WORD,
 		breakable,
-		capitalize,
+		humanizeKey,
 		effectiveGroupBy,
 		facets,
 		flag,
@@ -190,13 +190,14 @@
 		}
 	}
 
+	const anyDetails = $derived(detailsOn && rows.some((r) => r.details));
 	const reveal = () => ({ duration: prefersReducedMotion.current ? 0 : 150, easing: cubicOut });
-	const typeLabel = $derived(typeSel === ALL ? 'All types' : capitalize(types.find((t) => t.toLowerCase() === typeSel) ?? ''));
+	const typeLabel = $derived(typeSel === ALL ? 'All types' : humanizeKey(types.find((t) => t.toLowerCase() === typeSel) ?? ''));
 	const actorLabel = $derived(actorSel === ALL ? 'Everyone' : (actors.find((a) => a.toLowerCase() === actorSel) ?? ''));
-	const TRIGGER = 'h-7 w-auto max-w-[12rem] gap-1 text-[length:var(--text-callout)]';
+	const TRIGGER = 'h-7 w-auto max-w-[12rem] gap-1 pl-2 pr-1.5 text-[length:var(--text-callout)]';
 </script>
 
-<div {id} data-ripple-node={id} data-widget="audit-log" class={cn('al', className)} style={styleString}>
+<div {id} data-ripple-node={id} data-widget="audit-log" class={cn('al', anyDetails && 'has-details', className)} style={styleString}>
 	{#if rows.length === 0}
 		<p class="al-empty text-body text-ripple-muted-foreground">No events yet</p>
 	{:else}
@@ -211,11 +212,11 @@
 						{@const on = pressed.includes(s)}
 						<button
 							type="button"
-							class={['al-toggle text-callout', on ? [STATUS_CLASS[st].tint, STATUS_CLASS[st].text, 'is-on'] : 'text-ripple-surface-foreground']}
+							class={['al-toggle text-subheadline', on ? [STATUS_CLASS[st].tint, STATUS_CLASS[st].text, 'is-on'] : 'text-ripple-surface-foreground']}
 							aria-pressed={on}
 							onclick={() => toggleSeverity(s)}
 						>
-							<Icon size={14} strokeWidth={2} aria-hidden="true" class={['shrink-0', STATUS_CLASS[st].text]} />
+							<Icon size={12} strokeWidth={2} aria-hidden="true" class={['shrink-0', STATUS_CLASS[st].text]} />
 							<span>{SEVERITY_WORD[s]}</span>
 							<span class={['al-num', !on && 'text-ripple-muted-foreground']}>{n}</span>
 						</button>
@@ -229,7 +230,7 @@
 						<Select.Content>
 							<Select.Item value={ALL}>All types</Select.Item>
 							{#each types as t (t.toLowerCase())}
-								<Select.Item value={t.toLowerCase()}>{capitalize(t)}</Select.Item>
+								<Select.Item value={t.toLowerCase()}>{humanizeKey(t)}</Select.Item>
 							{/each}
 						</Select.Content>
 					</Select.Root>
@@ -301,7 +302,7 @@
 									</p>
 									{#if time || row.type}
 										<p class={['al-meta text-callout text-ripple-muted-foreground', !row.type && 'is-time-only']}>
-											{#if time}<span class="al-meta-time al-num" title={row.stamp.raw}>{time}</span>{/if}{#if time && row.type}<span class="al-meta-time" aria-hidden="true"> · </span>{/if}{#if row.type}<span>{capitalize(row.type)}</span>{/if}
+											{#if time}<span class="al-meta-time al-num" title={row.stamp.raw}>{time}</span>{/if}{#if time && row.type}<span class="al-meta-time al-sep" aria-hidden="true">·</span>{/if}{#if row.type}<span>{humanizeKey(row.type)}</span>{/if}
 										</p>
 									{/if}
 								</div>
@@ -391,15 +392,15 @@
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
-		gap: 6px;
+		gap: 6px 4px;
 	}
 
 	.al-toggle {
 		display: inline-flex;
 		align-items: center;
-		gap: 4px;
+		gap: 3px;
 		height: 28px;
-		padding: 0 8px;
+		padding: 0 6px;
 		border: 1px solid var(--ripple-border);
 		border-radius: calc(var(--ripple-radius) - 2px);
 		font-weight: 500;
@@ -473,32 +474,19 @@
 		grid-template-columns: 24px minmax(0, 1fr) auto;
 		column-gap: 8px;
 		padding: var(--pad);
-		margin-inline: calc(var(--pad) * -1);
 		border-radius: calc(var(--ripple-radius) - 2px);
 	}
 
-	/* One 1px line through every badge centre, from the first row to the last. */
-	.al-row::before {
+	/* The rail: a 1px line through every badge centre, from each badge to the
+	   next with a 2px gap, so it reads on any host surface without a disc. */
+	.al-row:not(:last-child)::before {
 		content: '';
 		position: absolute;
 		left: calc(var(--pad) + 11.5px);
-		top: 0;
-		bottom: 0;
+		top: calc(var(--mid) + 12px);
+		bottom: calc(12px - var(--mid));
 		width: 1px;
 		background: var(--ripple-border);
-	}
-
-	.al-row:first-child::before {
-		top: var(--mid);
-	}
-
-	.al-row:last-child::before {
-		bottom: auto;
-		height: var(--mid);
-	}
-
-	.al-row:only-child::before {
-		display: none;
 	}
 
 	.al-row.is-selected {
@@ -517,12 +505,6 @@
 		width: 20px;
 		height: 20px;
 		margin-top: -2px;
-		border-radius: 999px;
-		background: var(--ripple-surface);
-	}
-
-	.al-row.is-selected .al-badge {
-		background: color-mix(in oklab, var(--ripple-accent) 8%, var(--ripple-surface));
 	}
 
 	.al-dot {
@@ -569,6 +551,10 @@
 		line-height: var(--lh-body);
 		overflow-wrap: anywhere;
 		vertical-align: bottom;
+	}
+
+	.al-sep {
+		margin-inline: 4px;
 	}
 
 	.al-time {
@@ -674,7 +660,7 @@
 
 	/* Wide card: time gets its own right column, the chevron its own. */
 	@container (min-width: 480px) {
-		.al-row {
+		.has-details .al-row {
 			grid-template-columns: 24px minmax(0, 1fr) auto 24px;
 		}
 
