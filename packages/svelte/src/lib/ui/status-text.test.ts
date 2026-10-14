@@ -146,3 +146,45 @@ test('solid destructive buttons keep a white label at 4.5:1 at rest and on hover
   }
   expect(failures).toEqual([]);
 });
+
+// Control tokens: ink washes over the card. Boundaries (checkbox and radio
+// rims, slider thumb, selected segment, OTP slots) need 3:1 against the card
+// (WCAG 1.4.11); tracks, rails and skeleton blocks need a quiet 1.4:1. Measured
+// on the ripple site's warm cards and on paw-enterprise's grounds.
+test('control border reaches 3:1 and track reaches 1.4:1 on the card in both themes', async () => {
+  const css = await read('src/lib/theme.css');
+  const pct = (name: string) => {
+    const m = css.match(
+      new RegExp(`--ripple-${name}:\\s*color-mix\\(in oklab,\\s*var\\(--ripple-surface-foreground\\)\\s+([\\d.]+)%,\\s*transparent\\)`)
+    );
+    return m ? Number(m[1]) / 100 : 0;
+  };
+  const failures: string[] = [];
+  for (const name of ['track', 'control-border']) {
+    if (!css.includes(`--color-ripple-${name}: var(--ripple-${name});`)) failures.push(`--color-ripple-${name} utility missing`);
+  }
+  const cards: Record<string, { fg: Lab; ground: Lab }> = {
+    'site light #efeee8': { fg: oklch(0.2, 0.01, 95), ground: oklch(0.9482, 0.0081, 98.9) },
+    'site dark #1d1d1a': { fg: oklch(0.95, 0.005, 260), ground: oklch(0.2296, 0.0057, 106.8) },
+    'pe light': { fg: HOSTS.light.fg, ground: HOSTS.light.ground },
+    'pe dark': { fg: HOSTS['dark, --destructive'].fg, ground: HOSTS['dark, --destructive'].ground },
+  };
+  for (const [token, min] of [['control-border', 3], ['track', 1.4]] as const) {
+    const p = pct(token);
+    for (const [name, c] of Object.entries(cards)) {
+      const ground = toRgb(c.ground);
+      const ratio = contrast(over(toRgb(c.fg), p, ground), ground);
+      if (ratio < min) failures.push(`${token} on ${name}: ${ratio.toFixed(2)} < ${min}`);
+    }
+  }
+  expect(failures).toEqual([]);
+});
+
+test('checkbox and radio rims use the control border, not the host --input', async () => {
+  const files = ['src/lib/components/ui/checkbox/checkbox.svelte', 'src/lib/components/ui/radio-group/radio-group-item.svelte'];
+  for (const f of files) {
+    const src = await read(f);
+    expect(src, f).toContain('border-ripple-control-border');
+    expect(src, f).not.toMatch(/"border-input /);
+  }
+});
