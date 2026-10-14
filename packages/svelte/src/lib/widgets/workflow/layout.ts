@@ -2,14 +2,14 @@
 // as pure functions so layout.test.ts can pin it.
 //
 // sanitizeWorkflow narrows model data once (type, status, label, duplicate ids,
-// dangling edges). planWorkflow lays the graph out for a measured card width:
-// left-to-right columns at 480px and up (a compact column set when only that
-// fits at the readable floor, else the reader pans at the floor), one
-// top-to-bottom spine below 480px, or when the reader cannot pan and the columns
-// would not fit. The zoom never goes above 1 or below MIN_ZOOM, and the spine
-// always draws at 1, so labels stay at their design size at phone width; a
-// reader who cannot pan gets a canvas that grows instead. The minimap and zoom
-// controls get a bottom gutter, so they never cover a node at the initial view.
+// dangling edges). planWorkflow lays the graph out for a measured card width.
+// Below 480px: one top-to-bottom spine at zoom 1, so labels keep their design
+// size at phone width. From 480px: the first of standard columns, compact
+// columns, or rows with same-depth siblings side by side that fits at the
+// readable floor (MIN_ZOOM); when none fits, the reader pans whichever shows
+// the most at the floor. Zoom never goes above 1 or below the floor. A reader
+// who cannot pan (interactive false) gets a canvas that grows instead. The
+// minimap and zoom pill sit in a strip under the graph, never over a node.
 //
 // Edges: back edges (cycles) are found by DFS before layering, so a loop never
 // inflates depths. An edge to the very next column/row draws as a plain step;
@@ -36,8 +36,10 @@ export const TB_BELOW = 480;
 export const LR_STANDARD = { w: 192, gap: 48, labelled: 136 };
 export const LR_COMPACT = { w: 144, gap: 32, labelled: 96 };
 const LR_ROW_GAP = 24;
-const TB_MAX_W = 280;
+const TB_MAX_W = 280; // the spine
+const TB_WIDE_MAX = 360; // layered rows in a wide card
 const TB_MIN_W = 160;
+const TB_COL_GAP = 24; // between siblings in a layered row
 const TB_GAP = 24; // between rows
 const CHIP_H = 16; // a one-line chip, border included
 const TB_CHIP = 16; // first chip centre below its exit: 8px clear of the handle
@@ -46,7 +48,7 @@ const LANE_STEP = 8; // between lanes
 const CHAN0 = 12; // LR: first channel after the exit, so an edge runs straight out first
 const CHAN_STEP = 6;
 /** Bottom room kept clear for the overlays at the initial view. */
-const GUTTER = { controls: 36, minimap: 96 };
+const GUTTER = { controls: 40, minimap: 92 };
 
 const TYPES: readonly WorkflowNodeType[] = ['trigger', 'action', 'condition', 'approval', 'connector', 'output'];
 const STATUSES: readonly WorkflowNodeStatus[] = ['idle', 'running', 'success', 'error', 'waiting'];
@@ -141,6 +143,8 @@ export interface WorkflowPlan {
   fitsAtOne: boolean;
   showControls: boolean;
   showMinimap: boolean;
+  /** A strip under the graph (inside `height`) where the overlays sit. */
+  gutter: number;
 }
 
 interface Graph {
@@ -225,11 +229,11 @@ function spineOrder(g: Graph): string[] {
   return order;
 }
 
-/** Ranks (column in LR, row in TB) and cross-axis positions, before handles. */
-function place(g: Graph, dir: Direction): { rank: Map<string, number>; cross: Map<string, number> } {
+/** Ranks (column in LR, row in TB) and cross-axis positions, before handles; the spine is one column. */
+function place(g: Graph, spine: boolean): { rank: Map<string, number>; cross: Map<string, number> } {
   const rank = new Map<string, number>();
   const cross = new Map<string, number>();
-  if (dir === 'TB') {
+  if (spine) {
     spineOrder(g).forEach((id, i) => (rank.set(id, i), cross.set(id, 0)));
     return { rank, cross };
   }
@@ -254,19 +258,24 @@ function place(g: Graph, dir: Direction): { rank: Map<string, number>; cross: Ma
   return { rank, cross };
 }
 
-/** Lay the graph out in one direction at a given TB width (and LR column set). Pure geometry. */
-export function layoutWorkflow(nodes: WfNode[], rawEdges: WfEdge[], dir: Direction, tbWidth = TB_MAX_W, lrSet = LR_STANDARD) {
+/**
+ * Lay the graph out in one direction. Pure geometry. TB is one spine unless
+ * `layered`, which puts same-depth siblings side by side (wide cards). `tbWidth`
+ * is the room TB has; `lr` the LR column set.
+ */
+export function layoutWorkflow(
+  nodes: WfNode[],
+  rawEdges: WfEdge[],
+  dir: Direction,
+  opts: { tbWidth?: number; lr?: typeof LR_STANDARD; layered?: boolean } = {},
+) {
+  const tbWidth = opts.tbWidth ?? TB_MAX_W;
+  const lrSet = opts.lr ?? LR_STANDARD;
+  const spine = dir === 'TB' && !opts.layered;
   const g = analyse(nodes, rawEdges);
   const usePositions = modelPositionsUsable(nodes);
-  const { rank, cross } = usePositions ? { rank: new Map<string, number>(), cross: new Map<string, number>() } : place(g, dir);
+  const { rank, cross } = usePositions ? { rank: new Map<string, number>(), cross: new Map<string, number>() } : place(g, spine);
   const isLoop = (e: WfEdge) => !usePositions && (g.back.has(e) || rank.get(e.to)! - rank.get(e.from)! !== 1);
-
-  // Exit slots: a condition's plain exits first, its loops last (toward the lane).
-  const exit = new Map<WfEdge, { i: number; k: number }>();
-  for (const list of g.out.values()) {
-    if (list.length < 2 || g.slot.get(list[0])!.k < 2) list.forEach((e) => exit.set(e, { i: 0, k: 1 }));
-    else [...list.filter((e) => !isLoop(e)), ...list.filter(isLoop)].forEach((e, i) => exit.set(e, { i, k: list.length }));
-  }
 
   // One lane per loop: shortest spans innermost; loops whose rank spans overlap never share.
   const span = (e: WfEdge) => {
@@ -283,7 +292,25 @@ export function layoutWorkflow(nodes: WfNode[], rawEdges: WfEdge[], dir: Directi
     laneIdx.set(e, L);
   }
   const laneRoom = taken.length ? LANE0 + LANE_STEP * (taken.length - 1) + 8 : 0;
-  const w = dir === 'TB' ? Math.round(Math.max(TB_MIN_W, Math.min(TB_MAX_W, tbWidth - laneRoom))) : lrSet.w;
+
+  // Exit slots: a condition's plain exits first, then its loops, inner lane
+  // first, so a loop never crosses a sibling exit on its way out to its lane.
+  const exit = new Map<WfEdge, { i: number; k: number }>();
+  for (const list of g.out.values()) {
+    if (list.length < 2 || g.slot.get(list[0])!.k < 2) list.forEach((e) => exit.set(e, { i: 0, k: 1 }));
+    else {
+      const loops = list.filter(isLoop).sort((a, b) => laneIdx.get(a)! - laneIdx.get(b)!);
+      [...list.filter((e) => !isLoop(e)), ...loops].forEach((e, i) => exit.set(e, { i, k: list.length }));
+    }
+  }
+
+  const widest = Math.max(1, ...layerSizes(rank));
+  const w =
+    dir === 'LR'
+      ? lrSet.w
+      : spine
+        ? Math.round(Math.max(TB_MIN_W, Math.min(TB_MAX_W, tbWidth - laneRoom)))
+        : Math.floor(Math.max(TB_MIN_W, Math.min(TB_WIDE_MAX, (tbWidth - laneRoom - (widest - 1) * TB_COL_GAP) / widest)));
   const h = NODE_H;
 
   const placedEdges: PlacedEdge[] = g.edges.map((e, i) => {
@@ -303,24 +330,44 @@ export function layoutWorkflow(nodes: WfNode[], rawEdges: WfEdge[], dir: Directi
     };
   });
   const slotOf = (i: number) => exit.get(g.edges[i])!;
+  const all = placedEdges.map((_, i) => i);
+  const plain = all.filter((i) => !placedEdges[i].loop);
+  // The edges a plain edge must not overlap: its fan-out, else its fan-in.
+  const groupOf = (i: number, d: (i: number) => number) => {
+    const out = plain.filter((j) => placedEdges[j].from === placedEdges[i].from);
+    if (out.length > 1) return out.sort((a, b) => d(b) - d(a));
+    const into = plain.filter((j) => placedEdges[j].to === placedEdges[i].to);
+    return into.length > 1 ? into.sort((a, b) => d(a) - d(b)) : [i];
+  };
 
-  // TB: chips just under their exits (alternate chips one chip lower when three
-  // or more share the side), then each loop turns below the chips, the leftmost
-  // lowest so lanes never cross, then a labelled plain exit turns below the loops.
+  // TB: chips just under their exits (every other chip one chip lower when two
+  // or more share the side, so they never touch), then each loop turns below
+  // the chips, the leftmost lowest so lanes never cross, then the plain exits,
+  // each of a fan-out or fan-in at its own height.
   const gapAfter: number[] = [];
+  const colX = (id: string) => (cross.get(id) ?? 0) * (w + TB_COL_GAP);
   if (dir === 'TB') {
+    const dx = (i: number) => {
+      const e = placedEdges[i], s = slotOf(i);
+      return Math.abs(colX(e.to) + w / 2 - (colX(e.from) + (w * (s.i + 1)) / (s.k + 1)));
+    };
     for (const id of g.out.keys()) {
-      const mine = placedEdges.map((e, i) => i).filter((i) => placedEdges[i].from === id);
+      const mine = all.filter((i) => placedEdges[i].from === id);
       for (const i of mine) {
         const s = slotOf(i), e = placedEdges[i];
-        e.chipY = TB_CHIP + (s.k >= 3 && s.i % 2 ? CHIP_H : 0);
-        e.chip = s.k > 1 ? Math.max(28, Math.floor(((s.k >= 3 ? 2 : 1) * w) / (s.k + 1)) - 6) : Math.min(220, w - 24);
+        const c = (w * (s.i + 1)) / (s.k + 1);
+        e.chipY = TB_CHIP + (s.k >= 2 && s.i % 2 ? CHIP_H : 0);
+        e.chip = s.k > 1 ? Math.max(28, Math.min(Math.floor((2 * w) / (s.k + 1)) - 6, 2 * Math.min(c, w - c) + 16)) : Math.min(220, w - 24);
       }
       const chipBottom = Math.max(0, ...mine.filter((i) => placedEdges[i].label).map((i) => placedEdges[i].chipY + CHIP_H / 2));
       const loops = mine.filter((i) => placedEdges[i].loop).sort((a, b) => slotOf(a).i - slotOf(b).i);
       const base = Math.max(14, chipBottom + 6);
       loops.forEach((i, j) => (placedEdges[i].turn = base + 6 * (loops.length - 1 - j)));
-      for (const i of mine) if (!placedEdges[i].loop && placedEdges[i].label) placedEdges[i].turn = base + 6 * loops.length + 2;
+      for (const i of mine) {
+        if (placedEdges[i].loop) continue;
+        const grp = groupOf(i, dx);
+        if (placedEdges[i].label || grp.length > 1) placedEdges[i].turn = base + 6 * loops.length + 2 + 6 * grp.indexOf(i);
+      }
       const r = rank.get(id);
       if (r !== undefined) gapAfter[r] = Math.max(gapAfter[r] ?? TB_GAP, ...mine.map((i) => (placedEdges[i].turn ? placedEdges[i].turn + 18 : TB_GAP)));
     }
@@ -342,15 +389,15 @@ export function layoutWorkflow(nodes: WfNode[], rawEdges: WfEdge[], dir: Directi
     if (!src.some((x) => x.id === e.sourceHandle))
       src.push({ id: e.sourceHandle, type: 'source', side: dir === 'TB' ? 'bottom' : 'right', pct: ((s.i + 1) / (s.k + 1)) * 100 });
     const tgt = handles.get(e.to)!;
-    // TB: a step with one way in enters straight below its exit, so it never
-    // reads as the continuation of a sibling branch.
-    const only = dir === 'TB' && !e.loop && placedEdges.filter((x) => x.to === e.to).length === 1;
+    // On the spine a step with one way in enters straight below its exit, so it
+    // never reads as the continuation of a sibling branch.
+    const only = spine && !e.loop && placedEdges.filter((x) => x.to === e.to).length === 1;
     if (!tgt.some((x) => x.id === 'in')) tgt.push({ id: 'in', type: 'target', side: dir === 'TB' ? 'top' : 'left', pct: only ? ((s.i + 1) / (s.k + 1)) * 100 : 50 });
   });
 
   const placed: PlacedNode[] = nodes.map((n) => {
     const r = rank.get(n.id)!;
-    const at = usePositions ? n.position! : dir === 'TB' ? { x: 0, y: start[r] } : { x: start[r], y: cross.get(n.id)! * (h + LR_ROW_GAP) };
+    const at = usePositions ? n.position! : dir === 'TB' ? { x: colX(n.id), y: start[r] } : { x: start[r], y: cross.get(n.id)! * (h + LR_ROW_GAP) };
     return { ...n, x: at.x, y: at.y, w, h, handles: handles.get(n.id)! };
   });
 
@@ -363,36 +410,31 @@ export function layoutWorkflow(nodes: WfNode[], rawEdges: WfEdge[], dir: Directi
       const s = at.get(placedEdges[i].from)!, t = at.get(placedEdges[i].to)!, x = slotOf(i);
       return Math.abs(t.y + h / 2 - (s.y + (h * (x.i + 1)) / (x.k + 1)));
     };
-    const all = placedEdges.map((_, i) => i);
-    const plain = all.filter((i) => !placedEdges[i].loop);
     for (const id of g.out.keys()) {
       const gap = (gapAfter[rank.get(id)!] ?? lrSet.gap) - 10;
       const loops = all.filter((i) => placedEdges[i].from === id && placedEdges[i].loop).sort((a, b) => slotOf(b).i - slotOf(a).i);
       loops.forEach((i, j) => (placedEdges[i].chan = Math.min(gap, 8 + CHAN_STEP * j)));
-      const out = plain.filter((i) => placedEdges[i].from === id).sort((a, b) => dy(b) - dy(a));
-      const fanIn = (i: number) => plain.filter((j) => placedEdges[j].to === placedEdges[i].to).sort((a, b) => dy(a) - dy(b));
-      const group = out.length > 1 ? out : out.length === 1 ? fanIn(out[0]) : [];
-      const step = Math.min(CHAN_STEP, (gap - CHAN0) / Math.max(1, group.length - 1 + loops.length));
-      for (const i of out) {
-        const k = Math.max(0, group.indexOf(i)) + loops.length;
-        placedEdges[i].chan = Math.round(Math.min(gap, CHAN0 + step * k));
-        placedEdges[i].chip = Math.max(28, gap + 10 - placedEdges[i].chan - 12);
+      for (const i of plain.filter((j) => placedEdges[j].from === id)) {
+        const grp = groupOf(i, dy);
+        const step = Math.min(CHAN_STEP, (gap - CHAN0) / Math.max(1, grp.length - 1 + loops.length));
+        placedEdges[i].chan = Math.round(Math.min(gap, CHAN0 + step * (grp.indexOf(i) + loops.length)));
+        placedEdges[i].chip = Math.max(28, gap - placedEdges[i].chan - 2);
       }
     }
   }
 
-  // Bounds, then each loop's own outside lane: below the graph in LR, right of the spine in TB.
+  // Bounds, then each loop's own outside lane: below the graph in LR, right of it in TB.
   const edge = (f: (n: PlacedNode) => number, pick: (...v: number[]) => number) => (placed.length ? pick(...placed.map(f)) : 0);
   const x0 = edge((n) => n.x, Math.min);
   const y0 = edge((n) => n.y, Math.min);
   let x1 = edge((n) => n.x + n.w, Math.max);
   let y1 = edge((n) => n.y + n.h, Math.max);
-  const bottom = y1;
+  const [right, bottom] = [x1, y1];
   placedEdges.forEach((e, i) => {
     if (!e.loop) return;
     const offset = LANE0 + LANE_STEP * laneIdx.get(g.edges[i])!;
     if (dir === 'TB') {
-      e.lane = w + offset;
+      e.lane = right + offset;
       x1 = Math.max(x1, e.lane + 4);
     } else {
       e.lane = bottom + offset;
@@ -400,6 +442,13 @@ export function layoutWorkflow(nodes: WfNode[], rawEdges: WfEdge[], dir: Directi
     }
   });
   return { nodes: placed, edges: placedEdges, bounds: { x: x0, y: y0, w: x1 - x0, h: y1 - y0 }, positioned: usePositions };
+}
+
+/** How many nodes share each rank. */
+function layerSizes(rank: Map<string, number>): number[] {
+  const n: number[] = [];
+  for (const r of rank.values()) n[r] = (n[r] ?? 0) + 1;
+  return n.filter(Boolean);
 }
 
 /** One orthogonal polyline with rounded corners (SVG path data). */
@@ -423,6 +472,13 @@ export function stepRoute(s: { x: number; y: number }, t: { x: number; y: number
   if (Math.abs(t.y - s.y) < 1) return { points: [s, t], label: { x: (s.x + t.x) / 2, y: t.y } };
   const cx = s.x + chan;
   return { points: [s, { x: cx, y: s.y }, { x: cx, y: t.y }, t], label: { x: (cx + t.x) / 2, y: t.y } };
+}
+
+/** A TB plain edge: down to its turn (halfway when 0), across, down into the target. */
+export function dropRoute(s: { x: number; y: number }, t: { x: number; y: number }, turn: number) {
+  if (Math.abs(t.x - s.x) < 1) return [s, t];
+  const y = s.y + (turn || (t.y - s.y) / 2);
+  return [s, { x: s.x, y }, { x: t.x, y }, t];
 }
 
 /**
@@ -481,15 +537,31 @@ export function planWorkflow(
     zoom = opts.interactive ? Math.max(MIN_ZOOM, fit) : fit;
   } else if (W < TB_BELOW) {
     dir = 'TB';
-    layout = layoutWorkflow(nodes, edges, 'TB', avail);
+    layout = layoutWorkflow(nodes, edges, 'TB', { tbWidth: avail });
   } else {
-    // Columns at 480px and up: standard, else compact if that fits at the floor,
-    // else pan at the floor; only a reader who cannot pan falls back to the spine.
-    const compact = fitOf(lr) >= MIN_ZOOM ? undefined : layoutWorkflow(nodes, edges, 'LR', avail, LR_COMPACT);
-    if (!compact) zoom = fitOf(lr);
-    else if (fitOf(compact) >= MIN_ZOOM) (layout = compact), (zoom = fitOf(compact));
-    else if (opts.interactive) zoom = MIN_ZOOM;
-    else (dir = 'TB'), (layout = layoutWorkflow(nodes, edges, 'TB', avail));
+    // A wide card takes the first of these that fits at the readable floor:
+    // standard columns, compact columns, then rows with siblings side by side.
+    // When none fits, the reader pans the one that shows the most at the floor;
+    // a reader who cannot pan gets the spine, which grows instead.
+    const options: [Direction, () => ReturnType<typeof layoutWorkflow>][] = [
+      ['LR', () => lr],
+      ['LR', () => layoutWorkflow(nodes, edges, 'LR', { lr: LR_COMPACT })],
+      ['TB', () => layoutWorkflow(nodes, edges, 'TB', { tbWidth: avail, layered: true })],
+    ];
+    const shown = (l: ReturnType<typeof layoutWorkflow>) =>
+      Math.min(1, avail / (l.bounds.w * MIN_ZOOM)) * Math.min(1, (MAX_H - 2 * PAD) / (l.bounds.h * MIN_ZOOM));
+    let best: { d: Direction; l: ReturnType<typeof layoutWorkflow>; v: number } | undefined;
+    for (const [d, make] of options) {
+      const l = make();
+      if (fitOf(l) >= MIN_ZOOM) {
+        best = { d, l, v: 2 };
+        break;
+      }
+      if (!best || shown(l) > best.v) best = { d, l, v: shown(l) };
+    }
+    if (best!.v === 2) (dir = best!.d), (layout = best!.l), (zoom = fitOf(layout));
+    else if (opts.interactive) (dir = best!.d), (layout = best!.l), (zoom = MIN_ZOOM);
+    else (dir = 'TB'), (layout = layoutWorkflow(nodes, edges, 'TB', { tbWidth: avail }));
     // fitView false: draw at design size and let the reader pan.
     if (dir === 'LR' && !opts.fitView && opts.interactive) zoom = 1;
   }
@@ -498,15 +570,18 @@ export function planWorkflow(
   const clamp = (v: number) => Math.round(opts.interactive ? Math.min(MAX_H, Math.max(MIN_H, v)) : Math.max(MIN_H, v));
   const fitsX = b.w * zoom <= avail + 0.5;
   const fitsAtOne = zoom === 1 && fitsX && content <= clamp(content) + 0.5;
-  // Overlays get a bottom gutter, so neither covers a node at the initial view.
+  // Overlays sit in a strip under the graph, so neither ever covers a node.
   const showMinimap = opts.minimap === true && nodes.length >= 12 && W >= 560;
   const showControls = opts.interactive && !fitsAtOne;
   const gutter = showMinimap ? GUTTER.minimap : showControls ? GUTTER.controls : 0;
   const height = clamp(content + gutter);
   const room = height - gutter;
   const fitsY = content <= room + 0.5;
-  const vx = fitsX ? (W - b.w * zoom) / 2 - b.x * zoom : PAD - b.x * zoom;
-  const vy = fitsY ? (room - b.h * zoom) / 2 - b.y * zoom : PAD - b.y * zoom;
+  // A graph that pans opens on its main line: the start for the flow axis, the
+  // centre of the rows (or columns) across it, never past the graph's own edge.
+  const keep = (v: number, size: number, lo: number, len: number) => Math.min(PAD - lo * zoom, Math.max(size - PAD - (lo + len) * zoom, v));
+  const vx = fitsX ? (W - b.w * zoom) / 2 - b.x * zoom : dir === 'TB' ? keep(W / 2 - (layout.nodes[0]?.w ?? 0) * zoom / 2, W, b.x, b.w) : PAD - b.x * zoom;
+  const vy = fitsY ? (room - b.h * zoom) / 2 - b.y * zoom : dir === 'LR' ? keep(room / 2 - (NODE_H * zoom) / 2, room, b.y, b.h) : PAD - b.y * zoom;
   return {
     direction: dir,
     nodes: layout.nodes,
@@ -518,6 +593,7 @@ export function planWorkflow(
     fitsAtOne,
     showControls,
     showMinimap,
+    gutter,
   };
 }
 

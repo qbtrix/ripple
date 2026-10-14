@@ -6,10 +6,10 @@
   the drawing for the measured card width: columns left to right at 480px and
   up (panning at the 0.8 floor when they do not fit), one top-to-bottom spine
   below that, canvas height following the graph (120 to 560px; it grows instead
-  when the reader cannot pan). The plan also decides the overlays and keeps a
-  bottom gutter for them, so the minimap (a big graph in a wide card) and the
-  zoom pill (only when something does not fit) never cover a node at the
-  initial view. No frame of its own: the dot grid marks the canvas, and only
+  when the reader cannot pan). The plan also decides the overlays and reserves
+  a strip under the graph for them: the flow is clipped above the strip and
+  the panels sit in it, so the minimap (a big graph in a wide card) and the
+  zoom pill (only when something does not fit) never cover a node. No frame of its own: the dot grid marks the canvas, and only
   when the graph does not fit at zoom 1. Theming is the --xy-* to --ripple-*
   token map shared in spirit with the C4 diagram, so it follows the host's
   light or dark theme; colorMode is never set. Wheel and touch scroll the page,
@@ -126,38 +126,41 @@
     class="wf-canvas"
     class:wf-static={interactive === false}
     style:height="{plan.height}px"
+    style:--wf-gutter="{plan.gutter}px"
     bind:clientWidth={width}
   >
-    <SvelteFlow
-      nodes={flowNodes}
-      edges={flowEdges}
-      {nodeTypes}
-      {edgeTypes}
-      bind:viewport
-      fitViewOptions={{ padding: '16px', minZoom: MIN_ZOOM, maxZoom: 1 }}
-      panOnDrag={interactive !== false}
-      panOnScroll={false}
-      zoomOnScroll={false}
-      preventScrolling={false}
-      zoomOnPinch={interactive !== false}
-      zoomOnDoubleClick={false}
-      nodesDraggable={false}
-      nodesConnectable={false}
-      elementsSelectable={false}
-      minZoom={0.5}
-      maxZoom={1.5}
-      proOptions={{ hideAttribution: true }}
-    >
-      {#if !plan.fitsAtOne}
-        <Background variant={BackgroundVariant.Dots} gap={20} size={1.25} />
-      {/if}
-      {#if plan.showControls}
-        <Controls showLock={false} position="bottom-right" orientation="horizontal" />
-      {/if}
-      {#if plan.showMinimap}
-        <MiniMap position="bottom-left" width={120} height={80} nodeBorderRadius={4} />
-      {/if}
-    </SvelteFlow>
+    <div class="wf-flow">
+      <SvelteFlow
+        nodes={flowNodes}
+        edges={flowEdges}
+        {nodeTypes}
+        {edgeTypes}
+        bind:viewport
+        fitViewOptions={{ padding: '16px', minZoom: MIN_ZOOM, maxZoom: 1 }}
+        panOnDrag={interactive !== false}
+        panOnScroll={false}
+        zoomOnScroll={false}
+        preventScrolling={false}
+        zoomOnPinch={interactive !== false}
+        zoomOnDoubleClick={false}
+        nodesDraggable={false}
+        nodesConnectable={false}
+        elementsSelectable={false}
+        minZoom={0.5}
+        maxZoom={1.5}
+        proOptions={{ hideAttribution: true }}
+      >
+        {#if !plan.fitsAtOne}
+          <Background variant={BackgroundVariant.Dots} gap={20} size={1.25} />
+        {/if}
+        {#if plan.showControls}
+          <Controls showLock={false} position="bottom-right" orientation="horizontal" />
+        {/if}
+        {#if plan.showMinimap}
+          <MiniMap position="bottom-left" width={120} height={80} nodeBorderRadius={4} />
+        {/if}
+      </SvelteFlow>
+    </div>
   </div>
 </div>
 
@@ -257,6 +260,24 @@
     --xy-selection-background-color: color-mix(in oklab, var(--ripple-accent) 8%, transparent);
     --xy-selection-border: 1px dotted color-mix(in oklab, var(--ripple-accent) 60%, transparent);
     --xy-resize-background-color: var(--ripple-accent);
+  }
+
+  /* The flow stops above the overlay strip; its panels hang down into it. */
+  .wf-flow {
+    height: calc(100% - var(--wf-gutter, 0px));
+  }
+
+  .wf-canvas :global(.svelte-flow) {
+    overflow: visible;
+  }
+
+  .wf-canvas :global(.svelte-flow__zoom) {
+    overflow: hidden;
+  }
+
+  .wf-canvas :global(.svelte-flow__panel.bottom) {
+    margin: 0 4px;
+    bottom: calc(4px - var(--wf-gutter, 0px));
   }
 
   .wf-canvas :global(.svelte-flow),

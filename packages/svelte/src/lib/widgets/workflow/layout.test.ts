@@ -182,11 +182,26 @@ describe('conditions and loops', () => {
     expect(loops.filter((e) => e.from === 'v').every((e) => pct(e) > pct(plainExit))).toBe(true);
   });
 
-  it('keeps the overlays off the graph with a bottom gutter', () => {
-    const p = planWorkflow(chain(21).nodes, chain(21).edges, { width: 720, interactive: true, fitView: true, minimap: true });
-    expect(p.showMinimap && p.showControls).toBe(true);
-    const bottom = Math.max(...p.nodes.map((n) => n.y + n.h)) * p.zoom + p.viewport.y;
-    expect(bottom).toBeLessThanOrEqual(p.height - 96);
+  it('reserves a strip under the graph for the overlays, and only when they show', () => {
+    const big = planWorkflow(chain(21).nodes, chain(21).edges, { width: 720, interactive: true, fitView: true, minimap: true });
+    expect(big.showMinimap && big.showControls).toBe(true);
+    expect(big.gutter).toBeGreaterThanOrEqual(80);
+    expect(big.height).toBeLessThanOrEqual(MAX_H);
+    expect(plan(chain(21), 720).gutter).toBeGreaterThanOrEqual(30);
+    expect(plan(chain(3), 720).gutter).toBe(0);
+  });
+
+  it('puts siblings side by side in a wide card when the columns will not fit', () => {
+    const g = sanitizeWorkflow(
+      ['t', 'a', 'c', 'y', 'n', 'p', 'o'].map((id) => ({ id, type: id === 'c' ? 'condition' : 'action', label: id })),
+      [['t', 'a'], ['a', 'c'], ['c', 'y'], ['c', 'n'], ['y', 'p'], ['p', 'o']].map(([from, to]) => ({ from, to })),
+    );
+    const p = plan(g, 623);
+    expect(p.direction).toBe('TB');
+    expect(p.zoom).toBe(1);
+    const y = p.nodes.find((n) => n.id === 'y')!, n = p.nodes.find((n) => n.id === 'n')!;
+    expect(y.y).toBe(n.y);
+    expect(y.x).toBeLessThan(n.x);
   });
 
   it('a cycle does not inflate depth, and its back edge runs in an outside lane', () => {

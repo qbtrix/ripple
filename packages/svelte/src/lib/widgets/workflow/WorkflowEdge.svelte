@@ -4,7 +4,8 @@
   LR: a plain edge (target in the next column) runs straight out of its exit to
   its own channel in the column gap, across to the target's row and straight in,
   so the edges of a fan-out or fan-in never overlap; its chip rides the last run.
-  TB: a plain edge is a rounded step that turns below its exit's chip, which
+  TB: a plain edge drops from its exit, turns below its chip (each edge of a
+  fan-out or fan-in at its own height) and drops into the target; the chip
   sits just under the exit. A loop (a back edge, or one that skips a column or
   row) runs in its own outside lane layout.ts reserved for it, so it never
   crosses a node or a label; a back edge is dashed. Chips are one line, clamped
@@ -14,7 +15,7 @@
 -->
 <script lang="ts">
   import { BaseEdge, EdgeLabel, getSmoothStepPath, type EdgeProps } from '@xyflow/svelte';
-  import { loopRoute, roundedPath, stepRoute, type PlacedEdge } from './layout.js';
+  import { dropRoute, loopRoute, roundedPath, stepRoute, type PlacedEdge } from './layout.js';
   import type { Direction } from './types.js';
 
   let { id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, data, markerEnd }: EdgeProps = $props();
@@ -29,14 +30,18 @@
       const r = loopRoute(dir, s, t, edge.lane, edge.chan, edge.turn, edge.chipY);
       return { path: roundedPath(r.points), x: r.label.x, y: r.label.y };
     }
-    if (dir === 'LR') {
+    if (dir === 'LR' && targetX > sourceX + edge.chan + 4) {
       const r = stepRoute(s, t, edge.chan);
       return { path: roundedPath(r.points), x: r.label.x, y: r.label.y };
     }
     // TB: a labelled edge turns below its chip, and the chip sits under the exit.
-    const stepPosition = edge.turn && targetY > sourceY ? Math.min(0.9, edge.turn / (targetY - sourceY)) : undefined;
-    const [path, x, y] = getSmoothStepPath({ sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, borderRadius: 8, stepPosition });
-    return edge.label ? { path, x: sourceX, y: sourceY + edge.chipY } : { path, x, y };
+    if (dir === 'TB' && targetY > sourceY + edge.turn + 4) {
+      const path = roundedPath(dropRoute(s, t, edge.turn));
+      return edge.label ? { path, x: sourceX, y: sourceY + edge.chipY } : { path, x: (sourceX + targetX) / 2, y: (sourceY + targetY) / 2 };
+    }
+    // Model positions can put a target behind its source: the library's step routing copes.
+    const [path, x, y] = getSmoothStepPath({ sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, borderRadius: 8 });
+    return { path, x, y };
   });
 </script>
 
