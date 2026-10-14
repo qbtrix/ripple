@@ -5,7 +5,7 @@ import { render, fireEvent, cleanup } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import Treemap from './Treemap.svelte';
-import { sanitize, share, labelTier, layout, CAPTION } from './treemap.js';
+import { sanitize, share, labelTier, layout, CAPTION, NEST_GAP } from './treemap.js';
 
 // Spec 05 of the polish brief: no title, string value, nameless node, zero,
 // negative, empty children, parents with and without their own value.
@@ -67,6 +67,48 @@ test('layout: no root band, captions only on tall groups', () => {
 	if (tall.caption) for (const k of kids) expect(k.y0).toBeGreaterThanOrEqual(tall.y0 + CAPTION - 2);
 	// Children share their top-level group's colour step.
 	for (const k of kids) expect(k.step).toBe(tall.step);
+});
+
+// Spec 04 of the polish brief: names too long for their tiles.
+const LONG = [
+	{
+		name: 'Contractor and freelance design services',
+		children: [
+			{ name: 'Illustration and editorial artwork commissions', value: 2600 },
+			{ name: 'Motion graphics for the onboarding walkthrough', value: 1600 }
+		]
+	},
+	{ name: 'Cloud infrastructure and managed databases', value: 3100 },
+	{ name: 'Recruiting agency fees for senior engineering roles', value: 1900 },
+	{ name: 'Conference travel, lodging and per diem', value: 800 },
+	{ name: 'Miscellaneous office supplies and snacks', value: 240 }
+];
+
+test('layout: a caption that does not fit its group reserves no strip (spec 04 at 360)', () => {
+	const group = (rects: ReturnType<typeof layout>) => rects.find((r) => r.name.startsWith('Contractor'))!;
+	const kids = (rects: ReturnType<typeof layout>) => rects.filter((r) => r.parentName?.startsWith('Contractor'));
+	// The box alone would pay for a caption...
+	const plain = layout(sanitize(LONG), 360, 320);
+	expect(group(plain).caption).toBe(true);
+	expect(Math.min(...kids(plain).map((k) => k.y0))).toBe(group(plain).y0 + CAPTION);
+	// ...but the measured line is wider than the tile, so it is dropped before layout.
+	const measured = layout(sanitize(LONG), 360, 320, (t) => t.length * 6);
+	expect(group(measured).caption).toBe(false);
+	expect(Math.min(...kids(measured).map((k) => k.y0))).toBe(group(measured).y0);
+	// A short caption that fits still draws.
+	expect(layout(sanitize(HOSTILE), 600, 320, (t) => t.length * 6).find((r) => r.name === 'Utilities')!.caption).toBe(true);
+});
+
+test('layout: nested groups that hold groups get the wider gap', () => {
+	const rects = layout(
+		sanitize([{ name: 'p', children: [{ name: 'a', children: [{ name: 'g', children: [{ name: 'x', value: 5 }, { name: 'y', value: 3 }] }, { name: 'b', value: 4 }] }] }, { name: 'q', value: 9 }]),
+		600,
+		320
+	);
+	const g = rects.find((r) => r.name === 'g')!;
+	const b = rects.find((r) => r.name === 'b')!;
+	const gap = Math.max(b.x0 - g.x1, g.x0 - b.x1, b.y0 - g.y1, g.y0 - b.y1);
+	expect(gap).toBeCloseTo(NEST_GAP);
 });
 
 class SizedResizeObserver {
@@ -167,5 +209,45 @@ describe('component', () => {
 		for (const l of labels) expect(l.dataset.fit).toBe('none');
 		expect(container.textContent).not.toContain('…');
 		sh.mockRestore();
+	});
+
+	test('a name over two lines hides its whole label; a two-line name stays', async () => {
+		// jsdom has no layout: give names a two-line box (30px) and the long name four lines.
+		const long = 'Illustration and editorial artwork commissions';
+		const ch = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockImplementation(function (this: HTMLElement) {
+			return this.classList.contains('tm-name') ? 30 : this.classList.contains('tm-label') ? 200 : 0;
+		});
+		const sh = vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockImplementation(function (this: HTMLElement) {
+			if (!this.classList.contains('tm-name')) return 0;
+			return this.textContent === long ? 60 : 30;
+		});
+		const { container } = render(Treemap, {
+			props: { data: [{ name: long, value: 60 }, { name: 'Cloud infrastructure', value: 40 }] }
+		});
+		await tick();
+		await tick();
+		const label = (name: string) => tile(container, name).querySelector<HTMLElement>('.tm-label')!;
+		expect(label(long).dataset.fit).toBe('none');
+		expect(label('Cloud infrastructure').dataset.fit).toBe('full');
+		// The one unlabeled top-level tile is named under the plot.
+		expect(container.querySelector('.tm-foot')!.textContent).toContain(long);
+		ch.mockRestore();
+		sh.mockRestore();
+	});
+
+	test('a value line that does not fit steps down to the share, then drops', async () => {
+		// Only the full "value · share" line is too wide; the share alone fits.
+		const sw = vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockImplementation(function (this: HTMLElement) {
+			return this.closest('[data-fit="full"]') && this.classList.contains('tm-meta') ? 80 : 0;
+		});
+		const cw = vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockImplementation(() => 49);
+		const { container } = render(Treemap, { props: { data: BUDGET } });
+		await tick();
+		await tick();
+		const l = tile(container, 'Operations').querySelector<HTMLElement>('.tm-label')!;
+		expect(l.dataset.fit).toBe('share');
+		expect(container.querySelector('.tm-foot')).toBeNull();
+		sw.mockRestore();
+		cw.mockRestore();
 	});
 });

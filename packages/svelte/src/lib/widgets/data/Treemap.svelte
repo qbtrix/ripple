@@ -5,17 +5,22 @@
 
   Frame: an optional header (title left, compact total right in muted
   tabular figures), then the plot, edge to edge, `height` px (min 160). No
-  chrome at root. A top-level group gets a 20px caption strip in card colour,
-  only when it is at least 64px tall and wide. Tiles are one hue:
+  chrome at root. Only groups directly under the current root get a caption
+  (zoom shows deeper ones): a 20px strip in card colour, only when the group is
+  at least 64px tall and wide and its `name · share` line, measured on a canvas
+  at the caption font, fits on one line. A caption that would not draw
+  reserves no strip. Tiles are one hue:
   --ripple-accent mixed into --ripple-surface on treemap.ts's RAMP, gaps show
   the card. Ink is always the surface ink; the value line is that ink at
   INK_ALPHA.
 
-  Labels sit top-left and are whole or absent. A long name wraps, up to four
-  lines in a tall tile so a big tile never sits blank; after each layout every
-  label is measured once, and one that overflows its tile drops its value
-  line, then hides. Never an ellipsis. `showLabels: false` hides leaf labels
-  only.
+  Labels sit top-left and are whole or absent. A name wraps to at most two
+  lines; after each layout every label is measured once, and one that
+  overflows steps down: `value · share`, then share alone, then name only,
+  then hidden (a name over two lines hides the whole label). Never an
+  ellipsis. When 1 to 3 top-level leaves end up unlabeled, one muted line
+  under the plot names them with their share. `showLabels: false` hides leaf
+  labels only.
 
   Zoom: a caption, or a nested tile, zooms into its top-level group, one level
   at a time; a top-level leaf only shows its readout (tap on touch). While
@@ -43,7 +48,7 @@
 	import { cn } from '$lib/utils.js';
 	import { safeArray } from '$lib/utils/safe-props.js';
 	import { finite, num, plain } from '../data-kit/format.js';
-	import { RAMP, LIFT, INK_ALPHA, sanitize, find, layout, share, labelTier, type Rect } from './treemap.js';
+	import { RAMP, LIFT, INK_ALPHA, sanitize, find, layout, share, labelTier, captionText, type Measure, type Rect } from './treemap.js';
 
 	interface Props {
 		id?: string;
@@ -84,6 +89,8 @@
 	let focusId = $state('');
 	let active = $state<string | null>(null);
 	let plotEl = $state<HTMLDivElement>();
+	let fontsReady = $state(false);
+	let unlabeled = $state<string[]>([]);
 
 	// A new tree starts at the root.
 	let seen: unknown;
@@ -100,7 +107,19 @@
 	const total = $derived(nodes.reduce((s, n) => s + n.value, 0));
 	// Before the first measure (SSR, first paint) lay out at a typical card width.
 	const W = $derived(width || 600);
-	const rects = $derived(layout(nodes, W, plotH));
+	// Caption widths at the caption font, once webfonts are in (jsdom: none).
+	const measure = $derived.by((): Measure | undefined => {
+		if (!fontsReady || !plotEl) return undefined;
+		const ctx = document.createElement('canvas').getContext('2d');
+		if (!ctx) return undefined;
+		ctx.font = `11px ${getComputedStyle(plotEl).fontFamily}`;
+		return (t) => ctx.measureText(t).width;
+	});
+	// The inset mirrors the --tm-inset container query below.
+	const rects = $derived(layout(nodes, W, plotH, measure, W >= 560 ? 8 : 6));
+	const unnamed = $derived(
+		showLabels && unlabeled.length >= 1 && unlabeled.length <= 3 ? rects.filter((r) => unlabeled.includes(r.id)) : []
+	);
 	const crumbs = $derived.by(() => {
 		if (!focusNode) return [];
 		const parts = focusId.split('.');
@@ -112,6 +131,7 @@
 	const activeRect = $derived(active ? rects.find((r) => r.id === active) : undefined);
 
 	onMount(() => {
+		document.fonts?.ready.then(() => (fontsReady = true));
 		if (typeof ResizeObserver === 'undefined' || !plotEl) return;
 		const ro = new ResizeObserver((entries) => {
 			const w = entries[0]?.contentRect.width;
@@ -131,6 +151,9 @@
 		// After the DOM update and once webfonts are in, so widths are final.
 		Promise.all([tick(), document.fonts?.ready]).then(() => {
 			for (const label of el.querySelectorAll<HTMLElement>('[data-tm-label]')) fit(label);
+			unlabeled = [...el.querySelectorAll<HTMLElement>('[data-tm-top]')]
+				.filter((b) => !hasLabel(b))
+				.map((b) => b.dataset.tmTop!);
 		});
 	});
 
@@ -138,15 +161,21 @@
 		return !!e && (e.scrollHeight > e.clientHeight + 1 || e.scrollWidth > e.clientWidth + 1);
 	}
 
+	/** Steps down until the label fits: full, share alone, name only, hidden. */
 	function fit(label: HTMLElement) {
-		label.dataset.fit = 'full';
-		const bad = () => overflows(label) || overflows(label.querySelector('[data-tm-name]'));
-		if (!bad()) return;
-		if (label.querySelector('[data-tm-meta]')) {
-			label.dataset.fit = 'name';
+		const bad = () =>
+			overflows(label) || overflows(label.querySelector('[data-tm-name]')) || overflows(label.querySelector('[data-tm-meta]'));
+		const steps = label.querySelector('[data-tm-meta]') ? ['full', 'share', 'name'] : ['full'];
+		for (const f of steps) {
+			label.dataset.fit = f;
 			if (!bad()) return;
 		}
 		label.dataset.fit = 'none';
+	}
+
+	function hasLabel(tile: HTMLElement): boolean {
+		const f = tile.querySelector<HTMLElement>('[data-tm-label]')?.dataset.fit;
+		return !!f && f !== 'none';
 	}
 
 	async function zoom(to: string) {
@@ -154,6 +183,8 @@
 		active = null;
 		await tick();
 		plotEl?.querySelector<HTMLElement>('button')?.focus();
+		// Moving focus is not a request for a readout; it would cover the first label.
+		active = null;
 	}
 
 	function up() {
@@ -269,9 +300,7 @@
 									onpointerenter={() => (active = r.id)}
 									onfocus={() => (active = r.id)}
 								>
-									<span data-tm-label class="tm-caption-text" aria-hidden="true"
-										><span data-tm-name>{r.name}</span><span data-tm-meta>{` · ${share(r.value, total)}`}</span></span
-									>
+									<span data-tm-label class="tm-caption-text" aria-hidden="true">{captionText(r.name, r.value, total)}</span>
 								</button>
 							{/if}
 						{:else}
@@ -280,6 +309,7 @@
 								type="button"
 								class={['tm-tile', active === r.id && 'is-active']}
 								style={tileStyle(r)}
+								data-tm-top={r.depth === 1 ? r.id : undefined}
 								aria-label={aria(r)}
 								onclick={() => onTile(r)}
 								onpointerenter={() => (active = r.id)}
@@ -289,7 +319,9 @@
 									<span data-tm-label class="tm-label" aria-hidden="true">
 										<span class="tm-name" data-tm-name>{r.name}</span>
 										{#if tier === 'full'}
-											<span class="tm-meta" data-tm-meta>{num(r.value, { compact: true })} · {share(r.value, total)}</span>
+											<span class="tm-meta" data-tm-meta
+												><span data-tm-val>{`${num(r.value, { compact: true })} · `}</span>{share(r.value, total)}</span
+											>
 										{/if}
 									</span>
 								{/if}
@@ -311,6 +343,14 @@
 				</div>
 			{/if}
 		</div>
+
+		{#if unnamed.length}
+			<p class="tm-foot text-callout">
+				{#each unnamed as r (r.id)}
+					<span>{r.name} <span class="tm-foot-share">{share(r.value, total)}</span></span>
+				{/each}
+			</p>
+		{/if}
 	{/if}
 </div>
 
@@ -434,7 +474,8 @@
 		font-size: 12px;
 		line-height: 15px;
 		font-weight: var(--weight-medium, 500);
-		max-height: 60px;
+		/* Two lines; a longer name overflows and fit() hides the label. */
+		max-height: 30px;
 		overflow: hidden;
 		overflow-wrap: normal;
 	}
@@ -443,8 +484,10 @@
 		line-height: 14px;
 		font-variant-numeric: tabular-nums;
 		white-space: nowrap;
+		overflow: hidden;
 		color: color-mix(in oklab, var(--ripple-surface-foreground) var(--tm-meta), transparent);
 	}
+	[data-tm-label]:global([data-fit='share']) [data-tm-val],
 	[data-tm-label]:global([data-fit='name']) [data-tm-meta] {
 		display: none;
 	}
@@ -468,6 +511,17 @@
 		overflow: hidden;
 		white-space: nowrap;
 		line-height: 20px;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.tm-foot {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 2px 14px;
+		margin: 6px 0 0;
+		color: var(--ripple-muted-foreground);
+	}
+	.tm-foot-share {
 		font-variant-numeric: tabular-nums;
 	}
 

@@ -8,7 +8,10 @@
 // that sums to 0 or less drops, and so does a group whose children all drop;
 // a blank name reads "Unnamed". Node `color` is ignored: one hue is the design.
 //
-// Captions: only a top-level group gets one (deeper levels show on zoom).
+// Captions: only a group directly under the current root gets one (zoom
+// shows deeper ones), and only when its box is big enough and, given a
+// `measure`, its whole `name · share` line fits the width. A caption that would
+// not draw reserves no space. Nested groups get a wider gap so nesting reads.
 //
 // Colour: top-level tiles (children of the current root) are ranked by value
 // onto RAMP, the percent of --ripple-accent mixed into --ripple-surface;
@@ -26,6 +29,8 @@ export const INK_ALPHA = 80;
 /** Gap between tiles, px; top-level siblings get a wider one so groups read. */
 export const GAP = 2;
 export const TOP_GAP = 4;
+/** Gap between the children of a nested group that itself holds groups. */
+export const NEST_GAP = 4;
 /** Caption strip on a group tall enough to pay for it. */
 export const CAPTION = 20;
 export const CAPTION_MIN_HEIGHT = 64;
@@ -100,21 +105,33 @@ export function labelTier(w: number, h: number): 'full' | 'name' | 'none' {
 	return 'none';
 }
 
-/** Only top-level groups pay for a caption, and only when the tile is big enough. */
-function hasCaption(d: { depth: number; x0: number; x1: number; y0: number; y1: number }): boolean {
-	return d.depth === 1 && d.y1 - d.y0 >= CAPTION_MIN_HEIGHT && d.x1 - d.x0 >= CAPTION_MIN_WIDTH;
-}
+/** Text width in px at the caption font; layout uses it to keep only captions that fit. */
+export type Measure = (text: string) => number;
 
-/** Squarified layout of `nodes` in a w x h box, flattened, root excluded. */
-export function layout(nodes: TreeNode[], w: number, h: number): Rect[] {
+/** The caption line a group shows. */
+export const captionText = (name: string, value: number, total: number) => `${name} · ${share(value, total)}`;
+
+/**
+ * Squarified layout of `nodes` in a w x h box, flattened, root excluded.
+ * `inset` is the caption's right padding; with `measure` a caption that does
+ * not fit on one line is dropped before layout, so it reserves no strip.
+ */
+export function layout(nodes: TreeNode[], w: number, h: number, measure?: Measure, inset = 6): Rect[] {
 	if (!nodes.length || !(w > 0) || !(h > 0)) return [];
+	const total = nodes.reduce((s, n) => s + n.value, 0);
+	// 2px left pad, the inset on the right, 2px slack for rounding.
+	const hasCaption = (d: { depth: number; x0: number; x1: number; y0: number; y1: number; data: TreeNode }) =>
+		d.depth === 1 &&
+		d.y1 - d.y0 >= CAPTION_MIN_HEIGHT &&
+		d.x1 - d.x0 >= CAPTION_MIN_WIDTH &&
+		(!measure || measure(captionText(d.data.name, d.data.value, total)) + inset + 4 <= d.x1 - d.x0);
 	const tree = hierarchy<TreeNode>({ id: '', name: '', value: 0, children: nodes })
 		.sum((d) => (d.children ? 0 : d.value))
 		.sort((a, b) => (b.value ?? 0) - (a.value ?? 0));
 	const root = treemap<TreeNode>()
 		.size([w, h])
 		.tile(treemapSquarify)
-		.paddingInner((d) => (d.depth === 0 ? TOP_GAP : GAP))
+		.paddingInner((d) => (d.depth === 0 ? TOP_GAP : d.depth > 1 && d.children?.some((c) => c.children) ? NEST_GAP : GAP))
 		// d3 sets a node's own box before it asks for its padding, so the
 		// caption can depend on the group's height in one pass.
 		.paddingTop((d) => (hasCaption(d) ? CAPTION : 0))(tree);
