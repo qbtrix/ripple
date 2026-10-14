@@ -19,6 +19,7 @@ import Metric from './display/Metric.svelte';
 import Highlight from './display/Highlight.svelte';
 import Avatar from './display/Avatar.svelte';
 import Mention from './display/Mention.svelte';
+import Button from './input/Button.svelte';
 import ArticleMeta from './display/ArticleMeta.svelte';
 import Icon from './display/Icon.svelte';
 import Diff from './display/Diff.svelte';
@@ -64,6 +65,14 @@ describe('non-string props do not crash widgets', () => {
     expect(() =>
       render(AvatarGroup, { props: { users: [{ alt: 7 as unknown as string }] } })
     ).not.toThrow();
+  });
+
+  it('Button renders a numeric label and renders no element for an empty or null one', () => {
+    expect(renderText(Button, { label: 42 as unknown as string, variant: 'link' })).toBe('42');
+    for (const label of [undefined, '', '  ', null]) {
+      const { container } = render(Button, { props: { label: label as unknown as string, variant: 'link' } });
+      expect(container.querySelector('button')).toBeNull();
+    }
   });
 
   it('Mention tolerates a numeric name', () => {

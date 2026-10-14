@@ -56,6 +56,24 @@ test('Mention with a safe href is a link that underlines on hover', () => {
   expect(a.className).toContain('text-ripple-accent-text');
 });
 
+test('Badge with a variant outside the enum gets the default accent tint, not outline', () => {
+  const { container } = render(Badge, { props: { text: 'Queued', variant: 'primary' as 'default' } });
+  const cls = container.querySelector('[data-slot="badge"]')!.className;
+  expect(cls).toContain('bg-ripple-accent/10');
+  expect(cls).toContain('text-ripple-accent-text');
+  expect(cls).not.toContain('border-border');
+});
+
+test('Mention and link Button size to content so a stretching column cannot widen them', () => {
+  const pill = render(Mention, { props: { name: 'rosa' } }).container.querySelector('span')!;
+  expect(pill.className).toContain('w-fit');
+  const b = render(Button, { props: { label: 'Open the checklist', variant: 'link' } }).container.querySelector('button')!;
+  expect(b.className).toContain('w-fit');
+  expect(b.className).toContain('justify-start');
+  expect(b.className).not.toContain('justify-center');
+  expect(b.className).toMatch(/(^|\s)underline(\s|$)/);
+});
+
 test('link Button wraps a long label and uses the accent text token', () => {
   const { container } = render(Button, { props: { label: 'View the full planning history', variant: 'link' } });
   const b = container.querySelector('button')!;

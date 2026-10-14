@@ -8,7 +8,8 @@
      on card, muted and tinted grounds (guarded by ui/status-text.test.ts).
      A long label wraps inside the card (an unbroken URL breaks anywhere) and
      the 12px radius keeps a one-line badge a full pill. An empty label
-     renders nothing. Classes ride
+     renders nothing, and a variant outside the enum falls back to the
+     default accent tint, not the outline look. Classes ride
      `class` through twMerge so the shared shadcn badge stays untouched; the
      node id is forwarded as id + data-ripple-node for the visual editor.
 -->
@@ -43,13 +44,18 @@
     warning: 'bg-ripple-warning/10 text-ripple-warning-text border-transparent',
   };
 
+  // Anything outside the enum ('primary', typos) reads as the default tint.
+  const tone = $derived(
+    Object.hasOwn(variantMap, variant) || variant === 'destructive' || variant === 'outline' ? variant : 'default'
+  );
+
   const shadcnVariant = $derived(
-    ['default', 'secondary', 'destructive', 'outline'].includes(variant)
-      ? variant as 'default' | 'secondary' | 'destructive' | 'outline'
+    ['default', 'secondary', 'destructive', 'outline'].includes(tone)
+      ? tone as 'default' | 'secondary' | 'destructive' | 'outline'
       : 'outline'
   );
 
-  const extraClass = $derived(variantMap[variant] ?? '');
+  const extraClass = $derived(variantMap[tone] ?? '');
 
   // Bindings deliver numbers/booleans as readily as strings ({state.x.score}).
   // Coerce before the emptiness check — .trim() exists only on strings, and a

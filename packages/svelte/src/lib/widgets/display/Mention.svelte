@@ -4,7 +4,9 @@
      mention deepens to 15% and underlines on hover; the hover card is optional.
      `name` is coerced and stripped of leading @, so "@dana" never shows "@@";
      an empty name renders nothing. Only a safeUrl-approved href becomes a
-     link; anything else (javascript:, junk) renders the plain pill. -->
+     link; anything else (javascript:, junk) renders the plain pill. The pill
+     is w-fit, so a column flex (align-items: stretch) cannot widen it into a
+     full-width band; it sizes to the handle like a Badge. -->
 <script lang="ts">
   import { safeUrl } from '@ripple-ui/core';
   import * as HC from '$lib/components/ui/hover-card/index.js';
@@ -64,7 +66,7 @@
   const link = $derived(safeUrl(href));
   // [overflow-wrap:anywhere] lets a very long handle break inside the card.
   const pill =
-    'inline-flex max-w-full items-center gap-0.5 rounded-md bg-primary/10 text-ripple-accent-text font-medium px-1.5 py-0 text-[0.95em] [overflow-wrap:anywhere]';
+    'inline-flex w-fit max-w-full items-center gap-0.5 rounded-md bg-primary/10 text-ripple-accent-text font-medium px-1.5 py-0 text-[0.95em] [overflow-wrap:anywhere]';
   const linked = 'hover:bg-primary/15 hover:underline underline-offset-2 transition-colors';
 </script>
 
