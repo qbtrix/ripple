@@ -1,5 +1,10 @@
+<!-- src/lib/widgets/display/ArticleMeta.svelte
+     Byline row: author (photo, or initials on a name tint when the photo is
+     missing or fails), optional role, then date and read time. Date and read
+     time are one nowrap unit, so a wrap moves both and never orphans one. -->
 <script lang="ts">
-  import { safeUrl } from '@ripple-ui/core';
+  import { safeStyle, safeUrl } from '@ripple-ui/core';
+  import { nameTint } from '$lib/widgets/data-kit/tint.js';
   import { cn } from '$lib/utils.js';
   import { asText } from '$lib/widgets/text-coerce';
   import CalendarIcon from '@lucide/svelte/icons/calendar';
@@ -20,6 +25,8 @@
     id, class: className, style,
     author, avatar, role, date, readTime
   }: Props = $props();
+
+  let failedAvatar = $state<string>();
 
   const styleString = $derived(
     style ? Object.entries(style).map(([k, v]) => `${k}:${v}`).join(';') : undefined
@@ -45,10 +52,10 @@
 >
   {#if author}
     <div class="flex items-center gap-2">
-      {#if avatar}
-        <img src={safeUrl(avatar, { kind: 'resource' })} alt={author} class="size-8 rounded-full object-cover" />
+      {#if avatar && failedAvatar !== avatar && safeUrl(avatar, { kind: 'resource' })}
+        <img src={safeUrl(avatar, { kind: 'resource' })} alt={author} class="size-8 shrink-0 rounded-full object-cover" onerror={() => (failedAvatar = avatar)} />
       {:else}
-        <div class="flex size-8 items-center justify-center rounded-full bg-muted text-xs font-semibold text-foreground">
+        <div class="flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold" style={safeStyle(nameTint(asText(author)))}>
           {authorInitials(author)}
         </div>
       {/if}
@@ -58,6 +65,8 @@
       </div>
     </div>
   {/if}
+  {#if date || readTime}
+  <span class="inline-flex items-center gap-3 whitespace-nowrap">
   {#if date}
     <span class="inline-flex items-center gap-1">
       <CalendarIcon size={13} />
@@ -69,5 +78,7 @@
       <ClockIcon size={13} />
       <span>{readTime}</span>
     </span>
+  {/if}
+  </span>
   {/if}
 </div>

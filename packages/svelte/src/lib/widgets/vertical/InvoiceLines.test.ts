@@ -11,8 +11,8 @@ import { createInvoice } from '../__fixtures__/live-chip-specs.js';
 afterEach(cleanup);
 
 const rowText = (c: HTMLElement, label: string) =>
-  [...c.querySelectorAll('tr')].find((tr) => tr.textContent?.includes(label))?.textContent ?? '';
-const totalText = (c: HTMLElement) => c.querySelector('tfoot tr:last-child')?.textContent ?? '';
+  [...c.querySelectorAll('.ril-row, .ril-sum')].find((tr) => tr.textContent?.includes(label))?.textContent ?? '';
+const totalText = (c: HTMLElement) => c.querySelector('.ril-total')?.textContent ?? '';
 
 test('create-invoice spec: summary amount renders, no NaN anywhere', () => {
   const { container } = render(Ripple, { props: { spec: createInvoice } });
@@ -56,4 +56,38 @@ test('an ISO currency code formats as money, a symbol still prefixes', () => {
     props: { currency: '€', lines: [{ description: 'Logo', quantity: 1, unitPrice: 450 }] },
   });
   expect(rowText(eur, 'Logo')).toContain('€450.00');
+});
+
+test('a summary Subtotal replaces the auto row, so there is exactly one Subtotal', () => {
+  const { container } = render(InvoiceLines, {
+    props: {
+      lines: [
+        { description: 'Plan', quantity: 1, unitPrice: 20000 },
+        { description: 'Setup', quantity: 1, unitPrice: 500 }
+      ],
+      summary: [
+        { label: 'Subtotal', amount: 18000 },
+        { label: 'Tax', amount: 100 }
+      ]
+    }
+  });
+  const subs = [...container.querySelectorAll('.ril-sum')].filter((r) => /subtotal/i.test(r.textContent ?? ''));
+  expect(subs).toHaveLength(1);
+  expect(subs[0].textContent).toContain('18,000.00');
+  // The model's subtotal is not added twice: 18,000 + 100.
+  expect(totalText(container)).toContain('18,100.00');
+});
+
+test('an explicit total always wins over the arithmetic', () => {
+  const { container } = render(InvoiceLines, {
+    props: { lines: [{ description: 'Plan', total: 50 }], summary: [{ label: 'Subtotal', amount: 40 }], total: 99 }
+  });
+  expect(totalText(container)).toContain('99.00');
+});
+
+test('narrow cards get a qty × unit second line instead of extra columns', () => {
+  const { container } = render(InvoiceLines, {
+    props: { lines: [{ description: 'Seats', quantity: 12, unitPrice: 5 }] }
+  });
+  expect(container.querySelector('.ril-narrow')?.textContent).toContain('12 × $5.00');
 });

@@ -1,15 +1,15 @@
 <!-- src/lib/widgets/input/Segmented.svelte
-     A pill track of mutually exclusive (radiogroup/radio) or toggled
-     (group/checkbox, `multiple`) options. One aria-hidden thumb slides under the
-     selected segment in single mode; in multiple mode, or when the value matches
-     no option, there is no thumb and selected segments paint their own surface.
+     A track of mutually exclusive (radiogroup/radio) or toggled
+     (group/checkbox, `multiple`) options on the shared chip track. A selected
+     segment paints its own raised chip (components/ui/chip.ts, as tabs do). In
+     single mode an empty value selects the first enabled option, so the
+     control never shows nothing.
      Options take an optional icon (Lucide slug), `badge` (a small accent count
      pill), `class` and `disabled`; the `leading` snippet renders before each
      option's icon so a host can mark one (a category dot).
      Overflow: labels never wrap (whitespace-nowrap) and the track is capped at
      its container (max-w-full) and scrolls sideways when the options do not fit,
-     so a long option list can never spill over the rows below it. Segments stay
-     equal width, so the thumb maths (100% / columns) holds while scrolled.
+     so a long option list can never spill over the rows below it.
      Keyboard (single mode): one tab stop, the selected option or else the first
      enabled one (roving tabindex). Arrows move focus AND select like native
      radios: Left/Up previous, Right/Down next, wrapping at the ends; Home/End
@@ -20,6 +20,7 @@
   import { safeStyle } from '@ripple-ui/core';
   import type { Snippet } from 'svelte';
   import { cn } from '$lib/utils.js';
+  import { CHIP_RADIUS, CHIP_TRACK, SELECTED_CHIP } from '$lib/components/ui/chip.js';
   import { canonicalOptions } from '$lib/utils/safe-props.js';
   import * as icons from '@lucide/svelte';
 
@@ -63,9 +64,18 @@
 
   const normalized = $derived(canonicalOptions(options, { widget: 'segmented', key: 'options' }));
 
+  // Single mode never shows an empty control: with no bound value the first
+  // enabled option is selected, and committed to state once so the two agree.
+  const firstEnabled = $derived(normalized.find((o) => !(o as any).disabled));
+  const isEmpty = $derived(value === null || value === undefined || value === '');
+  const current = $derived(!multiple && isEmpty ? firstEnabled?.value : value);
+  $effect(() => {
+    if (!multiple && !disabled && isEmpty && firstEnabled) onchange?.(firstEnabled.value);
+  });
+
   function isSelected(v: string | number): boolean {
-    if (multiple) return Array.isArray(value) && value.includes(v);
-    return value === v;
+    if (multiple) return Array.isArray(current) && current.includes(v);
+    return current === v;
   }
 
   function pick(v: string | number) {
@@ -85,7 +95,7 @@
 
   // Radio mode's one tab stop: the selected option, else the first enabled one.
   const tabStop = $derived.by(() => {
-    const i = normalized.findIndex((o) => o.value === value && !off(o));
+    const i = normalized.findIndex((o) => o.value === current && !off(o));
     return i >= 0 ? i : normalized.findIndex((o) => !off(o));
   });
 
@@ -118,14 +128,12 @@
   }
 
   const sizeClass = $derived(size === 'sm' ? 'h-7 text-[12px]' : 'h-8 text-[13px]');
-  const padClass = $derived(size === 'sm' ? 'px-2.5' : 'px-3');
+  // Many options get tighter padding so a six-option track still fits a phone-width card.
+  const padClass = $derived(normalized.length > 4 ? 'px-2' : size === 'sm' ? 'px-2.5' : 'px-3');
 
   // repeat(0, …) is invalid CSS, so an empty options list still needs one track.
   const columns = $derived(Math.max(1, normalized.length));
   // Thumb position. -1 (no match) hides it rather than parking it on segment 0.
-  const selectedIndex = $derived(
-    multiple ? -1 : normalized.findIndex((o) => o.value === value)
-  );
 </script>
 
 <div class={cn('flex flex-col gap-1.5', className)} style={styleString}>
@@ -140,19 +148,13 @@
     class={cn(
       // w-fit is kept from the pre-skin version: the source renders standalone,
       // but here the track is a child of a column flex, which would stretch it.
-      'relative inline-grid w-fit max-w-full select-none overflow-x-auto rounded-full bg-ripple-border/60 p-0.5 [scrollbar-width:none]',
+      'relative inline-grid w-fit max-w-full select-none overflow-x-auto [scrollbar-width:none]',
+      CHIP_TRACK,
       sizeClass,
       disabled && 'opacity-50 cursor-not-allowed'
     )}
     style={safeStyle(`grid-template-columns: repeat(${columns}, 1fr);`)}
   >
-    {#if selectedIndex >= 0}
-      <span
-        aria-hidden="true"
-        class="pointer-events-none absolute inset-y-0.5 left-0.5 rounded-full bg-ripple-surface ring-1 ring-ripple-border transition-transform duration-200 ease-ripple-out motion-reduce:transition-none"
-        style={safeStyle(`width: calc((100% - 4px) / ${columns}); transform: translateX(${selectedIndex * 100}%);`)}
-      ></span>
-    {/if}
 
     {#each normalized as opt, i (opt.value)}
       {@const selected = isSelected(opt.value)}
@@ -166,13 +168,15 @@
         onclick={() => pick(opt.value)}
         onkeydown={(e) => onkeydown(e, i)}
         class={cn(
-          'relative z-10 inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full font-medium transition-colors duration-150 ease-ripple-out',
+          'relative z-10 inline-flex items-center justify-center gap-1.5 whitespace-nowrap font-medium transition-colors duration-150 ease-ripple-out',
+          CHIP_RADIUS,
           padClass,
           selected
             ? 'text-ripple-surface-foreground'
             : 'text-ripple-muted-foreground hover:text-ripple-surface-foreground',
-          // No sliding thumb in multiple mode — the segment paints its own surface.
-          multiple && selected && 'bg-ripple-surface ring-1 ring-ripple-border',
+          // The selected segment paints its own raised chip, so it can never
+          // drift from its label when segments differ in width.
+          selected && SELECTED_CHIP,
           (opt as any).disabled && 'opacity-50 cursor-not-allowed',
           typeof opt.class === 'string' ? opt.class : undefined
         )}

@@ -1,3 +1,8 @@
+<!--
+  DefinitionList.svelte: term/definition pairs, inline (two columns) or
+  stacked (term above). An empty definition renders a muted 'Not set', so its
+  term never reads as an orphaned heading.
+-->
 <script lang="ts">
   import { cn } from '$lib/utils.js';
 
@@ -25,6 +30,10 @@
   );
 </script>
 
+{#snippet def(text: string)}
+  {#if String(text ?? '').trim()}<dd>{text}</dd>{:else}<dd class="text-muted-foreground">Not set</dd>{/if}
+{/snippet}
+
 <dl
   {id}
   class={cn(
@@ -39,11 +48,11 @@
   {#each items as item}
     {#if layout === 'inline'}
       <dt class="font-medium text-muted-foreground">{item.term}</dt>
-      <dd>{item.definition}</dd>
+      {@render def(item.definition)}
     {:else}
       <div class="flex flex-col gap-0.5">
         <dt class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{item.term}</dt>
-        <dd>{item.definition}</dd>
+        {@render def(item.definition)}
       </div>
     {/if}
   {/each}

@@ -137,8 +137,9 @@
       // INSIDE the fixed size height, so every variant of a given size is the
       // SAME height (canonical) regardless of border/padding/consumer preflight.
       'ripple-btn box-border relative isolate inline-flex items-center justify-center whitespace-nowrap select-none cursor-pointer',
-      // Pill — the source's core button shape.
-      'rounded-full font-medium tracking-[-0.01em] leading-none',
+      // Radius follows --ripple-radius so a button sits beside inputs and
+      // selects on one radius scale; only the icon size stays round.
+      'rounded-ripple font-medium tracking-[-0.01em] leading-none',
       // Transitions are owned entirely by the scoped .ripple-btn block below:
       // its shorthand overrides any Tailwind transition-* class set here, so a
       // class here would only describe something that never applies. Colour
@@ -177,9 +178,12 @@
         sm: 'h-7 px-3 text-[12px] gap-1',
         md: 'h-8 px-4 text-[13px] gap-1.5',
         lg: 'h-10 px-5 text-sm gap-2',
-        icon: 'h-8 w-8 p-0 gap-0',
+        icon: 'h-8 w-8 p-0 gap-0 rounded-full',
       },
     },
+    // link reads as text: no inline padding (size's px would otherwise win), so
+    // it keeps the left edge the atoms around it hold.
+    compoundVariants: [{ variant: 'link', class: 'h-auto px-0' }],
     defaultVariants: { variant: 'default', size: 'md' },
   });
 

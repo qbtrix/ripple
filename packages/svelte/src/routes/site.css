@@ -66,6 +66,13 @@
 	--card-foreground: oklch(0.2 0.01 95);
 	--muted-foreground: oklch(0.43 0.01 95);
 	--border: oklch(0.2 0.01 95 / 12%);
+	/* Warm control fills, a step darker than the card so they never wash out. */
+	--muted: #e5e4dd;
+	--secondary: #e3e2da;
+	--secondary-foreground: oklch(0.2 0.01 95);
+	--accent: #e3e2da;
+	--accent-foreground: oklch(0.2 0.01 95);
+	--input: oklch(0.2 0.01 95 / 22%);
 
 	/* Ground, the warm surface ladder and the ink ladder. */
 	--site-ground: #f7f6f2;

@@ -1,3 +1,10 @@
+<!--
+  Card.svelte: the bordered surface container with optional title,
+  description, header snippet, body and footer. Always a div (see the note on
+  the element). A root card carries the surface fill; a default card nested
+  inside a spec drops its fill and keeps only the 1px border and radius, so it
+  reads as a tile on the surface its parent already paints.
+-->
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { tv } from 'tailwind-variants';
@@ -85,7 +92,7 @@
 <svelte:element
   this={'div'}
   {id}
-  class={cn(card({ variant, density, interactive: isInteractive }), className)}
+  class={cn('rcard', card({ variant, density, interactive: isInteractive }), className)}
   style={styleString}
   data-variant={variant}
   data-density={density}
@@ -127,3 +134,10 @@
     </div>
   {/if}
 </svelte:element>
+
+<style>
+  /* Nested in a spec (its parent is not .ripple-root itself): tile treatment. */
+  :global(.ripple-root *) > .rcard[data-variant='default'] {
+    background: transparent;
+  }
+</style>

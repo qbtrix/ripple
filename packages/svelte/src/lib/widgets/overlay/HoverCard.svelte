@@ -9,6 +9,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { cn } from '$lib/utils.js';
+  import { TEXT_TRIGGER } from '$lib/components/ui/trigger.js';
   import * as HoverCard from '$lib/components/ui/hover-card/index.js';
   import NodeRenderer from '$lib/components/NodeRenderer.svelte';
 
@@ -49,7 +50,7 @@
 <HoverCard.Root {openDelay} {closeDelay}>
   <HoverCard.Trigger>
     {#snippet child({ props: triggerProps })}
-      <span {...triggerProps} {id} class={cn(className)} style={styleString}>
+      <span {...triggerProps} {id} class={cn(!children && isString(trigger) && TEXT_TRIGGER, className)} style={styleString}>
         {#if children}
           {@render children()}
         {:else if isString(trigger)}

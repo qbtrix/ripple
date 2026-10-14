@@ -9,7 +9,6 @@
 <script lang="ts">
   import { safeUrl, safeStyle } from '@ripple-ui/core';
   import { cn } from '$lib/utils.js';
-  import { faviconUrl } from './favicon.js';
 
   interface Props {
     /** Spec node id, forwarded by NodeRenderer for editor selection. */
@@ -35,8 +34,6 @@
     url, class: className, onclick
   }: Props = $props();
 
-  const iconSrc = $derived(faviconUrl(source));
-  let iconError = $state(false);
 
   const sentimentConfig: Record<string, { label: string; color: string; bg: string }> = {
     bullish: { label: 'Bullish', color: '#22c55e', bg: 'rgba(34,197,94,0.1)' },
@@ -60,9 +57,6 @@
 <div {id} data-ripple-node={id} class={cn('rnews', className)} {...interactive}>
   <div class="rnews-body">
     <div class="rnews-source-row">
-      {#if !iconError}
-        <img src={safeUrl(iconSrc, { kind: 'resource' })} alt="" class="rnews-favicon" onerror={() => iconError = true} />
-      {/if}
       <span class="rnews-source">{source}</span>
       {#if time}
         <span class="rnews-dot">&middot;</span>
@@ -107,12 +101,6 @@
     align-items: center;
     gap: 5px;
     margin-bottom: 3px;
-  }
-  .rnews-favicon {
-    width: 12px;
-    height: 12px;
-    border-radius: 2px;
-    object-fit: contain;
   }
   .rnews-source {
     font-size: 11px;

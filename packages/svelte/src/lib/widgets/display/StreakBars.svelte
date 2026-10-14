@@ -39,7 +39,7 @@
     values,
     count = 14,
     filled,
-    color = 'var(--accent)',
+    color = 'var(--ripple-accent)',
     height = 14,
     gap = 3,
   }: Props = $props();
@@ -51,21 +51,21 @@
       return values.map((v, i) => {
         if (typeof v === 'number') {
           const lit = v > 0;
-          return { key: i, bg: color, opacity: lit ? Math.min(1, 0.3 + v * 0.7) : 0.1 };
+          return { key: i, bg: lit ? color : 'var(--ripple-track)', opacity: lit ? Math.min(1, 0.3 + v * 0.7) : 1 };
         }
         const on = v.on ?? (v.intensity ?? 0) > 0;
         return {
           key: i,
-          bg: v.color ?? color,
-          opacity: on ? Math.min(1, 0.3 + (v.intensity ?? 1) * 0.7) : 0.1,
+          bg: on ? (v.color ?? color) : 'var(--ripple-track)',
+          opacity: on ? Math.min(1, 0.3 + (v.intensity ?? 1) * 0.7) : 1,
         };
       });
     }
     const lit = filled ?? count;
     return Array.from({ length: count }, (_, i) => ({
       key: i,
-      bg: color,
-      opacity: i < lit ? 1 : 0.1,
+      bg: i < lit ? color : 'var(--ripple-track)',
+      opacity: 1,
     }));
   });
 

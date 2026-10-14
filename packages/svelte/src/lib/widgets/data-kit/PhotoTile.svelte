@@ -7,14 +7,17 @@
   Invariant: the only `src` sink is `safeUrl(src, { kind: 'resource' })`
   inline on the <img> (security/url-sinks.test.ts audits that), and the <img>
   renders only when that call returns a URL. Width comes from the caller's
-  class (`w-24`, `w-full`); a hero adds `max-h-[200px]`.
+  class (`w-24`, `w-full`); a hero adds `max-h-[200px]`. A caller with a
+  better fallback than the icon (link-preview's domain letter) passes the
+  `fallback` snippet; it fills the box in place of the icon.
 -->
 <script lang="ts">
 	import type { LucideIcon } from '@lucide/svelte';
+	import type { Snippet } from 'svelte';
 	import { safeUrl } from '@ripple-ui/core';
 	import { FALLBACK_ICON } from './icons.js';
 
-	type Ratio = '4:3' | '1:1' | '16:9';
+	type Ratio = '4:3' | '1:1' | '16:9' | 'auto';
 
 	interface Props {
 		src?: unknown;
@@ -23,11 +26,20 @@
 		icon?: LucideIcon;
 		iconSize?: number;
 		class?: string;
+		id?: string;
+		/** Inline style for the box (the image atom passes its width, height and radius). */
+		style?: string;
+		fit?: 'contain' | 'cover' | 'fill' | 'none' | 'scale-down';
+		/** Show the alt text under the fallback icon. */
+		caption?: boolean;
+		/** Replaces the icon tile when the image is missing, refused or failed. */
+		fallback?: Snippet;
 	}
 
-	let { src, alt = '', ratio = '1:1', icon, iconSize = 20, class: className }: Props = $props();
+	let { src, alt = '', ratio = '1:1', icon, iconSize = 20, class: className, id, style, fit = 'cover', caption = false, fallback }: Props = $props();
 
-	const RATIO: Record<Ratio, string> = { '4:3': 'aspect-[4/3]', '1:1': 'aspect-square', '16:9': 'aspect-video' };
+	// 'auto' leaves the box to its own width/height (the image atom); the fallback then keeps a floor height, and its floor width never exceeds the track it sits in.
+	const RATIO: Record<Ratio, string> = { '4:3': 'aspect-[4/3]', '1:1': 'aspect-square', '16:9': 'aspect-video', auto: '' };
 
 	// Keyed by URL, so a src that changes (a streamed placeholder swapped for
 	// the hydrated photo) starts over as loading instead of inheriting a state.
@@ -40,20 +52,24 @@
 	const Icon = $derived(icon ?? FALLBACK_ICON);
 </script>
 
-<div class={['relative overflow-hidden rounded-md bg-ripple-muted', RATIO[ratio] ?? RATIO['1:1'], className]} data-state={phase}>
+<div {id} {style} class={['relative overflow-hidden rounded-md bg-ripple-muted', RATIO[ratio] ?? RATIO['1:1'], ratio === 'auto' && phase === 'fallback' && 'min-h-24 min-w-[min(6rem,100%)]', className]} data-state={phase}>
 	{#if showImage}
 		<img
 			src={safeUrl(src, { kind: 'resource' })}
 			{alt}
 			loading="lazy"
 			decoding="async"
-			class={['size-full object-cover transition-opacity duration-150 ease-ripple-out', phase === 'loaded' ? 'opacity-100' : 'opacity-0']}
+			style:object-fit={fit}
+			class={['block size-full transition-opacity duration-150 ease-ripple-out', phase === 'loaded' ? 'opacity-100' : 'opacity-0']}
 			onload={() => (loadedUrl = url)}
 			onerror={() => (failedUrl = url)}
 		/>
+	{:else if fallback}
+		{@render fallback()}
 	{:else if alt}
-		<div class="grid size-full place-items-center text-ripple-muted-foreground" role="img" aria-label={alt}>
+		<div class="flex size-full flex-col items-center justify-center gap-1.5 p-2 text-ripple-muted-foreground" role="img" aria-label={alt}>
 			<Icon size={iconSize} strokeWidth={1.75} aria-hidden="true" />
+			{#if caption}<span class="line-clamp-2 max-w-full text-center text-xs" aria-hidden="true">{alt}</span>{/if}
 		</div>
 	{:else}
 		<div class="grid size-full place-items-center text-ripple-muted-foreground" aria-hidden="true">

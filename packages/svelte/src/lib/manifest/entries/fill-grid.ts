@@ -18,6 +18,6 @@ export const fillGridEntry: WidgetManifestEntry = {
   },
   example: {
     type: 'fill-grid',
-    props: { value: 100, max: 100, total: 24, color: '#2FB970' },
+    props: { value: 62, max: 100, total: 24 },
   },
 };
