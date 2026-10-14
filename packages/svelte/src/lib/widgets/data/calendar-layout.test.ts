@@ -175,14 +175,14 @@ describe('model data hygiene', () => {
 		expect(rangeLabel(D('2026-05-20'), D('2026-05-20'), 'en-US')).toBe('May 20');
 	});
 	it('falls back to "to" when formatRange is missing', () => {
-		const orig = Intl.DateTimeFormat.prototype.formatRange;
+		const orig = Object.getOwnPropertyDescriptor(Intl.DateTimeFormat.prototype, 'formatRange')!;
 		// @ts-expect-error simulate an old runtime
 		delete Intl.DateTimeFormat.prototype.formatRange;
 		try {
 			expect(rangeLabel(D('2026-05-20'), D('2026-05-22'), 'en-US')).toBe('May 20 to 22');
 			expect(rangeLabel(D('2026-10-28'), D('2026-11-03'), 'en-US', true)).toBe('Oct 28 to Nov 3, 2026');
 		} finally {
-			Intl.DateTimeFormat.prototype.formatRange = orig;
+			Object.defineProperty(Intl.DateTimeFormat.prototype, 'formatRange', orig);
 		}
 	});
 	it('caps at MAX_EVENTS and survives junk', () => {
@@ -197,7 +197,7 @@ describe('model data hygiene', () => {
 // ── Measured contrast (rubric 4) ───────────────────────────────────────────
 function hexLab(hex: string): Lab {
 	let h = hex.slice(1);
-	if (h.length === 3) h = [...h].map((c) => c + c).join('');
+	if (h.length === 3) h = h.split('').map((c) => c + c).join('');
 	const lin = [0, 2, 4].map((i) => {
 		const v = parseInt(h.slice(i, i + 2), 16) / 255;
 		return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;

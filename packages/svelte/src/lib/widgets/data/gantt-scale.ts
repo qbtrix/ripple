@@ -71,7 +71,7 @@ export function parseTasks(tasks: readonly unknown[]): GanttRow[] {
 		else if (end < start) [start, end] = [end, start];
 		return {
 			task,
-			id: t.id === undefined || t.id === null ? '' : String(t.id).trim(),
+			id: typeof t.id === 'string' || typeof t.id === 'number' ? String(t.id).trim() : '',
 			name: name || 'Untitled task',
 			untitled: !name,
 			start,

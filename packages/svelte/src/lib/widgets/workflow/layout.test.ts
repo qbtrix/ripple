@@ -182,7 +182,7 @@ describe('conditions and loops', () => {
     // fan-in shares one rail; every exit is on the bottom.
     const tb = plan(g, 360);
     const at = (id: string) => tb.nodes.find((n) => n.id === id)!;
-    expect(['v', ...ids, 'm'].map((id) => at(id).y)).toEqual([...['v', ...ids, 'm'].map((id) => at(id).y)].sort((p, q) => p - q));
+    expect(['v', ...ids, 'm'].map((id) => at(id).y)).toEqual(['v', ...ids, 'm'].map((id) => at(id).y).sort((p, q) => p - q));
     const indent = at('a').x - at('v').x;
     expect(indent).toBeGreaterThanOrEqual(24);
     expect(ids.every((id) => at(id).x === at('v').x + indent) && at('m').x === at('v').x).toBe(true);
