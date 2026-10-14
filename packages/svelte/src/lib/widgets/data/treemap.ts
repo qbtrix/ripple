@@ -9,18 +9,18 @@
 // a blank name reads "Unnamed". Node `color` is ignored: one hue is the design.
 //
 // Captions: only a group directly under the current root gets one (zoom
-// shows deeper ones), and only when its box is big enough. Given a `measure`,
-// the `name · share` caption takes one line if it fits, else wraps to two
-// (the share stays glued to the last word), else none. While zoomed, a group
-// that fills the view (rounds to 100%) gets none (the crumb already names it).
-// A caption reserves exactly the height it draws, or none. Top-level siblings
+// shows deeper ones), and only when its box is at least 64px tall and wide.
+// The caption is one 20px line, never two: `name · share` when `measure` says
+// it fits, else the share alone. While zoomed, a group that fills the view
+// (rounds to 100%) gets none (the crumb already names it). Top-level siblings
 // sit TOP_GAP apart, three times the in-group gap, so a group's edge reads;
 // nested groups that hold groups get NEST_GAP. Below 560px wide squarify runs
 // at ratio 1, so big leaves come out near square instead of as slivers.
 //
 // Colour: top-level tiles (children of the current root) are ranked by value
-// onto RAMP, the percent of --ripple-accent mixed into --ripple-surface;
-// descendants inherit their top-level step. Hover adds LIFT. Ink on a tile is
+// onto RAMP (RAMP_DARK in dark, whose floor sits higher so the smallest step
+// still reads against a dark card), the percent of --ripple-accent mixed into
+// --ripple-surface; descendants inherit their top-level step. Hover adds LIFT. Ink on a tile is
 // --ripple-surface-foreground; the value line is that ink at INK_ALPHA percent.
 // status-text.test.ts measures every step plus LIFT against both inks at 4.5:1,
 // so change these numbers only with that test.
@@ -28,6 +28,7 @@ import { hierarchy, treemap, treemapSquarify } from 'd3-hierarchy';
 import { finite, plain } from '../data-kit/format.js';
 
 export const RAMP = [56, 46, 37, 29, 22, 16] as const;
+export const RAMP_DARK = [56, 48, 41, 35, 29, 24] as const;
 export const LIFT = 8;
 export const INK_ALPHA = 80;
 
@@ -38,8 +39,6 @@ export const TOP_GAP = 6;
 export const NEST_GAP = 4;
 /** Caption strip on a group tall enough to pay for it. */
 export const CAPTION = 20;
-/** Two-line caption strip (two 15px lines plus padding). */
-export const CAPTION2 = 34;
 export const CAPTION_MIN_HEIGHT = 64;
 export const CAPTION_MIN_WIDTH = 64;
 const MAX_DEPTH = 8;
@@ -55,8 +54,10 @@ export type Rect = {
 	group: boolean;
 	/** Caption strip drawn (groups only). */
 	caption: boolean;
-	/** Caption strip height, px: CAPTION, CAPTION2 or 0. */
+	/** Caption strip height, px: CAPTION or 0. */
 	captionH: number;
+	/** Caption text: `name · share`, or the share alone when that does not fit. */
+	captionLabel: string;
 	x0: number;
 	y0: number;
 	x1: number;
@@ -116,9 +117,9 @@ export function labelTier(w: number, h: number): 'full' | 'name' | 'none' {
 
 /** Name line height and cap, px; the value line below takes one more line. */
 export const NAME_LINE = 15;
-export const MAX_NAME_LINES = 2;
+export const MAX_NAME_LINES = 4;
 
-/** How many name lines a tile of height `h` fits above its value line (1 to 2). */
+/** How many name lines a tile of height `h` fits above its value line (1 to 4). */
 export function nameLines(h: number, inset: number): number {
 	return Math.max(1, Math.min(MAX_NAME_LINES, Math.floor((h - 2 * inset - NAME_LINE) / NAME_LINE)));
 }
@@ -129,29 +130,34 @@ export type Measure = (text: string) => number;
 /** The caption a group shows; no-break spaces keep `· share` on the name's last word. */
 export const captionText = (name: string, value: number, total: number) => `${name}\u00a0·\u00a0${share(value, total)}`;
 
-/** Lines `text` takes when wrapped at spaces into `width` px: 1, 2, or 0 when 2 are not enough. */
-export function captionLines(text: string, width: number, measure: Measure): 0 | 1 | 2 {
-	if (measure(text) <= width) return 1;
-	let lines = 1;
-	let line = '';
-	for (const word of text.split(' ')) {
-		const next = line ? `${line} ${word}` : word;
-		if (measure(next) <= width) line = next;
-		else if (measure(word) > width || ++lines > 2) return 0;
-		else line = word;
-	}
-	return 2;
+/**
+ * Which items fit on one line `width` px wide, `gap` apart, in order: an item
+ * too wide is skipped so a later, shorter one can still show. Room is kept for
+ * a "+N more" tail (`more(n)` px wide) whenever some are left out.
+ */
+export function fitLine(widths: number[], gap: number, width: number, more: (n: number) => number): number[] {
+	const keep: number[] = [];
+	let used = 0;
+	widths.forEach((w, i) => {
+		const next = used + (keep.length ? gap : 0) + w;
+		const left = widths.length - keep.length - 1;
+		if (next + (left ? gap + more(left) : 0) <= width) {
+			keep.push(i);
+			used = next;
+		}
+	});
+	return keep;
 }
 
 /**
  * Squarified layout of `nodes` in a w x h box, flattened, root excluded.
- * `inset` is the caption's right padding; with `measure` a caption that does
- * not fit on one line is dropped before layout, so it reserves no strip.
+ * `inset` is the caption's right padding; with `measure` a `name · share`
+ * caption that does not fit on one line falls back to the share alone.
  */
 export function layout(nodes: TreeNode[], w: number, h: number, measure?: Measure, inset = 6, zoomed = false): Rect[] {
 	if (!nodes.length || !(w > 0) || !(h > 0)) return [];
 	const total = nodes.reduce((s, n) => s + n.value, 0);
-	const captionH = (d: { depth: number; x0: number; x1: number; y0: number; y1: number; data: TreeNode }) => {
+	const caption = (d: { depth: number; x0: number; x1: number; y0: number; y1: number; data: TreeNode }) => {
 		if (
 			d.depth !== 1 ||
 			// Rounds to 100%: it fills the view and the crumb names it.
@@ -159,11 +165,10 @@ export function layout(nodes: TreeNode[], w: number, h: number, measure?: Measur
 			d.y1 - d.y0 < CAPTION_MIN_HEIGHT ||
 			d.x1 - d.x0 < CAPTION_MIN_WIDTH
 		)
-			return 0;
-		if (!measure) return CAPTION;
+			return '';
+		const text = captionText(d.data.name, d.data.value, total);
 		// 2px left pad, the inset on the right, 2px slack for rounding.
-		const lines = captionLines(captionText(d.data.name, d.data.value, total), d.x1 - d.x0 - inset - 4, measure);
-		return lines === 1 ? CAPTION : lines === 2 && d.y1 - d.y0 >= CAPTION_MIN_HEIGHT + CAPTION2 - CAPTION ? CAPTION2 : 0;
+		return !measure || measure(text) <= d.x1 - d.x0 - inset - 4 ? text : share(d.data.value, total);
 	};
 	const tree = hierarchy<TreeNode>({ id: '', name: '', value: 0, children: nodes })
 		.sum((d) => (d.children ? 0 : d.value))
@@ -174,7 +179,7 @@ export function layout(nodes: TreeNode[], w: number, h: number, measure?: Measur
 		.paddingInner((d) => (d.depth === 0 ? TOP_GAP : d.depth > 1 && d.children?.some((c) => c.children) ? NEST_GAP : GAP))
 		// d3 sets a node's own box before it asks for its padding, so the
 		// caption can depend on the group's height in one pass.
-		.paddingTop(captionH)(tree);
+		.paddingTop((d) => (caption(d) ? CAPTION : 0))(tree);
 
 	const step = new Map<string, number>();
 	root.children?.forEach((c, i) => step.set(c.data.id, Math.min(i, RAMP.length - 1)));
@@ -183,15 +188,16 @@ export function layout(nodes: TreeNode[], w: number, h: number, measure?: Measur
 		if (d.depth === 0) continue;
 		const top = d.ancestors().find((a) => a.depth === 1)!;
 		const group = !!d.children;
-		const ch = group ? captionH(d) : 0;
+		const label = group ? caption(d) : '';
 		out.push({
 			id: d.data.id,
 			name: d.data.name,
 			value: d.value ?? 0,
 			depth: d.depth,
 			group,
-			caption: ch > 0,
-			captionH: ch,
+			caption: !!label,
+			captionH: label ? CAPTION : 0,
+			captionLabel: label,
 			x0: d.x0,
 			y0: d.y0,
 			x1: d.x1,

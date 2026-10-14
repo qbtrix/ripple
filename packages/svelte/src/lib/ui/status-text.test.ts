@@ -189,12 +189,12 @@ test('checkbox and radio rims use the control border, not the host --input', asy
   }
 });
 
-// Treemap tiles: the accent mixed into the card on treemap.ts's RAMP, plus
-// LIFT on hover. Tile ink is the surface ink; the value line is that ink at
+// Treemap tiles: the accent mixed into the card on treemap.ts's RAMP (RAMP_DARK
+// on dark cards), plus LIFT on hover. Tile ink is the surface ink; the value line is that ink at
 // INK_ALPHA. Both must reach 4.5:1 on every step at rest and on hover, on the
 // site's cards and on paw-enterprise's grounds. Brand blue #1877f2 in oklab.
 test('treemap label ink reaches 4.5:1 on every ramp step, at rest and on hover', async () => {
-  const { RAMP, LIFT, INK_ALPHA } = await import('../widgets/data/treemap.js');
+  const { RAMP, RAMP_DARK, LIFT, INK_ALPHA } = await import('../widgets/data/treemap.js');
   const css = await read('src/routes/site.css');
   expect(css).toMatch(/--primary:\s*#1877f2/i);
   const blue: Lab = [0.58913, -0.04266, -0.19833];
@@ -210,16 +210,16 @@ test('treemap label ink reaches 4.5:1 on every ramp step, at rest and on hover',
       0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s,
     ];
   };
-  const cards: Record<string, { fg: Lab; ground: Lab }> = {
-    'site light #efeee8': { fg: oklch(0.2, 0.01, 95), ground: hexLab('#efeee8') },
-    'site dark #1d1d1a': { fg: oklch(0.95, 0.005, 260), ground: hexLab('#1d1d1a') },
-    'pe light': { fg: HOSTS.light.fg, ground: HOSTS.light.ground },
-    'pe dark': { fg: HOSTS['dark, --destructive'].fg, ground: HOSTS['dark, --destructive'].ground },
+  const cards: Record<string, { fg: Lab; ground: Lab; ramp: readonly number[] }> = {
+    'site light #efeee8': { fg: oklch(0.2, 0.01, 95), ground: hexLab('#efeee8'), ramp: RAMP },
+    'site dark #1d1d1a': { fg: oklch(0.95, 0.005, 260), ground: hexLab('#1d1d1a'), ramp: RAMP_DARK },
+    'pe light': { fg: HOSTS.light.fg, ground: HOSTS.light.ground, ramp: RAMP },
+    'pe dark': { fg: HOSTS['dark, --destructive'].fg, ground: HOSTS['dark, --destructive'].ground, ramp: RAMP_DARK },
   };
   const failures: string[] = [];
-  for (const step of RAMP) {
-    for (const p of [step, step + LIFT]) {
-      for (const [name, c] of Object.entries(cards)) {
+  for (const [name, c] of Object.entries(cards)) {
+    for (const step of c.ramp) {
+      for (const p of [step, step + LIFT]) {
         const tile = toRgb(mix(blue, c.ground, p / 100));
         const ink = contrast(toRgb(c.fg), tile);
         const meta = contrast(over(toRgb(c.fg), INK_ALPHA / 100, tile), tile);

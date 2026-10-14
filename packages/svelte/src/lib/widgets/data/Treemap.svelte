@@ -6,22 +6,24 @@
   Frame: an optional header (title left, compact total right in muted
   tabular figures), then the plot, edge to edge, `height` px (min 160). No
   chrome at root. Only groups directly under the current root get a caption
-  (zoom shows deeper ones): a strip in card colour, only when the group is at
-  least 64px tall and wide. Its `name · share`, measured on a canvas at the
-  caption font, takes one line (20px) or wraps to two (34px); if two are not
-  enough there is no caption and no strip. Tiles are one hue:
-  --ripple-accent mixed into --ripple-surface on treemap.ts's RAMP, gaps show
-  the card. Ink is always the surface ink; the value line is that ink at
-  INK_ALPHA.
+  (zoom shows deeper ones): one 20px line in card colour, only when the group
+  is at least 64px tall and wide, reading `name · share` when that fits (measured
+  on a canvas at the caption font) and the share alone when it does not. Tiles
+  are one hue: --ripple-accent mixed into --ripple-surface on treemap.ts's RAMP
+  (RAMP_DARK under .dark or data-theme="dark"), gaps show the card. Ink is
+  always the surface ink; the value line is that ink at INK_ALPHA.
 
-  Labels sit top-left and are whole or absent. A name wraps to at most two
-  lines (treemap.ts `nameLines`); the `value · share` line never wraps. After
-  each layout every label is measured once, and one that overflows steps
-  down: name and value line, then name only, then hidden. Never an ellipsis,
-  never share alone. An unlabeled tile still has its readout, and top-level
-  leaves left unlabeled are also listed on one muted line under the plot
-  (whole items only; ones that do not fit the line drop). `showLabels: false`
-  hides leaf labels and that line.
+  Labels sit top-left and are whole or absent. A name wraps to as many lines
+  as the tile height pays for, up to four (treemap.ts `nameLines`). After each
+  layout every label is measured once and steps down until it fits: name and
+  `value · share`, name and share, name only, share alone, hidden. Never an
+  ellipsis. Every tile whose name is not drawn (leaves at any depth, and a
+  top-level group whose caption is share-only) is listed largest first on one
+  muted 11px line under the plot (one too long for it is skipped), each a button with a swatch in its tile's
+  tint, ending in "+N more" when the line runs out; hovering or focusing an
+  entry lights its tile and readout (click acts as the tile), and the active
+  tile lights its entry. `showLabels: false` hides
+  leaf labels and that line.
 
   Zoom: a caption, or a nested tile, zooms into its top-level group, one level
   at a time; a top-level leaf only shows its readout (tap on touch). While
@@ -51,7 +53,7 @@
 	import { cn } from '$lib/utils.js';
 	import { safeArray } from '$lib/utils/safe-props.js';
 	import { finite, num, plain } from '../data-kit/format.js';
-	import { RAMP, LIFT, INK_ALPHA, NAME_LINE, MAX_NAME_LINES, sanitize, find, layout, share, labelTier, nameLines, captionText, type Measure, type Rect } from './treemap.js';
+	import { RAMP, RAMP_DARK, LIFT, INK_ALPHA, NAME_LINE, MAX_NAME_LINES, sanitize, find, layout, share, labelTier, nameLines, fitLine, type Measure, type Rect } from './treemap.js';
 
 	interface Props {
 		id?: string;
@@ -93,8 +95,8 @@
 	let active = $state<string | null>(null);
 	let plotEl = $state<HTMLDivElement>();
 	let fontsReady = $state(false);
-	// Ids of tiles whose label survived the last fit pass; null before the first.
-	let shown = $state<Set<string> | null>(null);
+	// Ids of tiles whose name survived the last fit pass; null before the first.
+	let named = $state<Set<string> | null>(null);
 
 	// A new tree starts at the root.
 	let seen: unknown;
@@ -131,8 +133,20 @@
 		});
 	});
 	const activeRect = $derived(active ? rects.find((r) => r.id === active) : undefined);
-	// Top-level leaves with no label: they still print their share, under the plot.
-	const unlabeled = $derived(showLabels && shown ? rects.filter((r) => r.depth === 1 && !r.group && !shown!.has(r.id)) : []);
+	// Tiles whose name is not drawn, largest first; the footer names them.
+	const unlabeled = $derived(
+		showLabels && named
+			? rects
+					.filter((r) => (r.group ? r.caption && !r.captionLabel.startsWith(r.name) : !named!.has(r.id)))
+					.sort((a, b) => b.value - a.value)
+			: []
+	);
+	// The ones that fit one line, largest first, then "+N more". jsdom measures nothing: all of them.
+	const footer = $derived.by(() => {
+		const widths = unlabeled.map((r) => 12 + (measure ? measure(`${r.name} ${share(r.value, total)}`) : 0));
+		const items = measure ? fitLine(widths, 12, W - 2, (k) => measure(`+${k} more`)).map((i) => unlabeled[i]) : unlabeled;
+		return { items, more: unlabeled.length - items.length };
+	});
 	const backTo = $derived(focusId.includes('.') ? (find(tree, focusId.split('.').slice(0, -1).join('.'))?.name ?? 'All') : 'All');
 
 	onMount(() => {
@@ -159,9 +173,9 @@
 			for (const label of el.querySelectorAll<HTMLElement>('[data-tm-label]')) {
 				fit(label);
 				const id = label.closest<HTMLElement>('[data-tm-id]')?.dataset.tmId;
-				if (id && label.dataset.fit !== 'none') ok.add(id);
+				if (id && ['full', 'share', 'name'].includes(label.dataset.fit!)) ok.add(id);
 			}
-			shown = ok;
+			named = ok;
 		});
 	});
 
@@ -169,11 +183,17 @@
 		return !!e && (e.scrollHeight > e.clientHeight + 1 || e.scrollWidth > e.clientWidth + 1);
 	}
 
-	/** Steps down until the label fits: name and value line, name only, hidden. */
+	/**
+	 * Steps down until the label fits: name and `value · share`, name and share,
+	 * name only, share alone, hidden. (Stacking value over share never fits
+	 * where share alone does not, so it is not a step.)
+	 */
 	function fit(label: HTMLElement) {
 		const bad = () =>
-			overflows(label) || overflows(label.querySelector('[data-tm-name]')) || overflows(label.querySelector('[data-tm-meta]'));
-		const steps = label.querySelector('[data-tm-meta]') ? ['full', 'name'] : ['full'];
+			overflows(label) ||
+			(label.dataset.fit !== 'pct' && overflows(label.querySelector('[data-tm-name]'))) ||
+			overflows(label.querySelector('[data-tm-meta]'));
+		const steps = label.dataset.tier === 'full' ? ['full', 'share', 'name', 'pct'] : ['name', 'pct'];
 		for (const f of steps) {
 			label.dataset.fit = f;
 			if (!bad()) return;
@@ -214,12 +234,11 @@
 		return `${r.name}, ${num(r.value)}, ${ofTotal(r)}${where}${r.group || r.depth > 1 ? ', open group' : ''}`;
 	}
 
+	// The tile's tint in both themes; swatches in the footer reuse it.
+	const tint = (r: Rect) => `--tm-mix:${RAMP[r.step]}%;--tm-mix-d:${RAMP_DARK[r.step]}%;--tm-lift:${RAMP[r.step] + LIFT}%;--tm-lift-d:${RAMP_DARK[r.step] + LIFT}%`;
+
 	function tileStyle(r: Rect): string {
-		const mix = RAMP[r.step];
-		return (
-			`left:${pct(r.x0)};top:${r.y0}px;width:${pct(r.x1 - r.x0)};height:${r.y1 - r.y0}px;` +
-			`--tm-mix:${mix}%;--tm-lift:${mix + LIFT}%;--tm-meta:${INK_ALPHA}%`
-		);
+		return `left:${pct(r.x0)};top:${r.y0}px;width:${pct(r.x1 - r.x0)};height:${r.y1 - r.y0}px;${tint(r)};--tm-meta:${INK_ALPHA}%`;
 	}
 
 	// Below the tile, else above it, else inside it under its own label.
@@ -300,14 +319,14 @@
 							{#if r.caption}
 								<button
 									type="button"
-									class={['tm-caption', r.captionH > 20 && 'is-two']}
+									class={['tm-caption', active === r.id && 'is-active']}
 									style="left:{pct(r.x0)};top:{r.y0}px;width:{pct(r.x1 - r.x0)};height:{r.captionH}px"
 									aria-label={aria(r)}
 									onclick={() => onTile(r)}
 									onpointerenter={() => (active = r.id)}
 									onfocus={() => (active = r.id)}
 								>
-									<span data-tm-label class="tm-caption-text" aria-hidden="true">{captionText(r.name, r.value, total)}</span>
+									<span data-tm-label class="tm-caption-text" aria-hidden="true">{r.captionLabel}</span>
 								</button>
 							{/if}
 						{:else}
@@ -324,13 +343,13 @@
 								onfocus={() => (active = r.id)}
 							>
 								{#if tier !== 'none'}
-									<span data-tm-label class="tm-label" aria-hidden="true">
+									<span data-tm-label class="tm-label" aria-hidden="true" data-tier={tier} data-fit={tier}>
 										<span class="tm-name" data-tm-name style="max-height:{Math.min(MAX_NAME_LINES, lines) * NAME_LINE}px">{r.name}</span>
-										{#if tier === 'full'}
-											<span class="tm-meta" data-tm-meta
-												>{num(r.value, { compact: true })} · {share(r.value, total)}</span
-											>
-										{/if}
+										<span class="tm-meta" data-tm-meta
+											><span class="tm-v">{num(r.value, { compact: true })}</span><span class="tm-v">{' · '}</span><span
+												>{share(r.value, total)}</span
+											></span
+										>
 									</span>
 								{/if}
 							</button>
@@ -350,11 +369,22 @@
 			{/if}
 		</div>
 
-		{#if unlabeled.length}
-			<p class="tm-more text-callout">
-				{#each unlabeled as r (r.id)}
-					<span>{r.name} <span class="tm-more-share">{share(r.value, total)}</span></span>
+		{#if footer.items.length || footer.more}
+			<p class="tm-more">
+				{#each footer.items as r (r.id)}
+					<button
+						type="button"
+						class={['tm-more-item', active === r.id && 'is-active']}
+						style={tint(r)}
+						onclick={() => onTile(r)}
+						onpointerenter={() => (active = r.id)}
+						onpointerleave={() => (active = null)}
+						onfocus={() => (active = r.id)}
+						onblur={() => (active = null)}
+						><i class="tm-swatch" aria-hidden="true"></i>{r.name} <span class="tm-more-share">{share(r.value, total)}</span></button
+					>
 				{/each}
+				{#if footer.more}<span>+{footer.more} more</span>{/if}
 			</p>
 		{/if}
 	{/if}
@@ -457,17 +487,32 @@
 	}
 	.tm-tile {
 		border-radius: 3px;
-		background-color: color-mix(in oklab, var(--ripple-accent) var(--tm-mix), var(--ripple-surface));
 		color: var(--ripple-surface-foreground);
+	}
+	.tm-tile,
+	.tm-swatch {
+		background-color: color-mix(in oklab, var(--ripple-accent) var(--tm-mix), var(--ripple-surface));
 	}
 	.tm-tile:hover,
 	.tm-tile:focus-visible,
 	.tm-tile.is-active {
 		background-color: color-mix(in oklab, var(--ripple-accent) var(--tm-lift), var(--ripple-surface));
 	}
+	/* Dark: a higher floor so the smallest step still separates from the card. */
+	:global(.dark) .tm-tile,
+	:global(.dark) .tm-swatch,
+	:global([data-theme='dark']) .tm-tile,
+	:global([data-theme='dark']) .tm-swatch {
+		background-color: color-mix(in oklab, var(--ripple-accent) var(--tm-mix-d), var(--ripple-surface));
+	}
+	:global(.dark) .tm-tile:is(:hover, :focus-visible, .is-active),
+	:global([data-theme='dark']) .tm-tile:is(:hover, :focus-visible, .is-active) {
+		background-color: color-mix(in oklab, var(--ripple-accent) var(--tm-lift-d), var(--ripple-surface));
+	}
 	.tm-tile:focus-visible,
 	.tm-caption:focus-visible,
-	.tm-crumb:focus-visible {
+	.tm-crumb:focus-visible,
+	.tm-more-item:focus-visible {
 		outline: 2px solid var(--ripple-ring);
 		outline-offset: -2px;
 	}
@@ -497,7 +542,10 @@
 		overflow: hidden;
 		color: color-mix(in oklab, var(--ripple-surface-foreground) var(--tm-meta), transparent);
 	}
-	[data-tm-label]:global([data-fit='name']) [data-tm-meta] {
+	/* Fit steps (see fit()); hidden parts take no room, so overflow checks skip them. */
+	[data-tm-label]:global([data-fit='name']) [data-tm-meta],
+	[data-tm-label]:global([data-fit='pct']) [data-tm-name],
+	[data-tm-label]:global(:is([data-fit='share'], [data-fit='pct'])) .tm-v {
 		display: none;
 	}
 	[data-tm-label]:global([data-fit='none']) {
@@ -511,7 +559,8 @@
 		color: var(--ripple-muted-foreground);
 		border-radius: 3px;
 	}
-	.tm-caption:hover {
+	.tm-caption:hover,
+	.tm-caption.is-active {
 		color: var(--ripple-surface-foreground);
 	}
 	.tm-caption-text {
@@ -521,26 +570,46 @@
 		line-height: 20px;
 		font-variant-numeric: tabular-nums;
 	}
-	.is-two .tm-caption-text {
-		white-space: normal;
-		overflow-wrap: normal;
-		line-height: 15px;
-		padding-top: 2px;
-	}
 
-	/* One line of whole items; an item that wraps to a second row is clipped away entirely. */
+	/* One line of whole items at the caption font (the footer derived measures 11px);
+	   a wrapped row is clipped as a guard only. */
 	.tm-more {
 		display: flex;
 		flex-wrap: wrap;
-		column-gap: 14px;
+		column-gap: 12px;
 		margin: 6px 0 0;
+		font-size: 11px;
 		line-height: 18px;
 		max-height: 18px;
 		overflow: hidden;
 		color: var(--ripple-muted-foreground);
 	}
-	.tm-more > span {
+	.tm-more > * {
 		white-space: nowrap;
+	}
+	.tm-more-item {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		margin: 0;
+		padding: 0;
+		border: 0;
+		border-radius: 3px;
+		background: none;
+		font: inherit;
+		color: inherit;
+		cursor: pointer;
+		transition: color 160ms var(--ripple-ease-out);
+	}
+	.tm-more-item:hover,
+	.tm-more-item.is-active {
+		color: var(--ripple-surface-foreground);
+	}
+	.tm-swatch {
+		flex: none;
+		width: 8px;
+		height: 8px;
+		border-radius: 2px;
 	}
 	.tm-more-share {
 		font-variant-numeric: tabular-nums;
@@ -568,7 +637,8 @@
 
 	@media (prefers-reduced-motion: reduce) {
 		.tm-tile,
-		.tm-caption {
+		.tm-caption,
+		.tm-more-item {
 			transition: none;
 		}
 	}
