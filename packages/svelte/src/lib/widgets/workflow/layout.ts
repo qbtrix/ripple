@@ -13,17 +13,20 @@
 // only while its marks stay readable).
 //
 // Spine: each branch is one contiguous group, indented a level, in exit order,
-// and a step branches meet at waits below all of them. A branching step drops one
-// trunk down its left edge and each branch peels into the top of its first step,
-// label on the peel; skips share a rail right of the column per target and land
-// on top; only a back edge enters a side. Every exit is on the bottom edge, and
-// one node width serves the whole column.
+// and a step branches meet at waits below all of them. A branching step gives
+// each branch its own exit and its chip just under it: the branch right below
+// drops straight in, every later one runs its own lane in the indent gutter
+// (farthest leftmost, so none cross). Skips share a rail right of the column per
+// target and land on top; only a back edge enters a side. Every exit is on the
+// bottom edge, and one node width serves the whole column. A spine that pans is
+// cut in a row gap, never through a step; a lone step hugs its padding.
 //
 // Columns (LR) and rows (TB beside each other): back edges (cycles) are found by
 // DFS before layering, so a loop never inflates depths. An only child lines up
 // with its parent. An edge to the very next column/row draws as a plain step
 // (a row gap it bends across is at least 40px); any other edge (a back edge, or
-// one that skips) is a loop in its own outside lane, so it never crosses a node.
+// one that skips) is a loop in its own outside lane, so it never crosses a node;
+// a skip turns in above its target and enters its top, a back edge its side.
 // In LR each edge of a fan-out (or fan-in) turns in its own channel of the
 // column gap. A condition orders its exits yes-like, no-like, the rest.
 // Unlabelled first and second branches read "Yes" and "No"; later ones no chip.
@@ -47,7 +50,6 @@ const TB_COL_GAP = 24; // between siblings in a layered row
 const TB_GAP = 24; // between rows
 const TB_BEND_GAP = 40; // between rows an edge bends across
 const INDENT = 24; // spine: one branch level
-const TRUNK = 14; // spine: a branching step's trunk, in from its left edge
 const CHIP_H = 18; // a one-line chip, border included, plus a hair
 const TB_CHIP = 16; // first chip centre below its exit: 8px clear of the handle
 const LANE0 = 14; // first outside lane from the graph
@@ -143,8 +145,6 @@ export interface PlacedEdge extends WfEdge {
   chip: number;
   /** Spine: the whole route, absolute; the drawn line snaps its ends to the handles. */
   points?: { x: number; y: number }[];
-  /** Spine trunk: starts where the previous branch peeled off, so the shared trunk is drawn once. */
-  joined?: boolean;
 }
 
 export interface WorkflowPlan {
@@ -335,7 +335,7 @@ export function layoutWorkflow(
       ...e,
       id: `e-${e.from}-${e.to}-${i}`,
       sourceHandle: sideExit ? `out-${side.toLowerCase()}` : x.k > 1 ? `out-${x.i}` : 'out',
-      targetHandle: tbLoop ? `in-${side.toLowerCase()}` : 'in',
+      targetHandle: tbLoop ? `in-${g.back.has(e) ? '' : 't'}${side.toLowerCase()}` : 'in',
       loop: isLoop(e),
       side,
       sideExit,
@@ -373,17 +373,14 @@ export function layoutWorkflow(
       const mine = all.filter((i) => placedEdges[i].from === id && !placedEdges[i].sideExit);
       // Chips sit just under their exits; one that would overlap the chip to its
       // left drops a full chip height (plus a gap) below it.
-      let prev: { c: number; half: number; low: boolean } | undefined;
-      for (const i of mine.toSorted((a, b) => slotOf(a).i - slotOf(b).i)) {
+      const row = mine.toSorted((a, b) => slotOf(a).i - slotOf(b).i);
+      const items = row.map((i) => {
         const s = slotOf(i), e = placedEdges[i];
         const c = (w * (s.i + 1)) / (s.k + 1);
         e.chip = s.k > 1 ? Math.max(28, Math.min(Math.floor((2 * w) / (s.k + 1)) - 6, 2 * Math.min(c, w - c) + 16)) : Math.min(220, w - 24);
-        if (!e.label) continue;
-        const half = Math.min(e.chip, e.label.length * 6 + 12) / 2;
-        const low = !!prev && !prev.low && c - prev.c < prev.half + half + 4;
-        e.chipY = TB_CHIP + (low ? CHIP_H + 4 : 0);
-        prev = { c, half, low };
-      }
+        return { c, label: e.label, cap: e.chip };
+      });
+      chipRows(items).forEach((y, j) => (placedEdges[row[j]].chipY = y));
       const chipBottom = Math.max(0, ...mine.filter((i) => placedEdges[i].label).map((i) => placedEdges[i].chipY + CHIP_H / 2));
       // Loops turn below the chips: right-going ones leftmost lowest, left-going ones leftmost highest.
       const loops = mine.filter((i) => placedEdges[i].loop).sort((a, b) => slotOf(a).i - slotOf(b).i);
@@ -396,7 +393,7 @@ export function layoutWorkflow(
       for (const i of mine) {
         if (placedEdges[i].loop) continue;
         const grp = groupOf(i, dx);
-        if (placedEdges[i].label || grp.length > 1) placedEdges[i].turn = base + 6 * band + 2 + 6 * grp.indexOf(i);
+        if (placedEdges[i].label || grp.length > 1) placedEdges[i].turn = base + 6 * band + (band ? 12 : 2) + 6 * grp.indexOf(i);
       }
       const r = rank.get(id);
       if (r !== undefined) gapAfter[r] = Math.max(gapAfter[r] ?? TB_GAP, ...mine.map((i) => (placedEdges[i].turn ? placedEdges[i].turn + 18 : TB_GAP)));
@@ -431,6 +428,8 @@ export function layoutWorkflow(
       );
     const tgt = handles.get(e.to)!;
     if (tgt.some((x) => x.id === e.targetHandle)) return;
+    // A skip comes in at the top, near the corner on its lane's side; only a back edge enters a side.
+    if (e.targetHandle.startsWith('in-t')) return void tgt.push({ id: e.targetHandle, type: 'target', side: 'top', pct: ((e.side === 'L' ? 14 : w - 14) / w) * 100 });
     if (e.targetHandle !== 'in') return void tgt.push({ id: e.targetHandle, type: 'target', side: SIDE[e.side], pct: 50 });
     tgt.push({ id: 'in', type: 'target', side: dir === 'TB' ? 'top' : 'left', pct: 50 });
   });
@@ -507,12 +506,15 @@ export function layoutWorkflow(
  * The spine: one column, top to bottom, for a narrow card (or a wide one where
  * nothing else fits). Each branch is one contiguous group, indented a level, in
  * exit order; a step two or more branches meet at (a join) waits until every
- * branch is drawn and goes back to the outer level. A branching step sends one
- * trunk down its left edge, beside its indented branches, and each branch peels
- * off it into the top of its first step, the label on the peel. A skip lands on
- * its target through a rail right of the column (every skip into one target
- * shares it) and in at the top; only a back edge enters a step's side. Every
- * source handle is on the bottom edge.
+ * branch is drawn and goes back to the outer level. A branching step gives each
+ * branch its own exit on its bottom edge, the chip just under that exit. The
+ * branch drawn right below drops straight in from the rightmost exit; every
+ * later one turns left into its own lane in the indent gutter and runs down to
+ * its first step (into its top, or straight in when the lane is over it). The
+ * farthest branch takes the leftmost exit, the outermost lane and the highest
+ * turn, so no two branch lines cross. A skip lands on its target through a rail
+ * right of the column (every skip into one target shares it) and in at the top;
+ * only a back edge enters a step's side. Every source handle is on the bottom edge.
  */
 function layoutSpine(g: Graph, avail: number) {
   const { nodes } = g;
@@ -560,26 +562,78 @@ function layoutSpine(g: Graph, avail: number) {
   const depth = (id: string) => scope.get(id)!.length;
   const deepest = Math.max(0, ...order.map(depth));
 
-  // Edge kinds. A trunk edge only while every step it passes sits deeper than its source.
+  // Edge kinds. A branch edge only while every step it passes sits deeper than its source.
   const r = (id: string) => row.get(id)!;
   const passes = (e: WfEdge) => order.slice(r(e.from) + 1, r(e.to)).every((id) => depth(id) > depth(e.from));
-  const trunk = (e: WfEdge) => !g.back.has(e) && branching(e.from) && r(e.to) > r(e.from) && passes(e);
-  const railed = new Set(g.edges.filter((e) => !g.back.has(e) && !trunk(e) && r(e.to) - r(e.from) > 1).map((e) => e.to));
-  type Kind = 'trunk' | 'drop' | 'rail' | 'back';
-  const kindOf = (e: WfEdge): Kind => (g.back.has(e) ? 'back' : trunk(e) ? 'trunk' : railed.has(e.to) ? 'rail' : 'drop');
+  const isBranch = (e: WfEdge) => !g.back.has(e) && branching(e.from) && r(e.to) > r(e.from) && passes(e);
+  const railed = new Set(g.edges.filter((e) => !g.back.has(e) && !isBranch(e) && r(e.to) - r(e.from) > 1).map((e) => e.to));
+  type Kind = 'branch' | 'drop' | 'rail' | 'back';
+  const kindOf = (e: WfEdge): Kind => (g.back.has(e) ? 'back' : isBranch(e) ? 'branch' : railed.has(e.to) ? 'rail' : 'drop');
   const kinds = new Map(g.edges.map((e) => [e, kindOf(e)]));
 
-  // Rows: room in each gap for the exits that turn below the upper step (a chip
-  // under the exit, then the turn) and the peels into the lower one.
+  // Each branching step: the branch right below drops in, the rest take lanes, nearest first.
+  const fans = new Map<string, { direct?: WfEdge; lanes: WfEdge[] }>();
+  for (const id of order) {
+    const list = fwd.get(id)!.filter((e) => kinds.get(e) === 'branch').sort((a, b) => r(a.to) - r(b.to));
+    if (!list.length) continue;
+    const direct = r(list[0].to) === r(id) + 1 ? list[0] : undefined;
+    fans.set(id, { direct, lanes: direct ? list.slice(1) : list });
+  }
+  // The indent holds the most lanes any step needs, 10px clear of the steps beside them.
+  const indent = Math.max(INDENT, 16 + LANE_STEP * Math.max(0, ...[...fans.values()].map((f) => f.lanes.length)));
+  // Right-hand rails and back lanes: room for one each at most, so the width is known before the rows.
+  const rightLanes = railed.size + g.back.size;
+  const w = Math.round(Math.max(TB_MIN_W, Math.min(TB_MAX_W, avail - indent * deepest - (rightLanes ? LANE0 + LANE_STEP * (rightLanes - 1) + 4 : 0))));
+  const h = NODE_H;
+  const xOf = (id: string) => indent * depth(id);
+  const tcOf = (id: string) => xOf(id) + w / 2;
+
+  // Exits of each fan, left to right: farthest lane ... nearest lane, then the
+  // drop at the centre of the step below. Chips just under the exits, staggered
+  // where two would touch; turns below the chips, the farthest highest.
+  type Exit = { x: number; i: number; chip: number; chipY: number; turn: number; lane?: number };
+  const exits = new Map<WfEdge, Exit>();
+  const below = new Map<string, number>();
+  for (const [id, f] of fans) {
+    const sx = xOf(id);
+    const m = f.lanes.length;
+    const xd = f.direct ? Math.min(sx + w - 16, Math.max(sx + w / 2, tcOf(f.direct.to))) : sx + w / 2;
+    const step = (xd - sx) / (m + 1);
+    const line = [...f.lanes.toReversed(), ...(f.direct ? [f.direct] : [])];
+    const cap = line.length > 1 ? Math.max(28, Math.min(w - 24, 2 * (step - 4))) : w - 24;
+    const ys = chipRows(line.map((e, i) => ({ c: step * (i + 1), label: e.label, cap })));
+    const chipBottom = Math.max(0, ...line.map((e, i) => (e.label ? ys[i] + CHIP_H / 2 : 0)));
+    const base = Math.max(10, chipBottom + 6);
+    const jog = !!f.direct && Math.abs(xd - tcOf(f.direct.to)) > 1;
+    line.forEach((e, i) => {
+      const k = f.lanes.indexOf(e); // nearest lane is 0, innermost
+      exits.set(e, {
+        x: sx + step * (i + 1),
+        i,
+        chip: cap,
+        chipY: ys[i],
+        turn: k < 0 ? base + LANE_STEP * m : base + 6 * (m - 1 - k),
+        lane: k < 0 ? undefined : sx + indent - 10 - LANE_STEP * k,
+      });
+    });
+    below.set(id, Math.max(f.lanes.some((e) => e.label) || f.direct?.label ? chipBottom + 6 : 0, m ? base + 6 * (m - 1) + 12 : 0, jog ? base + LANE_STEP * m + 12 : 0));
+  }
+  // A lane over its target goes straight in; otherwise it turns into the target's top centre.
+  const straightIn = (e: WfEdge) => {
+    const L = exits.get(e)?.lane;
+    return L !== undefined && L >= xOf(e.to) + 12 && L <= xOf(e.to) + w - 12;
+  };
+  const isLane = (e: WfEdge) => exits.get(e)?.lane !== undefined;
+
+  // Rows: room in each gap for the exits under the upper step and the peels into the lower one.
   const turnBelow = (e: WfEdge) => (e.label ? 28 : 10);
-  const peelAbove = (e: WfEdge) => (kinds.get(e) === 'trunk' && e.label ? 17 : 12);
   const ys: number[] = [];
   for (let i = 0, y = 0; i < order.length; i++) {
     ys[i] = y;
     if (i === order.length - 1) break;
     const straight = (e: WfEdge) => kinds.get(e) === 'drop' && depth(e.from) === depth(e.to);
-    const up = Math.max(0, ...g.out.get(order[i])!.filter((e) => kinds.get(e) !== 'trunk').map((e) => (e.label ? 28 : straight(e) ? 0 : 10)));
-    const down = Math.max(0, ...into.get(order[i + 1])!.filter((e) => kinds.get(e) === 'trunk' || kinds.get(e) === 'rail').map((e) => peelAbove(e) + (kinds.get(e) === 'trunk' && e.label ? 9 : 0)));
+    const up = Math.max(below.get(order[i]) ?? 0, ...g.out.get(order[i])!.filter((e) => kinds.get(e) !== 'branch').map((e) => (e.label ? 28 : straight(e) ? 0 : 10)));
+    const down = into.get(order[i + 1])!.some((e) => kinds.get(e) === 'rail' || (isLane(e) && !straightIn(e))) ? 12 : 0;
     y += NODE_H + Math.max(TB_GAP, up + down + 8);
   }
   const top = (id: string) => ys[r(id)];
@@ -599,39 +653,42 @@ function layoutSpine(g: Graph, avail: number) {
     (used[k] ??= []).push([run.a, run.b]);
     laneOf.set(run.key, k);
   }
-  const laneRoom = used.length ? LANE0 + LANE_STEP * (used.length - 1) + 4 : 0;
-  // One node width for the whole column.
-  const w = Math.round(Math.max(TB_MIN_W, Math.min(TB_MAX_W, avail - INDENT * deepest - laneRoom)));
-  const h = NODE_H;
-  const right = INDENT * deepest + w;
+  const right = indent * deepest + w;
   const laneX = (key: WfEdge | string) => right + LANE0 + LANE_STEP * laneOf.get(key)!;
-  const at = new Map(nodes.map((n) => [n.id, { x: INDENT * depth(n.id), y: top(n.id) }]));
+  const at = new Map(nodes.map((n) => [n.id, { x: xOf(n.id), y: top(n.id) }]));
 
-  // Handles: trunk at the left of the bottom edge, every other exit at its middle
-  // (a back edge right of middle when the middle is taken); entries on top, a back edge's on the right.
+  // Handles: a fan's exits as placed; any other exit at the middle (a back edge
+  // right of middle when the middle is taken, a fan's rail near the right end);
+  // entries on top, a back edge's on the right.
   const handles = new Map<string, PlacedHandle[]>(nodes.map((n) => [n.id, []]));
   const add = (id: string, hd: PlacedHandle) => handles.get(id)!.some((x) => x.id === hd.id) || handles.get(id)!.push(hd);
-  const midTaken = (id: string) => g.out.get(id)!.some((e) => kinds.get(e) === 'drop' || kinds.get(e) === 'rail');
-  const est = (label: string) => label.length * 6 + 12;
+  const midTaken = (id: string) => fans.has(id) || g.out.get(id)!.some((e) => kinds.get(e) === 'drop' || kinds.get(e) === 'rail');
   const placedEdges: PlacedEdge[] = g.edges.map((e, i) => {
     const kind = kinds.get(e)!;
     const s = at.get(e.from)!, t = at.get(e.to)!;
     const bottom = s.y + h, tc = t.x + w / 2;
-    const exitPct = kind === 'trunk' ? (TRUNK / w) * 100 : kind === 'back' && midTaken(e.from) ? 80 : 50;
+    const fx = exits.get(e);
+    const exitPct = fx ? ((fx.x - s.x) / w) * 100 : kind === 'back' && midTaken(e.from) ? 80 : kind === 'rail' && fans.has(e.from) ? 90 : 50;
     const ex = s.x + (w * exitPct) / 100;
-    const sourceHandle = kind === 'trunk' ? 'out-t' : kind === 'back' && midTaken(e.from) ? 'out-b' : 'out';
-    const targetHandle = kind === 'back' ? 'in-r' : 'in';
+    const sourceHandle = fx ? `out-${fx.i}` : kind === 'back' && midTaken(e.from) ? 'out-b' : kind === 'rail' && fans.has(e.from) ? 'out-r' : 'out';
+    const straight = straightIn(e);
+    const targetHandle = kind === 'back' ? 'in-r' : straight ? `in-${Math.round(fx!.lane! - t.x)}` : 'in';
     add(e.from, { id: sourceHandle, type: 'source', side: 'bottom', pct: exitPct });
-    add(e.to, kind === 'back' ? { id: 'in-r', type: 'target', side: 'right', pct: 50 } : { id: 'in', type: 'target', side: 'top', pct: 50 });
-    const turn = bottom + turnBelow(e);
+    add(
+      e.to,
+      kind === 'back'
+        ? { id: 'in-r', type: 'target', side: 'right', pct: 50 }
+        : { id: targetHandle, type: 'target', side: 'top', pct: straight ? ((fx!.lane! - t.x) / w) * 100 : 50 },
+    );
+    const turn = bottom + (fx ? fx.turn : turnBelow(e));
     let points: { x: number; y: number }[];
-    let chipAt = { x: ex, y: bottom + 14 };
-    let chip = 2 * Math.min(ex - s.x, s.x + w - ex) - 8;
-    if (kind === 'trunk') {
-      const x = s.x + TRUNK, py = t.y - peelAbove(e);
-      points = [{ x, y: bottom }, { x, y: py }, { x: tc, y: py }, { x: tc, y: t.y }];
-      chip = t.x + w - 8 - (x + 6);
-      chipAt = { x: x + 6 + Math.min(chip, est(e.label)) / 2, y: py };
+    let chipAt = { x: ex, y: bottom + (fx ? fx.chipY : 14) };
+    const chip = fx ? fx.chip : 2 * Math.min(ex - s.x, s.x + w - ex) - 8;
+    if (fx?.lane !== undefined) {
+      const L = fx.lane;
+      points = straight
+        ? [{ x: ex, y: bottom }, { x: ex, y: turn }, { x: L, y: turn }, { x: L, y: t.y }]
+        : [{ x: ex, y: bottom }, { x: ex, y: turn }, { x: L, y: turn }, { x: L, y: t.y - 12 }, { x: tc, y: t.y - 12 }, { x: tc, y: t.y }];
     } else if (kind === 'rail') {
       const x = laneX(e.to), py = t.y - 12;
       points = [{ x: ex, y: bottom }, { x: ex, y: turn }, { x, y: turn }, { x, y: py }, { x: tc, y: py }, { x: tc, y: t.y }];
@@ -649,7 +706,7 @@ function layoutSpine(g: Graph, avail: number) {
       sideExit: false,
       at: chipAt,
       back: kind === 'back',
-      lane: kind === 'rail' ? laneX(e.to) : kind === 'back' ? laneX(e) : 0,
+      lane: fx?.lane ?? (kind === 'rail' ? laneX(e.to) : kind === 'back' ? laneX(e) : 0),
       chan: 0,
       turn: 0,
       chipY: 0,
@@ -657,15 +714,25 @@ function layoutSpine(g: Graph, avail: number) {
       points,
     };
   });
-  // Each trunk edge after the first starts at the previous peel (just above its corner), so no stretch is drawn twice.
-  for (const id of order) {
-    const peels = placedEdges.filter((e) => e.from === id && e.sourceHandle === 'out-t').sort((a, b) => r(a.to) - r(b.to));
-    peels.forEach((e, k) => k && ((e.points![0].y = peels[k - 1].points![1].y - 8), (e.joined = true)));
-  }
   const placed: PlacedNode[] = nodes.map((n) => ({ ...n, ...at.get(n.id)!, w, h, handles: handles.get(n.id)! }));
   const x1 = used.length ? right + LANE0 + LANE_STEP * (used.length - 1) + 2 : right;
   const y1 = order.length ? ys[order.length - 1] + h : 0;
   return { nodes: placed, edges: placedEdges, bounds: { x: 0, y: 0, w: x1, h: y1 }, positioned: false };
+}
+
+/**
+ * Chip centres below a row of exits (left to right, `c` along the edge): just
+ * under each exit, and one chip lower when it would touch the chip on its left.
+ */
+function chipRows(items: { c: number; label: string; cap: number }[]): number[] {
+  let prev: { c: number; half: number; low: boolean } | undefined;
+  return items.map(({ c, label, cap }) => {
+    if (!label) return TB_CHIP;
+    const half = Math.min(cap, label.length * 6 + 12) / 2;
+    const low = !!prev && !prev.low && c - prev.c < prev.half + half + 4;
+    prev = { c, half, low };
+    return TB_CHIP + (low ? CHIP_H + 4 : 0);
+  });
 }
 
 /** How many nodes share each rank. */
@@ -721,6 +788,7 @@ export function loopRoute(
   turn: number,
   chipY = TB_CHIP,
   sideExit = false,
+  top = false,
 ) {
   if (dir === 'LR') {
     const out = s.x + chan;
@@ -728,10 +796,11 @@ export function loopRoute(
     const pts = [s, { x: out, y: s.y }, { x: out, y: lane }, { x: into, y: lane }, { x: into, y: t.y }, t];
     return { points: pts, label: { x: (out + into) / 2, y: lane } };
   }
-  // TB: the target is entered from its side, so the line ends in its own node.
-  if (sideExit) return { points: [s, { x: lane, y: s.y }, { x: lane, y: t.y }, t], label: { x: lane, y: (s.y + t.y) / 2 } };
+  // TB: a back edge enters its target's side; a skip turns in above it and enters its top.
+  const end = top ? [{ x: lane, y: t.y - 12 }, { x: t.x, y: t.y - 12 }, t] : [{ x: lane, y: t.y }, t];
+  if (sideExit) return { points: [s, { x: lane, y: s.y }, ...end], label: { x: lane, y: (s.y + t.y) / 2 } };
   const down = s.y + turn;
-  const pts = [s, { x: s.x, y: down }, { x: lane, y: down }, { x: lane, y: t.y }, t];
+  const pts = [s, { x: s.x, y: down }, { x: lane, y: down }, ...end];
   return { points: pts, label: { x: s.x, y: s.y + chipY } };
 }
 
@@ -788,14 +857,17 @@ export function planWorkflow(
     else {
       dir = 'TB';
       layout = layoutWorkflow(nodes, edges, 'TB', { tbWidth: avail });
-      if (opts.interactive) zoom = Math.max(MIN_ZOOM, fitOf(layout));
+      // Design size, panning, unless the readable floor shows the whole graph.
+      if (opts.interactive && fitOf(layout) >= MIN_ZOOM) zoom = fitOf(layout);
     }
     // fitView false: draw at design size and let the reader pan.
     if (dir === 'LR' && !opts.fitView && opts.interactive) zoom = 1;
   }
   const b = layout.bounds;
   const content = b.h * zoom + 2 * PAD;
-  const clamp = (v: number) => Math.round(opts.interactive ? Math.min(MAX_H, Math.max(MIN_H, v)) : Math.max(MIN_H, v));
+  // A lone step (no edges) hugs its padding; anything else keeps the floor.
+  const floor = edges.length ? MIN_H : NODE_H + 2 * PAD;
+  const clamp = (v: number) => Math.round(opts.interactive ? Math.min(MAX_H, Math.max(floor, v)) : Math.max(floor, v));
   const fitsX = b.w * zoom <= avail + 0.5;
   const fitsAtOne = zoom === 1 && fitsX && content <= clamp(content) + 0.5;
   // Overlays sit in a strip under the graph, so neither ever covers a node.
@@ -804,14 +876,23 @@ export function planWorkflow(
   const showMinimap = opts.minimap === true && nodes.length >= 12 && W >= 560 && NODE_H * mm >= 4 && (layout.nodes[0]?.w ?? 0) * mm >= 12;
   const showControls = opts.interactive && !fitsAtOne;
   const gutter = showMinimap ? GUTTER.minimap : showControls ? GUTTER.controls : 0;
-  const height = clamp(content + gutter);
-  const room = height - gutter;
+  let height = clamp(content + gutter);
+  let room = height - gutter;
   const fitsY = content <= room + 0.5;
   // A graph that pans opens on its main line: the start for the flow axis, the
   // centre of the rows (or columns) across it, never past the graph's own edge.
   const keep = (v: number, size: number, lo: number, len: number) => Math.min(PAD - lo * zoom, Math.max(size - PAD - (lo + len) * zoom, v));
   const vx = fitsX ? (W - b.w * zoom) / 2 - b.x * zoom : dir === 'TB' ? keep(W / 2 - (layout.nodes[0]?.w ?? 0) * zoom / 2, W, b.x, b.w) : PAD - b.x * zoom;
   const vy = fitsY ? (room - b.h * zoom) / 2 - b.y * zoom : dir === 'LR' ? keep(room / 2 - (NODE_H * zoom) / 2, room, b.y, b.h) : PAD - b.y * zoom;
+  // A spine that pans: the bottom cut falls in a row gap, never through a step,
+  // so the reader sees whole steps and a line running on past the edge.
+  if (!fitsY && dir === 'TB') {
+    for (const n of layout.nodes.toSorted((p, q) => q.y - p.y)) {
+      const t = vy + n.y * zoom;
+      if (t < room && t + n.h * zoom > room) room = Math.floor(t - 8);
+    }
+    height = Math.max(MIN_H, room + gutter);
+  }
   return {
     direction: dir,
     nodes: layout.nodes,

@@ -5,7 +5,8 @@
   The model fills `nodes` and `edges`; layout.ts sanitises them once and plans
   the drawing for the measured card width: columns left to right at 480px and
   up (panning at the 0.8 floor when they do not fit), one top-to-bottom spine
-  with indented branches below that, canvas height following the graph (120 to 560px; it grows instead
+  with indented branches below that (and in a wide card where nothing else fits,
+  at design size, panning), canvas height following the graph (120 to 560px; it grows instead
   when the reader cannot pan). The plan also decides the overlays: the minimap
   (a big graph in a wide card) and the zoom pill (only when something does not
   fit, a minimap only while its marks stay readable). The graph draws in a

@@ -8,8 +8,9 @@
   a fan-out or fan-in at its own height) and drops into the target; the chip
   sits just under the exit. A loop (a back edge, or one that skips a column or
   row) runs in its own outside lane layout.ts reserved for it, so it never
-  crosses a node or a label. The spine plans every route whole (trunk and peel,
-  rail, back lane) in layout.ts; here its ends only snap to the drawn handles.
+  crosses a node or a label; a skip enters its target's top, a back edge its
+  side. The spine plans every route whole (branch lane, rail, back lane) in
+  layout.ts; here its ends only snap to the drawn handles.
   A back edge is dashed. Chips are one line, clamped
   with the full text on hover. Colours come from the --xy-* tokens Workflow.svelte
   maps to ripple tokens; an animated edge marks live flow in the accent and stops
@@ -36,12 +37,12 @@
       p[1].x = s.x;
       if (p[n - 1].x === p[n].x) p[n - 1].x = t.x;
       else p[n - 1].y = t.y;
-      p[0] = edge.joined ? { x: s.x, y: p[0].y } : s;
+      p[0] = s;
       p[n] = t;
       return { path: roundedPath(p), x: edge.at!.x, y: edge.at!.y };
     }
     if (edge.loop) {
-      const r = loopRoute(dir, s, t, edge.lane, edge.chan, edge.turn, edge.chipY, edge.sideExit);
+      const r = loopRoute(dir, s, t, edge.lane, edge.chan, edge.turn, edge.chipY, edge.sideExit, !edge.back);
       const at = edge.at ?? r.label;
       return { path: roundedPath(r.points), x: at.x, y: at.y };
     }

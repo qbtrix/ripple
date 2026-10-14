@@ -79,6 +79,13 @@ describe('direction and zoom', () => {
     expect(p.zoom).toBe(1);
   });
 
+  it('cuts a panning spine in a row gap, and a lone step hugs its padding', () => {
+    const p = plan(chain(21), 360);
+    const room = p.height - p.gutter;
+    expect(p.nodes.some((n) => p.viewport.y + n.y < room && p.viewport.y + n.y + n.h > room)).toBe(false);
+    expect(plan(sanitizeWorkflow([{ id: 'a', label: 'A' }], []), 720).height).toBe(80);
+  });
+
   it('plans for 720 before the card is measured', () => {
     expect(plan(chain(3), 0).direction).toBe('LR');
   });
@@ -171,13 +178,25 @@ describe('conditions and loops', () => {
     const into = p.edges.filter((e) => e.to === 'm');
     expect(new Set(into.map((e) => e.chan)).size).toBe(into.length);
     // On the narrow spine each branch is its own indented group, in exit order,
-    // fed by one trunk into its top; the fan-in shares one rail; every exit is on the bottom.
+    // with its own exit and (past the first) its own lane into its top; the
+    // fan-in shares one rail; every exit is on the bottom.
     const tb = plan(g, 360);
     const at = (id: string) => tb.nodes.find((n) => n.id === id)!;
     expect(['v', ...ids, 'm'].map((id) => at(id).y)).toEqual([...['v', ...ids, 'm'].map((id) => at(id).y)].sort((p, q) => p - q));
-    expect(ids.every((id) => at(id).x === at('v').x + 24) && at('m').x === at('v').x).toBe(true);
+    const indent = at('a').x - at('v').x;
+    expect(indent).toBeGreaterThanOrEqual(24);
+    expect(ids.every((id) => at(id).x === at('v').x + indent) && at('m').x === at('v').x).toBe(true);
     const fan = tb.edges.filter((e) => e.from === 'v');
-    expect(fan.every((e) => e.sourceHandle === 'out-t' && e.targetHandle === 'in')).toBe(true);
+    expect(new Set(fan.map((e) => e.sourceHandle)).size).toBe(fan.length);
+    expect(fan.every((e) => e.targetHandle === 'in')).toBe(true);
+    const lanes = fan.filter((e) => e.lane);
+    expect(lanes.length).toBe(fan.length - 1);
+    expect(new Set(lanes.map((e) => e.lane)).size).toBe(lanes.length);
+    expect(lanes.every((e) => e.lane < at('a').x)).toBe(true);
+    // Farther branches leave further left, so no two branch lines cross.
+    const exitX = (e: (typeof fan)[number]) => e.points![0].x;
+    const byRow = fan.toSorted((p, q) => at(p.to).y - at(q.to).y);
+    expect(byRow.map(exitX)).toEqual(byRow.map(exitX).toSorted((p, q) => q - p));
     const fanIn = tb.edges.filter((e) => e.to === 'm');
     expect(new Set(fanIn.map((e) => e.lane)).size).toBe(1);
     expect(fanIn.every((e) => e.lane > at('a').x + at('a').w && e.targetHandle === 'in')).toBe(true);
@@ -185,7 +204,7 @@ describe('conditions and loops', () => {
     expect(new Set(tb.nodes.map((n) => n.w)).size).toBe(1);
   });
 
-  it('draws each branch before the step they meet at, labelled on its peel', () => {
+  it('draws each branch before the step they meet at, each labelled just under its own exit', () => {
     const g = sanitizeWorkflow(
       [{ id: 'c', type: 'condition', label: 'Clear?' }, { id: 'r', label: 'Review' }, { id: 's', label: 'Set up' }],
       [
@@ -200,10 +219,17 @@ describe('conditions and loops', () => {
     expect([at('c').y < at('r').y, at('r').y < at('s').y]).toEqual([true, true]);
     expect([at('r').x - at('c').x, at('s').x - at('c').x]).toEqual([24, 0]);
     const yes = p.edges.find((e) => e.to === 's' && e.from === 'c')!;
-    expect([yes.sourceHandle, yes.targetHandle, yes.label]).toEqual(['out-t', 'in', 'yes, all checks clear']);
-    // Its chip rides the peel just above the join, clear of the branch above.
-    expect(yes.at!.y).toBeGreaterThan(at('r').y + at('r').h);
-    expect(yes.at!.y).toBeLessThan(at('s').y);
+    const no = p.edges.find((e) => e.to === 'r')!;
+    // Two exits, two chips under the condition, none on the join's way in.
+    expect(yes.sourceHandle).not.toBe(no.sourceHandle);
+    for (const e of [yes, no]) {
+      expect(e.at!.y).toBeGreaterThan(at('c').y + at('c').h);
+      expect(e.at!.y).toBeLessThan(at('r').y);
+      expect(e.at!.x).toBe(e.points![0].x);
+    }
+    // The yes lane runs down the gutter, clear of the review step, into the join's top.
+    expect(yes.lane).toBeLessThan(at('r').x);
+    expect(yes.targetHandle).not.toBe(p.edges.find((e) => e.from === 'r')!.targetHandle);
   });
 
   it('reserves a strip under the graph for the overlays, and only when they show', () => {
