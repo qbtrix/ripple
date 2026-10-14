@@ -1,37 +1,31 @@
 <!-- src/lib/widgets/vertical/InvoiceLines.svelte: invoice line items with
-     subtotal, summary rows (tax, discount, shipping) and a grand total. Also
-     composed by invoice-layout. Amounts are model output: a summary row reads
-     `value`, then `amount`, then `total`; a line reads `total`, then `amount`,
-     then quantity x unitPrice. Numeric strings count. `currency` is a symbol
-     to prefix ("$") or an ISO code ("USD") formatted through Intl. A row whose amount is not
-     a number renders "—" and drops out of the computed total; nothing ever
-     paints "NaN". -->
+     subtotal, summary rows (tax, discount, shipping) and one grand total. Also
+     composed by invoice-layout, which shares its arithmetic (invoice-math.ts)
+     so the hero amount and this Total always match.
+
+     Amounts are model output; invoice-math.ts holds the rules. A line with no
+     usable amount shows a dash and stays out of the sum (never $0.00). The
+     model's Subtotal / Total win (props, then a summary row so labelled, which
+     never prints twice); when one disagrees with its rows, a muted note says
+     what they add to. Blank descriptions read "Item <n>".
+
+     More than 12 lines collapse to the first 8 with a "Show all N lines" row;
+     totals always show, and print shows every line. Layout keys off the
+     widget's own width: two columns under 480px, four from 480px. -->
 <script lang="ts">
   import { cn } from '$lib/utils.js';
-  import { finite, money, num } from '$lib/widgets/data-kit/format.js';
-
-  type Line = {
-    id?: string | number;
-    description: string;
-    quantity?: number;
-    unitPrice?: number;
-    /** Pre-computed total. If omitted, computed as quantity * unitPrice. */
-    total?: number;
-    /** Alias for `total`. */
-    amount?: number;
-    /** Optional secondary text under description. */
-    note?: string;
-  };
+  import { finite, num } from '$lib/widgets/data-kit/format.js';
+  import { formatAmount, invoiceTotals, lineAmount, summaryValue, type InvoiceLine, type SummaryRow } from './invoice-math.js';
 
   interface Props {
     id?: string;
     class?: string;
     style?: Record<string, string>;
-    lines?: Line[];
+    lines?: InvoiceLine[];
     /** Currency symbol. */
     currency?: string;
     /** Tax/discount/shipping rows shown after subtotal. */
-    summary?: { label: string; value?: number; amount?: number; total?: number; isNegative?: boolean }[];
+    summary?: SummaryRow[];
     /** Override the auto-computed subtotal. */
     subtotal?: number;
     /** Override the auto-computed grand total. */
@@ -44,68 +38,35 @@
     id,
     class: className,
     style,
-    lines = [],
+    lines: rawLines = [],
     currency = '$',
-    summary = [],
+    summary: rawSummary = [],
     subtotal,
     total,
     showRowTotals = true
   }: Props = $props();
 
+  const COLLAPSE_OVER = 12;
+  const COLLAPSED_SHOWS = 8;
+
+  const lines = $derived(Array.isArray(rawLines) ? rawLines.filter((l) => l && typeof l === 'object') : []);
+  const summary = $derived(Array.isArray(rawSummary) ? rawSummary.filter((s) => s && typeof s === 'object') : []);
+  const totals = $derived(invoiceTotals({ lines, summary, subtotal, total }));
+  const collapsible = $derived(lines.length > COLLAPSE_OVER);
+  let expanded = $state(false);
+
   const styleString = $derived(
     style ? Object.entries(style).map(([k, v]) => `${k}:${v}`).join(';') : undefined
   );
 
-  function rowTotal(l: Line): number {
-    const t = finite(l.total) ?? finite(l.amount);
-    if (t !== undefined) return t;
-    const q = finite(l.quantity);
-    const u = finite(l.unitPrice);
-    return q !== undefined && u !== undefined ? q * u : 0;
-  }
-
-  // A summary row's signed amount, or undefined when it is not a number.
-  function summaryValue(s: NonNullable<Props['summary']>[number]): number | undefined {
-    const v = finite(s.value) ?? finite(s.amount) ?? finite(s.total);
-    return v === undefined ? undefined : s.isNegative ? -Math.abs(v) : v;
-  }
-
-  function format(n: number | undefined): string {
-    if (n === undefined || !Number.isFinite(n)) return '—';
-    // An ISO code ("USD") formats as money ($761.40), not "USD761.40".
-    // Negatives get a true minus tight to the symbol ("−$1,000.00").
-    if (/^[A-Za-z]{3}$/.test(currency)) return money(n, currency).replace(/^-/, '\u2212');
-    const sign = n < 0 ? '\u2212' : '';
-    return `${sign}${currency}${Math.abs(n).toLocaleString(undefined, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    })}`;
-  }
-
-  // One Subtotal row, ever: an explicit `subtotal` wins, then a summary row
-  // labelled like "Subtotal" (it replaces the auto row and stays out of the
-  // arithmetic), then the sum of the lines. An explicit `total` always wins.
-  const isSubtotal = (s: { label?: unknown }) => /subtotal/i.test(String(s.label ?? ''));
-  const modelSubtotal = $derived(summary.find(isSubtotal));
-  const extras = $derived(summary.filter((s) => !isSubtotal(s)));
-  const computedSubtotal = $derived(
-    finite(subtotal) ??
-      (modelSubtotal ? summaryValue(modelSubtotal) : undefined) ??
-      lines.reduce((acc, l) => acc + rowTotal(l), 0)
-  );
-  const subtotalLabel = $derived(finite(subtotal) === undefined && modelSubtotal ? String(modelSubtotal.label) : 'Subtotal');
-  const computedTotal = $derived(
-    finite(total) ??
-      computedSubtotal + extras.reduce((acc, s) => acc + (summaryValue(s) ?? 0), 0)
-  );
+  const format = (n: number | undefined) => formatAmount(n, currency);
+  const text = (v: unknown) => (v == null ? '' : String(v).trim());
 </script>
 
-<!-- Rows are a grid, not a table, so the layout follows the card's width:
-     under 480px it is two columns (description with "qty × unit" as a muted
-     second line, amount right-aligned); wider, four. Nothing is clipped. -->
 <div
   {id}
-  class={cn('ril @container rounded-md border border-border', className)}
+  class={cn('ril @container rounded-md border border-ripple-border', className)}
+  class:ril-collapsed={collapsible && !expanded}
   style={styleString}
 >
   <div class="ril-row ril-head" class:ril-nototal={!showRowTotals}>
@@ -116,38 +77,55 @@
   </div>
   <!-- Keyed by id AND position: a streamed item can lack its id, or carry a half-written one equal to a finished id, and a duplicate key throws. -->
   {#each lines as line, i (`${line.id}:${i}`)}
-    {@const hasQty = typeof line.quantity === 'number'}
-    {@const hasUnit = typeof line.unitPrice === 'number'}
-    <div class="ril-row ril-line" class:ril-nototal={!showRowTotals}>
+    {@const qty = finite(line.quantity)}
+    {@const unit = finite(line.unitPrice)}
+    {@const desc = text(line.description)}
+    {@const note = text(line.note)}
+    <div
+      class="ril-row ril-line"
+      class:ril-nototal={!showRowTotals}
+      class:ril-extra={collapsible && i >= COLLAPSED_SHOWS}
+    >
       <div class="min-w-0">
-        <div class="ril-desc">{line.description}</div>
-        {#if hasQty && hasUnit && showRowTotals}
-          <div class="ril-narrow ril-sub">{num(line.quantity)} × {format(line.unitPrice)}</div>
-        {:else if hasQty}
-          <div class="ril-narrow ril-sub">Qty {num(line.quantity)}</div>
+        <div class="ril-desc" class:ril-placeholder={!desc}>{desc || `Item ${i + 1}`}</div>
+        {#if qty !== undefined && unit !== undefined && showRowTotals}
+          <div class="ril-narrow ril-sub ril-figs">{num(qty)} × {format(unit)}</div>
+        {:else if qty !== undefined}
+          <div class="ril-narrow ril-sub ril-figs">Qty {num(qty)}</div>
         {/if}
-        {#if line.note}<div class="ril-sub">{line.note}</div>{/if}
+        {#if note}<div class="ril-sub">{note}</div>{/if}
       </div>
-      <span class="ril-wide ril-num">{hasQty ? num(line.quantity) : ''}</span>
-      <span class="ril-wide ril-num">{hasUnit ? format(line.unitPrice) : ''}</span>
+      <span class="ril-wide ril-num">{qty !== undefined ? num(qty) : ''}</span>
+      <span class="ril-wide ril-num">{unit !== undefined ? format(unit) : ''}</span>
       {#if showRowTotals}
-        <span class="ril-num font-medium">{format(rowTotal(line))}</span>
+        <span class="ril-num font-medium">{format(lineAmount(line))}</span>
       {:else}
-        <span class="ril-narrow ril-num">{hasUnit ? format(line.unitPrice) : ''}</span>
+        <span class="ril-narrow ril-num">{unit !== undefined ? format(unit) : ''}</span>
       {/if}
     </div>
   {/each}
+  {#if collapsible}
+    <button type="button" class="ril-toggle" aria-expanded={expanded} onclick={() => (expanded = !expanded)}>
+      {expanded ? 'Show fewer' : `Show all ${lines.length} lines`}
+    </button>
+  {/if}
   <div class="ril-foot">
-    <div class="ril-sum"><span>{subtotalLabel}</span><span class="ril-num">{format(computedSubtotal)}</span></div>
-    {#each extras as s, idx (`${s.label}:${idx}`)}
+    <div class="ril-sum"><span>{totals.subtotalLabel}</span><span class="ril-num">{format(totals.subtotal)}</span></div>
+    {#if totals.linesAddTo !== undefined}
+      <div class="ril-note">Lines add to {format(totals.linesAddTo)}</div>
+    {/if}
+    {#each totals.extras as s, idx (`${s.label}:${idx}`)}
       <div class="ril-sum ril-muted"><span>{s.label}</span><span class="ril-num">{format(summaryValue(s))}</span></div>
     {/each}
-    <div class="ril-sum ril-total"><span>Total</span><span class="ril-num">{format(computedTotal)}</span></div>
+    <div class="ril-sum ril-total"><span>Total</span><span class="ril-num">{format(totals.total)}</span></div>
+    {#if totals.rowsAddTo !== undefined}
+      <div class="ril-note">Rows add to {format(totals.rowsAddTo)}</div>
+    {/if}
   </div>
 </div>
 
 <style>
-  .ril { container-type: inline-size; font-size: 13px; }
+  .ril { container-type: inline-size; font-size: 13px; color: var(--ripple-surface-foreground); }
   .ril-row {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
@@ -156,6 +134,7 @@
     align-items: start;
   }
   .ril-line { border-top: 1px solid var(--ripple-border); }
+  .ril-collapsed .ril-extra { display: none; }
   .ril-head {
     font-size: 11px;
     font-weight: 600;
@@ -165,9 +144,27 @@
   }
   .ril-head > :not(:first-child) { text-align: right; }
   .ril-desc { overflow-wrap: anywhere; }
-  .ril-sub { margin-top: 2px; font-size: 12px; color: var(--ripple-muted-foreground); }
+  .ril-placeholder { color: var(--ripple-muted-foreground); }
+  .ril-sub { margin-top: 2px; font-size: 12px; color: var(--ripple-muted-foreground); overflow-wrap: anywhere; }
+  .ril-figs { font-variant-numeric: tabular-nums; }
   .ril-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .ril-wide { display: none; }
+  .ril-toggle {
+    display: block;
+    width: 100%;
+    min-height: 36px;
+    padding: 8px 12px;
+    border: 0;
+    border-top: 1px solid var(--ripple-border);
+    background: transparent;
+    color: var(--ripple-accent-text);
+    font: inherit;
+    font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+  }
+  .ril-toggle:hover { background: color-mix(in oklab, var(--ripple-surface-foreground) 5%, transparent); }
+  .ril-toggle:focus-visible { outline: 2px solid var(--ripple-ring); outline-offset: -2px; }
   .ril-foot { border-top: 1px solid var(--ripple-border); padding: 6px 12px 10px; }
   .ril-sum {
     display: flex;
@@ -175,8 +172,16 @@
     gap: 12px;
     padding: 4px 0;
   }
-  .ril-sum > :first-child { min-width: 0; color: var(--ripple-muted-foreground); }
+  .ril-sum > :first-child { min-width: 0; color: var(--ripple-muted-foreground); overflow-wrap: anywhere; }
   .ril-muted .ril-num { color: var(--ripple-muted-foreground); }
+  .ril-note {
+    margin-top: -2px;
+    padding-bottom: 4px;
+    font-size: 12px;
+    text-align: right;
+    color: var(--ripple-muted-foreground);
+    font-variant-numeric: tabular-nums;
+  }
   .ril-total {
     margin-top: 4px;
     padding-top: 8px;
@@ -190,6 +195,22 @@
     .ril-row.ril-nototal { grid-template-columns: minmax(0, 1fr) 4rem 6.5rem; }
     .ril-wide { display: block; }
     .ril-narrow { display: none; }
-    .ril-foot { padding-left: 40%; }
+    .ril-foot { padding-left: 30%; }
+    .ril-sum { display: grid; grid-template-columns: minmax(0, 1fr) minmax(7.5rem, auto); column-gap: 16px; }
+    .ril-sum > :first-child { text-align: right; }
+  }
+  /* invoice-layout passes `ril-flush`: no frame of its own (the card is the
+     one surface) and rows align with the card's text edge. */
+  .ril:global(.ril-flush) { border: 0; border-radius: 0; }
+  .ril:global(.ril-flush) .ril-row,
+  .ril:global(.ril-flush) .ril-toggle,
+  .ril:global(.ril-flush) .ril-foot { padding-left: 0; padding-right: 0; }
+  .ril:global(.ril-flush) .ril-foot { padding-bottom: 0; }
+  @container (min-width: 480px) {
+    .ril:global(.ril-flush) .ril-foot { padding-left: 30%; }
+  }
+  @media print {
+    .ril-collapsed .ril-extra { display: grid; }
+    .ril-toggle { display: none; }
   }
 </style>

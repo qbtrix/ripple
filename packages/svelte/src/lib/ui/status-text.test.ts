@@ -21,7 +21,7 @@
 //      --destructive is left alone), at rest and on hover, and the label must
 //      reach 4.5:1 in every state while hover stays distinct from rest.
 import { test, expect } from 'vitest';
-import { oklch, toRgb, mix, over, contrast, type Lab } from './__fixtures__/contrast.js';
+import { oklch, toRgb, mix, over, contrast, fromHex, type Lab } from './__fixtures__/contrast.js';
 
 const TONES = ['error', 'success', 'warning', 'info'] as const;
 type Tone = (typeof TONES)[number];
@@ -187,4 +187,38 @@ test('checkbox and radio rims use the control border, not the host --input', asy
     expect(src, f).toContain('border-ripple-control-border');
     expect(src, f).not.toMatch(/"border-input /);
   }
+});
+
+test('invoice-layout status chips reach 4.5:1 on their tints on the Blueprint site, both themes', async () => {
+  // Tokens from src/routes/site.css (Blueprint) and src/lib/styles.css (--destructive).
+  // Chips tint their tone 13% over --ripple-surface (oklab mix); text is the -text token.
+  const css = await read('src/lib/theme.css');
+  const share = (tone: string) => {
+    const m = css.match(new RegExp(`--ripple-${tone}-text:\\s*color-mix\\(in oklab,\\s*var\\(--ripple-${tone}\\)\\s+([\\d.]+)%`));
+    return m ? Number(m[1]) / 100 : 1;
+  };
+  const chip = await read('src/lib/widgets/composite/InvoiceLayout.svelte');
+  const tint = Number(chip.match(/var\(--ripple-accent\) (\d+)%, var\(--ripple-surface\)/)?.[1] ?? 100) / 100;
+  const accent = fromHex('#1877f2');
+  const success = oklch(0.72, 0.17, 155);
+  const themes = {
+    light: { surface: fromHex('#efeee8'), fg: oklch(0.2, 0.01, 95), mutedFg: oklch(0.43, 0.01, 95), muted: toRgb(fromHex('#e5e4dd')), error: fromHex('#ef4444') },
+    dark: { surface: fromHex('#1d1d1a'), fg: oklch(0.95, 0.005, 260), mutedFg: oklch(0.75, 0.015, 260), muted: over([1, 1, 1], 0.05, toRgb(fromHex('#1d1d1a'))), error: oklch(0.704, 0.191, 22.216) },
+  };
+  const failures: string[] = [];
+  for (const [name, th] of Object.entries(themes)) {
+    const chips: [string, Lab, number][] = [
+      ['sent', accent, share('accent')],
+      ['paid', success, share('success')],
+      ['overdue', th.error, share('error')],
+    ];
+    for (const [label, tone, p] of chips) {
+      const ratio = contrast(toRgb(mix(tone, th.fg, p)), toRgb(mix(tone, th.surface, tint)));
+      if (ratio < 4.5) failures.push(`${label} ${name}: ${ratio.toFixed(2)}`);
+    }
+    // draft, void and unknown statuses: muted ink on --ripple-muted.
+    const neutral = contrast(toRgb(th.mutedFg), th.muted);
+    if (neutral < 4.5) failures.push(`neutral ${name}: ${neutral.toFixed(2)}`);
+  }
+  expect(failures).toEqual([]);
 });

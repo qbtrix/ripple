@@ -44,3 +44,16 @@ export function contrast(x: Rgb, y: Rgb): number {
   const [hi, lo] = [lum(x), lum(y)].sort((p, q) => q - p);
   return (hi + 0.05) / (lo + 0.05);
 }
+
+/** A `#rrggbb` colour as oklab, so hex host tokens join the mix math. */
+export function fromHex(hex: string): Lab {
+  const [r, g, b] = [1, 3, 5].map((i) => decode(parseInt(hex.slice(i, i + 2), 16) / 255));
+  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+  const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+  const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+  return [
+    0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s,
+    1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s,
+    0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s,
+  ];
+}
