@@ -1,11 +1,11 @@
-// Chart.redraw.test.ts — the echarts-backed data widgets (chart, heatmap,
-// sankey, funnel), the native gantt and the DOM treemap redraw when their
+// Chart.redraw.test.ts: the echarts-backed data widgets (chart, sankey,
+// funnel), the native gantt and heatmap, and the DOM treemap redraw when their
 // props change after mount: state behind `data` changes, a streamed spec delivers
 // title/data in later chunks, or type/title are swapped on the live component.
-// The chart libs are mocked (jsdom has no canvas), so every assertion reads the
-// option handed to the instance's update call. The instance itself must be
-// created once and updated in place, then disposed on unmount. The treemap
-// draws DOM tiles, so its check reads the rendered tile text instead.
+// The chart libs are mocked (jsdom has no canvas), so every echarts assertion
+// reads the option handed to the instance's update call. The instance itself
+// must be created once and updated in place, then disposed on unmount. The DOM
+// widgets (treemap, heatmap, gantt) are checked by reading what they render.
 
 import { render, fireEvent } from '@testing-library/svelte';
 import { tick } from 'svelte';
@@ -128,7 +128,6 @@ describe('chart', () => {
 });
 
 describe.each([
-	['heatmap', Heatmap, { cells: [{ x: 'a', y: 'r', value: 1 }] }, { cells: [{ x: 'a', y: 'r', value: 9 }] }, (o: any) => o.series[0].data, [[0, 0, 9]]],
 	[
 		'sankey',
 		Sankey,
@@ -155,6 +154,19 @@ describe('treemap', () => {
 		expect(names()).toEqual(['a']);
 		await rerender({ data: [{ name: 'b', value: 9 }] });
 		expect(names()).toEqual(['b']);
+		expect(ec.init).not.toHaveBeenCalled();
+	});
+});
+
+describe('heatmap', () => {
+	test('redraws its cells when its cells prop changes after mount', async () => {
+		// bind:clientWidth needs entries with a target; the sized stub has none.
+		vi.unstubAllGlobals();
+		const { container, rerender } = render(Heatmap, { props: { cells: [{ x: 'a', y: 'r', value: 1 }] } });
+		const values = () => [...container.querySelectorAll('.hm-cell')].map((c) => c.getAttribute('data-value'));
+		expect(values()).toEqual(['1']);
+		await rerender({ cells: [{ x: 'a', y: 'r', value: 9 }, { x: 'b', y: 'r', value: 4 }] });
+		expect(values()).toEqual(['9', '4']);
 		expect(ec.init).not.toHaveBeenCalled();
 	});
 });

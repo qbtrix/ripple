@@ -1,7 +1,7 @@
 {
   "schema": "ripple.manifest/v1",
   "version": "0.8.0",
-  "generatedAt": "2026-10-14T09:34:15.214Z",
+  "generatedAt": "2026-10-14T14:42:20.558Z",
   "spec": {
     "uiField": "ui",
     "stateField": "state",
@@ -6546,7 +6546,7 @@
         "height": {
           "type": "number",
           "required": false,
-          "description": "Height in px. Default 280."
+          "description": "Max height. Default 280."
         },
         "title": {
           "type": "string",
@@ -6556,7 +6556,7 @@
         "colorRange": {
           "type": "[string, string]",
           "required": false,
-          "description": "Low-to-high gradient. Default [\"#dbeafe\", \"#1d4ed8\"]."
+          "description": "Ignored."
         },
         "showLabels": {
           "type": "boolean",

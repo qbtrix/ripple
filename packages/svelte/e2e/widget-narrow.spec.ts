@@ -286,3 +286,69 @@ test.describe('gallery fixtures on a phone card', () => {
 		});
 	}
 });
+
+test.describe('heatmap', () => {
+	const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+	// A sparse year of deploys: 53 weeks x 7 days, one outlier, deterministic.
+	const calendar: Spec = {
+		ui: {
+			type: 'heatmap',
+			props: {
+				title: 'Deploys per day',
+				yLabels: DAYS,
+				height: 160,
+				cells: Array.from({ length: 53 * 7 }, (_, k) => ({ x: `W${Math.floor(k / 7) + 1}`, y: DAYS[k % 7], value: k === 282 ? 4800 : (k * 37) % 5 === 0 ? (k % 9) + 1 : 0 }))
+			}
+		}
+	};
+	const queues = ['Customer onboarding and account verification desk', 'Billing', 'Returns, exchanges and warranty claims (international)'];
+	const months = ['September 2026', 'October 2026', 'November 2026', 'December 2026', 'January 2027', 'February 2027'];
+	const long: Spec = {
+		ui: { type: 'heatmap', props: { title: 'Median response time', cells: queues.flatMap((y, r) => months.map((x, c) => ({ x, y, value: (r * 7 + c * 13) % 90 }))) } }
+	};
+
+	test('y labels sit on their own row when rows are shorter than a label line, at 360', async ({ page }) => {
+		await open(page, calendar, 360);
+		const rows = await page.evaluate(() => {
+			const mid = (e: Element) => {
+				const b = e.getBoundingClientRect();
+				return (b.top + b.bottom) / 2;
+			};
+			return [...document.querySelectorAll<HTMLElement>('.hm-y')].map((l) => {
+				const r = Number(l.style.gridRow) - 2;
+				const cell = [...document.querySelectorAll<HTMLElement>('.hm-cell')].find((c) => c.dataset.r === String(r))!;
+				return { text: l.textContent.trim(), off: Math.abs(mid(l) - mid(cell)), rowH: cell.getBoundingClientRect().height };
+			});
+		});
+		expect(rows.map((r) => r.text)).toEqual(['Mon', 'Thu', 'Sun']);
+		expect(rows[0].rowH).toBeLessThan(13);
+		for (const r of rows) expect(r.off, r.text).toBeLessThan(1);
+	});
+
+	test('the readout stays one line, resting and hovered, at 360', async ({ page }) => {
+		await open(page, long, 360);
+		const height = () => page.locator('.hm-readout').evaluate((e) => e.getBoundingClientRect().height);
+		const rest = await height();
+		expect(rest).toBeLessThanOrEqual(16);
+		await page.locator('.hm-cell[data-r="2"][data-c="5"]').hover();
+		expect(await page.locator('.hm-readout').textContent()).toContain('February 2027');
+		expect(await height()).toBe(rest);
+		await page.locator('.hm-cell[data-r="1"][data-c="0"]').hover();
+		expect(await height()).toBe(rest);
+	});
+
+	test('x labels show at every Nth column, last group included, inside the card and whole, at 360', async ({ page }) => {
+		await open(page, long, 360);
+		const cols = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.hm-x')].map((e) => Number(e.style.gridColumn) - 2));
+		expect(cols[0]).toBe(0);
+		const n = cols[1];
+		expect(cols).toEqual(months.map((_, i) => i).filter((i) => i % n === 0));
+		const bad = await page.evaluate(() => {
+			const box = document.querySelector('.hm')!.getBoundingClientRect();
+			return [...document.querySelectorAll<HTMLElement>('.hm-xt')]
+				.filter((e) => e.getBoundingClientRect().right > box.right + 1 || e.getBoundingClientRect().left < box.left - 1 || e.scrollWidth > e.clientWidth + 1)
+				.map((e) => e.textContent);
+		});
+		expect(bad).toEqual([]);
+	});
+});
