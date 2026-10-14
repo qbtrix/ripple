@@ -6,7 +6,8 @@
 // an `icon`, honoured only when it is a key of that map; otherwise a keyword
 // scan of the option's name infers the key (optionIconKey, choiceIconKey).
 // habit-tracker's HABIT_ICONS is the same closed-key idea without the scan: a
-// habit's `icon` is honoured only when it is a key of the map.
+// habit's `icon` is honoured only when it is a key of the map. bulk-action-bar's
+// BULK_ICONS is closed too, but an unknown name shows no icon at all.
 //
 // One map per enum in the doc, each its own export so a widget's bundle carries
 // only the icons it imports. A widget with an enum not listed here
@@ -132,6 +133,27 @@ import Music from '@lucide/svelte/icons/music';
 import CandyOff from '@lucide/svelte/icons/candy-off';
 import Bike from '@lucide/svelte/icons/bike';
 import Pill from '@lucide/svelte/icons/pill';
+// bulk actions
+import UserCheck from '@lucide/svelte/icons/user-check';
+import UserPlus from '@lucide/svelte/icons/user-plus';
+import UserX from '@lucide/svelte/icons/user-x';
+import Mail from '@lucide/svelte/icons/mail';
+import Send from '@lucide/svelte/icons/send';
+import Trash2 from '@lucide/svelte/icons/trash-2';
+import Archive from '@lucide/svelte/icons/archive';
+import ArchiveRestore from '@lucide/svelte/icons/archive-restore';
+import Tags from '@lucide/svelte/icons/tags';
+import Download from '@lucide/svelte/icons/download';
+import Upload from '@lucide/svelte/icons/upload';
+import Copy from '@lucide/svelte/icons/copy';
+import FolderInput from '@lucide/svelte/icons/folder-input';
+import Pencil from '@lucide/svelte/icons/pencil';
+import Share2 from '@lucide/svelte/icons/share-2';
+import Flag from '@lucide/svelte/icons/flag';
+import EyeOff from '@lucide/svelte/icons/eye-off';
+import Lock from '@lucide/svelte/icons/lock';
+import LockOpen from '@lucide/svelte/icons/lock-open';
+import Check from '@lucide/svelte/icons/check';
 
 export const FALLBACK_ICON: LucideIcon = CircleDot;
 
@@ -436,6 +458,35 @@ export const HABIT_ICONS = {
 	veg: Carrot,
 	'no-sugar': CandyOff,
 	vitamins: Pill
+} satisfies Record<string, LucideIcon>;
+
+/**
+ * bulk-action-bar action `icon`, keyed by Lucide name: common bulk verbs only.
+ * Unlike kindIcon there is no fallback: an unknown name renders no icon.
+ */
+export const BULK_ICONS = {
+	'user-check': UserCheck,
+	'user-plus': UserPlus,
+	'user-x': UserX,
+	mail: Mail,
+	send: Send,
+	'trash-2': Trash2,
+	archive: Archive,
+	'archive-restore': ArchiveRestore,
+	tag: Tag,
+	tags: Tags,
+	download: Download,
+	upload: Upload,
+	copy: Copy,
+	'folder-input': FolderInput,
+	pencil: Pencil,
+	'share-2': Share2,
+	flag: Flag,
+	star: Star,
+	'eye-off': EyeOff,
+	lock: Lock,
+	unlock: LockOpen,
+	check: Check
 } satisfies Record<string, LucideIcon>;
 
 export type StopKind = keyof typeof STOP_ICONS;
