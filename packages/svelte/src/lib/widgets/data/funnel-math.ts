@@ -24,6 +24,8 @@ export type FunnelRow = {
 	value: number | undefined;
 	/** value / previous numbered value, when that is above 0. */
 	rate?: number;
+	/** Label of that previous numbered stage, set with `rate`. */
+	from?: string;
 	/** The lowest step rate under 100% (earliest on ties), when two or more rates exist. */
 	worst: boolean;
 	/** Bar width, percent of the widest stage. */
@@ -32,7 +34,6 @@ export type FunnelRow = {
 	ghostPct?: number;
 };
 
-export const DEFAULT_HEIGHT = 240;
 export const MIN_HEIGHT = 120;
 export const NAME_CAP = 24;
 export const COMPACT_FROM = 100_000;
@@ -43,10 +44,10 @@ export function parseValue(v: unknown): number | undefined {
 	return n === undefined ? undefined : Math.max(0, n);
 }
 
-/** `height` as a max: a number or `"300px"`, at least MIN_HEIGHT, junk falls back to 240. */
-export function parseHeight(v: unknown): number {
+/** `height` as a max: a number or `"300px"`, at least MIN_HEIGHT; absent or junk means no cap. */
+export function parseHeight(v: unknown): number | undefined {
 	const n = finite(typeof v === 'string' ? v.trim().replace(/px$/i, '') : v);
-	return n === undefined ? DEFAULT_HEIGHT : Math.max(MIN_HEIGHT, n);
+	return n === undefined ? undefined : Math.max(MIN_HEIGHT, n);
 }
 
 export function parseSort(v: unknown): FunnelSort {
@@ -73,6 +74,7 @@ export function funnelRows(data: readonly unknown[], sort: FunnelSort = 'none'):
 	const max = Math.max(0, ...stages.map((s) => s.value ?? 0));
 	const pctOf = (v: number) => (max > 0 ? Math.round((v / max) * 100_000) / 1000 : 0);
 	let prev: number | undefined;
+	let prevLabel = '';
 	const rows: FunnelRow[] = stages.map((s, i) => {
 		const row: FunnelRow = {
 			label: s.label || `Stage ${i + 1}`,
@@ -82,9 +84,13 @@ export function funnelRows(data: readonly unknown[], sort: FunnelSort = 'none'):
 			pct: s.value === undefined ? 0 : pctOf(s.value)
 		};
 		if (s.value !== undefined) {
-			if (prev !== undefined && prev > 0) row.rate = s.value / prev;
+			if (prev !== undefined && prev > 0) {
+				row.rate = s.value / prev;
+				row.from = prevLabel;
+			}
 			if (prev !== undefined && prev > s.value) row.ghostPct = pctOf(prev);
 			prev = s.value;
+			prevLabel = row.label;
 		}
 		return row;
 	});
@@ -97,10 +103,15 @@ export function funnelRows(data: readonly unknown[], sort: FunnelSort = 'none'):
 	return rows;
 }
 
-/** `0%`, `<0.1%`, `4.2%`, `62%`, `185%`, `>999%`. `precise` keeps one decimal up to 100% (the summary's `10.5%`). */
+/**
+ * `0%`, `<0.1%`, `4.2%`, `62%`, `185%`, `>999%`. `precise` keeps one decimal up
+ * to 100% (the summary's `10.5%`). A rate that is not exactly 100% never prints
+ * as `100%` (`<100%`, `>100%`), so a real loss or gain never reads as none.
+ */
 export function formatRate(r: number, precise = false): string {
 	const p = r * 100;
 	if (p === 0) return '0%';
+	if (p !== 100 && Math.round(p) === 100 && !(precise && p < 99.95)) return p < 100 ? '<100%' : '>100%';
 	if (p < 0.1) return '<0.1%';
 	if (p < (precise ? 99.95 : 9.95)) return `${num(p, { digits: 1 })}%`;
 	if (Math.round(p) > 999) return '>999%';
@@ -118,15 +129,20 @@ export function countFormat(rows: readonly FunnelRow[]): (v: number | undefined)
 	return (v) => (v === undefined ? 'n/a' : num(v, compact ? { compact: true } : {}));
 }
 
+/** At most NAME_CAP characters, cut at the last word boundary when there is one. */
 export function capName(s: string): string {
-	return s.length > NAME_CAP ? `${s.slice(0, NAME_CAP - 1).trimEnd()}…` : s;
+	if (s.length <= NAME_CAP) return s;
+	const cut = s.slice(0, NAME_CAP - 1);
+	const space = cut.lastIndexOf(' ');
+	return `${(space > 0 ? cut.slice(0, space) : cut).replace(/[\s,;:.-]+$/, '')}…`;
 }
 
 /**
  * The summary line: `10.5% of Leads reached Closed`, plus the worst step as a
- * separate `drop` clause (wide only, three or more stages). Fallbacks: under two
- * numbered stages none; all zero `Nothing recorded yet`; a rate above 100% (or a
- * zero first stage) `<n> stages · <largest> at the widest`.
+ * separate `drop` clause (wide only, three or more stages):
+ * `biggest drop: Proposal to Closed, 38% continued`. Fallbacks: under two
+ * numbered stages none; all zero `Nothing recorded yet`; a rate above 100% (or
+ * a zero first stage) `<n> stages · largest: <name>, <count>`.
  */
 export function funnelSummary(rows: readonly FunnelRow[]): { text: string; drop?: string } | undefined {
 	const numbered = rows.filter((r) => r.value !== undefined);
@@ -136,13 +152,17 @@ export function funnelSummary(rows: readonly FunnelRow[]): { text: string; drop?
 	const last = numbered[numbered.length - 1];
 	const count = countFormat(rows);
 	const overall = first.value! > 0 ? last.value! / first.value! : Infinity;
+	const largest = numbered.reduce((a, b) => (b.value! > a.value! ? b : a));
 	const text =
 		overall <= 1
 			? `${formatRate(overall, true)} of ${capName(first.label)} reached ${capName(last.label)}`
-			: `${rows.length} stages · ${count(Math.max(...numbered.map((r) => r.value!)))} at the widest`;
+			: `${rows.length} stages · largest: ${capName(largest.label)}, ${count(largest.value)}`;
 	const worst = rows.length >= 3 ? rows.find((r) => r.worst) : undefined;
 	return worst
-		? { text, drop: `biggest drop at ${capName(worst.label)} (${formatRate(worst.rate!)} of previous)` }
+		? {
+				text,
+				drop: `biggest drop: ${capName(worst.from!)} to ${capName(worst.label)}, ${formatRate(worst.rate!)} continued`
+			}
 		: { text };
 }
 

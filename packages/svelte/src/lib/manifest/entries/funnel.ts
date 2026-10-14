@@ -6,7 +6,7 @@ export const funnelEntry: WidgetManifestEntry = {
   description: 'Funnel chart showing stage-wise conversion or drop-off.',
   props: {
     data: { type: 'Array<{ label: string; value: number }>', required: true, description: 'Funnel stages.' },
-    height: { type: 'number', required: false, description: 'Max height px. Default 240' },
+    height: { type: 'number', required: false, description: 'Max height px; else fits.' },
     title: { type: 'string', required: false, description: 'Chart title.' },
     colors: { type: 'string[]', required: false, description: 'Ignored.' },
     sort: { type: '"descending" | "ascending" | "none"', required: false, description: 'Stage sort order.' },

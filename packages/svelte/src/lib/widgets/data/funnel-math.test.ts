@@ -52,8 +52,8 @@ describe('parsing', () => {
 		expect(parseHeight('300px')).toBe(300);
 		expect(parseHeight(200)).toBe(200);
 		expect(parseHeight(40)).toBe(120);
-		expect(parseHeight('tall')).toBe(240);
-		expect(parseHeight(undefined)).toBe(240);
+		expect(parseHeight('tall')).toBeUndefined();
+		expect(parseHeight(undefined)).toBeUndefined();
 	});
 	test('sort defaults to authored order', () => {
 		expect(parseSort(undefined)).toBe('none');
@@ -128,6 +128,13 @@ describe('words', () => {
 		expect(formatRate(9.99)).toBe('999%');
 		expect(formatRate(12)).toBe('>999%');
 		expect(formatRate(0.105, true)).toBe('10.5%');
+		// A real loss or gain never prints as a flat 100%.
+		expect(formatRate(11_999_000 / 12_000_000)).toBe('<100%');
+		expect(formatRate(0.997)).toBe('<100%');
+		expect(formatRate(0.997, true)).toBe('99.7%');
+		expect(formatRate(0.9999, true)).toBe('<100%');
+		expect(formatRate(12_000_000 / 11_999_000)).toBe('>100%');
+		expect(formatRate(1)).toBe('100%');
 	});
 
 	test('counts switch to compact at 100,000 for the whole column', () => {
@@ -141,19 +148,23 @@ describe('words', () => {
 	test('summary and its fallbacks', () => {
 		expect(funnelSummary(funnelRows(typical))).toEqual({
 			text: '10.5% of Leads reached Closed',
-			drop: 'biggest drop at Closed (38% of previous)'
+			drop: 'biggest drop: Proposal to Closed, 38% continued'
 		});
+		// The step's start is the last numbered stage, skipping n/a rows.
+		expect(funnelSummary(funnelRows(messy))?.drop).toBe('biggest drop: Stage 4 to Paid, 0% continued');
 		expect(funnelSummary(funnelRows([{ label: 'Signed up', value: 86 }]))).toBeUndefined();
 		expect(funnelSummary(funnelRows([{ label: 'a', value: 0 }, { label: 'b', value: 0 }]))?.text).toBe(
 			'Nothing recorded yet'
 		);
 		const asc = funnelRows([12_000_000, 11_999_000, 9_100_000, 845_000, 61_000, 3].map((value, i) => ({ label: `${i}`, value })), 'ascending');
 		expect(asc.slice(1, 4).map((r) => formatRate(r.rate!))).toEqual(['>999%', '>999%', '>999%']);
-		expect(funnelSummary(asc)).toEqual({ text: '6 stages · 12M at the widest' });
+		expect(funnelSummary(asc)).toEqual({ text: '6 stages · largest: 0, 12M' });
 	});
 
 	test('summary names are capped at 24 characters', () => {
-		expect(capName('Saw the poster at the library')).toBe('Saw the poster at the l…');
+		expect(capName('Saw the poster at the library')).toBe('Saw the poster at the…');
+		expect(capName('Saw it at the library, then left')).toBe('Saw it at the library…');
+		expect(capName('Supercalifragilisticexpialidocious')).toBe('Supercalifragilisticexp…');
 		expect(capName('Came back')).toBe('Came back');
 	});
 
@@ -177,6 +188,9 @@ describe('Funnel DOM', () => {
 		expect(items[5].querySelector('.fn-tick')).not.toBeNull();
 		expect(container.textContent).not.toMatch(/NaN|Infinity|undefined|\*\*/);
 		expect(container.querySelector<HTMLElement>('.fn-root')!.style.maxHeight).toBe('300px');
+		// Without a model-set height the widget fits its content.
+		const fitted = render(Funnel, { props: { data: typical } });
+		expect(fitted.container.querySelector<HTMLElement>('.fn-root')!.style.maxHeight).toBe('');
 	});
 
 	test('no data is a designed empty state; one stage has no summary', () => {

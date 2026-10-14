@@ -5,15 +5,18 @@
 
   Frame: optional title (text-headline), one muted summary line, then an <ol>
   of stages split by hairlines. No inner panel; the card is the only frame.
-  `height` is a maximum: the widget is as tall as its rows up to it, then only
-  the list scrolls, under the fixed title, summary and column caption.
+  Height: the widget is as tall as its content. Only a model-set `height` caps
+  it; then the list scrolls under the fixed title, summary and caption, its
+  height snapped to whole rows (no glyph is ever sliced), and a muted
+  `+N more stages, scroll` line under it counts the rows still below.
 
   Layout follows the root's own width (container query at 480px):
   - wide: one grid for every row (name | bar track | count | rate of previous),
     a caption over the two number columns, and the worst step's clause on the
     summary line;
   - narrow: each stage is name + count, then a full-width bar, with the step
-    rate as a connector line (`↓ 62% of previous`) between two stages.
+    rate as a connector line (`62% of previous`) between two stages. Its arrow
+    points down, or up when the stage grew, so it never reads as the opposite.
 
   Bars share a left baseline and scale to the widest stage (3px floor above 0,
   a 2px tick at 0, nothing for `n/a`). Behind each bar the previous stage's
@@ -25,7 +28,7 @@
 -->
 <script lang="ts">
 	import { safeStyle } from '@ripple-ui/core';
-	import { ArrowDown } from '@lucide/svelte';
+	import { ArrowDown, ArrowUp } from '@lucide/svelte';
 	import { cn } from '$lib/utils.js';
 	import { safeArray, uniqueKeys } from '$lib/utils/safe-props.js';
 	import { plain } from '../data-kit/format.js';
@@ -36,7 +39,7 @@
 		class?: string;
 		style?: Record<string, string>;
 		data?: Array<{ label: string; value: number }>;
-		/** Max height in px; rows scroll past it. */
+		/** Max height in px; rows scroll past it. Absent: fit the content. */
 		height?: number | string;
 		title?: string;
 		/** Accepted for compatibility; the funnel draws one hue. */
@@ -57,6 +60,56 @@
 	const maxH = $derived(parseHeight(height));
 	const dense = $derived(rows.length > 10);
 	const rated = $derived(rows.some((r) => r.rate !== undefined));
+	// Cue line under a capped list: caption-1 line height plus its top padding.
+	const CUE_H = 17;
+	let topEl = $state<HTMLElement>();
+	let listEl = $state<HTMLOListElement>();
+	let listMax = $state<number>();
+	let hidden = $state(0);
+
+	/** Rows whose bottom sits below the visible edge of the list. */
+	function countHidden(visible: number) {
+		if (!listEl) return;
+		const edge = listEl.scrollTop + visible + 1;
+		hidden = [...listEl.children].filter((li) => {
+			const el = li as HTMLElement;
+			return el.offsetTop + el.offsetHeight > edge;
+		}).length;
+	}
+
+	/** Snap the capped list to whole rows; no cap when everything fits. */
+	function fit() {
+		if (maxH === undefined || !listEl) {
+			listMax = undefined;
+			hidden = 0;
+			return;
+		}
+		const bottoms = [...listEl.children].map((li) => (li as HTMLElement).offsetTop + (li as HTMLElement).offsetHeight);
+		const top = topEl?.offsetHeight ?? 0;
+		if (!bottoms.length || top + bottoms[bottoms.length - 1] <= maxH) {
+			listMax = undefined;
+			hidden = 0;
+			return;
+		}
+		const room = maxH - top - CUE_H;
+		let k = 1;
+		while (k < bottoms.length && bottoms[k] <= room) k++;
+		const h = bottoms[k - 1];
+		listMax = h;
+		countHidden(h);
+	}
+
+	$effect(() => {
+		void rows;
+		if (!listEl) return;
+		fit();
+		if (typeof ResizeObserver === 'undefined') return;
+		const ro = new ResizeObserver(() => fit());
+		ro.observe(listEl.parentElement ?? listEl);
+		document.fonts?.ready.then(() => fit());
+		return () => ro.disconnect();
+	});
+
 	const styleString = $derived(
 		style ? Object.entries(style).map(([k, v]) => `${k}:${v}`).join(';') : undefined
 	);
@@ -67,10 +120,10 @@
 	data-ripple-node={id}
 	class={cn('fn-root w-full min-w-0 text-ripple-surface-foreground', className)}
 	style={safeStyle(styleString ?? '')}
-	style:max-height="{maxH}px"
+	style:max-height={maxH === undefined ? undefined : `${maxH}px`}
 >
 	{#if heading || summary || rated}
-		<div class="fn-top">
+		<div class="fn-top" bind:this={topEl}>
 			{#if heading}
 				<h3 class="fn-title text-headline">{heading}</h3>
 			{/if}
@@ -90,12 +143,18 @@
 	{#if !rows.length}
 		<p class="fn-empty text-callout">No stages to show</p>
 	{:else}
-		<ol class={cn('fn-list', dense && 'is-dense')} aria-label={heading || 'Funnel'}>
+		<ol
+			bind:this={listEl}
+			class={cn('fn-list', dense && 'is-dense')}
+			aria-label={heading || 'Funnel'}
+			style:max-height={listMax === undefined ? undefined : `${listMax}px`}
+			onscroll={() => countHidden(listEl?.clientHeight ?? 0)}
+		>
 			{#each rows as r, i (keys[i])}
 				<li class={cn('fn-row', r.worst && 'is-worst')} aria-label={rowName(r, count)}>
 					{#if r.rate !== undefined}
 						<span class="fn-conn text-caption-1" aria-hidden="true">
-							<ArrowDown size={12} aria-hidden="true" />{formatRate(r.rate)} of previous
+							{#if r.rate > 1}<ArrowUp size={12} aria-hidden="true" />{:else}<ArrowDown size={12} aria-hidden="true" />{/if}{formatRate(r.rate)} of previous
 						</span>
 					{/if}
 					<span class={cn('fn-name', r.unnamed && 'is-unnamed')} title={r.label} aria-hidden="true">{r.label}</span>
@@ -114,11 +173,16 @@
 				</li>
 			{/each}
 		</ol>
+		{#if listMax !== undefined}
+			<p class="fn-more text-caption-1" aria-hidden="true">
+				{hidden ? `+${hidden} more ${hidden === 1 ? 'stage' : 'stages'}, scroll` : ''}
+			</p>
+		{/if}
 	{/if}
 </div>
 
 <style>
-	/* The root caps the height; only the list scrolls, so nothing paints a ground. */
+	/* A model-set height caps the root; only the list scrolls, so nothing paints a ground. */
 	.fn-root {
 		container-type: inline-size;
 		display: flex;
@@ -154,6 +218,7 @@
 	}
 
 	.fn-list {
+		position: relative;
 		flex: 0 1 auto;
 		min-height: 0;
 		overflow-y: auto;
@@ -169,7 +234,14 @@
 	.fn-list {
 		display: flex;
 		flex-direction: column;
-		gap: 8px;
+		gap: 6px;
+	}
+	.fn-more {
+		flex: none;
+		margin: 0;
+		padding-top: 4px;
+		min-height: 17px;
+		color: var(--ripple-muted-foreground);
 	}
 	.fn-row {
 		display: grid;
@@ -183,7 +255,7 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 4px;
-		margin-bottom: 4px;
+		margin-bottom: 2px;
 		color: var(--ripple-muted-foreground);
 		font-variant-numeric: tabular-nums;
 	}
@@ -216,7 +288,7 @@
 		grid-area: track;
 		position: relative;
 		height: 10px;
-		margin-top: 6px;
+		margin-top: 4px;
 	}
 	.fn-rate {
 		display: none;
@@ -237,9 +309,13 @@
 		border-radius: min(4px, calc(var(--ripple-radius, 8px) / 2));
 	}
 	/* The lost part: starts 2px past the bar so the bar's end meets the card,
-	   not the tint. An accent tint over a light ink wash, so it clears the card
-	   in both themes on tokens alone. */
+	   not the tint. A light accent tint, so it reads as the same stage, faded.
+	   On a dark card a pure tint sinks into it, so a light ink wash lifts it. */
 	.fn-ghost {
+		background: color-mix(in oklab, var(--ripple-accent) 20%, var(--ripple-surface));
+	}
+	:global(.dark) .fn-ghost,
+	:global([data-theme='dark']) .fn-ghost {
 		background: color-mix(
 			in oklab,
 			var(--ripple-accent) 18%,
