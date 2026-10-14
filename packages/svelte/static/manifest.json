@@ -1,7 +1,7 @@
 {
   "schema": "ripple.manifest/v1",
   "version": "0.8.0",
-  "generatedAt": "2026-10-14T02:40:16.506Z",
+  "generatedAt": "2026-10-14T03:32:52.525Z",
   "spec": {
     "uiField": "ui",
     "stateField": "state",
@@ -18448,7 +18448,7 @@
     {
       "widget": "standup-board",
       "check": "clippedText",
-      "reason": "with 5 or more people, on-track and done rows clamp to one line (two at desktop width) and a tap expands them to the full text"
+      "reason": "with 5 or more people, on-track and done rows clamp Today to 1 line on a phone and Today and Yesterday to 2 lines on a wide card; names and roles never clamp, and a tap expands the row to the full text"
     }
   ],
   "intents": [

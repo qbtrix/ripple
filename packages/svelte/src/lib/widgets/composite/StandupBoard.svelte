@@ -178,9 +178,10 @@
 
 {#snippet face(p: Person, small: boolean, span: boolean)}
 	{@const src = safeUrl(p.avatar, { kind: 'resource' })}
+	{@const hue = `--h:${nameHue(p.name)}`}
 	<Avatar.Root class={['col-start-1 row-start-1', small ? 'size-6 self-center' : 'size-8 self-start', span && 'row-span-2 @min-[520px]:row-span-1', p.status === 'away' && 'opacity-50']}>
-		{#if src}<Avatar.Image {src} alt="" />{/if}
-		<Avatar.Fallback class={['standup-initials font-semibold text-ripple-surface-foreground', small ? 'text-[10px]' : 'text-[11px]']} style="--h:{nameHue(p.name)}">{initials(p.name)}</Avatar.Fallback>
+		{#if src}<Avatar.Image src={safeUrl(p.avatar, { kind: 'resource' })} alt="" />{/if}
+		<Avatar.Fallback class={['standup-initials font-semibold text-ripple-surface-foreground', small ? 'text-[10px]' : 'text-[11px]']} style={hue}>{initials(p.name)}</Avatar.Fallback>
 	</Avatar.Root>
 {/snippet}
 
