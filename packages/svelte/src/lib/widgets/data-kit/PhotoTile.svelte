@@ -38,7 +38,7 @@
 
 	let { src, alt = '', ratio = '1:1', icon, iconSize = 20, class: className, id, style, fit = 'cover', caption = false, fallback }: Props = $props();
 
-	// 'auto' leaves the box to its own width/height (the image atom); the fallback then keeps a floor height.
+	// 'auto' leaves the box to its own width/height (the image atom); the fallback then keeps a floor height, and its floor width never exceeds the track it sits in.
 	const RATIO: Record<Ratio, string> = { '4:3': 'aspect-[4/3]', '1:1': 'aspect-square', '16:9': 'aspect-video', auto: '' };
 
 	// Keyed by URL, so a src that changes (a streamed placeholder swapped for
@@ -52,7 +52,7 @@
 	const Icon = $derived(icon ?? FALLBACK_ICON);
 </script>
 
-<div {id} {style} class={['relative overflow-hidden rounded-md bg-ripple-muted', RATIO[ratio] ?? RATIO['1:1'], ratio === 'auto' && phase === 'fallback' && 'min-h-24 min-w-24', className]} data-state={phase}>
+<div {id} {style} class={['relative overflow-hidden rounded-md bg-ripple-muted', RATIO[ratio] ?? RATIO['1:1'], ratio === 'auto' && phase === 'fallback' && 'min-h-24 min-w-[min(6rem,100%)]', className]} data-state={phase}>
 	{#if showImage}
 		<img
 			src={safeUrl(src, { kind: 'resource' })}
@@ -67,7 +67,7 @@
 	{:else if fallback}
 		{@render fallback()}
 	{:else if alt}
-		<div class="flex size-full flex-col items-center justify-center gap-1.5 p-3 text-ripple-muted-foreground" role="img" aria-label={alt}>
+		<div class="flex size-full flex-col items-center justify-center gap-1.5 p-2 text-ripple-muted-foreground" role="img" aria-label={alt}>
 			<Icon size={iconSize} strokeWidth={1.75} aria-hidden="true" />
 			{#if caption}<span class="line-clamp-2 max-w-full text-center text-xs" aria-hidden="true">{alt}</span>{/if}
 		</div>

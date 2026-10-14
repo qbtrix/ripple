@@ -77,7 +77,7 @@
     {name}
   >
     <Select.Trigger {id} class={cn('w-full data-[size=default]:h-9', className)} style={styleString}>
-      {selectedLabel}
+      <span class="min-w-0 flex-1 truncate text-left">{selectedLabel}</span>
     </Select.Trigger>
     <Select.Content>
       {#each normalizedOptions as option}

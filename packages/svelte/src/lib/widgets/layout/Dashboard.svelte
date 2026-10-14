@@ -2,9 +2,9 @@
      the interactive one). A column may shrink to 70% of `columnMin`, so three
      tiles share a row in a chat card. Once measured, the column count is
      balanced so no row ends with one lone tile: 5 tiles lay out 3+2, not 4+1,
-     and when only two columns fit, an odd last tile spans the row. Tiles keep
-     their content height (align-items: start), so a short tile is not
-     stretched to a tall neighbour. Before the
+     and when only two columns fit, an odd last tile spans the row. Tiles in a
+     row stretch to the row height (align-items: stretch), so a row of
+     tiles has one bottom edge. Before the
      first measure (SSR, prerender) it is plain CSS auto-fill. Metric and stat
      children are bordered tiles and size containers. -->
 <script lang="ts" module>
@@ -81,7 +81,7 @@
   .rdash {
     width: 100%;
     align-content: start;
-    align-items: start;
+    align-items: stretch;
   }
   .rdash-span-last > :global(:last-child) {
     grid-column: 1 / -1;
