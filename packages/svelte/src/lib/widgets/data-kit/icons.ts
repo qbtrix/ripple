@@ -5,8 +5,9 @@
 // menu-order's OPTION_ICONS and OptionList's CHOICE_ICONS: an option may carry
 // an `icon`, honoured only when it is a key of that map; otherwise a keyword
 // scan of the option's name infers the key (optionIconKey, choiceIconKey).
-// habit-tracker's HABIT_ICONS is the same closed-key idea without the scan: a
-// habit's `icon` is honoured only when it is a key of the map.
+// habit-tracker's HABIT_ICONS and workflow's WORKFLOW_ICONS are the same
+// closed-key idea without the scan: an `icon` is honoured only when it is a key
+// of the map (workflow falls back to WORKFLOW_TYPE_ICONS by node type).
 //
 // One map per enum in the doc, each its own export so a widget's bundle carries
 // only the icons it imports. A widget with an enum not listed here
@@ -132,6 +133,25 @@ import Music from '@lucide/svelte/icons/music';
 import CandyOff from '@lucide/svelte/icons/candy-off';
 import Bike from '@lucide/svelte/icons/bike';
 import Pill from '@lucide/svelte/icons/pill';
+
+// workflow nodes
+import Play from '@lucide/svelte/icons/play';
+import GitBranch from '@lucide/svelte/icons/git-branch';
+import UserCheck from '@lucide/svelte/icons/user-check';
+import Plug from '@lucide/svelte/icons/plug';
+import Flag from '@lucide/svelte/icons/flag';
+import Check from '@lucide/svelte/icons/check';
+import CreditCard from '@lucide/svelte/icons/credit-card';
+import Mail from '@lucide/svelte/icons/mail';
+import Bell from '@lucide/svelte/icons/bell';
+import Clock from '@lucide/svelte/icons/clock';
+import Database from '@lucide/svelte/icons/database';
+import Search from '@lucide/svelte/icons/search';
+import Send from '@lucide/svelte/icons/send';
+import ShoppingCart from '@lucide/svelte/icons/shopping-cart';
+import Download from '@lucide/svelte/icons/download';
+import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+import GitMerge from '@lucide/svelte/icons/git-merge';
 
 export const FALLBACK_ICON: LucideIcon = CircleDot;
 
@@ -448,3 +468,40 @@ export type ExerciseKind = keyof typeof EXERCISE_ICONS;
 export type RecordKind = keyof typeof RECORD_ICONS;
 export type FeatureKind = keyof typeof FEATURE_ICONS;
 export type HabitIconKey = keyof typeof HABIT_ICONS;
+
+/** workflow: one icon per node type; the type always has one, so no fallback. */
+export const WORKFLOW_TYPE_ICONS = {
+	trigger: Zap,
+	action: Play,
+	condition: GitBranch,
+	approval: UserCheck,
+	connector: Plug,
+	output: Flag
+} as const satisfies Record<string, LucideIcon>;
+
+/** workflow: the icon names a node may carry. Anything else (emoji, unknown) shows the type icon. */
+export const WORKFLOW_ICONS = {
+	play: Play,
+	check: Check,
+	'credit-card': CreditCard,
+	mail: Mail,
+	bell: Bell,
+	clock: Clock,
+	database: Database,
+	user: User,
+	'file-text': FileText,
+	search: Search,
+	send: Send,
+	package: Package,
+	'shopping-cart': ShoppingCart,
+	download: Download,
+	'refresh-cw': RefreshCw,
+	'git-merge': GitMerge
+} as const satisfies Record<string, LucideIcon>;
+
+const isWorkflowIconKey = (k: unknown): k is keyof typeof WORKFLOW_ICONS => typeof k === 'string' && Object.hasOwn(WORKFLOW_ICONS, k);
+
+/** A node's icon: its own when it is a WORKFLOW_ICONS key, else its type's. Never a printed string. */
+export function workflowIcon(type: keyof typeof WORKFLOW_TYPE_ICONS, icon?: unknown): LucideIcon {
+	return isWorkflowIconKey(icon) ? WORKFLOW_ICONS[icon] : WORKFLOW_TYPE_ICONS[type];
+}

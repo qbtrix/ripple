@@ -1,17 +1,29 @@
 <!--
-  Workflow.svelte — Workflow widget for Ripple generative UI.
-  Renders interactive node-based workflow diagrams using @xyflow/svelte.
-  Accepts WorkflowNode[] and WorkflowEdge[] in a simplified spec format,
-  maps them to SvelteFlow's Node/Edge types, and provides auto-layout
-  when positions are not explicitly set.
+  Workflow.svelte: a small automation graph (trigger, steps, conditions,
+  outputs) drawn inside a chat card with @xyflow/svelte.
+
+  The model fills `nodes` and `edges`; layout.ts sanitises them once and plans
+  the drawing for the measured card width: columns left to right at 480px and
+  up (panning at the 0.8 floor when they do not fit), one top-to-bottom spine
+  with indented branches below that (and in a wide card where nothing else fits,
+  at design size, panning), canvas height following the graph (120 to 560px; it grows instead
+  when the reader cannot pan). The plan also decides the overlays: the minimap
+  (a big graph in a wide card) and the zoom pill (only when something does not
+  fit, a minimap only while its marks stay readable). The graph draws in a
+  flow area and the overlays sit in a strip under it, so they never cover a
+  node, at rest or panned; a graph that pans opens with its top in view. No frame of its own: the dot grid marks the
+  canvas, and only when the graph does not fit at zoom 1. Theming is the --xy-* to --ripple-*
+  token map shared in spirit with the C4 diagram, so it follows the host's
+  light or dark theme; colorMode is never set. Wheel and touch scroll the page,
+  nodes do not drag. The title row carries a status count in place of a legend.
 -->
 <script lang="ts">
-  import { SvelteFlow, Background, Controls, MiniMap, Position } from '@xyflow/svelte';
-  import type { Node, Edge, NodeTypes } from '@xyflow/svelte';
+  import { SvelteFlow, Background, BackgroundVariant, Controls, MiniMap, Position } from '@xyflow/svelte';
+  import type { Node, Edge, NodeTypes, EdgeTypes, Viewport } from '@xyflow/svelte';
   import '@xyflow/svelte/dist/style.css';
 
-  import { WorkflowNode } from './workflow/index.js';
-  import { autoLayout } from './workflow/layout.js';
+  import { WorkflowNode, WorkflowEdge } from './workflow/index.js';
+  import { planWorkflow, sanitizeWorkflow, MIN_ZOOM } from './workflow/layout.js';
   import type { WorkflowNodeData, WorkflowEdgeData } from './workflow/types.js';
   import { asText } from '$lib/widgets/text-coerce';
 
@@ -35,232 +47,333 @@
     class: className = '',
   }: Props = $props();
 
-  // Register the custom node type
-  const nodeTypes: NodeTypes = {
-    workflowNode: WorkflowNode as any,
-  };
+  const nodeTypes: NodeTypes = { workflowNode: WorkflowNode as any };
+  const edgeTypes: EdgeTypes = { workflow: WorkflowEdge as any };
 
-  // Map input nodes to SvelteFlow nodes
-  const flowNodes = $derived.by((): Node[] => {
-    // Compute auto-layout for nodes missing positions
-    const needsLayout = inputNodes.some((n) => !n.position);
-    const layoutPositions = needsLayout ? autoLayout(inputNodes, inputEdges) : new Map();
+  let width = $state(0);
 
-    return inputNodes.map((n) => {
-      const pos = n.position ?? layoutPositions.get(n.id) ?? { x: 0, y: 0 };
+  const graph = $derived(sanitizeWorkflow(inputNodes, inputEdges));
+  const plan = $derived(planWorkflow(graph.nodes, graph.edges, { width, interactive: interactive !== false, fitView: fitView !== false, minimap: minimap === true }));
+
+  const flowNodes = $derived(
+    plan.nodes.map((n): Node => {
+      const typeWord = n.type;
       return {
         id: n.id,
         type: 'workflowNode',
-        position: pos,
-        data: {
-          nodeType: n.type,
-          label: n.label,
-          icon: n.icon ?? '',
-          tool: n.tool ?? '',
-          status: n.status ?? 'idle',
-        },
-        // Condition nodes need specific source/target positions for handles
-        sourcePosition: Position.Right,
-        targetPosition: Position.Left,
-        draggable: interactive,
-        selectable: interactive,
-      } satisfies Node;
-    });
-  });
-
-  // Map input edges to SvelteFlow edges
-  const flowEdges = $derived.by((): Edge[] => {
-    return inputEdges.map((e, i) => {
-      const edge: Edge = {
-        id: `e-${e.from}-${e.to}-${i}`,
-        source: e.from,
-        target: e.to,
-        label: e.label,
-        animated: e.animated ?? false,
-        type: 'smoothstep',
-        style: 'stroke: rgba(255,255,255,0.20); stroke-width: 1.5px;',
-        labelStyle: 'fill: rgba(255,255,255,0.65); font-size: 10px; font-weight: 500;',
+        position: { x: n.x, y: n.y },
+        width: n.w,
+        height: n.h,
+        data: { node: n },
+        sourcePosition: plan.direction === 'TB' ? Position.Bottom : Position.Right,
+        targetPosition: plan.direction === 'TB' ? Position.Top : Position.Left,
+        draggable: false,
+        selectable: false,
+        connectable: false,
+        ariaLabel: `${n.label || typeWord}, ${typeWord}, ${n.status}`,
       };
+    }),
+  );
 
-      // If the source is a condition node, connect from the appropriate handle
-      const sourceNode = inputNodes.find((n) => n.id === e.from);
-      if (sourceNode?.type === 'condition' && e.label) {
-        // Edge labels come from spec data and can be non-strings — coerce
-        // before .toLowerCase so the handle match never crashes the canvas.
-        const handleId = asText(e.label).toLowerCase();
-        if (handleId === 'yes' || handleId === 'no') {
-          edge.sourceHandle = handleId;
-        }
-      }
+  const flowEdges = $derived(
+    plan.edges.map((e): Edge => ({
+      id: e.id,
+      source: e.from,
+      target: e.to,
+      sourceHandle: e.sourceHandle,
+      targetHandle: e.targetHandle,
+      type: 'workflow',
+      data: { edge: e, direction: plan.direction },
+      selectable: false,
+      focusable: false,
+    })),
+  );
 
-      return edge;
-    });
+  // The viewport follows the plan (a new width, direction or graph).
+  let viewport = $state<Viewport>({ x: 0, y: 0, zoom: 1 });
+  $effect(() => {
+    viewport = { ...plan.viewport };
   });
+
+
+  // Title-row count in place of a legend, only when some step is not idle.
+  const count = $derived.by(() => {
+    const by = (s: string) => plan.nodes.filter((n) => n.status === s).length;
+    const parts = [
+      { text: `${by('error')} failed`, n: by('error'), error: true },
+      { text: `${by('running')} running`, n: by('running'), error: false },
+      { text: `${by('waiting')} waiting`, n: by('waiting'), error: false },
+    ].filter((p) => p.n > 0);
+    const active = parts.length > 0 || by('success') > 0;
+    return active ? { steps: `${plan.nodes.length} ${plan.nodes.length === 1 ? 'step' : 'steps'}`, parts } : undefined;
+  });
+  const heading = $derived(asText(title).trim());
 </script>
 
 <div class="workflow-widget {className}">
-  {#if title}
-    <div class="workflow-title">{title}</div>
-  {/if}
-  <div class="workflow-canvas">
-    <SvelteFlow
-      nodes={flowNodes}
-      edges={flowEdges}
-      {nodeTypes}
-      {fitView}
-      fitViewOptions={{ padding: 0.3 }}
-      colorMode="dark"
-      panOnDrag={interactive}
-      zoomOnScroll={interactive}
-      zoomOnPinch={interactive}
-      zoomOnDoubleClick={interactive}
-      nodesDraggable={interactive}
-      nodesConnectable={false}
-      elementsSelectable={interactive}
-      minZoom={0.2}
-      maxZoom={3}
-      defaultMarkerColor="rgba(255,255,255,0.3)"
-      proOptions={{ hideAttribution: true }}
-    >
-      <Background
-        gap={20}
-        patternColor="rgba(255,255,255,0.05)"
-      />
-      <Controls
-        showLock={false}
-        position="bottom-right"
-      />
-      {#if minimap}
-        <MiniMap
-          position="bottom-left"
-          maskColor="rgba(0,0,0,0.6)"
-          bgColor="rgba(255,255,255,0.03)"
-          nodeColor={(node) => {
-            const TYPE_COLORS: Record<string, string> = {
-              trigger:   '#0A84FF',
-              action:    '#34C759',
-              condition: '#FF9F0A',
-              approval:  '#FFD60A',
-              connector: '#BF5AF2',
-              output:    '#64D2FF',
-            };
-            return TYPE_COLORS[(node.data as Record<string, unknown>)?.nodeType as string] ?? '#666';
-          }}
-        />
+  {#if heading || count}
+    <div class="wf-head">
+      {#if heading}<h3 class="wf-title">{heading}</h3>{/if}
+      {#if count}
+        <p class="wf-count">
+          <span>{count.steps}</span>
+          {#each count.parts as p (p.text)}
+            <span aria-hidden="true">·</span><span class:wf-count-error={p.error}>{p.text}</span>
+          {/each}
+        </p>
       {/if}
-    </SvelteFlow>
+    </div>
+  {/if}
+  <div
+    class="wf-canvas"
+    class:wf-static={interactive === false}
+    style:height="{plan.height}px"
+    style:--wf-gutter="{plan.gutter}px"
+    bind:clientWidth={width}
+  >
+    <div class="wf-flow" style:height="{plan.height - plan.gutter}px">
+      <SvelteFlow
+        nodes={flowNodes}
+        edges={flowEdges}
+        {nodeTypes}
+        {edgeTypes}
+        bind:viewport
+        fitViewOptions={{ padding: '16px', minZoom: MIN_ZOOM, maxZoom: 1 }}
+        panOnDrag={interactive !== false}
+        panOnScroll={false}
+        zoomOnScroll={false}
+        preventScrolling={false}
+        zoomOnPinch={interactive !== false}
+        zoomOnDoubleClick={false}
+        nodesDraggable={false}
+        nodesConnectable={false}
+        elementsSelectable={false}
+        minZoom={0.5}
+        maxZoom={1.5}
+        proOptions={{ hideAttribution: true }}
+      >
+        {#if !plan.fitsAtOne}
+          <Background variant={BackgroundVariant.Dots} gap={20} size={1.25} />
+        {/if}
+        {#if plan.showControls}
+          <Controls showLock={false} position="bottom-right" orientation="horizontal" />
+        {/if}
+        {#if plan.showMinimap}
+          <MiniMap position="bottom-left" width={120} height={80} nodeBorderRadius={4} />
+        {/if}
+      </SvelteFlow>
+    </div>
   </div>
 </div>
 
 <style>
   .workflow-widget {
     width: 100%;
+    min-width: 0;
     display: flex;
     flex-direction: column;
+    gap: 8px;
+    container-type: inline-size;
   }
 
-  .workflow-title {
-    font-size: 13px;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.85);
-    padding: 0 0 8px;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  .wf-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    column-gap: 12px;
+    row-gap: 2px;
   }
 
-  .workflow-canvas {
+  .wf-title {
+    margin: 0;
+    min-width: 0;
+    font-size: var(--text-headline, 13px);
+    line-height: var(--lh-headline, 16px);
+    font-weight: var(--weight-semibold, 600);
+    color: var(--ripple-surface-foreground);
+    overflow-wrap: anywhere;
+  }
+
+  /* No auto margin: on the title's line space-between pushes the count right;
+     wrapped under a long title it starts at the left edge. */
+  .wf-count {
+    margin: 0;
+    display: flex;
+    gap: 5px;
+    font-size: var(--text-caption-1, 10px);
+    line-height: var(--lh-caption, 13px);
+    color: var(--ripple-muted-foreground);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .wf-count-error {
+    color: var(--ripple-error-text);
+    font-weight: var(--weight-medium, 500);
+  }
+
+  /* A narrow card: the count drops under the title instead of squeezing it. */
+  @container (max-width: 420px) {
+    .wf-head {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+
+  /* SvelteFlow's theme variables mapped to ripple tokens (the C4 diagram's map),
+     so the canvas follows the host's light or dark theme. */
+  .wf-canvas {
     width: 100%;
-    height: 400px;
-    border-radius: 10px;
-    overflow: hidden;
     position: relative;
+    overflow: hidden;
+    /* Opaque fills derived from the ink, so they hold over any host card:
+       a ground for chips and controls, and a card fill one step above the
+       canvas (near white in light, a lifted grey in dark). */
+    --wf-ground: oklch(from var(--ripple-surface-foreground) calc(1.2 - l * 1.02) calc(c * 0.5) h);
+    --wf-card: oklch(from var(--ripple-surface-foreground) calc(1.18 - l * 0.92) calc(c * 0.5) h);
+    --xy-background-pattern-color: color-mix(in oklab, var(--ripple-surface-foreground) 8%, transparent);
+    --xy-edge-stroke: var(--ripple-control-border);
+    --xy-edge-stroke-width: 1.5;
+    --xy-edge-label-background-color: var(--wf-ground);
+    --xy-edge-label-color: var(--ripple-muted-foreground);
+    --xy-controls-button-background-color: transparent;
+    --xy-controls-button-background-color-hover: var(--ripple-muted);
+    --xy-controls-button-color: var(--ripple-muted-foreground);
+    --xy-controls-button-color-hover: var(--ripple-surface-foreground);
+    --xy-controls-button-border-color: transparent;
+    --xy-controls-box-shadow: none;
+    --xy-minimap-background-color: var(--ripple-surface);
+    --xy-minimap-mask-background-color: color-mix(in oklab, var(--ripple-surface-foreground) 6%, transparent);
+    --xy-minimap-mask-stroke-color: var(--ripple-border);
+    --xy-minimap-node-background-color: color-mix(in oklab, var(--ripple-muted-foreground) 45%, transparent);
+    --xy-minimap-node-stroke-color: transparent;
+    --xy-background-color: transparent;
+    --xy-attribution-background-color: transparent;
+    --xy-connectionline-stroke: var(--ripple-muted-foreground);
+    --xy-edge-stroke-selected: var(--ripple-accent);
+    --xy-node-color: var(--ripple-surface-foreground);
+    --xy-node-background-color: transparent;
+    --xy-node-border: none;
+    --xy-node-group-background-color: transparent;
+    --xy-node-boxshadow-hover: none;
+    --xy-node-boxshadow-selected: none;
+    --xy-handle-background-color: var(--wf-ground);
+    --xy-handle-border-color: var(--ripple-control-border);
+    --xy-selection-background-color: color-mix(in oklab, var(--ripple-accent) 8%, transparent);
+    --xy-selection-border: 1px dotted color-mix(in oklab, var(--ripple-accent) 60%, transparent);
+    --xy-resize-background-color: var(--ripple-accent);
   }
 
-  /* Dark theme overrides for SvelteFlow */
-  .workflow-canvas :global(.svelte-flow) {
-    background: transparent !important;
+  /* The graph draws in the flow area only; the overlays sit in the strip under
+     it (the gutter), so neither ever covers a node, at rest or panned. */
+  .wf-canvas :global(.svelte-flow) {
+    overflow: visible;
   }
 
-  .workflow-canvas :global(.svelte-flow__background) {
-    background: transparent !important;
+  .wf-canvas :global(.svelte-flow__zoom) {
+    overflow: hidden;
   }
 
-  .workflow-canvas :global(.svelte-flow__edge-path) {
-    stroke: rgba(255, 255, 255, 0.20);
+  .wf-canvas :global(.svelte-flow__panel.bottom) {
+    margin: 4px;
+    bottom: calc(-1 * var(--wf-gutter, 0px));
   }
 
-  .workflow-canvas :global(.svelte-flow__edge.animated .svelte-flow__edge-path) {
-    stroke-dasharray: 5;
-    animation: wf-dash 0.5s linear infinite;
+  .wf-canvas :global(.svelte-flow),
+  .wf-canvas :global(.svelte-flow__background) {
+    background: transparent;
   }
 
-  .workflow-canvas :global(.svelte-flow__edge.selected .svelte-flow__edge-path) {
-    stroke: rgba(10, 132, 255, 0.6);
-    stroke-width: 2px;
+  .wf-canvas :global(.svelte-flow__node) {
+    border-radius: var(--ripple-radius, 10px);
+    cursor: default;
   }
 
-  .workflow-canvas :global(.svelte-flow__selection) {
-    background: rgba(10, 132, 255, 0.08) !important;
-    border: 1px solid rgba(10, 132, 255, 0.30) !important;
+  .wf-canvas :global(.svelte-flow__node:focus) {
+    outline: none;
   }
 
-  .workflow-canvas :global(.svelte-flow__controls) {
-    background: rgba(30, 30, 30, 0.85) !important;
-    border: 1px solid rgba(255, 255, 255, 0.08) !important;
-    border-radius: 8px !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  .wf-canvas :global(.svelte-flow__node:focus-visible) {
+    outline: 2px solid var(--ripple-ring);
+    outline-offset: 2px;
   }
 
-  .workflow-canvas :global(.svelte-flow__controls-button) {
-    background: transparent !important;
-    border: none !important;
-    color: rgba(255, 255, 255, 0.65) !important;
-    fill: rgba(255, 255, 255, 0.65) !important;
+  .wf-static :global(.svelte-flow__pane) {
+    cursor: default;
   }
 
-  .workflow-canvas :global(.svelte-flow__controls-button:hover) {
-    background: rgba(255, 255, 255, 0.08) !important;
-    color: rgba(255, 255, 255, 0.9) !important;
-    fill: rgba(255, 255, 255, 0.9) !important;
+  .wf-canvas :global(.wf-edge) {
+    stroke-width: 1.5px;
   }
 
-  .workflow-canvas :global(.svelte-flow__controls-button svg) {
-    fill: inherit !important;
+  .wf-canvas :global(.wf-back) {
+    stroke-dasharray: 5 4;
   }
 
-  .workflow-canvas :global(.svelte-flow__minimap) {
-    background: rgba(20, 20, 20, 0.8) !important;
-    border: 1px solid rgba(255, 255, 255, 0.08) !important;
-    border-radius: 8px !important;
+  .wf-canvas :global(.wf-live) {
+    stroke: var(--ripple-accent);
+    stroke-dasharray: 6 4;
+    animation: wf-flow 0.8s linear infinite;
   }
 
-  .workflow-canvas :global(.svelte-flow__minimap-mask) {
-    fill: rgba(0, 0, 0, 0.6) !important;
+  .wf-canvas :global(.wf-chip) {
+    padding: 1px 5px;
+    border-radius: 7px;
+    text-align: center;
+    border: 1px solid var(--ripple-border);
+    background: var(--wf-ground);
+    color: var(--ripple-muted-foreground);
+    font-size: var(--text-caption-1, 10px);
+    line-height: var(--lh-caption, 13px);
+    font-weight: var(--weight-medium, 500);
+    cursor: default;
   }
 
-  .workflow-canvas :global(.svelte-flow__node) {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    padding: 0 !important;
+  .wf-canvas :global(.wf-chip span) {
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
 
-  .workflow-canvas :global(.svelte-flow__node.selected) {
-    box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.5) !important;
-    border-radius: 10px !important;
+  .wf-canvas :global(.svelte-flow__controls) {
+    display: flex;
+    padding: 2px;
+    gap: 2px;
+    border: 1px solid var(--ripple-border);
+    border-radius: 999px;
+    background: var(--wf-ground);
+    overflow: hidden;
   }
 
-  .workflow-canvas :global(.svelte-flow__edge-text) {
-    fill: rgba(255, 255, 255, 0.65);
-    font-size: 10px;
+  .wf-canvas :global(.svelte-flow__controls-button) {
+    width: 24px;
+    height: 24px;
+    padding: 5px;
+    border-radius: 999px;
   }
 
-  .workflow-canvas :global(.svelte-flow__edge-textbg) {
-    fill: rgba(20, 20, 20, 0.85);
+  .wf-canvas :global(.svelte-flow__controls-button:focus-visible) {
+    outline: 2px solid var(--ripple-ring);
+    outline-offset: -2px;
   }
 
-  @keyframes wf-dash {
+  .wf-canvas :global(.svelte-flow__minimap) {
+    border: 1px solid var(--ripple-border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  @keyframes wf-flow {
     to {
       stroke-dashoffset: -10;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .wf-canvas :global(.wf-live) {
+      animation: none;
     }
   }
 </style>
