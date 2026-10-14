@@ -3,33 +3,30 @@
   slice, and how do I switch?"
 
   A wrapping row of chips in the shared selected-option look (chip.ts, as tabs
-  and segmented): the selected view is a raised chip with medium weight, the
-  rest are quiet muted labels. Each chip is [icon] label count [pin]. On the
-  selected chip count and pin keep the label ink (muted ink on the dark raised
-  fill drops under 3:1) and the count is set apart by weight. On the other
-  chips the count shares the muted label ink: one step quieter (80% muted into
-  the surface) measures 3.3:1 on the light card, under 4.5:1, so the gap is
-  the only cue there. Counts read 2,847 grouped, 12.4K compact from 10,000; the
-  full number is in the accessible name. A label never wraps inside its chip:
-  it ellipses (full text in title and aria-label) and the row wraps between
-  chips, so nothing ever scrolls sideways.
+  and segmented). Each chip is [icon] label count [pin]. The selected chip is
+  raised with a medium label; its count and pin keep the label ink (muted ink on
+  the dark raised fill drops under 3:1). Inactive counts sit one step under the
+  muted label: muted mixed 85% into the surface, 4.99:1 light and 5.69:1 dark on
+  the site card (SavedViews.test.ts checks it). The default styles.css theme has
+  no room for that step (muted is 4.74:1 on white), which is why it is 85, not 80.
+  Counts read 2,847 grouped, 12.4K compact from 10,000; the full number is in
+  the accessible name. A label never wraps: it ellipses (full text in title and
+  aria-label). Words are spans spaced by margin, not space characters, so the
+  ellipsis never lands after a space ("escalations …").
 
-  Chips, "N more" and New view share one flex flow: the radiogroup element is
-  `display: contents`, so it groups the radios for assistive tech without
-  boxing them, and the two buttons follow the last chip on its line (New view
-  pushed to the end by an auto margin). The root is the size container. Below
-  480px chips get tighter padding; below 400px view icons are dropped; below
-  280px New view is an icon-only square. More than COLLAPSE_AT views fold to
-  the first seven plus the selected one and an "N more" disclosure
-  (saved-views.ts holds the rule and the normaliser).
+  Chips, "N more" and New view share one flex flow (the radiogroup element is
+  `display: contents`); New view rides the last line, pushed right by an auto
+  margin. The root is the size container: under 480px chips get tighter
+  padding, under 400px view icons drop. New view is an icon-only square under
+  280px and whenever the row folds, so it fits after "N more" instead of taking
+  a line of its own. Past COLLAPSE_AT views the row folds to the first seven plus
+  the selected one (saved-views.ts holds the rule and the normaliser).
 
   Selection: `value` when it names a view, else the first pinned view, else the
-  first; a default is committed once through onchange so state agrees. It is a
-  radiogroup (no panels): one tab stop, arrows move and select with wrap,
-  Home/End jump, and arrowing into folded views unfolds them. "N more" and
-  New view are buttons outside the group. New view renders only when
-  `canCreate` is true AND the spec has an `on_create` handler (`oncreate`), so
-  it is never a dead control.
+  first; a default is committed once through onchange. It is a radiogroup: one
+  tab stop, arrows move and select with wrap, Home/End jump, arrowing into
+  folded views unfolds them. New view renders only when `canCreate` is true AND
+  the spec has an `on_create` handler (`oncreate`), so it is never dead.
 -->
 <script lang="ts">
   import { tick } from 'svelte';
@@ -174,9 +171,11 @@
             )}
           >
             {#if Icon}<span class="sv__icon" aria-hidden="true"><Icon size={14} strokeWidth={1.75} /></span>{/if}
-            <span class="min-w-0 truncate">{view.label}</span>
+            <span class="min-w-0 truncate"
+              >{#each view.label.split(/\s+/) as word, w (w)}<span class="sv__word">{word}</span>{/each}</span
+            >
             {#if view.count !== undefined}
-              <span class={cn('shrink-0 tabular-nums font-normal', !on && 'text-ripple-muted-foreground')} aria-hidden="true"
+              <span class={cn('shrink-0 tabular-nums font-normal', !on && 'sv__count')} aria-hidden="true"
                 >{countText(view.count)}</span
               >
             {/if}
@@ -218,6 +217,7 @@
         title="New view"
         onclick={() => oncreate?.()}
         class={cn(
+          foldable && 'sv__new--icon',
           'sv__new inline-flex h-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap border border-ripple-control-border text-[13px] text-ripple-surface-foreground hover:bg-ripple-track',
           CHIP_RADIUS,
           motion,
@@ -273,7 +273,26 @@
     padding-inline: 10px;
   }
 
-  /* Tiny containers: New view is an icon-only square. */
+  /* One step under the muted label; the test pins the 4.5:1 floor. */
+  .sv__count {
+    color: color-mix(in oklab, var(--ripple-muted-foreground) 85%, var(--ripple-surface));
+  }
+
+  .sv__word + .sv__word {
+    margin-inline-start: 0.28em;
+  }
+
+  /* Folded rows: New view is an icon-only square that fits after "N more". */
+  .sv__new--icon {
+    width: 2rem;
+    padding-inline: 0;
+  }
+
+  .sv__new--icon .sv__new-text {
+    display: none;
+  }
+
+  /* Tiny containers: the same square. */
   @container (max-width: 279px) {
     .sv__new {
       width: 2rem;

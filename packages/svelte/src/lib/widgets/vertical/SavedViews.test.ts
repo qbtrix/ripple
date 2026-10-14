@@ -1,10 +1,13 @@
 // widgets/vertical/SavedViews.test.ts: jsdom coverage for SavedViews as a
 // single-choice control: one tab stop, arrows select and call onchange, the
 // default commit, New view only with an oncreate handler, the "N more"
-// disclosure, and a 0 count rendering as 0.
+// disclosure, a 0 count rendering as 0, and the inactive count ink keeping
+// 4.5:1 on the site card in both themes.
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render } from '@testing-library/svelte';
 import SavedViews from './SavedViews.svelte';
+import SOURCE from './SavedViews.svelte?raw';
+import { contrast, fromHex, mix, oklch, toRgb } from '$lib/ui/__fixtures__/contrast.js';
 
 const VIEWS = [
 	{ id: 'all', label: 'All issues', count: 142, pinned: true },
@@ -89,5 +92,19 @@ describe('SavedViews', () => {
 	it('shows an empty line, never a blank strip, with no views', () => {
 		const { getByText } = render(SavedViews, { props: { views: [] } });
 		expect(getByText('No saved views yet')).toBeTruthy();
+	});
+
+	it('keeps the quieter inactive count at 4.5:1 on the site card in both themes', () => {
+		const pct = SOURCE.match(/\.sv__count\s*\{\s*color:\s*color-mix\(in oklab,\s*var\(--ripple-muted-foreground\)\s+([\d.]+)%,\s*var\(--ripple-surface\)\)/);
+		expect(pct).toBeTruthy();
+		const p = Number(pct![1]) / 100;
+		// site.css light and dark: --muted-foreground on --card.
+		const themes = {
+			light: [oklch(0.43, 0.01, 95), fromHex('#efeee8')],
+			dark: [oklch(0.75, 0.015, 260), fromHex('#1d1d1a')]
+		} as const;
+		for (const [muted, card] of Object.values(themes)) {
+			expect(contrast(toRgb(mix(muted, card, p)), toRgb(card))).toBeGreaterThanOrEqual(4.5);
+		}
 	});
 });
