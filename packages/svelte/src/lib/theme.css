@@ -16,7 +16,8 @@
      --ripple-control-border (checkbox and radio rims, slider thumbs, OTP
      slots) are ink washes over whatever card the host paints, so controls
      read on any surface: tracks at least 1.4:1 and borders at least 3:1
-     (WCAG 1.4.11) against the card in both themes.
+     (WCAG 1.4.11) against the card in both themes. --ripple-raised fills a
+     selected tab or segment, lighter than the track in both themes.
    The -text and control tokens sit on :where(.ripple-root) too, so a host
    that re-points a tone or the ink on .ripple-root gets values blended from
    its own, and any direct override still wins (zero specificity).
@@ -71,6 +72,9 @@
   /* Control tokens: ink washes over the card, so they read on any host surface. */
   --ripple-track: color-mix(in oklab, var(--ripple-surface-foreground) 18%, transparent);
   --ripple-control-border: color-mix(in oklab, var(--ripple-surface-foreground) 50%, transparent);
+  /* A raised chip (selected tab or segment): the card lifted toward white, so
+     it sits lighter than --ripple-track in light and dark alike. */
+  --ripple-raised: color-mix(in oklab, var(--ripple-surface) 68%, white);
 }
 
 @theme inline {
@@ -85,6 +89,7 @@
   --color-ripple-accent-text: var(--ripple-accent-text);
   --color-ripple-track: var(--ripple-track);
   --color-ripple-control-border: var(--ripple-control-border);
+  --color-ripple-raised: var(--ripple-raised);
   --color-ripple-border: var(--ripple-border);
   --color-ripple-ring: var(--ripple-ring);
   --color-ripple-success: var(--ripple-success);

@@ -1,7 +1,7 @@
 <!-- src/lib/widgets/input/Segmented.svelte
-     A pill track of mutually exclusive (radiogroup/radio) or toggled
-     (group/checkbox, `multiple`) options on a --ripple-track pill. A selected
-     segment paints its own raised chip (surface fill, control-border rim). In
+     A track of mutually exclusive (radiogroup/radio) or toggled
+     (group/checkbox, `multiple`) options on the shared chip track. A selected
+     segment paints its own raised chip (components/ui/chip.ts, as tabs do). In
      single mode an empty value selects the first enabled option, so the
      control never shows nothing.
      Options take an optional icon (Lucide slug), `badge` (a small accent count
@@ -20,6 +20,7 @@
   import { safeStyle } from '@ripple-ui/core';
   import type { Snippet } from 'svelte';
   import { cn } from '$lib/utils.js';
+  import { CHIP_RADIUS, CHIP_TRACK, SELECTED_CHIP } from '$lib/components/ui/chip.js';
   import { canonicalOptions } from '$lib/utils/safe-props.js';
   import * as icons from '@lucide/svelte';
 
@@ -147,7 +148,8 @@
     class={cn(
       // w-fit is kept from the pre-skin version: the source renders standalone,
       // but here the track is a child of a column flex, which would stretch it.
-      'relative inline-grid w-fit max-w-full select-none overflow-x-auto rounded-full bg-ripple-track p-0.5 [scrollbar-width:none]',
+      'relative inline-grid w-fit max-w-full select-none overflow-x-auto [scrollbar-width:none]',
+      CHIP_TRACK,
       sizeClass,
       disabled && 'opacity-50 cursor-not-allowed'
     )}
@@ -166,14 +168,15 @@
         onclick={() => pick(opt.value)}
         onkeydown={(e) => onkeydown(e, i)}
         class={cn(
-          'relative z-10 inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full font-medium transition-colors duration-150 ease-ripple-out',
+          'relative z-10 inline-flex items-center justify-center gap-1.5 whitespace-nowrap font-medium transition-colors duration-150 ease-ripple-out',
+          CHIP_RADIUS,
           padClass,
           selected
             ? 'text-ripple-surface-foreground'
             : 'text-ripple-muted-foreground hover:text-ripple-surface-foreground',
           // The selected segment paints its own raised chip, so it can never
           // drift from its label when segments differ in width.
-          selected && 'bg-ripple-surface shadow-sm ring-1 ring-ripple-control-border',
+          selected && SELECTED_CHIP,
           (opt as any).disabled && 'opacity-50 cursor-not-allowed',
           typeof opt.class === 'string' ? opt.class : undefined
         )}

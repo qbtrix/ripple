@@ -3,7 +3,8 @@
      Rows are fixed-height (itemHeight). Default rows show `label` (or `name`)
      with an optional muted `description` line, a hairline divider and a hover
      fill. Without an explicit `height` the box hugs its content up to 320px,
-     so three items do not leave an empty slab. role="option" rows carry
+     so three items do not leave an empty slab. An empty list is one quiet
+     muted line with no frame. role="option" rows carry
      aria-selected="false" (required ARIA prop). -->
 <script lang="ts">
   import { safeStyle } from '@ripple-ui/core';
@@ -104,12 +105,12 @@
   {id}
   bind:this={viewportEl}
   onscroll={onScroll}
-  class={cn('relative overflow-auto rounded-md border border-border', className)}
-  style={safeStyle(`height: ${containerHeight}; ${styleString ?? ''}`)}
+  class={cn('relative overflow-auto', total > 0 && 'rounded-md border border-border', className)}
+  style={safeStyle(`height: ${total === 0 ? 'auto' : containerHeight}; ${styleString ?? ''}`)}
   role="listbox"
 >
   {#if total === 0}
-    <div class="h-full grid place-items-center text-sm text-muted-foreground">{emptyText}</div>
+    <div class="py-2 text-sm text-muted-foreground">{emptyText}</div>
   {:else}
     <div style={safeStyle(`height: ${totalHeight}px; position: relative;`)}>
       <div style={safeStyle(`position: absolute; top: 0; left: 0; right: 0; transform: translateY(${offsetY}px);`)}>

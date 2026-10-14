@@ -1,5 +1,12 @@
+<!--
+  Rating.svelte: a row of stars bound to a number. Filled stars use the gold
+  warning tone, empty ones a control-border outline. Clicking the current star
+  clears it. With showValue, a set value reads "4 / 5" and an unset one "Not
+  rated".
+-->
 <script lang="ts">
   import { cn } from '$lib/utils.js';
+  import { FIELD_LABEL } from '$lib/components/ui/control.js';
   import StarIcon from '@lucide/svelte/icons/star';
 
   interface Props {
@@ -38,7 +45,7 @@
 
 <div class={cn('flex flex-col gap-1', className)} style={styleString} {id}>
   {#if label}
-    <span class="text-sm font-medium leading-none">{label}</span>
+    <span class={FIELD_LABEL}>{label}</span>
   {/if}
   <div class="flex items-center gap-0.5" role="radiogroup" aria-label={label ?? 'Rating'}>
     {#each Array(max) as _, i}
@@ -68,7 +75,8 @@
       </button>
     {/each}
     {#if showValue}
-      <span class="ml-2 text-xs text-muted-foreground tabular-nums">{numericValue} / {max}</span>
+      <!-- Unset (0 after a clear, or never bound) reads "Not rated", never "0 / 5". -->
+      <span class="ml-2 text-xs text-muted-foreground tabular-nums">{numericValue > 0 ? `${numericValue} / ${max}` : 'Not rated'}</span>
     {/if}
   </div>
 </div>

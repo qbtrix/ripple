@@ -8,7 +8,7 @@
      paints "NaN". -->
 <script lang="ts">
   import { cn } from '$lib/utils.js';
-  import { finite, money } from '$lib/widgets/data-kit/format.js';
+  import { finite, money, num } from '$lib/widgets/data-kit/format.js';
 
   type Line = {
     id?: string | number;
@@ -73,8 +73,9 @@
   function format(n: number | undefined): string {
     if (n === undefined || !Number.isFinite(n)) return '—';
     // An ISO code ("USD") formats as money ($761.40), not "USD761.40".
-    if (/^[A-Za-z]{3}$/.test(currency)) return money(n, currency);
-    const sign = n < 0 ? '-' : '';
+    // Negatives get a true minus tight to the symbol ("−$1,000.00").
+    if (/^[A-Za-z]{3}$/.test(currency)) return money(n, currency).replace(/^-/, '\u2212');
+    const sign = n < 0 ? '\u2212' : '';
     return `${sign}${currency}${Math.abs(n).toLocaleString(undefined, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
@@ -121,13 +122,13 @@
       <div class="min-w-0">
         <div class="ril-desc">{line.description}</div>
         {#if hasQty && hasUnit && showRowTotals}
-          <div class="ril-narrow ril-sub">{line.quantity} × {format(line.unitPrice)}</div>
+          <div class="ril-narrow ril-sub">{num(line.quantity)} × {format(line.unitPrice)}</div>
         {:else if hasQty}
-          <div class="ril-narrow ril-sub">Qty {line.quantity}</div>
+          <div class="ril-narrow ril-sub">Qty {num(line.quantity)}</div>
         {/if}
         {#if line.note}<div class="ril-sub">{line.note}</div>{/if}
       </div>
-      <span class="ril-wide ril-num">{hasQty ? line.quantity : ''}</span>
+      <span class="ril-wide ril-num">{hasQty ? num(line.quantity) : ''}</span>
       <span class="ril-wide ril-num">{hasUnit ? format(line.unitPrice) : ''}</span>
       {#if showRowTotals}
         <span class="ril-num font-medium">{format(rowTotal(line))}</span>

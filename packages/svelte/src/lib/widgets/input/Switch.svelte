@@ -51,6 +51,7 @@
      localChecked seed: it's intentionally mutated by handleChange + synced by
      an $effect (controlled input with internal state), so it stays $state. -->
 <script lang="ts">
+  import { FIELD_LABEL } from '$lib/components/ui/control.js';
   import { cn } from '$lib/utils.js';
   import { Switch } from '$lib/components/ui/switch/index.js';
 
@@ -111,16 +112,16 @@
 </script>
 
 {#if label}
-  <div class={cn('flex items-center gap-2', className)} style={styleString}>
-    <Switch
+  <div class={cn('flex items-start gap-2', className)} style={styleString}>
+    <span class="flex h-[1.35em] shrink-0 items-center text-sm"><Switch
       id={switchId}
       {name}
       checked={localChecked}
       {disabled}
       class={skin}
       onCheckedChange={handleChange}
-    />
-    <label for={switchId} class="text-[13px] font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+    /></span>
+    <label for={switchId} class={cn(FIELD_LABEL, 'peer-disabled:cursor-not-allowed peer-disabled:opacity-70')}>
       {label}
     </label>
   </div>

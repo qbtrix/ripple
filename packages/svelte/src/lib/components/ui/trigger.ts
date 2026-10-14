@@ -7,5 +7,7 @@
 export const TEXT_TRIGGER =
 	'inline-flex items-center gap-1 cursor-pointer rounded-sm text-ripple-accent-text underline decoration-dotted decoration-1 underline-offset-[3px] hover:decoration-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ripple-ring';
 
+// First in its row, the ghost trigger pulls back by its own padding so its
+// label sits on the row's left edge (the hover fill bleeds out instead).
 export const GHOST_TRIGGER =
-	'inline-flex h-8 items-center gap-1 cursor-pointer rounded-ripple px-2.5 text-sm font-medium text-ripple-surface-foreground transition-colors hover:bg-ripple-track focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ripple-ring data-[state=open]:bg-ripple-track';
+	'first:-ms-2.5 inline-flex h-8 items-center gap-1 cursor-pointer rounded-ripple px-2.5 text-sm font-medium text-ripple-surface-foreground transition-colors hover:bg-ripple-track focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ripple-ring data-[state=open]:bg-ripple-track';

@@ -3,6 +3,7 @@
      Output is always 24-hour "HH:MM[:SS]". An unset value renders as --:--
      placeholders in muted ink; it never pretends to be 00:00 / 12:00 AM. -->
 <script lang="ts">
+  import { CONTROL_H, FIELD, FIELD_LABEL } from '$lib/components/ui/control.js';
   import { cn } from '$lib/utils.js';
   import ClockIcon from '@lucide/svelte/icons/clock';
 
@@ -138,15 +139,15 @@
   }
 </script>
 
-<div class={cn('flex flex-col gap-1.5', className)} style={styleString}>
+<div class={cn(FIELD, className)} style={styleString}>
   {#if label}
-    <label for={id} class="text-sm font-medium">{label}</label>
+    <label for={id} class={FIELD_LABEL}>{label}</label>
   {/if}
 
   <div
     {id}
     class={cn(
-      'inline-flex items-center gap-1 h-9 rounded-md border border-input bg-background px-2 text-sm shadow-xs',
+      CONTROL_H, 'inline-flex items-center gap-1 rounded-md border border-input bg-background px-2 text-sm shadow-xs',
       'transition-[color,box-shadow] outline-none',
       'focus-within:border-ring focus-within:ring-ring/50 focus-within:ring-[3px]',
       disabled && 'cursor-not-allowed opacity-50'

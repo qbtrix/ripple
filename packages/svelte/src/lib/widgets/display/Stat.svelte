@@ -1,6 +1,8 @@
 <!--
   Stat.svelte: single metric display (label + formatted value + optional delta).
-  Values are model output, so formatValue never paints "NaN" (non-finite
+  In a grid or dashboard tile the value is sized from the tile's own box and,
+  under 140px, swaps to the compact form ('$45.2K'); the delta wraps under the
+  value and never overflows. Values are model output, so formatValue never paints "NaN" (non-finite
   numbers render blank, strings pass through verbatim) and a plain number is
   rounded for display by magnitude (0 decimals from 100, 1 from 10, else 2)
   unless `decimals` / `precision` pins the digits. Status-coloured text uses
@@ -52,7 +54,7 @@
     align = 'left',
   }: Props = $props();
 
-  function formatValue(v: number | string): string {
+  function formatValue(v: number | string, compact = false): string {
     // Strings pass through untouched (existing behavior): a numeric string
     // like "125000" (httpbin echoes query params as strings) renders as
     // "125000", and a non-numeric string ("pending") renders verbatim.
@@ -91,6 +93,9 @@
         opts.notation = 'compact';
         break;
     }
+    if (compact && format !== 'percent') {
+      Object.assign(opts, { notation: 'compact', minimumFractionDigits: 0, maximumFractionDigits: 1 });
+    }
     return new Intl.NumberFormat(locale, opts).format(v);
   }
 
@@ -115,9 +120,9 @@
     return { dir: 'neutral', sentiment: 'neutral' };
   }
 
-  function formatDelta(): string {
+  function formatDelta(compact = false): string {
     const absPart =
-      delta !== undefined ? `${delta > 0 ? '+' : ''}${formatValue(delta)}` : '';
+      delta !== undefined ? `${delta > 0 ? '+' : ''}${formatValue(delta, compact)}` : '';
     const pctPart =
       deltaPercent !== undefined
         ? `${deltaPercent > 0 ? '+' : ''}${deltaPercent}%`
@@ -132,6 +137,16 @@
   const hasDelta = $derived(delta !== undefined || deltaPercent !== undefined);
   const displayValue = $derived(formatValue(value));
   const displayDelta = $derived(hasDelta ? formatDelta() : '');
+  // The narrow-tile forms ('$45.2K'), shown by a container query under 140px.
+  const compactValue = $derived.by(() => {
+    // Only a long value swaps ('$45,230.00'); '1,240' still fits a narrow tile.
+    const c = displayValue.length > 7 ? formatValue(value, true) : displayValue;
+    return c !== displayValue ? c : '';
+  });
+  const compactDelta = $derived.by(() => {
+    const c = hasDelta && displayDelta.length > 7 ? formatDelta(true) : displayDelta;
+    return c !== displayDelta ? c : '';
+  });
 
   const root = tv({
     base: 'flex flex-col min-w-0',
@@ -180,10 +195,31 @@
   {#if label}
     <span class={labelCls({ size })}>{label}</span>
   {/if}
-  <div data-ripple-tile-value class="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0">
-    <span data-slot="stat-value" class={valueCls({ size })}>{displayValue}</span>
+  <div data-ripple-tile-value class="flex max-w-full min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+    <span data-slot="stat-value" class={cn(valueCls({ size }), 'stat-fit', compactValue && 'stat-full')}>{displayValue}</span>
+    {#if compactValue}
+      <span data-slot="stat-value-compact" class={cn(valueCls({ size }), 'stat-fit stat-compact')}>{compactValue}</span>
+    {/if}
     {#if hasDelta}
-      <Delta text={displayDelta} dir={resolved.dir} sentiment={resolved.sentiment} size={iconSize} slot="stat-delta" />
+      <Delta text={displayDelta} dir={resolved.dir} sentiment={resolved.sentiment} size={iconSize} slot="stat-delta" class={compactDelta ? 'stat-full' : undefined} />
+      {#if compactDelta}
+        <Delta text={compactDelta} dir={resolved.dir} sentiment={resolved.sentiment} size={iconSize} slot="stat-delta-compact" class="stat-compact" />
+      {/if}
     {/if}
   </div>
 </div>
+
+<style>
+  /* Sized from the tile's own box (grid and dashboard make tiles containers):
+     the value steps down toward text-body in a narrow tile, and under 140px the
+     compact forms replace the full ones. Without a container, the max applies. */
+  .stat-fit { font-size: clamp(var(--text-body), 22cqi, var(--stat-fs)); line-height: 1.25; }
+  [data-size='sm'] .stat-fit { --stat-fs: var(--text-body); }
+  [data-size='md'] .stat-fit { --stat-fs: var(--text-title-3); }
+  [data-size='lg'] .stat-fit { --stat-fs: var(--text-title-2); }
+  [data-ripple-tile-value] > :global(.stat-compact) { display: none; }
+  @container (max-width: 139px) {
+    [data-ripple-tile-value] > :global(.stat-full) { display: none; }
+    [data-ripple-tile-value] > :global(.stat-compact) { display: inline-flex; }
+  }
+</style>

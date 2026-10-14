@@ -5,6 +5,7 @@
      internalValue seed: it's intentionally mutated by handleChange/bind:value +
      synced by an $effect (controlled input with internal state), stays $state. -->
 <script lang="ts">
+  import { FIELD, FIELD_LABEL } from '$lib/components/ui/control.js';
   import { cn } from '$lib/utils.js';
   import { canonicalOptions } from '$lib/utils/safe-props.js';
   import * as Select from '$lib/components/ui/select/index.js';
@@ -62,9 +63,9 @@
   }
 </script>
 
-<div class="space-y-2">
+<div class={FIELD}>
   {#if label}
-    <span class="text-sm font-medium leading-none">
+    <span class={FIELD_LABEL}>
       {label}
     </span>
   {/if}
@@ -75,7 +76,7 @@
     {disabled}
     {name}
   >
-    <Select.Trigger {id} class={cn('w-full', className)} style={styleString}>
+    <Select.Trigger {id} class={cn('w-full data-[size=default]:h-9', className)} style={styleString}>
       {selectedLabel}
     </Select.Trigger>
     <Select.Content>

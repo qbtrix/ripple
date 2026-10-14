@@ -1,8 +1,8 @@
 <!--
-  Grid.svelte — Ripple CSS grid layout widget.
-  Updated 2026-06-09 (a11y): optional onclick uses a conditional-spread so the div
-  is a plain element with no handler and a keyboard-operable role="button"
-  (Enter/Space) when one is passed. Replaces the dead svelte-ignore.
+  Grid.svelte: Ripple CSS grid layout widget. Numeric `columns` are equal
+  minmax(0,1fr) tracks; metric and stat children become bordered tiles that are
+  also size containers. An optional onclick makes the grid a keyboard-operable
+  role="button" (Enter/Space); without one it is a plain element.
 -->
 <script lang="ts">
   import { safeStyle } from '@ripple-ui/core';
@@ -62,10 +62,13 @@
 
 <style>
 	.rgrid { min-width: 0; }
-	/* Metric and stat children read as tiles inside a grid. */
+	/* Metric and stat children read as tiles inside a grid. Each tile is a
+	   size container, so the atom sizes its value from its own box. */
 	.rgrid > :global([data-ripple-tile]) {
 		border: 1px solid var(--ripple-border);
 		border-radius: var(--ripple-radius);
 		padding: 12px 14px;
+		container-type: inline-size;
+		min-width: 0;
 	}
 </style>

@@ -14,6 +14,7 @@
      shrinks with it instead of pushing its siblings out of a dialog.
      `name` is rendered on the native input so a static <form> POST submits it. -->
 <script lang="ts">
+  import { FIELD_LABEL } from '$lib/components/ui/control.js';
   import { cn } from '$lib/utils.js';
   import MinusIcon from '@lucide/svelte/icons/minus';
   import PlusIcon from '@lucide/svelte/icons/plus';
@@ -118,7 +119,7 @@
 
 <div class={cn('flex min-w-0 flex-col gap-1.5', compact && 'w-full', className)} style={styleString}>
   {#if label && !compact}
-    <label for={id} class="text-sm font-medium text-foreground">{label}</label>
+    <label for={id} class={FIELD_LABEL}>{label}</label>
   {/if}
 
   <div

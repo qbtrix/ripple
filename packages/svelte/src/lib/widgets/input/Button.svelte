@@ -181,6 +181,9 @@
         icon: 'h-8 w-8 p-0 gap-0 rounded-full',
       },
     },
+    // link reads as text: no inline padding (size's px would otherwise win), so
+    // it keeps the left edge the atoms around it hold.
+    compoundVariants: [{ variant: 'link', class: 'h-auto px-0' }],
     defaultVariants: { variant: 'default', size: 'md' },
   });
 
