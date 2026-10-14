@@ -55,7 +55,8 @@ describe('normalizeActions', () => {
 
 describe('splitActions', () => {
 	const make = (labels: string[]) => normalizeActions(labels.map((label) => ({ id: label, label })));
-	const menu = (labels: string[], wide: boolean) => splitActions(make(labels), wide).menu.map((a) => a.label);
+	// 0 = unmeasured (the wide rule, no width budget); 380 = a narrow chat card.
+	const menu = (labels: string[], wide: boolean) => splitActions(make(labels), wide ? 0 : 380).menu.map((a) => a.label);
 
 	test('three short actions fit at both sizes', () => {
 		expect(menu(['Assign role', 'Send email', 'Delete'], true)).toEqual([]);
@@ -75,6 +76,18 @@ describe('splitActions', () => {
 		expect(menu(labels, false)).toEqual(['Send a personalised reminder']);
 		expect(menu(['Move to the folder'], false)).toEqual(['Move to the folder']);
 		expect(menu(['Move to the folder'], true)).toEqual([]);
+	});
+
+	test('wide fits the row beside the count, keeping room for More', () => {
+		const labels = ['Assign', 'Add tag', 'Archive', 'Export CSV', 'Star', 'Mark as read'];
+		const inline = (width: number, lead: number) => splitActions(make(labels), width, lead).inline.map((a) => a.label);
+		// 581px bar beside "48 conversations selected": two fit, then More.
+		expect(inline(581, 25)).toEqual(['Assign', 'Add tag']);
+		expect(inline(720, 16)).toEqual(['Assign', 'Add tag', 'Archive', 'Export CSV']);
+	});
+
+	test('narrow sends a word too wide for a quarter column to More', () => {
+		expect(splitActions(make(['Reassignations', 'Tag']), 320).menu.map((a) => a.label)).toEqual(['Reassignations']);
 	});
 });
 

@@ -1,17 +1,21 @@
 <!--
   BulkActionBar: "N things selected, what can you do to all of them?"
 
-  A selection-state strip, not a card: brand-blue tint, one border, a shadow
-  only when `position` is "sticky-bottom" (it then sticks 12px above the bottom
-  of a scrolling host). Left block: Clear (X, 32px target) next to the count
-  line ("**5** users selected"). Right block: the actions.
+  A selection-state strip, not a card: brand-blue tint (stronger in dark, where
+  the light mix reads as plain navy), one border, a shadow only when `position`
+  is "sticky-bottom" (it then sticks 12px above the bottom of a scrolling host).
+  Left block: Clear (X, 32px target) next to the count line ("**5** users
+  selected"). Right block: the actions.
 
   The outer element is the size container. At 520px and wider the bar is one
-  row of ghost buttons (icon + label). Narrower, it is two rows: Clear + count,
-  then equal-width columns with the icon above the label. Which actions sit in
-  the row and which go to the More menu is a fixed rule on label length and
-  that same width (bulk-action-bar.ts, splitActions), read from the element's
-  own clientWidth because the menu content is portalled and CSS cannot reach it.
+  nowrap row of ghost buttons (icon + label); the count is what shrinks and
+  wraps. Narrower, a single control (one action, or More alone) stays on that
+  row as a compact button (More goes icon-only); 2+ controls go to a second row
+  of equal-width columns, icon above label, with an empty icon slot under a
+  label-only action so every label shares one line. Which actions sit in the
+  row and which go to More is a fixed rule on label length, estimated width and
+  the wrapper's own clientWidth (bulk-action-bar.ts, splitActions); measuring
+  the wrapper, not the row, keeps the split from feeding back into itself.
 
   Props are normalised in bulk-action-bar.ts: a string or fractional count is
   rounded, 0 or junk renders nothing, blank labels drop, a missing id falls
@@ -79,7 +83,11 @@
   // 0 = not measured yet (SSR, jsdom): use the wide rule.
   let width = $state(0);
   const wide = $derived(width === 0 || width >= WIDE_AT);
-  const split = $derived(splitActions(all, wide));
+  const split = $derived(splitActions(all, width, line.count.length + 1 + line.rest.length));
+  const solo = $derived(split.inline.length + (split.menu.length > 0 ? 1 : 0) === 1);
+  const hasIcon = (a: BulkAction) => !!a.icon && Object.hasOwn(BULK_ICONS, a.icon);
+  // A label-only column gets an empty icon slot when a sibling column shows an icon (More always does).
+  const iconSlot = $derived(split.menu.length > 0 || split.inline.some(hasIcon));
   const safe = $derived(split.inline.filter((a) => !a.destructive));
   const danger = $derived(split.inline.filter((a) => a.destructive));
   const menuSafe = $derived(split.menu.filter((a) => !a.destructive));
@@ -109,7 +117,7 @@
     disabled={a.disabled}
     onclick={() => onaction?.(a.id)}
   >
-    {#if Icon}<Icon {...ICON.row} aria-hidden="true" />{/if}
+    {#if Icon}<Icon {...ICON.row} aria-hidden="true" />{:else if iconSlot}<span class="rbab-icon-slot" aria-hidden="true"></span>{/if}
     <span class="rbab-label">{a.label}</span>
   </button>
 {/snippet}
@@ -124,7 +132,7 @@
     bind:clientWidth={width}
   >
     <!-- Escape is bound as an attachment: role="group" is not interactive, and the a11y lint rejects an inline keydown on it. -->
-    <div class="rbab" role="group" aria-label="Bulk actions" {@attach (el) => on(el, 'keydown', onkeydown)}>
+    <div class="rbab" data-solo={solo || undefined} role="group" aria-label="Bulk actions" {@attach (el) => on(el, 'keydown', onkeydown)}>
       <div class="rbab-lead">
         <Tooltip.Root delayDuration={400}>
           <Tooltip.Trigger class="rbab-clear" aria-label="Clear selection" onclick={clear}>
@@ -143,7 +151,7 @@
           {/each}
           {#if split.menu.length > 0}
             <DropdownMenu.Root>
-              <DropdownMenu.Trigger class="rbab-act rbab-more">
+              <DropdownMenu.Trigger class="rbab-act rbab-more" aria-label="More actions">
                 <EllipsisIcon {...ICON.row} aria-hidden="true" />
                 <span class="rbab-label">More</span>
               </DropdownMenu.Trigger>
@@ -191,18 +199,25 @@
     z-index: 10;
   }
   .rbab {
+    --rbab-fill: 8%;
+    --rbab-edge: 28%;
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
     gap: 6px 12px;
     padding: 6px 8px 6px 6px;
-    border: 1px solid color-mix(in oklab, var(--ripple-accent) 28%, var(--ripple-surface));
+    border: 1px solid color-mix(in oklab, var(--ripple-accent) var(--rbab-edge), var(--ripple-surface));
     border-radius: var(--ripple-radius);
-    background: color-mix(in oklab, var(--ripple-accent) 8%, var(--ripple-surface));
+    background: color-mix(in oklab, var(--ripple-accent) var(--rbab-fill), var(--ripple-surface));
     color: var(--ripple-surface-foreground);
     font-size: 13px;
     line-height: 1.35;
     animation: rbab-in 160ms var(--ripple-ease-out);
+  }
+  :global(.dark) .rbab,
+  :global([data-theme='dark']) .rbab {
+    --rbab-fill: 12%;
+    --rbab-edge: 40%;
   }
   [data-position='sticky-bottom'] > .rbab {
     box-shadow: 0 8px 24px -10px oklch(0 0 0 / 0.28);
@@ -240,12 +255,16 @@
   }
 
   .rbab-actions {
+    flex: none;
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
     justify-content: flex-end;
     gap: 6px;
     margin-left: auto;
+  }
+  .rbab-icon-slot {
+    display: none;
   }
   .rbab-divider {
     align-self: stretch;
@@ -322,6 +341,7 @@
       flex: 1 1 0;
       min-width: 0;
       flex-direction: column;
+      justify-content: flex-start;
       gap: 4px;
       min-height: 48px;
       padding: 6px 4px;
@@ -330,16 +350,53 @@
       white-space: normal;
       text-align: center;
     }
+    /* No overflow-wrap here: a word too wide for its column must show in the audit, not split mid-word. */
     .rbab :global(.rbab-act .rbab-label) {
       display: -webkit-box;
       -webkit-box-orient: vertical;
       -webkit-line-clamp: 2;
       line-clamp: 2;
       overflow: hidden;
-      overflow-wrap: anywhere;
+    }
+    .rbab-icon-slot {
+      display: block;
+      flex: none;
+      width: 16px;
+      height: 16px;
     }
     .rbab-divider {
       margin: 6px 0;
+    }
+
+    /* One control: stay on the count row as a compact button. */
+    .rbab[data-solo] {
+      flex-direction: row;
+      align-items: center;
+      gap: 8px;
+    }
+    .rbab[data-solo] .rbab-actions {
+      align-items: center;
+      margin-left: auto;
+    }
+    .rbab[data-solo] :global(.rbab-act) {
+      flex: none;
+      flex-direction: row;
+      gap: 6px;
+      min-height: 32px;
+      padding: 0 10px;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .rbab[data-solo] :global(.rbab-act .rbab-label) {
+      display: inline;
+    }
+    .rbab[data-solo] :global(.rbab-more) {
+      width: 32px;
+      padding: 0;
+    }
+    .rbab[data-solo] :global(.rbab-more .rbab-label),
+    .rbab[data-solo] .rbab-icon-slot {
+      display: none;
     }
   }
 </style>
