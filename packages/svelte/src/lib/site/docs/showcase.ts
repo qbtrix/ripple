@@ -12,7 +12,8 @@
 //   showcase.test.ts checks both, and that each spec passes validateCatalog.
 // - Fictional names and data only. Dates are not after the day this was
 //   written (2026-10-14), except where the widget is about plans (gantt,
-//   calendar). Numbers add up (invoice lines sum to the subtotal).
+//   calendar). Numbers add up (invoice lines sum to the subtotal, funnel
+//   stages only shrink).
 
 const spec = (ui: Record<string, unknown>): Record<string, unknown> => ({ version: '1.0', ui });
 
@@ -167,6 +168,182 @@ export const SHOWCASE: Record<string, Record<string, unknown>> = {
 			actions: [
 				{ id: 'download', label: 'Download PDF', icon: 'download', variant: 'outline' },
 				{ id: 'pay', label: 'Pay invoice', icon: 'credit-card' }
+			]
+		}
+	}),
+	heatmap: spec({
+		type: 'heatmap',
+		props: {
+			title: 'Orders by weekday and hour',
+			showLabels: true,
+			height: 120,
+			...(() => {
+				const hours = Array.from({ length: 24 }, (_, h) => String(h).padStart(2, '0'));
+				const rows: Record<string, number[]> = {
+					Mon: [0, 7, 5, 3, 2, 12, 17, 32, 59, 94, 135, 150, 145, 131, 133, 133, 127, 105, 69, 44, 20, 8, 2, 8],
+					Tue: [3, 1, 8, 6, 5, 6, 11, 35, 62, 97, 129, 153, 148, 134, 127, 127, 130, 108, 72, 38, 23, 11, 5, 2],
+					Wed: [6, 4, 2, 0, 8, 9, 14, 29, 65, 100, 132, 147, 142, 137, 130, 130, 124, 111, 75, 41, 17, 5, 8, 5],
+					Thu: [1, 5, 4, 2, 3, 10, 15, 30, 57, 91, 131, 146, 141, 128, 136, 135, 129, 102, 66, 46, 22, 9, 3, 6],
+					Fri: [4, 2, 6, 5, 4, 8, 13, 38, 66, 101, 126, 149, 151, 139, 131, 124, 133, 112, 81, 52, 31, 16, 9, 4],
+					Sat: [6, 4, 2, 0, 7, 6, 7, 11, 28, 39, 49, 53, 50, 53, 49, 47, 44, 44, 30, 17, 7, 2, 7, 5],
+					Sun: [0, 7, 5, 3, 1, 9, 10, 14, 22, 33, 52, 56, 53, 47, 52, 50, 47, 38, 24, 20, 10, 5, 1, 8]
+				};
+				return {
+					xLabels: hours,
+					yLabels: Object.keys(rows),
+					cells: Object.entries(rows).flatMap(([y, values]) => values.map((value, i) => ({ x: hours[i], y, value })))
+				};
+			})()
+		}
+	}),
+	'audit-log': spec({
+		type: 'audit-log',
+		props: {
+			groupBy: 'day',
+			showFilters: true,
+			entries: [
+				{ id: 'ev-1000', actor: 'Priya Raman', action: 'created API key', target: 'key:pk_test_174', type: 'api', timestamp: '2026-09-20 11:52 UTC', severity: 'info' },
+				{ id: 'ev-999', actor: 'Hannah Weiss', action: 'revoked API key', target: 'key:pk_test_319', type: 'api', timestamp: '2026-09-20 10:02 UTC', severity: 'destructive', details: { ip: '203.0.113.109', client: 'web', requestId: 'req_42301241' } },
+				{ id: 'ev-998', actor: 'Priya Raman', action: 'reset password', target: 'user:hannah', type: 'auth', timestamp: '2026-09-19 17:36 UTC', severity: 'info', details: { ip: '203.0.113.59', client: 'cli', requestId: 'req_94212661' } },
+				{ id: 'ev-997', actor: 'Kofi Mensah', action: 'failed sign-in', target: 'session:web', type: 'auth', timestamp: '2026-09-19 10:02 UTC', severity: 'warning' },
+				{ id: 'ev-996', actor: 'Grace Okafor', action: 'issued refund', target: 'invoice #653', type: 'billing', timestamp: '2026-09-18 17:07 UTC', severity: 'warning' },
+				{ id: 'ev-995', actor: 'Samuel Adeyemi', action: 'renamed', target: 'workspace:orchard-199', type: 'workspace', timestamp: '2026-09-18 13:35 UTC', severity: 'info' },
+				{ id: 'ev-994', actor: 'Hannah Weiss', action: 'invited member', target: 'tomas@larkspur.example', type: 'user', timestamp: '2026-09-17 10:56 UTC', severity: 'info' },
+				{ id: 'ev-993', actor: 'Rafael Duarte', action: 'disabled webhook', target: 'hook:624', type: 'webhook', timestamp: '2026-09-17 08:26 UTC', severity: 'warning', details: { ip: '203.0.113.89', client: 'web', requestId: 'req_75627516' } },
+				{ id: 'ev-992', actor: 'Hannah Weiss', action: 'connected', target: 'calendar sync', type: 'integration', timestamp: '2026-09-16 20:50 UTC', severity: 'success' },
+				{ id: 'ev-991', actor: 'Henrik Dahl', action: 'updated payment method', target: 'card ending 4417', type: 'billing', timestamp: '2026-09-15 15:18 UTC', severity: 'info', details: { ip: '203.0.113.65', client: 'mobile', requestId: 'req_62472380' } },
+				{ id: 'ev-990', actor: 'System', actorIcon: 'bot', action: 'deleted bucket', target: 'bucket:archive-662', type: 'storage', timestamp: '2026-09-15 12:17 UTC', severity: 'destructive' }
+			]
+		}
+	}),
+	funnel: spec({
+		type: 'funnel',
+		props: {
+			title: 'Checkout steps, last 30 days',
+			data: [
+				{ label: 'Landed on home', value: 48210 },
+				{ label: 'Opened a product', value: 22950 },
+				{ label: 'Added to bag', value: 9876 },
+				{ label: 'Started checkout', value: 6355 },
+				{ label: 'Entered card', value: 3902 },
+				{ label: 'Placed order', value: 3518 }
+			]
+		}
+	}),
+	kanban: spec({
+		type: 'kanban',
+		props: {
+			columns: [
+				{ id: 'todo', title: 'To do' },
+				{ id: 'doing', title: 'In progress', color: 'amber' },
+				{ id: 'review', title: 'In review', color: 'blue' },
+				{ id: 'done', title: 'Done', color: 'green' }
+			],
+			columnKey: 'status',
+			titleKey: 'title',
+			descriptionKey: 'description',
+			badgeKey: 'owner',
+			value: [
+				{ id: 1, title: 'Ship loyalty points page', status: 'todo', owner: 'Marco' },
+				{ id: 2, title: 'Draft delivery estimate badge', status: 'todo', owner: 'Priya', description: 'Show the window, not a single day.' },
+				{ id: 3, title: 'Update gift card balance check', status: 'todo', owner: 'Lea' },
+				{ id: 4, title: 'Design partner sign-up form', status: 'doing', owner: 'Lea', description: 'Two steps max, tax ID moves to step two.' },
+				{ id: 5, title: 'Migrate warehouse label printer', status: 'doing', owner: 'Sam' },
+				{ id: 6, title: 'Draft returns flow', status: 'doing', owner: 'Ana', description: 'Waiting on the refund policy copy.' },
+				{ id: 7, title: 'Rewrite checkout copy', status: 'review', owner: 'Ana' },
+				{ id: 8, title: 'Order history filters', status: 'review', owner: 'Sam', description: 'Date range and status, saved per user.' },
+				{ id: 9, title: 'Help center search', status: 'done', owner: 'Priya' },
+				{ id: 10, title: 'Weekly digest email', status: 'done', owner: 'Jon' },
+				{ id: 11, title: 'Store hours widget', status: 'done', owner: 'Jon' }
+			]
+		}
+	}),
+	'menu-order': spec({
+		type: 'menu-order',
+		props: {
+			title: 'Copper Griddle',
+			subtitle: 'Open until 10 pm · Elm Street',
+			currency: 'USD',
+			featured: { id: 'mushroom-swiss', reason: 'Vegetarian and under $13.' },
+			checkout: true,
+			fulfilment: ['pickup', 'delivery'],
+			fee: { delivery: 3.99 },
+			preset: [{ id: 'shoestring-fries', qty: 1 }],
+			items: [
+				{
+					product_id: 'smash-burger',
+					name: 'Double Smash Burger',
+					kind: 'main',
+					category: 'Burgers',
+					price: 13.5,
+					description: 'Two smashed beef patties, American cheese, pickles and house sauce on a potato bun.',
+					tags: ['Most ordered'],
+					groups: [
+						{
+							id: 'size',
+							name: 'Size',
+							choose: 'one',
+							required: true,
+							options: [
+								{ id: 'single', name: 'Single patty', price_delta: 0 },
+								{ id: 'double', name: 'Double patty', price_delta: 2.5 }
+							]
+						},
+						{
+							id: 'extras',
+							name: 'Extras',
+							choose: 'many',
+							max: 3,
+							options: [
+								{ id: 'bacon', name: 'Thick-cut bacon', price_delta: 2 },
+								{ id: 'egg', name: 'Fried egg', price_delta: 1.25 },
+								{ id: 'extra-cheese', name: 'Extra cheese', price_delta: 1 }
+							]
+						}
+					]
+				},
+				{
+					product_id: 'mushroom-swiss',
+					name: 'Mushroom Swiss',
+					kind: 'main',
+					category: 'Burgers',
+					price: 12.25,
+					description: 'Roasted portobello, Swiss and caramelised onions.',
+					tags: ['Vegetarian'],
+					groups: [
+						{
+							id: 'size',
+							name: 'Size',
+							choose: 'one',
+							required: true,
+							options: [
+								{ id: 'single', name: 'Single patty', price_delta: 0 },
+								{ id: 'double', name: 'Double patty', price_delta: 2.5 }
+							]
+						}
+					]
+				},
+				{ product_id: 'shoestring-fries', name: 'Shoestring Fries', kind: 'side', category: 'Sides', price: 3.95, description: 'Sea salt and rosemary.', tags: ['Vegan'] },
+				{ product_id: 'malted-shake', name: 'Malted Vanilla Shake', kind: 'dessert', category: 'Shakes', price: 5.95, description: 'Thick, with a malt crumb.' }
+			]
+		}
+	}),
+	'saved-views': spec({
+		type: 'saved-views',
+		props: {
+			value: 'mine',
+			canCreate: true,
+			views: [
+				{ id: 'all', label: 'All tasks', icon: 'list', count: 412, pinned: true },
+				{ id: 'mine', label: 'My tasks', icon: 'user', count: 17, pinned: true },
+				{ id: 'today', label: 'Due today', icon: 'calendar', count: 6 },
+				{ id: 'week', label: 'This week', count: 29 },
+				{ id: 'overdue', label: 'Overdue', icon: 'alert-triangle', count: 11 },
+				{ id: 'review', label: 'In review', count: 9 },
+				{ id: 'blocked', label: 'Blocked', icon: 'ban', count: 4 },
+				{ id: 'unassigned', label: 'Unassigned', count: 15 },
+				{ id: 'recent', label: 'Recently updated', icon: 'history', count: 88 },
+				{ id: 'done', label: 'Done', icon: 'check', count: 1306 }
 			]
 		}
 	})
