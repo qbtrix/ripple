@@ -8,12 +8,15 @@
   groups (blocked, on track, done, away). Every row sits on one grid: avatar
   track | name track | Today | Yesterday (520px and up) | chevron, so names and
   updates start on one x. Blocked people are always expanded, with a 32px
-  avatar, a two-line person block and the blocker sentence on a red rule.
-  With 5 or more people every on-track and done row is one quiet line (24px
-  avatar, name, updates clamped to one line in muted ink) that expands on tap;
-  the chevron shows only when the clamp hides something. Below 520px of the
-  card's own width a row's Today and Yesterday sit under the name in a
-  label | text grid. Container queries only.
+  avatar, a two-line person block and the blocker sentence on a red rule
+  directly under the name line (Resolve in its trailing slot), then Today and
+  Yesterday. With 5 or more people every on-track and done row is quiet (24px
+  avatar, muted updates) and expands on tap: below 520px the name sits over a
+  1-line Today; from 520px the role stacks under the name and Today and
+  Yesterday clamp to 2 lines. The chevron shows only when a clamp hides
+  something. Names and roles never clamp; on a phone the quiet row drops the
+  role instead. Away rows recede (muted name, faded avatar). A row with
+  neither update shows one "No update". Container queries only.
 
   Invariants:
   - `value` ({ resolved: person ids }) is the bound field (default `value` /
@@ -134,7 +137,7 @@
 		const check = () => {
 			const cells = [...node.querySelectorAll<HTMLElement>('[data-clamp]')];
 			if (!cells.length) return;
-			const m = cells.some((el) => !el.getClientRects().length || el.scrollWidth > el.clientWidth + 1);
+			const m = cells.some((el) => !el.getClientRects().length || el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + 1);
 			if (more[id] !== m) more[id] = m;
 		};
 		check();
@@ -168,11 +171,14 @@
 	const textLine = 'min-w-0 text-callout text-pretty [overflow-wrap:break-word]';
 	const noUpdate = 'italic text-ripple-muted-foreground';
 	const nameWrap = '[overflow-wrap:break-word] hyphens-auto';
+	// Quiet rows: muted updates at the callout line height; Today is 1 line on a phone, both are 2 lines from 520px.
+	const quiet = 'min-w-0 text-callout text-ripple-muted-foreground [overflow-wrap:anywhere]';
+	const clamp = 'line-clamp-1 @min-[520px]:line-clamp-2';
 </script>
 
-{#snippet face(p: Person, small: boolean)}
+{#snippet face(p: Person, small: boolean, span: boolean)}
 	{@const src = safeUrl(p.avatar, { kind: 'resource' })}
-	<Avatar.Root class={['col-start-1 row-start-1', small ? 'size-6 self-center' : 'size-8 self-start', p.status === 'away' && 'opacity-50']}>
+	<Avatar.Root class={['col-start-1 row-start-1', small ? 'size-6 self-center' : 'size-8 self-start', span && 'row-span-2 @min-[520px]:row-span-1', p.status === 'away' && 'opacity-50']}>
 		{#if src}<Avatar.Image {src} alt="" />{/if}
 		<Avatar.Fallback class={['standup-initials font-semibold text-ripple-surface-foreground', small ? 'text-[10px]' : 'text-[11px]']} style="--h:{nameHue(p.name)}">{initials(p.name)}</Avatar.Fallback>
 	</Avatar.Root>
@@ -190,10 +196,10 @@
 	{/if}
 {/snippet}
 
-{#snippet pair(label: string, t: string, col: string, hide: boolean)}
+{#snippet pair(label: string, t: string, col: string, hide: boolean, row: string)}
 	<span class={hide ? 'hidden @min-[520px]:contents' : 'contents'}>
 		<span class="text-footnote font-medium text-ripple-muted-foreground @min-[520px]:sr-only">{label}</span>
-		<span class={[textLine, col, '@min-[520px]:row-start-1']}>{#if t}{t}{:else}<span class={noUpdate}>No update</span>{/if}</span>
+		<span class={[textLine, col, row]}>{#if t}{t}{:else}<span class={noUpdate}>No update</span>{/if}</span>
 	</span>
 {/snippet}
 
@@ -218,11 +224,11 @@
 			{#if verdict}
 				<div class="col-span-2 row-start-2 @min-[520px]:col-span-1">
 					<p class="flex items-start gap-1.5 text-body-emph" data-status={verdict.status} data-slot="verdict">
-						<span class="flex h-[1lh] w-5 shrink-0 items-center justify-center" aria-hidden="true">
+						<span class="flex h-[1lh] w-4 shrink-0 items-center" aria-hidden="true">
 							{#if verdict.status === 'good'}
 								<CircleCheck size={16} strokeWidth={2} class={STATUS_CLASS.good.text} />
 							{:else}
-								<span class={['size-2 rounded-full', STATUS_CLASS[verdict.status].fill]}></span>
+								<OctagonAlert size={16} strokeWidth={2} class={STATUS_CLASS[verdict.status].text} />
 							{/if}
 						</span>
 						<span class="min-w-0 text-pretty"><span class="sr-only">{STATUS_WORDS[verdict.status]}: </span>{verdict.text}</span>
@@ -283,27 +289,30 @@
 								{@const line = shut || away}
 								{@const small = line || folds}
 								{@const fold = isBlocked && compact && !unfolded[p.id]}
+								{@const desk = isBlocked ? '@min-[520px]:row-start-2 @min-[520px]:mt-2' : '@min-[520px]:row-start-1'}
 								{@const rowClass = [
 									'grid w-full text-left',
 									grid,
-									line ? 'min-h-11 content-center items-baseline py-2' : 'items-start py-3',
+									line ? 'min-h-11 content-center items-baseline py-1.5 @min-[520px]:py-2' : 'items-start py-3',
 									canExpand && ['rounded-md hover:bg-ripple-muted/60', focusRing]
 								]}
 								<li in:rise={{ index: i }} data-person={p.id} data-status={p.status} data-resolved={done || undefined} use:clampWatch={`${p.id} ${shut}`}>
 									{#snippet body()}
-										{@render face(p, small)}
+										{@render face(p, small, line)}
 
 										{#if line}
-											<span class={['col-start-2 row-start-1 min-w-0 truncate text-body leading-6', nameWrap]}>
-												<span class="font-semibold" data-slot="name">{p.name}</span>
-												{#if p.role}<span class="ml-1.5 hidden text-footnote text-ripple-muted-foreground @min-[520px]:inline" data-slot="role">{p.role}</span>{/if}
+											<span class={['col-[2/-2] row-start-1 min-w-0 text-body leading-snug @min-[520px]:col-[2/3] @min-[520px]:pr-1', nameWrap]}>
+												<span class={away ? 'text-ripple-muted-foreground' : 'font-semibold'} data-slot="name">{p.name}</span>
+												{#if p.role}<span class="hidden text-footnote leading-snug text-ripple-muted-foreground @min-[520px]:block" data-slot="role">{p.role}</span>{/if}
 												{#if away && !headed}<span class="ml-1.5">{@render mark(p, done, true)}</span>{/if}
 											</span>
 											{#if away}
-												{#if p.today}<span class={['col-start-3 row-start-1 min-w-0 truncate text-callout leading-6 text-ripple-muted-foreground']}>{p.today}</span>{/if}
+												{#if p.today}<span class={[quiet, 'col-[2/-2] row-start-2 @min-[520px]:col-[3/5] @min-[520px]:row-start-1']}>{p.today}</span>{/if}
+											{:else if !p.today && !p.yesterday}
+												<span class={[quiet, 'col-[2/-2] row-start-2 italic @min-[520px]:col-[3/5] @min-[520px]:row-start-1']}>No update</span>
 											{:else}
-												<span class={['col-start-3 row-start-1 min-w-0 truncate text-callout leading-6 text-ripple-muted-foreground']} data-clamp={p.today ? '' : undefined}>{#if p.today}{p.today}{:else}<span class="italic">No update</span>{/if}</span>
-												<span class={['col-start-4 row-start-1 hidden min-w-0 truncate text-callout leading-6 text-ripple-muted-foreground @min-[520px]:block']} data-clamp={p.yesterday ? '' : undefined}>{#if p.yesterday}{p.yesterday}{:else}<span class="italic">No update</span>{/if}</span>
+												<span class={[quiet, clamp, 'col-[2/-2] row-start-2 @min-[520px]:col-[3/4] @min-[520px]:row-start-1']} data-clamp={p.today ? '' : undefined}>{#if p.today}{p.today}{:else}<span class="italic">No update</span>{/if}</span>
+												<span class={[quiet, clamp, 'hidden @min-[520px]:col-start-4 @min-[520px]:row-start-1']} data-clamp={p.yesterday ? '' : undefined}>{#if p.yesterday}{p.yesterday}{:else}<span class="italic">No update</span>{/if}</span>
 											{/if}
 										{:else}
 											<span
@@ -321,20 +330,25 @@
 											</span>
 
 											{#if isBlocked}
-												<span class={['col-[2/-1] row-start-2 mt-1.5 flow-root border-l-2 pl-3 text-body @min-[520px]:col-[3/-1] @min-[520px]:mt-2', done ? 'border-ripple-border' : 'border-ripple-error']} data-slot="blocker">
-													<span class={['text-pretty [overflow-wrap:break-word]', done ? 'text-body text-ripple-muted-foreground line-through' : p.blocker ? 'text-body-emph' : 'text-body text-ripple-muted-foreground']}>{p.blocker || 'No detail given'}</span>
+												<span class={['col-[2/-1] row-start-2 mt-1.5 flow-root border-l-2 pl-3 text-body @min-[520px]:col-[3/-1] @min-[520px]:row-start-1 @min-[520px]:mt-0 @min-[520px]:flex @min-[520px]:items-baseline @min-[520px]:gap-3', done ? 'border-ripple-border' : 'border-ripple-error']} data-slot="blocker">
+													<!-- Floated first so on a phone it always sits top right of the sentence; from 520px a fixed trailing slot. -->
 													<button
 														type="button"
-														class={['relative float-right ml-3 rounded-sm px-1 text-callout leading-(--lh-body) font-medium text-ripple-accent-text after:absolute after:-inset-x-1 after:-inset-y-3 hover:underline underline-offset-2', focusRing]}
+														class={['relative float-right ml-3 -mr-1 rounded-sm px-1 text-callout leading-(--lh-body) font-medium text-ripple-accent-text after:absolute after:-inset-x-1 after:-inset-y-3 hover:underline underline-offset-2 @min-[520px]:order-last @min-[520px]:ml-0 @min-[520px]:shrink-0', focusRing]}
 														aria-label={done ? `Undo resolving ${p.name}'s blocker` : `Resolve ${p.name}'s blocker`}
 														onclick={() => toggleResolved(p)}>{done ? 'Undo' : 'Resolve'}</button>
+													<span class={['text-pretty [overflow-wrap:break-word] @min-[520px]:min-w-0 @min-[520px]:flex-1', done ? 'text-body text-ripple-muted-foreground line-through' : p.blocker ? 'text-body-emph' : 'text-body text-ripple-muted-foreground']}>{p.blocker || 'No detail given'}</span>
 												</span>
 											{/if}
 
 											<span class={['col-[2/-1] mt-1.5 grid grid-cols-[max-content_minmax(0,1fr)] items-baseline gap-x-2 gap-y-1 @min-[520px]:contents', isBlocked ? 'row-start-3' : 'row-start-2']}>
-												{@render pair('Today', p.today, '@min-[520px]:col-start-3', fold && many)}
-												{@render pair('Yesterday', p.yesterday, '@min-[520px]:col-start-4', fold)}
-												{#if fold}
+												{#if !p.today && !p.yesterday}
+													<span class={[textLine, noUpdate, 'col-span-2 @min-[520px]:col-[3/5]', desk]}>No update</span>
+												{:else}
+													{@render pair('Today', p.today, '@min-[520px]:col-start-3', fold && many, desk)}
+													{@render pair('Yesterday', p.yesterday, '@min-[520px]:col-start-4', fold, desk)}
+												{/if}
+												{#if fold && (p.today || p.yesterday)}
 													<button
 														type="button"
 														class={['col-span-2 inline-flex min-h-8 items-center gap-1 justify-self-start text-footnote font-medium text-ripple-muted-foreground @min-[520px]:hidden', focusRing]}
@@ -350,7 +364,7 @@
 												size={16}
 												strokeWidth={2}
 												aria-hidden="true"
-												class={['col-start-4 row-start-1 self-center justify-self-end text-ripple-muted-foreground transition-transform duration-150 motion-reduce:transition-none @min-[520px]:col-start-5', !shut && 'rotate-90', shut && !more[p.id] && 'invisible']}
+												class={['col-start-4 row-start-1 self-center justify-self-end text-ripple-muted-foreground transition-transform duration-150 motion-reduce:transition-none @min-[520px]:col-start-5', line && 'row-span-2 @min-[520px]:row-span-1', !shut && 'rotate-90', shut && !more[p.id] && 'invisible']}
 											/>
 										{/if}
 									{/snippet}

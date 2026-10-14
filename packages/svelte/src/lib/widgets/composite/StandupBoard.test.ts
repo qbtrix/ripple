@@ -180,7 +180,7 @@ describe('standup-board: states', () => {
 	it('sparse: roster only, "No update", default title, no date', () => {
 		const c = rendered({ people: ['Lina Okafor', 'Tomás Reyes', 'Mei'] });
 		expect(c.querySelector('h2')?.textContent?.trim()).toBe('Standup');
-		expect(screen.getAllByText('No update').length).toBe(6);
+		expect(screen.getAllByText('No update').length).toBe(3);
 		expect(screen.getByText('No updates yet.')).toBeTruthy();
 		expect(screen.getAllByText('LO').length).toBe(1);
 	});
