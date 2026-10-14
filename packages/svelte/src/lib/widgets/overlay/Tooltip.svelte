@@ -9,6 +9,8 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { cn } from '$lib/utils.js';
+  import { TEXT_TRIGGER } from '$lib/components/ui/trigger.js';
+  import InfoIcon from '@lucide/svelte/icons/info';
   import * as Tooltip from '$lib/components/ui/tooltip/index.js';
   import NodeRenderer from '$lib/components/NodeRenderer.svelte';
 
@@ -50,11 +52,11 @@
 
 <Tooltip.Provider delayDuration={delay}>
   <Tooltip.Root>
-    <Tooltip.Trigger {id} class={cn(className)} style={styleString}>
+    <Tooltip.Trigger {id} class={cn(!children && triggerIsString && TEXT_TRIGGER, className)} style={styleString}>
       {#if children}
         {@render children()}
       {:else if triggerIsString}
-        {trigger}
+        {trigger}<InfoIcon size={14} aria-hidden="true" />
       {:else if triggerIsSpec}
         <NodeRenderer node={trigger} />
       {/if}
