@@ -46,7 +46,6 @@ import Snowflake from '@lucide/svelte/icons/snowflake';
 import Hamburger from '@lucide/svelte/icons/hamburger';
 import Salad from '@lucide/svelte/icons/salad';
 import CupSoda from '@lucide/svelte/icons/cup-soda';
-import IceCreamCone from '@lucide/svelte/icons/ice-cream-cone';
 // menu options
 import Maximize2 from '@lucide/svelte/icons/maximize-2';
 import Minimize2 from '@lucide/svelte/icons/minimize-2';
@@ -225,7 +224,7 @@ export const MENU_ICONS = {
 	main: Hamburger,
 	side: Salad,
 	drink: CupSoda,
-	dessert: IceCreamCone,
+	dessert: CakeSlice,
 	product: ShoppingBag
 } satisfies Record<string, LucideIcon>;
 

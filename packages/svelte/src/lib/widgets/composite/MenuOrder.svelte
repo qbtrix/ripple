@@ -8,17 +8,20 @@
   chat case, or every photo failed) it is a grouped list: full-width category
   headings, then hairline rows (muted kind glyph, name and description
   clamped to 2 lines; every row has the price top-right on the name's first
-  line with the control under it), two columns from 560px in a group of 2+.
+  line with the control under it). From 560px every group uses two columns when
+  any group has 2+ items (a lone item takes the left one), else one column.
   Any photo still loading or loaded gives photo cards in one auto-fill grid
-  with no category headings (small groups would strand one card per row); a
-  failed photo keeps its slot with the kind icon. Glyphs come from DISH: the
+  with no category headings (small groups would strand one card per row);
+  cards in a row match heights with the control pinned to the bottom, and a
+  chosen card gets an accent rim (the tint means the pick only). A failed
+  photo keeps its slot with the kind icon. Glyphs come from DISH: the
   generic kinds draw neutral dishes, never a specific food. The pick ("Picked
   for you") is a tinted row above the groups, its name on the rows' text edge,
   never listed twice. Chips show only for 2+ categories and 8+ items, and wrap.
   Placeholders show only while the spec streams in ('ui-streaming' is
   'active'); a settled card collapses a missing price and names a nameless
-  item by its id in words. Price 0 is Free; the headline's "from" counts only
-  prices above 0. A repeated product_id shares one
+  item by its id in words. Price 0 is Free; the headline's "from" counts 0
+  (from Free) but never a credit below 0. A repeated product_id shares one
   cart line and only its first row is highlighted. One primary button per
   stage, in a sticky footer bar (hairline top, inset like the rows) that
   carries the item count and subtotal (the review adds the fee). A priced item
@@ -198,7 +201,7 @@
 	const headline = $derived.by(() => {
 		const prices = menu.map((i) => i.price).filter((p): p is number => p !== undefined);
 		const parts = [`${menu.length} ${menu.length === 1 ? 'item' : 'items'}`];
-		const real = prices.filter((p) => p > 0); // a free item or a credit is not a starting price
+		const real = prices.filter((p) => p >= 0); // a credit below 0 is not a menu price
 		if (real.length) parts.push(`from ${priceText(Math.min(...real))}`);
 		else if (!prices.length && categories.length > 1) parts.push(`${categories.length} categories`);
 		if (orderable) parts.push(modes.length > 1 ? 'pickup or delivery' : modes[0]);
@@ -260,6 +263,8 @@
 		let start = 0;
 		return sets.filter((g) => g.items.length).map((g) => ({ ...g, start: (start += g.items.length) - g.items.length }));
 	});
+	// One column rule for the whole list, so prices line up from group to group.
+	const twoCol = $derived(groups.some((g) => g.items.length > 1));
 	const draftItem = $derived.by(() => {
 		const d = draft;
 		const item = d ? itemOf(d.pid) : undefined;
@@ -431,9 +436,8 @@
 {#snippet card(item: Item)}
 	<article
 		class={[
-			'flex gap-3 rounded-ripple border p-2 transition-colors @min-[560px]:flex-col @min-[560px]:gap-2',
-			'border-ripple-border',
-			chosen(item) ? 'bg-ripple-accent/8' : 'bg-ripple-surface'
+			'flex h-full gap-3 rounded-ripple border bg-ripple-surface p-2 transition-colors @min-[560px]:flex-col @min-[560px]:gap-2',
+			chosen(item) ? 'border-ripple-accent ring-1 ring-ripple-accent' : 'border-ripple-border'
 		]}
 	>
 		<PhotoTile src={safeUrl(item.image, { kind: 'resource' })} ratio="4:3" icon={glyph(item.kind)} iconSize={24} class="w-24 shrink-0 self-start @min-[560px]:w-full" onerror={() => fail(item)} />
@@ -594,7 +598,7 @@
 										{/each}
 									</ul>
 								{:else}
-									<ul class={['grid', g.items.length > 1 && '@min-[560px]:grid-cols-2 @min-[560px]:gap-x-6']} aria-label={g.name ? undefined : 'Menu'} aria-labelledby={g.name ? `${uid}-cat${gi}` : undefined}>
+									<ul class={['grid', twoCol && '@min-[560px]:grid-cols-2 @min-[560px]:gap-x-6']} aria-label={g.name ? undefined : 'Menu'} aria-labelledby={g.name ? `${uid}-cat${gi}` : undefined}>
 										{#each g.items as item, i (item.key)}
 											<li class="min-w-0 border-t border-ripple-border first:border-t-0 @min-[560px]:nth-2:border-t-0" in:rise={{ index: g.start + i }}>
 												{@render row(item, g.name ? 'h4' : 'h3')}

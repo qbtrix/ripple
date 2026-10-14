@@ -386,18 +386,32 @@ describe('menu-order — menu layout', () => {
 		expect(glyphs[0].getAttribute('class')).toContain('text-ripple-muted-foreground');
 	});
 
-	it('starts the headline at the lowest price above 0, and drops "from" when none is', () => {
+	it('starts the headline at the lowest price of 0 or more, never at a credit', () => {
 		render(MenuOrder, { props: { items: [fries, { product_id: 'water', name: 'Tap Water', price: 0 }, { product_id: 'credit', name: 'Credit', price: -2 }] } });
-		expect(screen.getByText('3 items · from $3.49')).toBeTruthy();
+		expect(screen.getByText('3 items · from Free')).toBeTruthy();
 		cleanup();
-		render(MenuOrder, { props: { items: [{ product_id: 'water', name: 'Tap Water', price: 0 }] } });
-		expect(screen.getByText('1 item')).toBeTruthy();
+		render(MenuOrder, { props: { items: [fries, { product_id: 'credit', name: 'Credit', price: -2 }] } });
+		expect(screen.getByText('2 items · from $3.49')).toBeTruthy();
 	});
 
-	it('splits a group into two columns only when it has 2+ items', () => {
+	it('uses two columns in every group once any group has 2+ items, else one', () => {
 		render(MenuOrder, { props: { items: [fries, { ...fries, product_id: 'curly', name: 'Curly Fries' }, shake] } });
 		expect(screen.getByRole('list', { name: 'Sides' }).className).toContain('grid-cols-2');
-		expect(screen.getByRole('list', { name: 'Shakes' }).className).not.toContain('grid-cols-2');
+		expect(screen.getByRole('list', { name: 'Shakes' }).className).toContain('grid-cols-2');
+		cleanup();
+		render(MenuOrder, { props: { items: [fries, shake] } });
+		expect(screen.getByRole('list', { name: 'Sides' }).className).not.toContain('grid-cols-2');
+	});
+
+	it('marks a chosen photo card with an accent rim, not the tint the pick wears', () => {
+		const { container } = render(MenuOrder, {
+			props: { items: [{ ...fries, image: 'https://img.example/1' }, { ...shake, image: 'https://img.example/2' }], checkout: true, preset: [{ id: 'shoestring-fries', qty: 1 }] }
+		});
+		const [picked, other] = container.querySelectorAll('article');
+		expect(picked.className).toContain('ring-ripple-accent');
+		expect(picked.className).not.toContain('bg-ripple-accent');
+		expect(other.className).not.toContain('ring-ripple-accent');
+		expect(picked.className).toContain('h-full');
 	});
 
 	it('explains a maxed-out stepper and shows the price of an item that cannot be ordered in normal ink', () => {
