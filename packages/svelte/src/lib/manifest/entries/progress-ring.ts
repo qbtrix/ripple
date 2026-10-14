@@ -14,5 +14,5 @@ export const progressRingEntry: WidgetManifestEntry = {
     label: { type: 'string', required: false, description: 'Center label. Default "{percent}%".' },
     hideLabel: { type: 'boolean', required: false, description: 'Hide center label.' },
   },
-  example: { type: 'progress-ring', props: { value: 72, max: 100, size: 80, color: '#6366f1' } },
+  example: { type: 'progress-ring', props: { value: 72, max: 100, size: 80 } },
 };

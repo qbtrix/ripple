@@ -1,5 +1,6 @@
 <!-- src/lib/widgets/display/LinkPreview.svelte -->
 <script lang="ts">
+  import PhotoTile from '$lib/widgets/data-kit/PhotoTile.svelte';
   import { safeUrl } from '@ripple-ui/core';
   import { cn } from '$lib/utils.js';
   import LinkIcon from '@lucide/svelte/icons/link';
@@ -60,7 +61,7 @@
   {target}
   {rel}
   class={cn(
-    'group block max-w-md rounded-lg border border-border bg-card overflow-hidden transition-colors hover:border-primary/40 hover:bg-muted/30',
+    'group block w-full rounded-lg border border-border bg-card overflow-hidden transition-colors hover:border-primary/40 hover:bg-muted/30',
     className
   )}
   style={styleString}
@@ -73,7 +74,8 @@
           layout === 'horizontal' ? 'w-32 h-full min-h-[88px]' : 'w-full h-40'
         )}
       >
-        <img src={safeUrl(image, { kind: 'resource' })} alt="" class="w-full h-full object-cover" loading="lazy" />
+        <!-- PhotoTile: a designed icon tile when the image is refused or fails. -->
+        <PhotoTile src={image} ratio="auto" class="size-full" style="border-radius:0" />
       </div>
     {/if}
     <div class="flex-1 min-w-0 p-3">

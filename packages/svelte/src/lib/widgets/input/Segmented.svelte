@@ -127,7 +127,8 @@
   }
 
   const sizeClass = $derived(size === 'sm' ? 'h-7 text-[12px]' : 'h-8 text-[13px]');
-  const padClass = $derived(size === 'sm' ? 'px-2.5' : 'px-3');
+  // Many options get tighter padding so a six-option track still fits a phone-width card.
+  const padClass = $derived(normalized.length > 4 ? 'px-2' : size === 'sm' ? 'px-2.5' : 'px-3');
 
   // repeat(0, …) is invalid CSS, so an empty options list still needs one track.
   const columns = $derived(Math.max(1, normalized.length));

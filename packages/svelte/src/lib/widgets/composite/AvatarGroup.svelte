@@ -59,7 +59,7 @@
      the overlap stays small enough that two-letter initials are never clipped. -->
 <Avatar.Group
   {id}
-  class={cn('-space-x-1.5 *:data-[slot=avatar]:ring-ripple-surface', className)}
+  class={cn(size === 'sm' ? '-space-x-1' : '-space-x-1.5', '*:data-[slot=avatar]:ring-ripple-surface', className)}
   style={styleString}
 >
   {#each visible as user, i (i)}
@@ -68,7 +68,7 @@
         <Avatar.Image src={safeUrl(user.src, { kind: 'resource' })} alt={user.alt ?? ''} />
       {/if}
       <Avatar.Fallback
-        class="text-xs font-medium"
+        class={size === 'sm' ? 'text-[9px] font-semibold' : 'text-xs font-medium'}
         style={initials(user) ? nameTint(asText(user.alt) || initials(user)) : undefined}
       >{initials(user)}</Avatar.Fallback>
     </Avatar.Root>

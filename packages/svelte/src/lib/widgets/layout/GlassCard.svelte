@@ -19,24 +19,27 @@
     description?: string;
     opacity?: number;    // Glass opacity 0-100, default 38
     blur?: number;       // Blur px, default 8
-    tint?: string;       // Tint color, default '#000000'
+    tint?: string;       // Tint colour; without one the card is a light glass of the surface with surface ink
     borderGlow?: boolean; // Enable reflex border glow, default true
     onclick?: (e?: unknown) => void;
   }
 
   let {
     id, class: className, style, children, title, description,
-    opacity = 38, blur = 8, tint = '#000000', borderGlow = true, onclick
+    opacity = 38, blur = 8, tint, borderGlow = true, onclick
   }: Props = $props();
 
   const glassStyle = $derived.by(() => {
     const base: Record<string, string> = {
-      'background-color': `color-mix(in srgb, ${tint} ${opacity}%, transparent)`,
       'backdrop-filter': `blur(${blur}px) saturate(150%)`,
       '-webkit-backdrop-filter': `blur(${blur}px) saturate(150%)`,
-      'border': '1px solid rgba(255, 255, 255, 0.12)',
       'border-radius': '12px',
     };
+    // A supplied tint keeps the dark glass with white ink; the default is the surface's own glass.
+    if (tint) {
+      base['background-color'] = `color-mix(in srgb, ${tint} ${opacity}%, transparent)`;
+      base['border'] = '1px solid rgba(255, 255, 255, 0.12)';
+    }
     if (borderGlow) {
       base['box-shadow'] = [
         'inset 0 0 0 1px color-mix(in srgb, #fff 10%, transparent)',
@@ -60,7 +63,7 @@
   );
 </script>
 
-<div {id} class={cn('ripple-glass-card', className)} style={glassStyle} {...interactive}>
+<div {id} class={cn('ripple-glass-card', tint && 'glass-tinted', className)} style={glassStyle} {...interactive}>
   {#if title || description}
     <div class="glass-card-header">
       {#if title}
@@ -78,24 +81,31 @@
 
 <style>
   .ripple-glass-card {
-    color: rgba(255, 255, 255, 0.92);
+    background-color: color-mix(in oklab, var(--ripple-surface) 55%, white);
+    border: 1px solid var(--ripple-border);
+    color: var(--ripple-surface-foreground);
     overflow: hidden;
   }
+  :global(.dark) .ripple-glass-card {
+    background-color: color-mix(in oklab, var(--ripple-surface) 90%, white);
+  }
+  .glass-tinted { color: rgba(255, 255, 255, 0.92); }
   .glass-card-header {
     padding: 16px 16px 0;
   }
   .glass-card-title {
     font-size: 14px;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.90);
+    color: inherit;
     margin: 0 0 4px;
   }
   .glass-card-desc {
     font-size: 12px;
-    color: rgba(255, 255, 255, 0.50);
+    color: var(--ripple-muted-foreground);
     margin: 0;
     line-height: 1.4;
   }
+  .glass-tinted .glass-card-desc { color: rgba(255, 255, 255, 0.6); }
   .glass-card-content {
     padding: 16px;
   }

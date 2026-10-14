@@ -173,6 +173,7 @@
   {id}
   class={cn(root({ size, align }), className)}
   data-size={size}
+  data-ripple-tile
   data-direction={resolved.dir}
   data-sentiment={resolved.sentiment}
 >

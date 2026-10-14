@@ -18,10 +18,10 @@
   let { id, title, text, variant = 'info', class: className }: Props = $props();
 
   const config: Record<string, { border: string; bg: string; icon: string }> = {
-    info:    { border: '#3b82f6', bg: 'rgba(59,130,246,0.06)', icon: 'i' },
-    success: { border: '#22c55e', bg: 'rgba(34,197,94,0.06)',  icon: '\u2713' },
-    warning: { border: '#f59e0b', bg: 'rgba(245,158,11,0.06)', icon: '!' },
-    insight: { border: '#8b5cf6', bg: 'rgba(139,92,246,0.06)', icon: '\u2726' },
+    info:    { border: 'var(--ripple-info)', bg: 'color-mix(in oklab, var(--ripple-info) 7%, transparent)', icon: 'i' },
+    success: { border: 'var(--ripple-success)', bg: 'color-mix(in oklab, var(--ripple-success) 7%, transparent)',  icon: '\u2713' },
+    warning: { border: 'var(--ripple-warning)', bg: 'color-mix(in oklab, var(--ripple-warning) 7%, transparent)', icon: '!' },
+    insight: { border: 'var(--ripple-accent)', bg: 'color-mix(in oklab, var(--ripple-accent) 7%, transparent)', icon: '\u2726' },
   };
 
   const c = $derived(config[variant] ?? config.info);
