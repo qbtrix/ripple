@@ -4,9 +4,12 @@
   hygiene and moves live in kanban-board.ts.
 
   Layout (container queries only): from 480px of its own width the lanes are a
-  grid of quiet fills that share the width down to 160px and wrap to further
-  rows, cards are the only bordered boxes. Below 480px the lanes stack as
-  sections with hairline rows, and an empty lane collapses to its header.
+  grid of quiet fills, cards the lightest bordered boxes with the badge on a
+  meta row under the full-width title. Lanes per row come from the width
+  (3 to 6, about 136px each) and rows are balanced, so 4 lanes go 4 across or
+  2 + 2 and 7 go 4 + 3, never a lone last lane. Below 480px the lanes stack as
+  sections with hairline rows, an empty lane collapses to its header and the
+  badge trails the title. An empty board shows headers plus one "No cards yet".
   Each lane shows 4 cards, then "Show N more". The header count always counts
   every card in the lane.
 
@@ -167,7 +170,7 @@
 </script>
 
 <div {id} class={['kb', className]} style={rootStyle}>
-	<div class="kb-board">
+	<div class="kb-board" style:--lanes={board.length}>
 		{#each board as l, li (laneKeys[li])}
 			{@const open = !!expanded[l.key]}
 			{@const shown = open ? l.items : l.items.slice(0, CAP)}
@@ -191,7 +194,7 @@
 				</div>
 
 				{#if l.items.length === 0}
-					<p class="kb-empty text-footnote">No cards</p>
+					{#if cards.length}<p class="kb-empty text-footnote">No cards</p>{/if}
 				{:else}
 					<div class="kb-cards" role="list">
 						{#each shown as it, k (keys[k])}
@@ -267,7 +270,7 @@
 		{/each}
 	</div>
 	{#if cards.length === 0}
-		<p class="kb-none text-callout">No cards yet</p>
+		<p class="kb-none text-footnote">No cards yet</p>
 	{/if}
 	<p class="kb-sr" aria-live="polite">{announce}</p>
 </div>
@@ -465,8 +468,7 @@
 	}
 
 	.kb-none {
-		margin: 0.5rem 0 0;
-		text-align: center;
+		margin: 0.25rem 0 0;
 		color: var(--ripple-muted-foreground);
 	}
 
@@ -485,8 +487,12 @@
 	/* Wide: a grid of quiet lane fills that wraps, cards are bordered boxes. */
 	@container kb (min-width: 480px) {
 		.kb-board {
+			/* Balanced rows: at most --max lanes a row, then as few columns as fill the rows evenly. */
+			--max: 3;
+			--rows: round(up, var(--lanes) / var(--max), 1);
+			--cols: round(up, var(--lanes) / var(--rows), 1);
 			display: grid;
-			grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+			grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
 			column-gap: 0.75rem;
 			row-gap: 1.25rem;
 			align-items: start;
@@ -519,10 +525,28 @@
 		}
 
 		.kb-card {
+			grid-template-columns: minmax(0, 1fr) auto;
+			grid-template-areas: 'name move' 'badge badge' 'desc desc';
 			padding: 0.625rem;
 			border: 1px solid var(--ripple-border);
 			border-radius: var(--ripple-radius);
-			background: color-mix(in oklab, var(--ripple-surface) 88%, white);
+			/* The lightest plane in light: at or above the card frame, never between it and the lane. */
+			background: color-mix(in oklab, var(--ripple-surface) 40%, white);
+		}
+
+		:global(.dark) .kb-card,
+		:global([data-theme='dark']) .kb-card {
+			background: color-mix(in oklab, var(--ripple-surface) 82%, white);
+		}
+
+		.kb-tpl {
+			grid-area: 1 / 1 / -1 / 2;
+		}
+
+		.kb-badge {
+			justify-self: start;
+			max-width: 100%;
+			margin: 0.25rem 0 0.125rem;
 		}
 
 		.kb-card + .kb-card {
@@ -544,6 +568,24 @@
 
 		.kb-more {
 			padding: 0.25rem;
+		}
+	}
+
+	@container kb (min-width: 576px) {
+		.kb-board {
+			--max: 4;
+		}
+	}
+
+	@container kb (min-width: 728px) {
+		.kb-board {
+			--max: 5;
+		}
+	}
+
+	@container kb (min-width: 876px) {
+		.kb-board {
+			--max: 6;
 		}
 	}
 

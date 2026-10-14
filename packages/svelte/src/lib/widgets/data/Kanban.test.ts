@@ -66,6 +66,7 @@ describe('Kanban', () => {
 		a.unmount();
 		const b = render(Kanban, { props: { columns, value: [] } });
 		expect(b.getByText('No cards yet')).toBeTruthy();
+		expect(b.queryByText('No cards')).toBeNull();
 	});
 
 	it('with onchange, moves a card through its menu by index', async () => {
