@@ -14,7 +14,7 @@
 	import { safeUrl } from '@ripple-ui/core';
 	import { FALLBACK_ICON } from './icons.js';
 
-	type Ratio = '4:3' | '1:1' | '16:9';
+	type Ratio = '4:3' | '1:1' | '16:9' | 'auto';
 
 	interface Props {
 		src?: unknown;
@@ -23,11 +23,18 @@
 		icon?: LucideIcon;
 		iconSize?: number;
 		class?: string;
+		id?: string;
+		/** Inline style for the box (the image atom passes its width, height and radius). */
+		style?: string;
+		fit?: 'contain' | 'cover' | 'fill' | 'none' | 'scale-down';
+		/** Show the alt text under the fallback icon. */
+		caption?: boolean;
 	}
 
-	let { src, alt = '', ratio = '1:1', icon, iconSize = 20, class: className }: Props = $props();
+	let { src, alt = '', ratio = '1:1', icon, iconSize = 20, class: className, id, style, fit = 'cover', caption = false }: Props = $props();
 
-	const RATIO: Record<Ratio, string> = { '4:3': 'aspect-[4/3]', '1:1': 'aspect-square', '16:9': 'aspect-video' };
+	// 'auto' leaves the box to its own width/height (the image atom); the fallback then keeps a floor height.
+	const RATIO: Record<Ratio, string> = { '4:3': 'aspect-[4/3]', '1:1': 'aspect-square', '16:9': 'aspect-video', auto: '' };
 
 	// Keyed by URL, so a src that changes (a streamed placeholder swapped for
 	// the hydrated photo) starts over as loading instead of inheriting a state.
@@ -40,20 +47,22 @@
 	const Icon = $derived(icon ?? FALLBACK_ICON);
 </script>
 
-<div class={['relative overflow-hidden rounded-md bg-ripple-muted', RATIO[ratio] ?? RATIO['1:1'], className]} data-state={phase}>
+<div {id} {style} class={['relative overflow-hidden rounded-md bg-ripple-muted', RATIO[ratio] ?? RATIO['1:1'], ratio === 'auto' && phase === 'fallback' && 'min-h-24 min-w-24', className]} data-state={phase}>
 	{#if showImage}
 		<img
 			src={safeUrl(src, { kind: 'resource' })}
 			{alt}
 			loading="lazy"
 			decoding="async"
-			class={['size-full object-cover transition-opacity duration-150 ease-ripple-out', phase === 'loaded' ? 'opacity-100' : 'opacity-0']}
+			style:object-fit={fit}
+			class={['block size-full transition-opacity duration-150 ease-ripple-out', phase === 'loaded' ? 'opacity-100' : 'opacity-0']}
 			onload={() => (loadedUrl = url)}
 			onerror={() => (failedUrl = url)}
 		/>
 	{:else if alt}
-		<div class="grid size-full place-items-center text-ripple-muted-foreground" role="img" aria-label={alt}>
+		<div class="flex size-full flex-col items-center justify-center gap-1.5 p-3 text-ripple-muted-foreground" role="img" aria-label={alt}>
 			<Icon size={iconSize} strokeWidth={1.75} aria-hidden="true" />
+			{#if caption}<span class="line-clamp-2 max-w-full text-center text-xs" aria-hidden="true">{alt}</span>{/if}
 		</div>
 	{:else}
 		<div class="grid size-full place-items-center text-ripple-muted-foreground" aria-hidden="true">

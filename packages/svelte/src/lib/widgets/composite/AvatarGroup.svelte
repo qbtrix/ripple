@@ -11,6 +11,7 @@
   import { cn } from '$lib/utils.js';
   import * as Avatar from '$lib/components/ui/avatar/index.js';
   import { asText } from '$lib/widgets/text-coerce';
+  import { nameTint } from '$lib/widgets/data-kit/tint.js';
 
   type Size = 'sm' | 'md' | 'lg';
 
@@ -54,16 +55,25 @@
   }
 </script>
 
-<Avatar.Group {id} class={cn(className)} style={styleString}>
+<!-- Each face sits on a 2px ring in the card colour so overlaps separate, and
+     the overlap stays small enough that two-letter initials are never clipped. -->
+<Avatar.Group
+  {id}
+  class={cn('-space-x-1.5 *:data-[slot=avatar]:ring-ripple-surface', className)}
+  style={styleString}
+>
   {#each visible as user, i (i)}
-    <Avatar.Root size={rootSize}>
+    <Avatar.Root size={rootSize} class="after:hidden">
       {#if user.src}
         <Avatar.Image src={safeUrl(user.src, { kind: 'resource' })} alt={user.alt ?? ''} />
       {/if}
-      <Avatar.Fallback>{initials(user)}</Avatar.Fallback>
+      <Avatar.Fallback
+        class="text-xs font-medium"
+        style={initials(user) ? nameTint(asText(user.alt) || initials(user)) : undefined}
+      >{initials(user)}</Avatar.Fallback>
     </Avatar.Root>
   {/each}
   {#if overflow > 0}
-    <Avatar.GroupCount>+{overflow}</Avatar.GroupCount>
+    <Avatar.GroupCount class="bg-ripple-track text-ripple-surface-foreground text-xs font-medium ring-ripple-surface tabular-nums">+{overflow}</Avatar.GroupCount>
   {/if}
 </Avatar.Group>

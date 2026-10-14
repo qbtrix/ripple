@@ -9,16 +9,17 @@
 <script lang="ts">
   import { safeUrl, safeStyle } from '@ripple-ui/core';
   import { cn } from '$lib/utils.js';
-  import { faviconUrl } from './favicon.js';
+  import { nameTint } from '$lib/widgets/data-kit/tint.js';
+  import { asText } from '$lib/widgets/text-coerce';
 
   interface Props {
     /** Spec node id, forwarded by NodeRenderer for editor selection. */
     id?: string;
     /** Source/publisher name */
     source: string;
-    /** Dot/accent color — fallback if favicon fails */
+    /** Letter-tile fill when there is no favicon (default: a tint from the source name) */
     color?: string;
-    /** Override favicon URL (auto-derived from source name if omitted) */
+    /** Favicon URL; without one the source's first letter shows in a small tile */
     favicon?: string;
     /** Optional superscript citation number */
     number?: number;
@@ -29,11 +30,15 @@
   }
 
   let {
-    id, source, color = 'var(--primary)', favicon, number,
+    id, source, color, favicon, number,
     url, class: className, onclick
   }: Props = $props();
 
-  const iconSrc = $derived(favicon ?? faviconUrl(source));
+  // Only a favicon the spec supplies: deriving one from the source name would
+  // send every cited domain to an outside service, and CSPs block it anyway.
+  const iconSrc = $derived(favicon);
+  const letter = $derived(asText(source).trim().charAt(0).toUpperCase());
+  const tileStyle = $derived(color ? `background:${color};color:#fff` : nameTint(asText(source)));
   let iconError = $state(false);
 
   const safeLink = $derived(safeUrl(url));
@@ -50,15 +55,12 @@
 </script>
 
 <span {id} data-ripple-node={id} class={cn('rcite', className)} {...interactive}>
-  {#if !iconError}
+  {#if iconSrc && !iconError}
     <img src={safeUrl(iconSrc, { kind: 'resource' })} alt="" class="rcite-favicon" onerror={() => iconError = true} />
-  {:else}
-    <span class="rcite-dot" style={safeStyle(`background:${color}`)}></span>
+  {:else if letter}
+    <span class="rcite-letter" aria-hidden="true" style={safeStyle(tileStyle)}>{letter}</span>
   {/if}
-  <span class="rcite-name">{source}</span>
-  {#if number != null}
-    <sup class="rcite-num">{number}</sup>
-  {/if}
+  <span class="rcite-name">{source}{#if number != null}<sup class="rcite-num">{number}</sup>{/if}</span>
 </span>
 
 <style>
@@ -81,10 +83,15 @@
   .rcite[role='button']:hover {
     background: var(--muted);
   }
-  .rcite-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
+  .rcite-letter {
+    display: inline-grid;
+    place-items: center;
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    font-size: 8px;
+    font-weight: 700;
+    line-height: 1;
     flex-shrink: 0;
   }
   .rcite-favicon {
@@ -100,7 +107,8 @@
   }
   .rcite-num {
     font-size: 9px;
-    color: color-mix(in oklab, var(--muted-foreground) 70%, transparent);
+    color: var(--muted-foreground);
     margin-left: 1px;
+    top: -0.4em;
   }
 </style>

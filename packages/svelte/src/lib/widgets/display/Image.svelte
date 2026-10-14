@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { safeUrl, safeStyle } from '@ripple-ui/core';
+  import { safeStyle } from '@ripple-ui/core';
+  import PhotoTile from '$lib/widgets/data-kit/PhotoTile.svelte';
+  import ImageIcon from '@lucide/svelte/icons/image';
   interface Props {
     id?: string;
     class?: string;
@@ -22,10 +24,7 @@
   };
 
   const combinedStyle = $derived.by(() => {
-    const s: string[] = [
-      `object-fit:${fit}`,
-      `border-radius:${radiusMap[rounded] ?? '8px'}`,
-    ];
+    const s: string[] = [`border-radius:${radiusMap[rounded] ?? '8px'}`];
     if (width) s.push(`width:${typeof width === 'number' ? `${width}px` : width}`);
     if (height) s.push(`height:${typeof height === 'number' ? `${height}px` : height}`);
     if (style) s.push(...Object.entries(style).map(([k, v]) => `${k}:${v}`));
@@ -33,4 +32,6 @@
   });
 </script>
 
-<img {id} src={safeUrl(src, { kind: 'resource' })} {alt} class="block max-w-full {className ?? ''}" style={combinedStyle} />
+<!-- PhotoTile owns loading, missing, refused and failed src: a designed icon
+     tile at the requested size, never the browser's broken-image glyph. -->
+<PhotoTile {id} {src} {alt} {fit} ratio="auto" icon={ImageIcon} caption class="block max-w-full {className ?? ''}" style={combinedStyle} />
