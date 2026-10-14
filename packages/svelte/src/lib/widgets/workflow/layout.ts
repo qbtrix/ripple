@@ -8,22 +8,25 @@
 // columns, or rows with same-depth siblings side by side that fits at the
 // readable floor (MIN_ZOOM); when none fits, the centred spine, panning top to
 // bottom. Zoom never goes above 1 or below the floor. A reader who cannot pan
-// (interactive false) gets a canvas that grows instead. When the graph fits,
-// the canvas keeps a strip under it for the minimap and zoom pill.
+// (interactive false) gets a canvas that grows instead. Whenever overlays show,
+// the canvas keeps a strip under it for the zoom pill and minimap (the minimap
+// only while its marks stay readable).
 //
-// Edges: back edges (cycles) are found by DFS before layering, so a loop never
-// inflates depths. An edge to the very next column/row draws as a plain step;
-// any other edge (a back edge, or one that skips a column/row) is a "loop" that
-// runs in an outside lane so it never crosses a node. LR: lanes below the graph,
-// back in through the target's entry. TB: lanes beside the spine, entering the
-// target's side, so each line visibly ends in its own node: back edges and a
-// condition's later skips on the right, a single-exit step's skips (fan-ins) and
-// a condition's skips that rank before its plain exits on the left, so fan-outs
-// and fan-ins never cross. Every loop gets its own lane per side (shorter spans
-// inside). In LR each edge of a fan-out (or fan-in) turns in its own channel of
-// the column gap. A condition orders its exits yes-like, no-like, the rest (in
-// LR plain exits before loops, toward their lane). Unlabelled first and second
-// branches read "Yes" and "No"; later unlabelled ones carry no chip.
+// Spine: each branch is one contiguous group, indented a level, in exit order,
+// and a step branches meet at waits below all of them. A branching step drops one
+// trunk down its left edge and each branch peels into the top of its first step,
+// label on the peel; skips share a rail right of the column per target and land
+// on top; only a back edge enters a side. Every exit is on the bottom edge, and
+// one node width serves the whole column.
+//
+// Columns (LR) and rows (TB beside each other): back edges (cycles) are found by
+// DFS before layering, so a loop never inflates depths. An only child lines up
+// with its parent. An edge to the very next column/row draws as a plain step
+// (a row gap it bends across is at least 40px); any other edge (a back edge, or
+// one that skips) is a loop in its own outside lane, so it never crosses a node.
+// In LR each edge of a fan-out (or fan-in) turns in its own channel of the
+// column gap. A condition orders its exits yes-like, no-like, the rest.
+// Unlabelled first and second branches read "Yes" and "No"; later ones no chip.
 import { asText } from '$lib/widgets/text-coerce';
 import type { Direction, WfEdge, WfNode, WorkflowNodeStatus, WorkflowNodeType } from './types.js';
 
@@ -42,6 +45,9 @@ const TB_WIDE_MAX = 360; // layered rows in a wide card
 const TB_MIN_W = 160;
 const TB_COL_GAP = 24; // between siblings in a layered row
 const TB_GAP = 24; // between rows
+const TB_BEND_GAP = 40; // between rows an edge bends across
+const INDENT = 24; // spine: one branch level
+const TRUNK = 14; // spine: a branching step's trunk, in from its left edge
 const CHIP_H = 18; // a one-line chip, border included, plus a hair
 const TB_CHIP = 16; // first chip centre below its exit: 8px clear of the handle
 const LANE0 = 14; // first outside lane from the graph
@@ -135,6 +141,10 @@ export interface PlacedEdge extends WfEdge {
   chipY: number;
   /** Max chip width, so chips never touch. */
   chip: number;
+  /** Spine: the whole route, absolute; the drawn line snaps its ends to the handles. */
+  points?: { x: number; y: number }[];
+  /** Spine trunk: starts where the previous branch peeled off, so the shared trunk is drawn once. */
+  joined?: boolean;
 }
 
 export interface WorkflowPlan {
@@ -213,35 +223,10 @@ function analyse(nodes: WfNode[], rawEdges: WfEdge[]): Graph {
   return { nodes, edges, out, back, depth, slot };
 }
 
-/** Top-to-bottom order that keeps each branch contiguous (DFS-flavoured topological sort). */
-function spineOrder(g: Graph): string[] {
-  const indeg = new Map(g.nodes.map((n) => [n.id, 0]));
-  for (const e of g.edges) if (!g.back.has(e)) indeg.set(e.to, indeg.get(e.to)! + 1);
-  const stack = g.nodes.filter((n) => indeg.get(n.id) === 0).map((n) => n.id).toReversed();
-  const order: string[] = [];
-  while (stack.length) {
-    const id = stack.pop()!;
-    order.push(id);
-    const ready: string[] = [];
-    for (const e of g.out.get(id)!) {
-      if (g.back.has(e)) continue;
-      indeg.set(e.to, indeg.get(e.to)! - 1);
-      if (indeg.get(e.to) === 0) ready.push(e.to);
-    }
-    stack.push(...ready.toReversed());
-  }
-  for (const n of g.nodes) if (!order.includes(n.id)) order.push(n.id);
-  return order;
-}
-
-/** Ranks (column in LR, row in TB) and cross-axis positions, before handles; the spine is one column. */
-function place(g: Graph, spine: boolean): { rank: Map<string, number>; cross: Map<string, number> } {
+/** Ranks (column in LR, row in TB) and cross-axis positions, before handles. */
+function place(g: Graph): { rank: Map<string, number>; cross: Map<string, number> } {
   const rank = new Map<string, number>();
   const cross = new Map<string, number>();
-  if (spine) {
-    spineOrder(g).forEach((id, i) => (rank.set(id, i), cross.set(id, 0)));
-    return { rank, cross };
-  }
   const index = new Map(g.nodes.map((n, i) => [n.id, i]));
   const layers: string[][] = [];
   for (const n of g.nodes) (layers[g.depth.get(n.id)!] ??= []).push(n.id);
@@ -254,10 +239,16 @@ function place(g: Graph, spine: boolean): { rank: Map<string, number>; cross: Ma
     const key = (id: string) =>
       Math.min(Infinity, ...(inEdges.get(id) ?? []).map((e) => (orderIn.get(e.from) ?? 0) * 1000 + g.slot.get(e)!.i));
     layer.sort((a, b) => (key(a) === key(b) ? index.get(a)! - index.get(b)! : key(a) - key(b)));
+    // A node that is the only child of its only parent sits in line with it;
+    // the rest keep the centred spread. No two in a layer closer than one slot.
+    const parent = (id: string) => (inEdges.get(id)?.length === 1 ? inEdges.get(id)![0].from : undefined);
     layer.forEach((id, i) => {
+      const p = parent(id);
+      const sole = p !== undefined && cross.has(p) && layer.filter((x) => (inEdges.get(x) ?? []).some((e) => e.from === p)).length === 1;
+      const want = sole ? cross.get(p)! : i - (layer.length - 1) / 2;
       orderIn.set(id, i);
       rank.set(id, g.depth.get(id)!);
-      cross.set(id, i - (layer.length - 1) / 2);
+      cross.set(id, i ? Math.max(want, cross.get(layer[i - 1])! + 1) : want);
     });
   }
   return { rank, cross };
@@ -276,10 +267,10 @@ export function layoutWorkflow(
 ) {
   const tbWidth = opts.tbWidth ?? TB_MAX_W;
   const lrSet = opts.lr ?? LR_STANDARD;
-  const spine = dir === 'TB' && !opts.layered;
   const g = analyse(nodes, rawEdges);
   const usePositions = modelPositionsUsable(nodes);
-  const { rank, cross } = usePositions ? { rank: new Map<string, number>(), cross: new Map<string, number>() } : place(g, spine);
+  if (dir === 'TB' && !opts.layered && !usePositions) return layoutSpine(g, tbWidth);
+  const { rank, cross } = usePositions ? { rank: new Map<string, number>(), cross: new Map<string, number>() } : place(g);
   const isLoop = (e: WfEdge) => !usePositions && (g.back.has(e) || rank.get(e.to)! - rank.get(e.from)! !== 1);
 
   // TB lane side: right for back edges and a condition's skips that rank with or
@@ -332,9 +323,7 @@ export function layoutWorkflow(
   const w =
     dir === 'LR'
       ? lrSet.w
-      : spine
-        ? Math.round(Math.max(TB_MIN_W, Math.min(TB_MAX_W, tbWidth - laneRoom)))
-        : Math.floor(Math.max(TB_MIN_W, Math.min(TB_WIDE_MAX, (tbWidth - laneRoom - (widest - 1) * TB_COL_GAP) / widest)));
+      : Math.floor(Math.max(TB_MIN_W, Math.min(TB_WIDE_MAX, (tbWidth - laneRoom - (widest - 1) * TB_COL_GAP) / widest)));
   const h = NODE_H;
 
   const placedEdges: PlacedEdge[] = g.edges.map((e, i) => {
@@ -412,6 +401,12 @@ export function layoutWorkflow(
       const r = rank.get(id);
       if (r !== undefined) gapAfter[r] = Math.max(gapAfter[r] ?? TB_GAP, ...mine.map((i) => (placedEdges[i].turn ? placedEdges[i].turn + 18 : TB_GAP)));
     }
+    // A plain edge that has to bend gets room for both corners.
+    for (const i of plain) {
+      const e = placedEdges[i], s = slotOf(i);
+      if (Math.abs(colX(e.to) + w / 2 - (colX(e.from) + (w * (s.i + 1)) / (s.k + 1))) > 1)
+        gapAfter[rank.get(e.from)!] = Math.max(gapAfter[rank.get(e.from)!] ?? TB_GAP, TB_BEND_GAP);
+    }
   } else {
     for (const e of placedEdges) if (e.label && !e.loop) gapAfter[rank.get(e.from)!] = lrSet.labelled;
   }
@@ -437,10 +432,7 @@ export function layoutWorkflow(
     const tgt = handles.get(e.to)!;
     if (tgt.some((x) => x.id === e.targetHandle)) return;
     if (e.targetHandle !== 'in') return void tgt.push({ id: e.targetHandle, type: 'target', side: SIDE[e.side], pct: 50 });
-    // On the spine a step with one way in enters straight below its exit, so it
-    // never reads as the continuation of a sibling branch.
-    const only = spine && placedEdges.filter((x) => x.to === e.to && x.targetHandle === 'in').length === 1;
-    tgt.push({ id: 'in', type: 'target', side: dir === 'TB' ? 'top' : 'left', pct: only ? ((s.i + 1) / (s.k + 1)) * 100 : 50 });
+    tgt.push({ id: 'in', type: 'target', side: dir === 'TB' ? 'top' : 'left', pct: 50 });
   });
   // A side with both a way in and a way out: in above, out below.
   for (const list of handles.values())
@@ -509,6 +501,171 @@ export function layoutWorkflow(
     }
   });
   return { nodes: placed, edges: placedEdges, bounds: { x: x0, y: y0, w: x1 - x0, h: y1 - y0 }, positioned: usePositions };
+}
+
+/**
+ * The spine: one column, top to bottom, for a narrow card (or a wide one where
+ * nothing else fits). Each branch is one contiguous group, indented a level, in
+ * exit order; a step two or more branches meet at (a join) waits until every
+ * branch is drawn and goes back to the outer level. A branching step sends one
+ * trunk down its left edge, beside its indented branches, and each branch peels
+ * off it into the top of its first step, the label on the peel. A skip lands on
+ * its target through a rail right of the column (every skip into one target
+ * shares it) and in at the top; only a back edge enters a step's side. Every
+ * source handle is on the bottom edge.
+ */
+function layoutSpine(g: Graph, avail: number) {
+  const { nodes } = g;
+  const fwd = new Map(nodes.map((n) => [n.id, g.out.get(n.id)!.filter((e) => !g.back.has(e))]));
+  const into = new Map<string, WfEdge[]>(nodes.map((n) => [n.id, []]));
+  for (const e of g.edges) if (!g.back.has(e)) into.get(e.to)!.push(e);
+  const branching = (id: string) => fwd.get(id)!.length > 1;
+  const index = new Map(nodes.map((n, i) => [n.id, i]));
+
+  // Order: topological; among the ready steps the deepest branch first, branches
+  // in exit order, so a branch never interleaves with another and a join comes last.
+  type Scope = (readonly [number, number])[];
+  const scope = new Map<string, Scope>();
+  const row = new Map<string, number>();
+  const order: string[] = [];
+  const waiting = new Map(nodes.map((n) => [n.id, into.get(n.id)!.length]));
+  const first = (a: string, b: string) => {
+    const A = scope.get(a)!, B = scope.get(b)!;
+    for (let k = 0; k < Math.min(A.length, B.length); k++) {
+      const d = A[k][0] - B[k][0] || A[k][1] - B[k][1];
+      if (d) return d;
+    }
+    return B.length - A.length || index.get(a)! - index.get(b)!;
+  };
+  const ready = nodes.filter((n) => !waiting.get(n.id)).map((n) => n.id);
+  for (const id of ready) scope.set(id, []);
+  while (ready.length) {
+    const id = ready.sort(first).shift()!;
+    row.set(id, order.length);
+    order.push(id);
+    for (const e of fwd.get(id)!) {
+      waiting.set(e.to, waiting.get(e.to)! - 1);
+      if (waiting.get(e.to)) continue;
+      // A step's scope is what every way into it shares.
+      const ways = into.get(e.to)!.map((x) => {
+        const s = scope.get(x.from)!;
+        return branching(x.from) ? [...s, [row.get(x.from)!, fwd.get(x.from)!.indexOf(x)] as const] : s;
+      });
+      let n = Math.min(...ways.map((w) => w.length));
+      for (let k = 0; k < n; k++) if (ways.some((w) => w[k][0] !== ways[0][k][0] || w[k][1] !== ways[0][k][1])) n = k;
+      scope.set(e.to, ways[0].slice(0, n));
+      ready.push(e.to);
+    }
+  }
+  const depth = (id: string) => scope.get(id)!.length;
+  const deepest = Math.max(0, ...order.map(depth));
+
+  // Edge kinds. A trunk edge only while every step it passes sits deeper than its source.
+  const r = (id: string) => row.get(id)!;
+  const passes = (e: WfEdge) => order.slice(r(e.from) + 1, r(e.to)).every((id) => depth(id) > depth(e.from));
+  const trunk = (e: WfEdge) => !g.back.has(e) && branching(e.from) && r(e.to) > r(e.from) && passes(e);
+  const railed = new Set(g.edges.filter((e) => !g.back.has(e) && !trunk(e) && r(e.to) - r(e.from) > 1).map((e) => e.to));
+  type Kind = 'trunk' | 'drop' | 'rail' | 'back';
+  const kindOf = (e: WfEdge): Kind => (g.back.has(e) ? 'back' : trunk(e) ? 'trunk' : railed.has(e.to) ? 'rail' : 'drop');
+  const kinds = new Map(g.edges.map((e) => [e, kindOf(e)]));
+
+  // Rows: room in each gap for the exits that turn below the upper step (a chip
+  // under the exit, then the turn) and the peels into the lower one.
+  const turnBelow = (e: WfEdge) => (e.label ? 28 : 10);
+  const peelAbove = (e: WfEdge) => (kinds.get(e) === 'trunk' && e.label ? 17 : 12);
+  const ys: number[] = [];
+  for (let i = 0, y = 0; i < order.length; i++) {
+    ys[i] = y;
+    if (i === order.length - 1) break;
+    const straight = (e: WfEdge) => kinds.get(e) === 'drop' && depth(e.from) === depth(e.to);
+    const up = Math.max(0, ...g.out.get(order[i])!.filter((e) => kinds.get(e) !== 'trunk').map((e) => (e.label ? 28 : straight(e) ? 0 : 10)));
+    const down = Math.max(0, ...into.get(order[i + 1])!.filter((e) => kinds.get(e) === 'trunk' || kinds.get(e) === 'rail').map((e) => peelAbove(e) + (kinds.get(e) === 'trunk' && e.label ? 9 : 0)));
+    y += NODE_H + Math.max(TB_GAP, up + down + 8);
+  }
+  const top = (id: string) => ys[r(id)];
+
+  // Right-hand lanes: one per rail (target) and per back edge, never sharing a stretch.
+  const runs: { key: WfEdge | string; a: number; b: number }[] = [];
+  for (const t of railed) {
+    const from = into.get(t)!.filter((e) => kinds.get(e) === 'rail');
+    runs.push({ key: t, a: Math.min(...from.map((e) => top(e.from) + NODE_H + turnBelow(e))), b: top(t) - 12 });
+  }
+  for (const e of g.back) runs.push({ key: e, a: top(e.to) + NODE_H / 2, b: top(e.from) + NODE_H + turnBelow(e) });
+  const laneOf = new Map<WfEdge | string, number>();
+  const used: [number, number][][] = [];
+  for (const run of runs.sort((p, q) => p.b - p.a - (q.b - q.a))) {
+    let k = 0;
+    while (used[k]?.some(([a, b]) => a <= run.b + 6 && run.a <= b + 6)) k++;
+    (used[k] ??= []).push([run.a, run.b]);
+    laneOf.set(run.key, k);
+  }
+  const laneRoom = used.length ? LANE0 + LANE_STEP * (used.length - 1) + 4 : 0;
+  // One node width for the whole column.
+  const w = Math.round(Math.max(TB_MIN_W, Math.min(TB_MAX_W, avail - INDENT * deepest - laneRoom)));
+  const h = NODE_H;
+  const right = INDENT * deepest + w;
+  const laneX = (key: WfEdge | string) => right + LANE0 + LANE_STEP * laneOf.get(key)!;
+  const at = new Map(nodes.map((n) => [n.id, { x: INDENT * depth(n.id), y: top(n.id) }]));
+
+  // Handles: trunk at the left of the bottom edge, every other exit at its middle
+  // (a back edge right of middle when the middle is taken); entries on top, a back edge's on the right.
+  const handles = new Map<string, PlacedHandle[]>(nodes.map((n) => [n.id, []]));
+  const add = (id: string, hd: PlacedHandle) => handles.get(id)!.some((x) => x.id === hd.id) || handles.get(id)!.push(hd);
+  const midTaken = (id: string) => g.out.get(id)!.some((e) => kinds.get(e) === 'drop' || kinds.get(e) === 'rail');
+  const est = (label: string) => label.length * 6 + 12;
+  const placedEdges: PlacedEdge[] = g.edges.map((e, i) => {
+    const kind = kinds.get(e)!;
+    const s = at.get(e.from)!, t = at.get(e.to)!;
+    const bottom = s.y + h, tc = t.x + w / 2;
+    const exitPct = kind === 'trunk' ? (TRUNK / w) * 100 : kind === 'back' && midTaken(e.from) ? 80 : 50;
+    const ex = s.x + (w * exitPct) / 100;
+    const sourceHandle = kind === 'trunk' ? 'out-t' : kind === 'back' && midTaken(e.from) ? 'out-b' : 'out';
+    const targetHandle = kind === 'back' ? 'in-r' : 'in';
+    add(e.from, { id: sourceHandle, type: 'source', side: 'bottom', pct: exitPct });
+    add(e.to, kind === 'back' ? { id: 'in-r', type: 'target', side: 'right', pct: 50 } : { id: 'in', type: 'target', side: 'top', pct: 50 });
+    const turn = bottom + turnBelow(e);
+    let points: { x: number; y: number }[];
+    let chipAt = { x: ex, y: bottom + 14 };
+    let chip = 2 * Math.min(ex - s.x, s.x + w - ex) - 8;
+    if (kind === 'trunk') {
+      const x = s.x + TRUNK, py = t.y - peelAbove(e);
+      points = [{ x, y: bottom }, { x, y: py }, { x: tc, y: py }, { x: tc, y: t.y }];
+      chip = t.x + w - 8 - (x + 6);
+      chipAt = { x: x + 6 + Math.min(chip, est(e.label)) / 2, y: py };
+    } else if (kind === 'rail') {
+      const x = laneX(e.to), py = t.y - 12;
+      points = [{ x: ex, y: bottom }, { x: ex, y: turn }, { x, y: turn }, { x, y: py }, { x: tc, y: py }, { x: tc, y: t.y }];
+    } else if (kind === 'back') {
+      const x = laneX(e), my = t.y + h / 2;
+      points = [{ x: ex, y: bottom }, { x: ex, y: turn }, { x, y: turn }, { x, y: my }, { x: t.x + w, y: my }];
+    } else points = Math.abs(ex - tc) < 1 ? [{ x: ex, y: bottom }, { x: tc, y: t.y }] : [{ x: ex, y: bottom }, { x: ex, y: turn }, { x: tc, y: turn }, { x: tc, y: t.y }];
+    return {
+      ...e,
+      id: `e-${e.from}-${e.to}-${i}`,
+      sourceHandle,
+      targetHandle,
+      loop: kind === 'rail' || kind === 'back',
+      side: 'R',
+      sideExit: false,
+      at: chipAt,
+      back: kind === 'back',
+      lane: kind === 'rail' ? laneX(e.to) : kind === 'back' ? laneX(e) : 0,
+      chan: 0,
+      turn: 0,
+      chipY: 0,
+      chip: Math.max(28, chip),
+      points,
+    };
+  });
+  // Each trunk edge after the first starts at the previous peel (just above its corner), so no stretch is drawn twice.
+  for (const id of order) {
+    const peels = placedEdges.filter((e) => e.from === id && e.sourceHandle === 'out-t').sort((a, b) => r(a.to) - r(b.to));
+    peels.forEach((e, k) => k && ((e.points![0].y = peels[k - 1].points![1].y - 8), (e.joined = true)));
+  }
+  const placed: PlacedNode[] = nodes.map((n) => ({ ...n, ...at.get(n.id)!, w, h, handles: handles.get(n.id)! }));
+  const x1 = used.length ? right + LANE0 + LANE_STEP * (used.length - 1) + 2 : right;
+  const y1 = order.length ? ys[order.length - 1] + h : 0;
+  return { nodes: placed, edges: placedEdges, bounds: { x: 0, y: 0, w: x1, h: y1 }, positioned: false };
 }
 
 /** How many nodes share each rank. */
@@ -642,7 +799,9 @@ export function planWorkflow(
   const fitsX = b.w * zoom <= avail + 0.5;
   const fitsAtOne = zoom === 1 && fitsX && content <= clamp(content) + 0.5;
   // Overlays sit in a strip under the graph, so neither ever covers a node.
-  const showMinimap = opts.minimap === true && nodes.length >= 12 && W >= 560;
+  // The minimap only when its 120x80 box still draws each node as a readable mark.
+  const mm = Math.min(120 / Math.max(1, b.w), 80 / Math.max(1, b.h));
+  const showMinimap = opts.minimap === true && nodes.length >= 12 && W >= 560 && NODE_H * mm >= 4 && (layout.nodes[0]?.w ?? 0) * mm >= 12;
   const showControls = opts.interactive && !fitsAtOne;
   const gutter = showMinimap ? GUTTER.minimap : showControls ? GUTTER.controls : 0;
   const height = clamp(content + gutter);

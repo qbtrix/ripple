@@ -5,12 +5,12 @@
   The model fills `nodes` and `edges`; layout.ts sanitises them once and plans
   the drawing for the measured card width: columns left to right at 480px and
   up (panning at the 0.8 floor when they do not fit), one top-to-bottom spine
-  below that, canvas height following the graph (120 to 560px; it grows instead
+  with indented branches below that, canvas height following the graph (120 to 560px; it grows instead
   when the reader cannot pan). The plan also decides the overlays: the minimap
   (a big graph in a wide card) and the zoom pill (only when something does not
-  fit). The flow fills the whole canvas and the overlays sit inside it; a graph
-  that fits keeps a strip under it so they cover no node, and one that pans
-  opens with its top in view. No frame of its own: the dot grid marks the
+  fit, a minimap only while its marks stay readable). The graph draws in a
+  flow area and the overlays sit in a strip under it, so they never cover a
+  node, at rest or panned; a graph that pans opens with its top in view. No frame of its own: the dot grid marks the
   canvas, and only when the graph does not fit at zoom 1. Theming is the --xy-* to --ripple-*
   token map shared in spirit with the C4 diagram, so it follows the host's
   light or dark theme; colorMode is never set. Wheel and touch scroll the page,
@@ -127,38 +127,41 @@
     class="wf-canvas"
     class:wf-static={interactive === false}
     style:height="{plan.height}px"
+    style:--wf-gutter="{plan.gutter}px"
     bind:clientWidth={width}
   >
-    <SvelteFlow
-      nodes={flowNodes}
-      edges={flowEdges}
-      {nodeTypes}
-      {edgeTypes}
-      bind:viewport
-      fitViewOptions={{ padding: '16px', minZoom: MIN_ZOOM, maxZoom: 1 }}
-      panOnDrag={interactive !== false}
-      panOnScroll={false}
-      zoomOnScroll={false}
-      preventScrolling={false}
-      zoomOnPinch={interactive !== false}
-      zoomOnDoubleClick={false}
-      nodesDraggable={false}
-      nodesConnectable={false}
-      elementsSelectable={false}
-      minZoom={0.5}
-      maxZoom={1.5}
-      proOptions={{ hideAttribution: true }}
-    >
-      {#if !plan.fitsAtOne}
-        <Background variant={BackgroundVariant.Dots} gap={20} size={1.25} />
-      {/if}
-      {#if plan.showControls}
-        <Controls showLock={false} position="bottom-right" orientation="horizontal" />
-      {/if}
-      {#if plan.showMinimap}
-        <MiniMap position="bottom-left" width={120} height={80} nodeBorderRadius={4} />
-      {/if}
-    </SvelteFlow>
+    <div class="wf-flow" style:height="{plan.height - plan.gutter}px">
+      <SvelteFlow
+        nodes={flowNodes}
+        edges={flowEdges}
+        {nodeTypes}
+        {edgeTypes}
+        bind:viewport
+        fitViewOptions={{ padding: '16px', minZoom: MIN_ZOOM, maxZoom: 1 }}
+        panOnDrag={interactive !== false}
+        panOnScroll={false}
+        zoomOnScroll={false}
+        preventScrolling={false}
+        zoomOnPinch={interactive !== false}
+        zoomOnDoubleClick={false}
+        nodesDraggable={false}
+        nodesConnectable={false}
+        elementsSelectable={false}
+        minZoom={0.5}
+        maxZoom={1.5}
+        proOptions={{ hideAttribution: true }}
+      >
+        {#if !plan.fitsAtOne}
+          <Background variant={BackgroundVariant.Dots} gap={20} size={1.25} />
+        {/if}
+        {#if plan.showControls}
+          <Controls showLock={false} position="bottom-right" orientation="horizontal" />
+        {/if}
+        {#if plan.showMinimap}
+          <MiniMap position="bottom-left" width={120} height={80} nodeBorderRadius={4} />
+        {/if}
+      </SvelteFlow>
+    </div>
   </div>
 </div>
 
@@ -240,7 +243,7 @@
     --xy-controls-button-border-color: transparent;
     --xy-controls-box-shadow: none;
     --xy-minimap-background-color: var(--ripple-surface);
-    --xy-minimap-mask-background-color: color-mix(in oklab, var(--ripple-surface-foreground) 4%, transparent);
+    --xy-minimap-mask-background-color: color-mix(in oklab, var(--ripple-surface-foreground) 6%, transparent);
     --xy-minimap-mask-stroke-color: var(--ripple-border);
     --xy-minimap-node-background-color: color-mix(in oklab, var(--ripple-muted-foreground) 45%, transparent);
     --xy-minimap-node-stroke-color: transparent;
@@ -261,8 +264,19 @@
     --xy-resize-background-color: var(--ripple-accent);
   }
 
+  /* The graph draws in the flow area only; the overlays sit in the strip under
+     it (the gutter), so neither ever covers a node, at rest or panned. */
+  .wf-canvas :global(.svelte-flow) {
+    overflow: visible;
+  }
+
+  .wf-canvas :global(.svelte-flow__zoom) {
+    overflow: hidden;
+  }
+
   .wf-canvas :global(.svelte-flow__panel.bottom) {
     margin: 4px;
+    bottom: calc(-1 * var(--wf-gutter, 0px));
   }
 
   .wf-canvas :global(.svelte-flow),

@@ -4,12 +4,13 @@
   LR: a plain edge (target in the next column) runs straight out of its exit to
   its own channel in the column gap, across to the target's row and straight in,
   so the edges of a fan-out or fan-in never overlap; its chip rides the last run.
-  TB: a plain edge drops from its exit, turns below its chip (each edge of a
-  fan-out or fan-in at its own height) and drops into the target; the chip
+  TB rows: a plain edge drops from its exit, turns below its chip (each edge of
+  a fan-out or fan-in at its own height) and drops into the target; the chip
   sits just under the exit. A loop (a back edge, or one that skips a column or
   row) runs in its own outside lane layout.ts reserved for it, so it never
-  crosses a node or a label; in TB the lane sits beside the spine and the line
-  turns straight into the target's side. A back edge is dashed. Chips are one line, clamped
+  crosses a node or a label. The spine plans every route whole (trunk and peel,
+  rail, back lane) in layout.ts; here its ends only snap to the drawn handles.
+  A back edge is dashed. Chips are one line, clamped
   with the full text on hover. Colours come from the --xy-* tokens Workflow.svelte
   maps to ripple tokens; an animated edge marks live flow in the accent and stops
   under reduced motion.
@@ -27,6 +28,18 @@
   const route = $derived.by(() => {
     const s = { x: sourceX, y: sourceY };
     const t = { x: targetX, y: targetY };
+    // The spine plans the whole route; its ends snap to the drawn handles.
+    if (edge.points) {
+      const p = edge.points.map((q) => ({ ...q }));
+      const n = p.length - 1;
+      if (n === 1) return { path: roundedPath([s, t]), x: edge.at!.x, y: edge.at!.y };
+      p[1].x = s.x;
+      if (p[n - 1].x === p[n].x) p[n - 1].x = t.x;
+      else p[n - 1].y = t.y;
+      p[0] = edge.joined ? { x: s.x, y: p[0].y } : s;
+      p[n] = t;
+      return { path: roundedPath(p), x: edge.at!.x, y: edge.at!.y };
+    }
     if (edge.loop) {
       const r = loopRoute(dir, s, t, edge.lane, edge.chan, edge.turn, edge.chipY, edge.sideExit);
       const at = edge.at ?? r.label;

@@ -157,7 +157,7 @@ describe('conditions and loops', () => {
     expect(plan(bare, 720).edges.map((e) => e.label)).toEqual(['Yes', 'No']);
   });
 
-  it('gives every fan-out exit its own channel and chip, and loops their own lanes', () => {
+  it('gives every fan-out exit its own channel in columns, and its own indented group on the spine', () => {
     const ids = ['a', 'b', 'c', 'd'];
     const g = sanitizeWorkflow(
       [{ id: 'v', type: 'condition', label: 'Valid?' }, ...ids.map((id) => ({ id, label: id })), { id: 'm', label: 'Merge' }],
@@ -170,24 +170,22 @@ describe('conditions and loops', () => {
     expect(new Set(out.map((e) => e.chan)).size).toBe(out.length);
     const into = p.edges.filter((e) => e.to === 'm');
     expect(new Set(into.map((e) => e.chan)).size).toBe(into.length);
-    // On the narrow spine the skipped exits are loops; overlapping ones never share a lane.
-    // The fan-out leaves the condition right of its plain exit and runs on the right,
-    // the fan-in runs on the left, and every loop enters its target's side.
+    // On the narrow spine each branch is its own indented group, in exit order,
+    // fed by one trunk into its top; the fan-in shares one rail; every exit is on the bottom.
     const tb = plan(g, 360);
-    const loops = tb.edges.filter((e) => e.loop);
-    const fanOut = loops.filter((e) => e.from === 'v'), fanIn = loops.filter((e) => e.to === 'm');
-    for (const group of [fanOut, fanIn]) expect(new Set(group.map((e) => e.lane)).size).toBe(group.length);
-    expect(fanOut.every((e) => e.side === 'R' && e.targetHandle === 'in-r')).toBe(true);
-    expect(fanIn.every((e) => e.side === 'L' && e.sourceHandle === 'out-l' && e.targetHandle === 'in-l')).toBe(true);
-    const v = tb.nodes.find((n) => n.id === 'v')!;
-    const pct = (e: (typeof tb.edges)[number]) => v.handles.find((h) => h.id === e.sourceHandle)!.pct;
-    const plainExit = tb.edges.find((e) => e.from === 'v' && !e.loop)!;
-    expect(fanOut.every((e) => pct(e) > pct(plainExit))).toBe(true);
-    const spineX = tb.nodes[0].x;
-    expect(fanOut.every((e) => e.lane > spineX + tb.nodes[0].w) && fanIn.every((e) => e.lane < spineX)).toBe(true);
+    const at = (id: string) => tb.nodes.find((n) => n.id === id)!;
+    expect(['v', ...ids, 'm'].map((id) => at(id).y)).toEqual([...['v', ...ids, 'm'].map((id) => at(id).y)].sort((p, q) => p - q));
+    expect(ids.every((id) => at(id).x === at('v').x + 24) && at('m').x === at('v').x).toBe(true);
+    const fan = tb.edges.filter((e) => e.from === 'v');
+    expect(fan.every((e) => e.sourceHandle === 'out-t' && e.targetHandle === 'in')).toBe(true);
+    const fanIn = tb.edges.filter((e) => e.to === 'm');
+    expect(new Set(fanIn.map((e) => e.lane)).size).toBe(1);
+    expect(fanIn.every((e) => e.lane > at('a').x + at('a').w && e.targetHandle === 'in')).toBe(true);
+    expect(tb.nodes.flatMap((n) => n.handles).filter((h) => h.type === 'source').every((h) => h.side === 'bottom')).toBe(true);
+    expect(new Set(tb.nodes.map((n) => n.w)).size).toBe(1);
   });
 
-  it('keeps yes first on the spine even when the yes branch skips a row', () => {
+  it('draws each branch before the step they meet at, labelled on its peel', () => {
     const g = sanitizeWorkflow(
       [{ id: 'c', type: 'condition', label: 'Clear?' }, { id: 'r', label: 'Review' }, { id: 's', label: 'Set up' }],
       [
@@ -197,15 +195,21 @@ describe('conditions and loops', () => {
       ],
     );
     const p = plan(g, 360);
-    const yes = p.edges.find((e) => e.to === 's' && e.from === 'c')!, no = p.edges.find((e) => e.to === 'r')!;
-    expect([yes.sourceHandle, no.sourceHandle]).toEqual(['out-0', 'out-1']);
-    expect(yes).toMatchObject({ loop: true, side: 'L' });
+    const at = (id: string) => p.nodes.find((n) => n.id === id)!;
+    // The no branch sits right under its condition, indented; the join waits below it.
+    expect([at('c').y < at('r').y, at('r').y < at('s').y]).toEqual([true, true]);
+    expect([at('r').x - at('c').x, at('s').x - at('c').x]).toEqual([24, 0]);
+    const yes = p.edges.find((e) => e.to === 's' && e.from === 'c')!;
+    expect([yes.sourceHandle, yes.targetHandle, yes.label]).toEqual(['out-t', 'in', 'yes, all checks clear']);
+    // Its chip rides the peel just above the join, clear of the branch above.
+    expect(yes.at!.y).toBeGreaterThan(at('r').y + at('r').h);
+    expect(yes.at!.y).toBeLessThan(at('s').y);
   });
 
   it('reserves a strip under the graph for the overlays, and only when they show', () => {
+    // A tall spine would draw hairline marks in the minimap, so only the pill shows.
     const big = planWorkflow(chain(21).nodes, chain(21).edges, { width: 720, interactive: true, fitView: true, minimap: true });
-    expect(big.showMinimap && big.showControls).toBe(true);
-    expect(big.gutter).toBeGreaterThanOrEqual(80);
+    expect([big.showMinimap, big.showControls]).toEqual([false, true]);
     expect(big.height).toBeLessThanOrEqual(MAX_H);
     expect(plan(chain(21), 720).gutter).toBeGreaterThanOrEqual(30);
     expect(plan(chain(3), 720).gutter).toBe(0);
@@ -222,6 +226,9 @@ describe('conditions and loops', () => {
     const y = p.nodes.find((n) => n.id === 'y')!, n = p.nodes.find((n) => n.id === 'n')!;
     expect(y.y).toBe(n.y);
     expect(y.x).toBeLessThan(n.x);
+    // An only child lines up under its parent, not under the gap between siblings.
+    const at = (id: string) => p.nodes.find((x) => x.id === id)!;
+    expect([at('p').x, at('o').x]).toEqual([y.x, y.x]);
   });
 
   it('a cycle does not inflate depth, and its back edge runs in an outside lane', () => {
