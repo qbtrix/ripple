@@ -149,17 +149,35 @@ const firstName = (p: Person, all: readonly Person[]) => {
 	return all.filter((q) => q.name.split(/\s+/)[0] === f).length > 1 ? p.name : f;
 };
 
-/** Up to six whole words, with a trailing ellipsis only when words were dropped. */
-export function firstWords(text: string, n = 6): string {
-	const words = text.split(/\s+/).filter(Boolean);
-	const cut = words.slice(0, n).join(' ').replace(/[.,;:!?]+$/, '');
-	return words.length > n ? `${cut}…` : cut;
+const LEAD = /^(?:still\s+)?(?:waiting\s+(?:on|for)|blocked\s+(?:on|by)|stuck\s+on|held\s+up\s+(?:on|by)|depends\s+on|needs?)\s+/i;
+const BREAK = /[,.;:!?()]|\s(?:from|to|until|till|because|since|so|which|that|before|after|while|but|for)\s/i;
+const TAIL = /\s+(?:the|a|an|of|on|to|from|with|for|and|or|in)$/i;
+
+/**
+ * What a blocker waits on, as a clause for the verdict: "staging DB creds"
+ * from "Waiting on staging DB creds from infra." Empty when the blocker does
+ * not open with a waiting-on phrase or the thing runs past six words, so the
+ * verdict never cuts a sentence mid-way.
+ */
+export function blockedOn(text: string): string {
+	const lead = text.match(LEAD);
+	if (!lead) return '';
+	let rest = text.slice(lead[0].length);
+	const b = rest.search(BREAK);
+	if (b >= 0) rest = rest.slice(0, b);
+	rest = rest.trim();
+	while (TAIL.test(rest)) rest = rest.replace(TAIL, '');
+	const words = rest.split(/\s+/).filter(Boolean);
+	if (!words.length || words.length > 6) return '';
+	const w = words[0];
+	if (w.length > 1 && w[1] === w[1].toLowerCase()) words[0] = w[0].toLowerCase() + w.slice(1);
+	return words.join(' ');
 }
 
 const joinNames = (names: string[]) => (names.length < 2 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`);
 
 /** The derived headline when the model wrote no summary. */
-export function deriveVerdict(people: readonly Person[], resolved: readonly string[]): Verdict | undefined {
+export function deriveVerdict(people: readonly Person[], resolved: readonly string[]): Required<Verdict> | undefined {
 	if (!people.length) return undefined;
 	const open = openBlocked(people, resolved);
 	const silent = people.every((p) => !p.yesterday && !p.today && p.status !== 'blocked' && p.status !== 'away' && p.status !== 'done');
@@ -168,7 +186,8 @@ export function deriveVerdict(people: readonly Person[], resolved: readonly stri
 	if (open.length === 1) {
 		const p = open[0];
 		const who = firstName(p, people);
-		return { text: p.blocker ? `${who} is blocked: ${firstWords(p.blocker)}.`.replace(/…\.$/, '…') : `${who} is blocked.`, status: 'bad' };
+		const on = blockedOn(p.blocker);
+		return { text: on ? `${who} is blocked on ${on}.` : `${who} is blocked.`, status: 'bad' };
 	}
 	if (open.length <= 3) return { text: `${joinNames(open.map((p) => firstName(p, people)))} are blocked.`, status: 'bad' };
 	const total = people.length;

@@ -19,7 +19,7 @@ describe('standup-board SSR', () => {
 		});
 		expect(body).toContain('Payments team');
 		expect(body).toContain('Wed 14 Oct');
-		expect(body).toContain('Lina is blocked: Waiting on staging DB creds.');
+		expect(body).toContain('Lina is blocked on staging DB creds.');
 		expect(body).toContain('open blocker');
 		expect(body.indexOf('Lina Okafor')).toBeLessThan(body.indexOf('Aarav Mehta'));
 		expect(body).toContain('Resolve Lina Okafor');

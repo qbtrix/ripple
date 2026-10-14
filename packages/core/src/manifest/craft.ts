@@ -68,7 +68,7 @@ export const waivers: readonly Waiver[] = [
 	{
 		widget: 'standup-board',
 		check: 'clippedText',
-		reason: 'with 5 or more people, on-track and done rows clamp to one line (two at desktop width) and a tap expands them to the full text'
+		reason: 'with 5 or more people, on-track and done rows are one line (name, Today, Yesterday each cut with an ellipsis) and a tap expands them to the full text'
 	}
 ];
 

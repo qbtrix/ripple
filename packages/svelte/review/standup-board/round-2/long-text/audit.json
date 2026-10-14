@@ -1,0 +1,111 @@
+{
+  "spec": "/Users/prakash-1/Documents/paw-workspace/paw-worktrees/ripple-feat-standup-board/packages/svelte/review/standup-board/specs/long-text.json",
+  "base": "http://localhost:4820",
+  "url": "http://localhost:4820/playground?s=…(3346 chars)",
+  "specStatus": "Valid, 1 node, 2.9 KB",
+  "clean": false,
+  "counts": {
+    "notRendered": 0,
+    "themeNotApplied": 0,
+    "errorBoxes": 0,
+    "consoleErrors": 0,
+    "overflow": 0,
+    "clippedText": 24,
+    "emptyContainers": 0,
+    "badText": 0,
+    "axeViolations": null
+  },
+  "consoleErrors": [],
+  "axe": null,
+  "axeHint": "axe-core is not installed: npm i -D axe-core (or set RIPPLE_AXE=/path/to/axe.min.js)",
+  "shots": [
+    {
+      "file": "/Users/prakash-1/Documents/paw-workspace/paw-worktrees/ripple-feat-standup-board/packages/svelte/review/standup-board/round-2/long-text/380-light.png",
+      "width": 380,
+      "theme": "light",
+      "rendered": true,
+      "themeApplied": true,
+      "surfaces": 1,
+      "surfaceWidth": 322,
+      "surfaceHeight": 977,
+      "errorBoxes": [],
+      "overflow": [],
+      "clippedText": [
+        "widget=standup-board span.col-start-3.row-start-1 \"Pair with design on the empty and error states for\" (877px cut sideways)",
+        "widget=standup-board span.col-start-3.row-start-1 \"Explore the new upload retry flow with slow networ\" (546px cut sideways)",
+        "widget=standup-board span.col-start-3.row-start-1 \"Write a help article for the new retry flow and sh\" (397px cut sideways)",
+        "widget=standup-board span.col-start-3.row-start-1 \"Watch queue depth and error rate after the move an\" (339px cut sideways)"
+      ],
+      "emptyContainers": [],
+      "badText": []
+    },
+    {
+      "file": "/Users/prakash-1/Documents/paw-workspace/paw-worktrees/ripple-feat-standup-board/packages/svelte/review/standup-board/round-2/long-text/1024-light.png",
+      "width": 1024,
+      "theme": "light",
+      "rendered": true,
+      "themeApplied": true,
+      "surfaces": 1,
+      "surfaceWidth": 623,
+      "surfaceHeight": 776,
+      "errorBoxes": [],
+      "overflow": [],
+      "clippedText": [
+        "widget=standup-board span.col-start-3.row-start-1 \"Pair with design on the empty and error states for\" (813px cut sideways)",
+        "widget=standup-board span.col-start-4.row-start-1 \"Reworked the identity verification upload flow so \" (1051px cut sideways)",
+        "widget=standup-board span.col-start-3.row-start-1 \"Explore the new upload retry flow with slow networ\" (482px cut sideways)",
+        "widget=standup-board span.col-start-4.row-start-1 \"Ran the verification regression suite on three bro\" (156px cut sideways)",
+        "widget=standup-board span.col-start-3.row-start-1 \"Write a help article for the new retry flow and sh\" (333px cut sideways)",
+        "widget=standup-board span.col-start-4.row-start-1 \"Answered verification questions from the weekend b\" (284px cut sideways)",
+        "widget=standup-board span.col-start-3.row-start-1 \"Watch queue depth and error rate after the move an\" (276px cut sideways)",
+        "widget=standup-board span.col-start-4.row-start-1 \"Moved the document scanner service onto the new qu\" (176px cut sideways)"
+      ],
+      "emptyContainers": [],
+      "badText": []
+    },
+    {
+      "file": "/Users/prakash-1/Documents/paw-workspace/paw-worktrees/ripple-feat-standup-board/packages/svelte/review/standup-board/round-2/long-text/380-dark.png",
+      "width": 380,
+      "theme": "dark",
+      "rendered": true,
+      "themeApplied": true,
+      "surfaces": 1,
+      "surfaceWidth": 322,
+      "surfaceHeight": 977,
+      "errorBoxes": [],
+      "overflow": [],
+      "clippedText": [
+        "widget=standup-board span.col-start-3.row-start-1 \"Pair with design on the empty and error states for\" (877px cut sideways)",
+        "widget=standup-board span.col-start-3.row-start-1 \"Explore the new upload retry flow with slow networ\" (546px cut sideways)",
+        "widget=standup-board span.col-start-3.row-start-1 \"Write a help article for the new retry flow and sh\" (397px cut sideways)",
+        "widget=standup-board span.col-start-3.row-start-1 \"Watch queue depth and error rate after the move an\" (339px cut sideways)"
+      ],
+      "emptyContainers": [],
+      "badText": []
+    },
+    {
+      "file": "/Users/prakash-1/Documents/paw-workspace/paw-worktrees/ripple-feat-standup-board/packages/svelte/review/standup-board/round-2/long-text/1024-dark.png",
+      "width": 1024,
+      "theme": "dark",
+      "rendered": true,
+      "themeApplied": true,
+      "surfaces": 1,
+      "surfaceWidth": 623,
+      "surfaceHeight": 776,
+      "errorBoxes": [],
+      "overflow": [],
+      "clippedText": [
+        "widget=standup-board span.col-start-3.row-start-1 \"Pair with design on the empty and error states for\" (813px cut sideways)",
+        "widget=standup-board span.col-start-4.row-start-1 \"Reworked the identity verification upload flow so \" (1051px cut sideways)",
+        "widget=standup-board span.col-start-3.row-start-1 \"Explore the new upload retry flow with slow networ\" (482px cut sideways)",
+        "widget=standup-board span.col-start-4.row-start-1 \"Ran the verification regression suite on three bro\" (156px cut sideways)",
+        "widget=standup-board span.col-start-3.row-start-1 \"Write a help article for the new retry flow and sh\" (333px cut sideways)",
+        "widget=standup-board span.col-start-4.row-start-1 \"Answered verification questions from the weekend b\" (284px cut sideways)",
+        "widget=standup-board span.col-start-3.row-start-1 \"Watch queue depth and error rate after the move an\" (276px cut sideways)",
+        "widget=standup-board span.col-start-4.row-start-1 \"Moved the document scanner service onto the new qu\" (176px cut sideways)"
+      ],
+      "emptyContainers": [],
+      "badText": []
+    }
+  ]
+}

@@ -13,7 +13,7 @@ import StandupBoard from './StandupBoard.svelte';
 import {
 	blockerText,
 	deriveVerdict,
-	firstWords,
+	blockedOn,
 	initials,
 	nameHue,
 	openBlocked,
@@ -86,12 +86,20 @@ describe('standup-board: normaliser', () => {
 	it('derives the verdict by naming people, then by proportion', () => {
 		const p = (n: number, of: number) => readPeople(Array.from({ length: of }, (_, i) => ({ name: `P${i} X`, today: 't', ...(i < n ? { blocker: `Thing ${i}` } : {}) }))).people;
 		expect(deriveVerdict(readPeople(SEVEN()).people, [])?.text).toBe('Lina and Tomás are blocked.');
-		expect(deriveVerdict(readPeople(SEVEN()).people, ['tomas-reyes'])?.text).toBe('Lina is blocked: Waiting on staging DB creds from…');
+		expect(deriveVerdict(readPeople(SEVEN()).people, ['tomas-reyes'])?.text).toBe('Lina is blocked on staging DB creds.');
+		expect(deriveVerdict(readPeople(SEVEN()).people, ['lina-okafor'])?.text).toBe('Tomás is blocked.');
 		expect(deriveVerdict(p(3, 6), [])?.text).toBe('P0, P1 and P2 are blocked.');
 		expect(deriveVerdict(p(5, 8), [])).toEqual({ text: '5 of 8 are blocked.', status: 'bad' });
 		expect(deriveVerdict(p(0, 4), [])).toEqual({ text: 'Everyone is unblocked.', status: 'good' });
 		expect(deriveVerdict(readPeople(['A', 'B']).people, [])?.text).toBe('No updates yet.');
-		expect(firstWords('Short one.')).toBe('Short one');
+	});
+
+	it('the one-blocker verdict is a clean clause or just the name, never a cut sentence', () => {
+		expect(blockedOn('Still waiting on the recruiting agency to confirm the third participant.')).toBe('the recruiting agency');
+		expect(blockedOn('Waiting on staging database credentials from the infra team.')).toBe('staging database credentials');
+		expect(blockedOn('Need API keys for the sandbox')).toBe('API keys');
+		expect(blockedOn('Cannot get a production change window until the council signs off.')).toBe('');
+		expect(blockedOn('Waiting on a very long list of many separate small things here')).toBe('');
 	});
 
 	it('counts open blockers from people and resolved ids only; away without text is not blocked', () => {

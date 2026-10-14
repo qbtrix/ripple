@@ -42,9 +42,10 @@ Needs ImageMagick (`magick`) and Playwright's headless Chromium in
 
 ## Known audit counts
 
-`clippedText` counts on specs with 5 or more people are the one-line (phone)
-and two-line (desktop) clamps on collapsed on-track and done rows, which the
-brief asks for and which expand on tap. `craft.ts` carries a reviewed waiver
-for exactly that (`standup-board` / `clippedText`); `render.mjs` prints raw
-counts, the build loop applies the waiver. Any clipped item that is not a
-`line-clamp` span is a real fault.
+`clippedText` counts on specs with 5 or more people are the one-line rows
+the brief asks for: each collapsed on-track, done or away row cuts its name,
+Today and Yesterday to one line with an ellipsis (`truncate`), and a tap
+expands it. `craft.ts` carries a reviewed waiver for exactly that
+(`standup-board` / `clippedText`); `render.mjs` prints raw counts, the build
+loop applies the waiver. Any clipped item that is not a `truncate` cell on a
+collapsed row is a real fault.

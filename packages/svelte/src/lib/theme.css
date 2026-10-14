@@ -85,6 +85,8 @@
   --ripple-success-text: color-mix(in oklab, var(--ripple-success) 55%, var(--ripple-surface-foreground));
   --ripple-warning-text: color-mix(in oklab, var(--ripple-warning) 50%, var(--ripple-surface-foreground));
   --ripple-info-text: color-mix(in oklab, var(--ripple-info) 55%, var(--ripple-surface-foreground));
+  /* Accent as text (links, inline actions): --ripple-accent stays the fill. */
+  --ripple-accent-text: color-mix(in oklab, var(--ripple-accent) 75%, var(--ripple-surface-foreground));
 }
 
 @theme inline {
@@ -96,6 +98,7 @@
   --color-ripple-muted-foreground: var(--ripple-muted-foreground);
   --color-ripple-accent: var(--ripple-accent);
   --color-ripple-accent-foreground: var(--ripple-accent-foreground);
+  --color-ripple-accent-text: var(--ripple-accent-text);
   --color-ripple-border: var(--ripple-border);
   --color-ripple-ring: var(--ripple-ring);
   --color-ripple-success: var(--ripple-success);
