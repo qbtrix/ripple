@@ -281,7 +281,7 @@
 							{@const time = timeOf(row)}
 							{@const hasDetails = detailsOn && !!row.details}
 							{@const isOpen = hasDetails && expanded.has(row.key)}
-							{@const panelId = `${uid}-d-${row.key}`}
+							{@const panelId = `${uid}-d-${row.key.replace(/\s+/g, "-")}`}
 							<li class={['al-row', isSelected(row) && 'is-selected']}>
 								<span class="al-badge" aria-hidden="true">
 									{#if row.severity}
