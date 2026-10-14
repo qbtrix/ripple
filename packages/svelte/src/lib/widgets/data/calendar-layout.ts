@@ -243,21 +243,36 @@ export function nearest(events: CalEvent[], from: number, to: number): { dir: 'n
 }
 
 // ── Formatting ──────────────────────────────────────────────────────────────
-/** Intl date formatting in UTC days; a bad locale falls back to the runtime default. */
-export function fmt(locale: string | undefined, opts: Intl.DateTimeFormatOptions): (day: number) => string {
-	let f: Intl.DateTimeFormat;
+/** An Intl formatter in UTC days; a bad locale falls back to the runtime default. */
+function formatter(locale: string | undefined, opts: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
 	try {
-		f = new Intl.DateTimeFormat(locale, { ...opts, timeZone: 'UTC' });
+		return new Intl.DateTimeFormat(locale, { ...opts, timeZone: 'UTC' });
 	} catch {
-		f = new Intl.DateTimeFormat(undefined, { ...opts, timeZone: 'UTC' });
+		return new Intl.DateTimeFormat(undefined, { ...opts, timeZone: 'UTC' });
 	}
+}
+
+export function fmt(locale: string | undefined, opts: Intl.DateTimeFormatOptions): (day: number) => string {
+	const f = formatter(locale, opts);
 	return (day) => f.format(dayDate(day));
 }
 
-/** "May 20 to 22", "Oct 28 to Nov 3", or "May 20" for one day. */
-export function rangeLabel(start: number, end: number, locale?: string): string {
-	const md = fmt(locale, { month: 'short', day: 'numeric' });
-	if (start === end) return md(start);
-	const sameMonth = monthStart(start) === monthStart(end);
-	return `${md(start)} to ${sameMonth ? fmt(locale, { day: 'numeric' })(end) : md(end)}`;
+/**
+ * A day range in the locale's own words via formatRange, so a German card
+ * reads "16.-19. Nov." (with the locale's dash) instead of an English joiner.
+ * The year is added when asked. Runtimes without formatRange get
+ * "May 20 to 22". One day is just that day.
+ */
+export function rangeLabel(start: number, end: number, locale?: string, year = false): string {
+	const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', ...(year ? { year: 'numeric' } : {}) };
+	const f = formatter(locale, opts);
+	if (start === end) return f.format(dayDate(start));
+	try {
+		return f.formatRange(dayDate(start), dayDate(end));
+	} catch {
+		const md = fmt(locale, { month: 'short', day: 'numeric' });
+		const sameMonth = monthStart(start) === monthStart(end);
+		const out = `${md(start)} to ${sameMonth ? fmt(locale, { day: 'numeric' })(end) : md(end)}`;
+		return year ? `${out}, ${fmt(locale, { year: 'numeric' })(end)}` : out;
+	}
 }

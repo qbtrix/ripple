@@ -161,9 +161,28 @@ describe('model data hygiene', () => {
 	});
 	it('survives a bad locale', () => {
 		expect(() => fmt('xx_bad!', { month: 'long' })(D('2027-03-01'))).not.toThrow();
-		expect(rangeLabel(D('2026-05-20'), D('2026-05-22'), 'xx_bad!')).toMatch(/to/);
-		expect(rangeLabel(D('2026-05-20'), D('2026-05-22'), 'en-US')).toBe('May 20 to 22');
-		expect(rangeLabel(D('2026-10-28'), D('2026-11-03'), 'en-US')).toBe('Oct 28 to Nov 3');
+		expect(rangeLabel(D('2026-05-20'), D('2026-05-22'), 'xx_bad!')).toMatch(/20.*22/);
+	});
+	it('formats ranges in the locale, not with an English joiner', () => {
+		expect(rangeLabel(D('2026-05-20'), D('2026-05-22'), 'en-US')).toMatch(/^May 20\s*\u2013\s*22$/);
+		expect(rangeLabel(D('2026-10-28'), D('2026-11-03'), 'en-US')).toMatch(/^Oct 28\s*\u2013\s*Nov 3$/);
+		expect(rangeLabel(D('2026-10-11'), D('2026-10-17'), 'en-US', true)).toMatch(/^Oct 11\s*\u2013\s*17, 2026$/);
+		const de = rangeLabel(D('2026-11-16'), D('2026-11-19'), 'de-DE');
+		expect(de).toMatch(/^16\.\s*\u2013\s*19\. Nov\.$/);
+		expect(rangeLabel(D('2026-10-28'), D('2026-11-04'), 'de-DE')).toMatch(/^28\. Okt\.\s*\u2013\s*4\. Nov\.$/);
+		expect(de).not.toMatch(/ to /);
+		expect(rangeLabel(D('2026-05-20'), D('2026-05-20'), 'en-US')).toBe('May 20');
+	});
+	it('falls back to "to" when formatRange is missing', () => {
+		const orig = Intl.DateTimeFormat.prototype.formatRange;
+		// @ts-expect-error simulate an old runtime
+		delete Intl.DateTimeFormat.prototype.formatRange;
+		try {
+			expect(rangeLabel(D('2026-05-20'), D('2026-05-22'), 'en-US')).toBe('May 20 to 22');
+			expect(rangeLabel(D('2026-10-28'), D('2026-11-03'), 'en-US', true)).toBe('Oct 28 to Nov 3, 2026');
+		} finally {
+			Intl.DateTimeFormat.prototype.formatRange = orig;
+		}
 	});
 	it('caps at MAX_EVENTS and survives junk', () => {
 		const many = parseEvents(Array.from({ length: MAX_EVENTS + 5 }, (_, i) => ev('2026-10-01', undefined, { id: i })));

@@ -80,7 +80,7 @@ describe('calendar', () => {
 		const { container } = render(Calendar, {
 			props: { view: 'week', events: [{ id: 1, title: 'Trip', start: '2026-10-13', end: '2026-10-15' }] }
 		});
-		expect(container.querySelector('h2')!.textContent).toBe('Oct 11 to 17, 2026');
+		expect(container.querySelector('h2')!.textContent).toMatch(/^Oct 11\s*\u2013\s*17, 2026$/);
 		expect(container.querySelectorAll('.cal-week')).toHaveLength(1);
 		expect(container.querySelectorAll('.cal-chip--bar')).toHaveLength(1);
 	});

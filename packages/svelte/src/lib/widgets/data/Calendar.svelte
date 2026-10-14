@@ -14,7 +14,16 @@
     week row is as tall as its lanes (cap 3 in month view, then "+N more"),
     single-day events are chips, multi-day events one bar per week segment;
   - narrow: 40px rows with up to 3 colour dots per day, and an agenda under
-    the grid listing every event in the shown period, grouped by day.
+    the grid listing every event in the shown period, grouped by day. The
+    agenda opens scrolled to the selected day's group, else today's.
+
+  Chips are one line with an ellipsis. In month view the time prefix shows
+  only when a column is about 110px or wider (container query): at the 720
+  chat card a column is ~83px and "12:30 Cust..." would leave no title, so
+  the title wins and the time stays in the tooltip and accessible name. Week
+  chips carry a muted first line (time, All day, or the range) so every chip
+  in a column has the same height. Chips and bars sit above the day hairlines
+  (z-index), so a span reads as one bar per week.
 
   Invariants:
   - Structure is an APG grid: gridcells hold a day button and, beside it,
@@ -125,7 +134,7 @@
 	// 2026-02-01 is a Sunday.
 	const SUNDAY = 20485;
 	const weekdays = $derived([0, 1, 2, 3, 4, 5, 6].map((i) => ({ short: F.short(SUNDAY + i), narrow: F.narrow(SUNDAY + i) })));
-	const heading = $derived(mode === 'month' ? F.month(anchor) : `${rangeLabel(range[0], range[1], loc)}, ${F.year(range[1])}`);
+	const heading = $derived(mode === 'month' ? F.month(anchor) : rangeLabel(range[0], range[1], loc, true));
 	const countLabel = $derived(count ? `${count} ${count === 1 ? 'event' : 'events'}` : 'No events');
 	const plural = (n: number) => `${n} ${n === 1 ? 'event' : 'events'}`;
 
@@ -134,11 +143,11 @@
 		e.end > e.start ? rangeLabel(e.start, e.end, loc) : `${F.md(e.start)}${e.time ? ` at ${e.time}` : ''}`;
 	const nameOf = (e: CalEvent) => `${titleOf(e)}, ${whenOf(e)}`;
 	const metaOf = (e: CalEvent) => (e.end > e.start ? rangeLabel(e.start, e.end, loc) : e.time ?? 'All day');
+	const undatedCount = $derived(parsed.undated.length ? `${plural(parsed.undated.length)} without a date` : '');
 	const undatedLine = $derived.by(() => {
 		const u = parsed.undated;
-		if (!u.length) return '';
-		const titles = u.map((x) => x.title || 'Untitled event');
-		return u.length > 2 ? `${u.length} events without a date` : `${plural(u.length)} without a date: ${titles.join(', ')}`;
+		if (!u.length || u.length > 2) return undatedCount;
+		return `${undatedCount}: ${u.map((x) => x.title || 'Untitled event').join(', ')}`;
 	});
 	const undatedTitles = $derived(parsed.undated.map((x) => x.title || 'Untitled event').join(', '));
 	const emptyLine = $derived.by(() => {
@@ -163,16 +172,29 @@
 		go(shiftPeriod(anchor, mode, delta));
 	}
 
+	/** Scroll the agenda to a day's group; `fallback` scrolls to the top when the day has none. */
+	function scrollAgenda(day: number | null, fallback = true): boolean {
+		const el = agendaEl;
+		if (!el || el.scrollHeight <= el.clientHeight) return false;
+		const group = day === null ? null : el.querySelector<HTMLElement>(`[data-agenda-day="${day}"]`);
+		if (group || fallback) el.scrollTo({ top: group ? group.offsetTop : 0, behavior: 'auto' });
+		return !!group;
+	}
+
+	// A new period mounts a new agenda: open it on the selected day, else today.
+	$effect(() => {
+		if (!agendaEl) return;
+		const [sel, t] = untrack(() => [selected, today]);
+		if (!scrollAgenda(sel, false)) scrollAgenda(t, false);
+	});
+
 	async function pick(day: number) {
 		picked = day;
 		focusDay = day;
 		if (!inPeriod(day)) go(period(day, mode)[0]);
 		onchange?.(isoOf(day));
 		await tick();
-		const group = agendaEl?.querySelector<HTMLElement>(`[data-agenda-day="${day}"]`);
-		if (agendaEl && agendaEl.scrollHeight > agendaEl.clientHeight) {
-			agendaEl.scrollTo({ top: group ? group.offsetTop : 0, behavior: 'auto' });
-		}
+		scrollAgenda(day);
 	}
 
 	function select(e: CalEvent) {
@@ -277,10 +299,10 @@
 										type="button"
 										class={['cal-chip', focusRing, s.span > 1 && 'cal-chip--bar', s.before && 'cal-chip--before', s.after && 'cal-chip--after']}
 										style={segStyle(s.col, s.span, s.lane, s.ev.color)}
-										title={titleOf(s.ev)}
+										title={s.ev.time && s.ev.end === s.ev.start ? `${s.ev.time} ${titleOf(s.ev)}` : titleOf(s.ev)}
 										aria-label={nameOf(s.ev)}
 										onclick={() => select(s.ev)}
-									>{#if s.ev.time && s.ev.end === s.ev.start}<span class="cal-time tabular-nums">{s.ev.time}</span>{' '}{/if}<span class={['cal-chip-title', !s.ev.title && 'cal-untitled']}>{titleOf(s.ev)}</span></button>
+									>{#if mode === 'week'}<span class="cal-meta tabular-nums">{metaOf(s.ev)}</span>{:else if s.ev.time && s.ev.end === s.ev.start}<span class="cal-time tabular-nums">{s.ev.time}</span>{' '}{/if}<span class={['cal-chip-title', !s.ev.title && 'cal-untitled']}>{titleOf(s.ev)}</span></button>
 								{/each}
 								{#if L.more[c]}
 									<button
@@ -337,7 +359,7 @@
 					{/if}
 				</p>
 			{/if}
-			{#if undatedLine}<p title={undatedTitles}>{undatedLine}</p>{/if}
+			{#if undatedLine}<p title={undatedTitles}><span class="cal-undated-long">{undatedLine}</span><span class="cal-undated-short">{undatedCount}</span></p>{/if}
 			{#if parsed.capped}<p>Showing the first {MAX_EVENTS} events</p>{/if}
 		</div>
 	{/if}
@@ -345,6 +367,8 @@
 
 <style>
 	.cal {
+		/* Chip tint; dark surfaces need more of the event colour to read. */
+		--cal-tint: 16%;
 		container-type: inline-size;
 		display: flex;
 		flex-direction: column;
@@ -389,6 +413,10 @@
 		gap: 0.5rem;
 		animation: cal-in 150ms var(--ripple-ease-out);
 	}
+	:global(.dark) .cal,
+	:global([data-theme='dark']) .cal {
+		--cal-tint: 26%;
+	}
 	@keyframes cal-in {
 		from {
 			opacity: 0;
@@ -414,19 +442,22 @@
 		border-top: 1px solid var(--ripple-border);
 	}
 	.cal--week .cal-week {
-		grid-template-rows: 1.5rem repeat(var(--n), minmax(1.25rem, auto)) minmax(0.375rem, 1fr);
+		grid-template-rows: 1.5rem repeat(var(--n), auto) minmax(0.375rem, 1fr);
 		min-height: 7.5rem;
 	}
-	/* Week columns have room to grow down, so chip titles wrap instead of cutting. */
+	/* Week chips: a muted meta line over a one-line title, same height for all. */
 	.cal--week .cal-chip {
-		display: block;
+		flex-direction: column;
+		align-items: stretch;
+		gap: 0;
 		padding-block: 0.25rem;
-		line-height: var(--lh-caption);
-		white-space: normal;
-		overflow-wrap: break-word;
+		line-height: 1rem;
 	}
-	.cal--week .cal-chip-title {
-		overflow: visible;
+	.cal-meta {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		font-weight: 400;
+		opacity: 0.75;
 	}
 	.cal-cell {
 		display: contents;
@@ -490,19 +521,21 @@
 		text-align: left;
 		white-space: nowrap;
 		overflow: hidden;
-		background: color-mix(in oklab, var(--ev) 16%, var(--ripple-surface));
+		background: color-mix(in oklab, var(--ev) var(--cal-tint), var(--ripple-surface));
 		color: color-mix(in oklab, var(--ev) 40%, var(--ripple-surface-foreground));
 		box-shadow: inset 3px 0 0 color-mix(in oklab, var(--ev) 70%, var(--ripple-surface-foreground));
+		/* Above the day hairlines painted by later cells. */
+		z-index: 1;
 		transition: background-color 150ms var(--ripple-ease-out);
 	}
 	.cal-chip:hover {
-		background: color-mix(in oklab, var(--ev) 28%, var(--ripple-surface));
+		background: color-mix(in oklab, var(--ev) calc(var(--cal-tint) + 12%), var(--ripple-surface));
 	}
 	.cal-chip--before {
 		margin-left: 0;
 		border-top-left-radius: 0;
 		border-bottom-left-radius: 0;
-		box-shadow: none;
+		box-shadow: inset 2px 0 0 color-mix(in oklab, var(--ev) 45%, transparent);
 	}
 	.cal-chip--after {
 		margin-right: 0;
@@ -542,6 +575,9 @@
 		max-height: 18rem;
 		overflow-y: auto;
 		overscroll-behavior: contain;
+		/* Fade the cut row; the padding lets the last row scroll clear of it. */
+		padding-bottom: 1.5rem;
+		mask-image: linear-gradient(to bottom, #000 calc(100% - 1.5rem), transparent);
 	}
 	.cal-nothing {
 		padding: 0.25rem 0.5rem 0.5rem;
@@ -605,6 +641,10 @@
 		flex-direction: column;
 		gap: 0.125rem;
 		min-width: 0;
+		margin-top: 0.25rem;
+	}
+	.cal-undated-short {
+		display: none;
 	}
 	.cal-link {
 		color: var(--ripple-accent-text);
@@ -664,6 +704,18 @@
 		}
 		.cal-agenda {
 			display: block;
+		}
+		.cal-undated-long {
+			display: none;
+		}
+		.cal-undated-short {
+			display: inline;
+		}
+	}
+	/* Under ~110px a column: the title beats the time prefix. */
+	@container (max-width: 779px) {
+		.cal-time {
+			display: none;
 		}
 	}
 
