@@ -9,7 +9,8 @@
 
   The outer element is the size container. At 520px and wider the bar is one
   nowrap row of ghost buttons (icon + label); the count is what shrinks and
-  wraps. Narrower, a single control (one action, or More alone) stays on that
+  wraps, so the wide row never holds fewer actions than the narrow one. Both
+  sizes show at most 4 controls: 3 actions plus More once anything overflows. Narrower, a single control (one action, or More alone) stays on that
   row as a compact button (More goes icon-only); 2+ controls go to a second row
   of equal-width columns, icon above label, with an empty icon slot under a
   label-only action so every label shares one line. Which actions sit in the
@@ -83,7 +84,8 @@
   // 0 = not measured yet (SSR, jsdom): use the wide rule.
   let width = $state(0);
   const wide = $derived(width === 0 || width >= WIDE_AT);
-  const split = $derived(splitActions(all, width, line.count.length + 1 + line.rest.length));
+  const words = $derived(`${line.count} ${line.rest}`.split(' '));
+  const split = $derived(splitActions(all, width, words.join(' ').length, Math.max(...words.map((w) => w.length))));
   const solo = $derived(split.inline.length + (split.menu.length > 0 ? 1 : 0) === 1);
   const hasIcon = (a: BulkAction) => !!a.icon && Object.hasOwn(BULK_ICONS, a.icon);
   // A label-only column gets an empty icon slot when a sibling column shows an icon (More always does).
@@ -92,6 +94,8 @@
   const danger = $derived(split.inline.filter((a) => a.destructive));
   const menuSafe = $derived(split.menu.filter((a) => !a.destructive));
   const menuDanger = $derived(split.menu.filter((a) => a.destructive));
+  // A menu item without an icon keeps an empty slot so its label lines up with its siblings'.
+  const menuIconSlot = $derived(split.menu.some(hasIcon));
 
   // Hidden for the count it was cleared at; a new count shows the bar again.
   let clearedAt = $state<number | null>(null);
@@ -159,7 +163,7 @@
                 {#each menuSafe as a, idx (`${a.id}:${idx}`)}
                   {@const Icon = a.icon ? BULK_ICONS[a.icon as keyof typeof BULK_ICONS] : undefined}
                   <DropdownMenu.Item disabled={a.disabled} onSelect={() => onaction?.(a.id)} class="items-start">
-                    {#if Icon}<Icon {...ICON.row} aria-hidden="true" class="mt-0.5" />{/if}
+                    {#if Icon}<Icon {...ICON.row} aria-hidden="true" class="mt-0.5" />{:else if menuIconSlot}<span class="size-4 shrink-0" aria-hidden="true"></span>{/if}
                     <span class="min-w-0 whitespace-normal">{a.label}</span>
                   </DropdownMenu.Item>
                 {/each}
@@ -169,7 +173,7 @@
                 {#each menuDanger as a, idx (`${a.id}:${idx}`)}
                   {@const Icon = a.icon ? BULK_ICONS[a.icon as keyof typeof BULK_ICONS] : undefined}
                   <DropdownMenu.Item variant="destructive" disabled={a.disabled} onSelect={() => onaction?.(a.id)} class="items-start">
-                    {#if Icon}<Icon {...ICON.row} aria-hidden="true" class="mt-0.5" />{/if}
+                    {#if Icon}<Icon {...ICON.row} aria-hidden="true" class="mt-0.5" />{:else if menuIconSlot}<span class="size-4 shrink-0" aria-hidden="true"></span>{/if}
                     <span class="min-w-0 whitespace-normal">{a.label}</span>
                   </DropdownMenu.Item>
                 {/each}
@@ -297,7 +301,7 @@
     color: var(--ripple-muted-foreground);
   }
   .rbab :global(.rbab-act) {
-    padding: 0 10px;
+    padding: 0 8px;
     white-space: nowrap;
   }
   .rbab :global(.rbab-clear:hover),

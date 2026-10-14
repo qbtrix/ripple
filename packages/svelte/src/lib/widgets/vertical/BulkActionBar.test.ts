@@ -63,9 +63,10 @@ describe('splitActions', () => {
 		expect(menu(['Assign role', 'Send email', 'Delete'], false)).toEqual([]);
 	});
 
-	test('wide keeps 4, narrow keeps 3 once there are 5 or more', () => {
+	test('both sizes keep 4 controls: 3 plus More once there are 5 or more', () => {
 		const five = ['A', 'B', 'C', 'D', 'E'];
-		expect(menu(five, true)).toEqual(['E']);
+		expect(menu(five, true)).toEqual(['D', 'E']);
+		expect(menu(['A', 'B', 'C', 'D'], true)).toEqual([]);
 		expect(menu(five, false)).toEqual(['D', 'E']);
 		expect(menu(['A', 'B', 'C', 'D'], false)).toEqual([]);
 	});
@@ -80,10 +81,36 @@ describe('splitActions', () => {
 
 	test('wide fits the row beside the count, keeping room for More', () => {
 		const labels = ['Assign', 'Add tag', 'Archive', 'Export CSV', 'Star', 'Mark as read'];
-		const inline = (width: number, lead: number) => splitActions(make(labels), width, lead).inline.map((a) => a.label);
-		// 581px bar beside "48 conversations selected": two fit, then More.
-		expect(inline(581, 25)).toEqual(['Assign', 'Add tag']);
-		expect(inline(720, 16)).toEqual(['Assign', 'Add tag', 'Archive', 'Export CSV']);
+		const inline = (width: number, lead: number, word: number) => splitActions(make(labels), width, lead, word).inline.map((a) => a.label);
+		expect(inline(720, 16, 8)).toEqual(['Assign', 'Add tag', 'Archive']);
+		expect(splitActions(make(labels.slice(0, 4)), 720, 16, 8).menu).toEqual([]);
+	});
+
+	test('a wide bar never shows fewer actions than the narrow card (specs 02 and 06)', () => {
+		const spec02 = normalizeActions([
+			{ id: 'assign', label: 'Assign' },
+			{ id: 'tag', label: 'Add tag' },
+			{ id: 'delete', label: 'Delete', variant: 'destructive' },
+			{ id: 'archive', label: 'Archive' },
+			{ id: 'export', label: 'Export CSV' },
+			{ id: 'spam', label: 'Mark as spam', variant: 'destructive' },
+			{ id: 'star', label: 'Star' },
+			{ id: 'read', label: 'Mark as read' },
+			{ id: 'move', label: 'Move to folder' }
+		]);
+		const spec06 = normalizeActions([
+			{ id: 'purge', label: 'Purge', variant: 'destructive' },
+			{ id: 'ship', label: 'Ship' },
+			{ id: 'label', label: 'Print label' },
+			{ id: 'hold', label: 'Hold', disabled: true },
+			{ id: 'void', label: 'Void', variant: 'destructive' },
+			{ id: 'merge', label: 'Merge' }
+		]);
+		// "48 conversations selected" (25 chars, longest word 13); "1,000,000 boxes selected" (24, 9).
+		for (const width of [322, 520, 580, 1000]) {
+			expect(splitActions(spec02, width, 25, 13).inline.map((a) => a.label)).toEqual(['Assign', 'Add tag', 'Archive']);
+			expect(splitActions(spec06, width, 24, 9).inline.map((a) => a.label)).toEqual(['Ship', 'Print label', 'Hold']);
+		}
 	});
 
 	test('narrow sends a word too wide for a quarter column to More', () => {
@@ -151,6 +178,6 @@ describe('BulkActionBar', () => {
 		const many = ['A', 'B', 'C', 'D', 'E', 'F'].map((l) => ({ id: l, label: l }));
 		const { container } = render(BulkActionBar, { props: { selectedCount: 9, actions: many } });
 		const labels = [...container.querySelectorAll('.rbab-act')].map((b) => b.textContent?.trim());
-		expect(labels).toEqual(['A', 'B', 'C', 'D', 'More']);
+		expect(labels).toEqual(['A', 'B', 'C', 'More']);
 	});
 });

@@ -53,7 +53,7 @@ export function normalizeActions(v: unknown): BulkAction[] {
 // 12px narrow labels at about 6.5px). Estimates only: the wide row is nowrap, so a
 // miss shows up as an overflow in the audit rather than a silent wrap.
 const CH = 7;
-const BTN = 48; // 10px padding each side, 16px icon, 6px icon gap, 6px row gap
+const BTN = 44; // 8px padding each side, 16px icon, 6px icon gap, 6px row gap
 const MORE = BTN + 4 * CH;
 const DIVIDER = 13;
 const ROW_CHROME = 28; // bar padding, border, and the gap between count and actions
@@ -61,19 +61,23 @@ const NARROW_CH = 6.5;
 
 /**
  * Which actions sit in the row and which go to More. `width` is the bar's own
- * width (0 = not measured, SSR or jsdom: the wide rule with no budget) and
- * `leadChars` the length of the count line.
+ * width (0 = not measured, SSR or jsdom: the wide rule with no budget),
+ * `leadChars` the length of the count line and `wordChars` its longest word.
  *
- * Wide (>= WIDE_AT): labels up to 24 characters, at most 4 inline, and in order
- * only while their estimated width fits beside the count (the count gets up to
- * half the bar and wraps under itself past that), with room kept for More.
+ * Both sizes hold at most 4 controls, so 3 actions plus More whenever anything
+ * overflows; a disabled action keeps its slot.
+ * Wide (>= WIDE_AT): labels up to 24 characters, in order, while their
+ * estimated width fits beside the count. The count shrinks and wraps first: it
+ * is budgeted only a quarter of the bar (or its longest word, if wider), so a
+ * wider bar never shows fewer actions than the narrow one.
  * Narrow: labels up to 14 characters whose longest word fits a quarter-width
- * column, at most 4 columns, so 3 plus More once there are 5 or more actions.
+ * column.
  */
 export function splitActions(
 	actions: BulkAction[],
 	width = 0,
-	leadChars = 0
+	leadChars = 0,
+	wordChars = 0
 ): { inline: BulkAction[]; menu: BulkAction[] } {
 	if (width > 0 && width < WIDE_AT) {
 		const maxWord = Math.floor(((width - ROW_CHROME) / 4 - 8) / NARROW_CH);
@@ -84,22 +88,20 @@ export function splitActions(
 		for (const a of actions) (inline.length < max && fits(a) ? inline : menu).push(a);
 		return { inline, menu };
 	}
-	if (width === 0) return pack(actions, Infinity);
-	const lead = Math.min(36 + leadChars * CH, width / 2);
-	const room = width - ROW_CHROME - lead;
-	const all = pack(actions, room);
-	return all.menu.length ? pack(actions, room - MORE) : all;
+	const room = width === 0 ? Infinity : width - ROW_CHROME - (36 + CH * Math.min(leadChars, Math.max(wordChars, (width / 4 - 36) / CH)));
+	const all = pack(actions, room, 4);
+	return all.menu.length ? pack(actions, room - MORE, 3) : all;
 }
 
-/** Up to 4 labels of 24 characters or fewer, in order, until the budget runs out. */
-function pack(actions: BulkAction[], budget: number): { inline: BulkAction[]; menu: BulkAction[] } {
+/** Up to `max` labels of 24 characters or fewer, in order, until the budget runs out. */
+function pack(actions: BulkAction[], budget: number, max: number): { inline: BulkAction[]; menu: BulkAction[] } {
 	const inline: BulkAction[] = [];
 	const menu: BulkAction[] = [];
 	let used = 0;
 	let full = false;
 	for (const a of actions) {
 		const cost = BTN + a.label.length * CH + (a.destructive && !inline.some((b) => b.destructive) ? DIVIDER : 0);
-		if (!full && inline.length < 4 && a.label.length <= 24) {
+		if (!full && inline.length < max && a.label.length <= 24) {
 			if (used + cost <= budget) {
 				inline.push(a);
 				used += cost;
