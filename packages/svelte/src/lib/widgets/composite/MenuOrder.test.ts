@@ -370,12 +370,34 @@ describe('menu-order — menu layout', () => {
 		expect(container.querySelector('[data-state]')).toBeNull();
 	});
 
-	it('clamps names to two lines with the full name in title, and draws no kind glyph in a row', () => {
-		const { container } = render(MenuOrder, { props: { items: [fries, shake] } });
+	it('clamps names to two lines with the full name in title, behind a bare muted kind glyph', () => {
+		const { container } = render(MenuOrder, { props: { items: [fries, { ...shake, kind: 'pizza' }] } });
 		const name = screen.getByText('Shoestring Fries');
 		expect(name.className).toContain('line-clamp-2');
 		expect(name.getAttribute('title')).toBe('Shoestring Fries');
-		expect(container.querySelector('li svg')).toBeNull();
+		const glyphs = container.querySelectorAll('li svg[aria-hidden="true"]');
+		expect(glyphs).toHaveLength(2); // an unknown kind still gets the fallback glyph
+		expect(glyphs[0].getAttribute('class')).toContain('text-ripple-muted-foreground');
+	});
+
+	it('starts the headline at the lowest non-negative price, Free included', () => {
+		render(MenuOrder, { props: { items: [fries, { product_id: 'water', name: 'Tap Water', price: 0 }, { product_id: 'credit', name: 'Credit', price: -2 }] } });
+		expect(screen.getByText('3 items · from Free')).toBeTruthy();
+	});
+
+	it('splits a group into two columns only when it has 2+ items', () => {
+		render(MenuOrder, { props: { items: [fries, { ...fries, product_id: 'curly', name: 'Curly Fries' }, shake] } });
+		expect(screen.getByRole('list', { name: 'Sides' }).className).toContain('grid-cols-2');
+		expect(screen.getByRole('list', { name: 'Shakes' }).className).not.toContain('grid-cols-2');
+	});
+
+	it('explains a maxed-out stepper and mutes the price of an item that cannot be ordered', () => {
+		render(MenuOrder, { props: { items: [fries, { name: 'Ask the server', price: 16 }], checkout: true, preset: [{ id: 'shoestring-fries', qty: 20 }] } });
+		const plus = btn('Add one Shoestring Fries') as HTMLButtonElement;
+		expect(plus.disabled).toBe(true);
+		expect(plus.title).toBe('Max 20');
+		expect(screen.getByText('$16.00').className).toContain('text-ripple-muted-foreground');
+		expect(screen.getByText('$3.49').className).not.toContain('text-ripple-muted-foreground');
 	});
 
 	it('shows the item subtotal in the bar; the review adds the delivery fee', () => {

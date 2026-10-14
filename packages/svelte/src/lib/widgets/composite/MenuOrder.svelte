@@ -6,8 +6,9 @@
 
   Menu: the layout follows the photos that load. With none (the model-only
   chat case, or every photo failed) it is a grouped list: full-width category
-  headings, then hairline rows (name and description clamped to 2 lines,
-  price and control at the right), two columns per group from 560px. Any
+  headings, then hairline rows (muted kind glyph, name and description
+  clamped to 2 lines, price and control at the right, side by side when the
+  row has no description or tags), two columns from 560px in a group of 2+. Any
   photo still loading or loaded gives photo cards; a failed photo drops its
   tile. The pick ("Picked for you") is a tinted row above the groups, never
   listed twice. Chips show only for 2+ categories and 8+ items, and wrap.
@@ -15,8 +16,9 @@
   'active'); a settled card collapses a missing price and names a nameless
   item by its id in words. Price 0 is Free. A repeated product_id shares one
   cart line and only its first row is highlighted. One primary button per
-  stage, in a sticky footer bar that carries the item count and subtotal (the
-  review adds the fee). Customise joins the stage rail only once an item with
+  stage, in a sticky footer bar (hairline top, inset like the rows) that
+  carries the item count and subtotal (the review adds the fee). A priced item
+  that cannot be ordered shows its price muted. Customise joins the stage rail only once an item with
   options is in play, so no skipped stage shows as done.
 
   Customise: the item's photo, or a tinted tile with its kind icon and name;
@@ -183,8 +185,8 @@
 	const headline = $derived.by(() => {
 		const prices = menu.map((i) => i.price).filter((p): p is number => p !== undefined);
 		const parts = [`${menu.length} ${menu.length === 1 ? 'item' : 'items'}`];
-		const paid = prices.filter((p) => p > 0);
-		if (paid.length) parts.push(`from ${fmt(Math.min(...paid))}`);
+		const real = prices.filter((p) => p >= 0); // a negative credit is not a starting price
+		if (real.length) parts.push(`from ${priceText(Math.min(...real))}`);
 		else if (!prices.length && categories.length > 1) parts.push(`${categories.length} categories`);
 		if (orderable) parts.push(modes.length > 1 ? 'pickup or delivery' : modes[0]);
 		return menu.length ? parts.join(' · ') : '';
@@ -356,7 +358,7 @@
 
 {#snippet price(item: Item, cls = 'text-body-emph')}
 	{#if item.price !== undefined}
-		<span class={['shrink-0 tabular-nums', cls]}>{priceText(item.price)}</span>
+		<span class={['shrink-0 tabular-nums', cls, orderable && !canOrder(item) && 'text-ripple-muted-foreground']}>{priceText(item.price)}</span>
 	{:else if streaming}
 		<span class="mt-1 h-3.5 w-10 shrink-0 rounded bg-ripple-track" aria-hidden="true" data-placeholder></span>
 	{/if}
@@ -390,7 +392,7 @@
 			<Minus size={14} strokeWidth={2} aria-hidden="true" />
 		</button>
 		<span class="min-w-6 text-center text-body-emph tabular-nums">{q}</span>
-		<button type="button" class={STEP} aria-label="Add one {label}" disabled={q >= MAX_QTY} onclick={inc}>
+		<button type="button" class={STEP} aria-label="Add one {label}" title={q >= MAX_QTY ? `Max ${MAX_QTY}` : undefined} disabled={q >= MAX_QTY} onclick={inc}>
 			<Plus size={14} strokeWidth={2} aria-hidden="true" />
 		</button>
 	</div>
@@ -436,18 +438,21 @@
 {/snippet}
 
 {#snippet row(item: Item, level: string)}
+	{@const Glyph = kindIcon(MENU_ICONS, item.kind)}
+	{@const bare = !item.description && !item.tags.length}
 	<div
 		class={[
-			'relative grid min-h-11 grid-cols-[minmax(0,1fr)_auto] items-start gap-x-2.5 px-2.5 py-2.5',
+			'relative grid min-h-11 grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-x-2.5 px-2.5 py-2.5',
 			chosen(item) && 'before:absolute before:inset-y-1.5 before:left-0 before:w-0.5 before:rounded-full before:bg-ripple-accent'
 		]}
 	>
+		<Glyph size={16} strokeWidth={1.75} class="mt-0.5 text-ripple-muted-foreground" aria-hidden="true" />
 		<div class="flex min-w-0 flex-col gap-0.5">
 			{@render name(item, 'text-body-emph', level)}
 			{#if item.description}<p class="line-clamp-2 text-callout text-pretty text-ripple-muted-foreground">{item.description}</p>{/if}
 			{#if item.tags.length}<div class="pt-1">{@render tags(item)}</div>{/if}
 		</div>
-		<div class="flex flex-col items-end gap-1.5 empty:hidden">
+		<div class={['flex empty:hidden', bare ? '-my-1 items-center gap-2.5' : 'flex-col items-end gap-1.5']}>
 			{@render price(item)}
 			{@render control(item)}
 		</div>
@@ -574,7 +579,7 @@
 										{/each}
 									</ul>
 								{:else}
-									<ul class="grid @min-[560px]:grid-cols-2 @min-[560px]:gap-x-6" aria-label={g.name ? undefined : 'Menu'} aria-labelledby={g.name ? `${uid}-cat${gi}` : undefined}>
+									<ul class={['grid', g.items.length > 1 && '@min-[560px]:grid-cols-2 @min-[560px]:gap-x-6']} aria-label={g.name ? undefined : 'Menu'} aria-labelledby={g.name ? `${uid}-cat${gi}` : undefined}>
 										{#each g.items as item, i (item.key)}
 											<li class="min-w-0 border-t border-ripple-border first:border-t-0 @min-[560px]:nth-2:border-t-0" in:rise={{ index: g.start + i }}>
 												{@render row(item, g.name ? 'h4' : 'h3')}
@@ -826,7 +831,7 @@
 	{/key}
 
 	{#if orderable && (count > 0 || view !== 'menu')}
-		<div class="sticky bottom-0 z-10 flex items-center gap-3 border-t border-ripple-border bg-ripple-surface pt-2.5 pb-1 text-ripple-surface-foreground">
+		<div class="sticky bottom-0 z-10 flex items-center gap-3 rounded-b-ripple border-t border-ripple-border bg-ripple-surface px-2.5 py-1.5 text-ripple-surface-foreground">
 			<p class="min-w-0 flex-1 truncate text-callout" aria-live="polite">
 				{#if count > 0}
 					<span class="font-medium tabular-nums">{count} {count === 1 ? 'item' : 'items'}</span><span class="text-ripple-muted-foreground"
