@@ -1,0 +1,35 @@
+{
+  "version": "1.0",
+  "state": {
+    "standup": {
+      "resolved": []
+    }
+  },
+  "ui": {
+    "type": "standup-board",
+    "bind": "{state.standup}",
+    "props": {
+      "people": [
+        "Lina Okafor",
+        {
+          "name": "Tomás Reyes",
+          "yesterday": "Wired refunds"
+        },
+        {
+          "name": "Aarav Mehta",
+          "status": "blocked"
+        },
+        {
+          "name": "Mei Tanaka",
+          "blocker": "none",
+          "status": "ok"
+        },
+        "Priya Nair",
+        {
+          "name": "Rui Santos",
+          "status": "pto"
+        }
+      ]
+    }
+  }
+}

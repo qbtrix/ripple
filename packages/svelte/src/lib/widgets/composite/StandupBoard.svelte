@@ -7,7 +7,7 @@
   Layout: a verdict line and the open-blocker count up top, then people in
   groups (blocked, on track, done, away). Blocked people are always expanded
   with the blocker sentence on a red rule; with more than 4 people the others
-  collapse to one line that expands on tap. Below 600px of the card's own
+  collapse to one line that expands on tap. Below 520px of the card's own
   width each person stacks with inline "Today" / "Yesterday" labels; above it
   rows share a person | today | yesterday grid under one header row.
   Container queries only.
@@ -135,31 +135,31 @@
 	);
 
 	const focusRing = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ripple-ring';
-	const cols = '@min-[600px]:grid @min-[600px]:grid-cols-[11rem_minmax(0,1fr)_minmax(0,1fr)_1rem] @min-[600px]:gap-x-4';
+	const cols = '@min-[520px]:grid @min-[520px]:grid-cols-[10rem_minmax(0,1fr)_minmax(0,1fr)_1rem] @min-[520px]:gap-x-3';
 	const textLine = 'text-callout text-pretty [overflow-wrap:anywhere]';
 	const noUpdate = 'italic text-ripple-muted-foreground';
 </script>
 
 {#snippet face(p: Person, small: boolean)}
 	{@const src = safeUrl(p.avatar, { kind: 'resource' })}
-	<Avatar.Root class={[small ? 'size-6 @min-[600px]:size-8' : 'size-8', p.status === 'away' && 'opacity-50']}>
+	<Avatar.Root class={[small ? 'size-6 @min-[520px]:size-8' : 'size-8', p.status === 'away' && 'opacity-50']}>
 		{#if src}<Avatar.Image {src} alt="" />{/if}
-		<Avatar.Fallback class="standup-initials text-caption-2 font-semibold text-ripple-surface-foreground" style="--h:{nameHue(p.name)}">{initials(p.name)}</Avatar.Fallback>
+		<Avatar.Fallback class={['standup-initials font-semibold text-ripple-surface-foreground', small ? 'text-[10px] @min-[520px]:text-[11px]' : 'text-[11px]']} style="--h:{nameHue(p.name)}">{initials(p.name)}</Avatar.Fallback>
 	</Avatar.Root>
 {/snippet}
 
 {#snippet nameRole(p: Person, line: boolean)}
-	<span class="min-w-0 text-pretty [overflow-wrap:anywhere]">
-		<span class="text-body font-semibold" data-slot="name">{p.name}</span>
+	<span class="min-w-0 text-body leading-snug text-pretty [overflow-wrap:break-word]">
+		<span class="font-semibold" data-slot="name">{p.name}</span>{' '}
 		{#if p.role}
-			<span class={['text-footnote text-ripple-muted-foreground @min-[600px]:block', line && 'hidden']} data-slot="role"><span class="@min-[600px]:hidden" aria-hidden="true">· </span>{p.role}</span>
+			<span class={['text-footnote text-ripple-muted-foreground @min-[520px]:block', line && 'hidden']} data-slot="role"><span class="@min-[520px]:hidden" aria-hidden="true">·&nbsp;</span>{p.role}</span>
 		{/if}
 	</span>
 {/snippet}
 
 {#snippet text(label: string, t: string, clamp: boolean, extra: string)}
-	<span class={['block', textLine, clamp && 'line-clamp-1 @min-[600px]:line-clamp-2', extra]}>
-		<span class={['mr-1 text-footnote font-medium text-ripple-muted-foreground @min-[600px]:sr-only', clamp && 'sr-only']}>{label}</span>
+	<span class={[clamp ? 'line-clamp-1 @min-[520px]:line-clamp-2' : 'block', textLine, extra]}>
+		<span class={['mr-1 text-footnote font-medium text-ripple-muted-foreground @min-[520px]:sr-only', clamp && 'sr-only']}>{label}</span>
 		{#if t}{t}{:else}<span class={noUpdate}>No update</span>{/if}
 	</span>
 {/snippet}
@@ -167,12 +167,12 @@
 <div {id} class={['@container max-w-[760px] text-ripple-surface-foreground', className]} style={rootStyle} data-widget="standup-board">
 	<div class="flex flex-col gap-3 rounded-ripple border border-ripple-border bg-ripple-surface p-4">
 		<header class="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-4 gap-y-1.5" data-slot="header">
-			<h2 class="col-span-2 flex min-w-0 items-baseline justify-between gap-x-3 @min-[600px]:col-span-1 @min-[600px]:justify-start">
+			<h2 class="col-span-2 flex min-w-0 items-baseline justify-between gap-x-3 @min-[520px]:col-span-1 @min-[520px]:justify-start">
 				<span class="text-headline font-semibold text-pretty [overflow-wrap:anywhere]">{title}</span>
-				{#if day}<span class="shrink-0 text-footnote text-ripple-muted-foreground tabular-nums"><span class="hidden @min-[600px]:inline" aria-hidden="true">· </span>{day}</span>{/if}
+				{#if day}<span class="shrink-0 text-footnote text-ripple-muted-foreground tabular-nums"><span class="hidden @min-[520px]:inline" aria-hidden="true">·&nbsp;</span>{day}</span>{/if}
 			</h2>
 			{#if total && (open || meta)}
-				<p class="col-span-2 row-start-3 flex items-baseline justify-between gap-x-3 @min-[600px]:col-span-1 @min-[600px]:col-start-2 @min-[600px]:row-span-2 @min-[600px]:row-start-1 @min-[600px]:flex-col @min-[600px]:items-end @min-[600px]:gap-y-1.5" data-slot="hero">
+				<p class="col-span-2 row-start-3 flex items-baseline justify-between gap-x-3 @min-[520px]:col-span-1 @min-[520px]:col-start-2 @min-[520px]:row-span-2 @min-[520px]:row-start-1 @min-[520px]:flex-col @min-[520px]:items-end @min-[520px]:gap-y-1.5" data-slot="hero">
 					{#if open}
 						<span class="flex items-baseline gap-1.5" data-slot="count">
 							<span class="text-title-2 font-semibold tabular-nums">{open}</span>
@@ -183,7 +183,7 @@
 				</p>
 			{/if}
 			{#if verdict}
-				<div class="col-span-2 row-start-2 @min-[600px]:col-span-1">
+				<div class="col-span-2 row-start-2 @min-[520px]:col-span-1">
 					{#if verdict.status === 'good'}
 						<p class="flex items-start gap-2 text-body-emph" data-status="good" data-slot="verdict">
 							<CircleCheck size={16} strokeWidth={2} aria-hidden="true" class={['mt-[3px] shrink-0', STATUS_CLASS.good.text]} />
@@ -200,12 +200,10 @@
 			<p class="text-callout text-ripple-muted-foreground">No one has posted an update yet.</p>
 		{:else}
 			<div class="flex flex-col border-t border-ripple-border pt-3">
-				<div class="mb-1 flex flex-col gap-2 @min-[600px]:flex-row-reverse @min-[600px]:items-end">
-					{#if showFilter}
+				{#if showFilter}
+					<div class="mb-1 self-start @min-[520px]:self-end" role="group" aria-label="Show people">
 						<Segmented
-							class="self-start"
 							size="sm"
-							label="Show"
 							options={[
 								{ value: 'all', label: 'All' },
 								{ value: 'blocked', label: 'Blocked' }
@@ -213,10 +211,10 @@
 							value={view}
 							onchange={(v) => (filter = v === 'blocked' ? 'blocked' : 'all')}
 						/>
-					{/if}
-					<div class={['hidden flex-1 text-footnote text-ripple-muted-foreground', cols]} aria-hidden="true" data-slot="columns">
-						<span></span><span>Today</span><span>Yesterday</span><span></span>
 					</div>
+				{/if}
+				<div class={['hidden pb-1 text-footnote text-ripple-muted-foreground', cols]} aria-hidden="true" data-slot="columns">
+					<span></span><span>Today</span><span>Yesterday</span><span></span>
 				</div>
 
 				{#if view === 'blocked' && !open}
@@ -246,22 +244,18 @@
 								{@const away = p.status === 'away'}
 								{@const line = shut || away}
 								{@const fold = isBlocked && compact && !unfolded[p.id]}
+								{@const indent = isBlocked ? 'pl-3.5 @min-[520px]:pl-0' : 'pl-[2.625rem] @min-[520px]:pl-0'}
+								{@const rowClass = [
+									'w-full text-left',
+									cols,
+									line ? 'flex min-h-11 items-center gap-2.5 py-2 @min-[520px]:items-start' : 'flex flex-col gap-1.5 py-3',
+									canExpand && ['rounded-md hover:bg-ripple-muted/60', focusRing]
+								]}
 								<li in:rise={{ index: i }} data-person={p.id} data-status={p.status} data-resolved={done || undefined}>
-									<svelte:element
-										this={canExpand ? 'button' : 'div'}
-										type={canExpand ? 'button' : undefined}
-										aria-expanded={canExpand ? !shut : undefined}
-										onclick={canExpand ? () => (expanded[p.id] = !expanded[p.id]) : undefined}
-										class={[
-											'w-full text-left',
-											cols,
-											line ? 'flex min-h-11 items-center gap-2.5 py-2 @min-[600px]:items-start' : 'flex flex-col gap-1.5 py-3',
-											canExpand && ['rounded-md hover:bg-ripple-muted/60', focusRing]
-										]}
-									>
-										<span class={['flex min-w-0 gap-2.5 @min-[600px]:col-start-1 @min-[600px]:row-start-1 @min-[600px]:row-span-2', line ? 'max-w-[55%] shrink-0 items-center @min-[600px]:max-w-none @min-[600px]:items-start' : 'items-start']}>
+									{#snippet body()}
+										<span class={['flex min-w-0 gap-2.5 @min-[520px]:col-start-1 @min-[520px]:row-start-1 @min-[520px]:row-span-2', line ? 'max-w-[55%] shrink-0 items-center @min-[520px]:max-w-none @min-[520px]:items-start' : 'items-start']}>
 											{@render face(p, line)}
-											<span class={['flex min-w-0 flex-1', line ? 'flex-wrap items-center gap-x-2' : 'flex-wrap items-start justify-between gap-x-3 gap-y-0.5 @min-[600px]:flex-col @min-[600px]:justify-start']}>
+											<span class={['flex min-w-0 flex-1', line ? 'flex-wrap items-center gap-x-2' : 'flex-wrap items-start justify-between gap-x-3 gap-y-0.5 @min-[520px]:flex-col @min-[520px]:justify-start']}>
 												{@render nameRole(p, line)}
 												{#if isBlocked}
 													<span class={['inline-flex shrink-0 items-center gap-1 text-footnote font-medium', done ? STATUS_CLASS.good.text : STATUS_CLASS.bad.text]} data-slot="mark">
@@ -276,7 +270,7 @@
 										</span>
 
 										{#if isBlocked}
-											<span class={['flex flex-wrap items-baseline justify-between gap-x-3 border-l-2 pl-3 @min-[600px]:col-span-2 @min-[600px]:col-start-2 @min-[600px]:row-start-2 @min-[600px]:mt-2', done ? 'border-ripple-border' : 'border-ripple-error']} data-slot="blocker">
+											<span class={['flex flex-wrap items-baseline justify-between gap-x-3 border-l-2 pl-3 @min-[520px]:col-span-2 @min-[520px]:col-start-2 @min-[520px]:row-start-2 @min-[520px]:mt-2', done ? 'border-ripple-border' : 'border-ripple-error']} data-slot="blocker">
 												<span class={['min-w-0 flex-1 basis-48 text-pretty [overflow-wrap:anywhere]', done ? 'text-body text-ripple-muted-foreground line-through' : p.blocker ? 'text-body-emph' : 'text-body text-ripple-muted-foreground']}>{p.blocker || 'No detail given'}</span>
 												<button
 													type="button"
@@ -287,32 +281,37 @@
 										{/if}
 
 										{#if away}
-											{#if p.today}<span class={['min-w-0 flex-1 text-ripple-muted-foreground @min-[600px]:col-start-2 @min-[600px]:row-start-1', textLine]}>{p.today}</span>{/if}
+											{#if p.today}<span class={['min-w-0 flex-1 text-ripple-muted-foreground @min-[520px]:col-start-2 @min-[520px]:row-start-1', textLine]}>{p.today}</span>{/if}
 										{:else}
 											{#if fold}
 												<button
 													type="button"
-													class={['order-2 inline-flex min-h-8 items-center gap-1 self-start pl-[2.875rem] text-footnote font-medium text-ripple-muted-foreground @min-[600px]:hidden', focusRing]}
+													class={['order-2 inline-flex min-h-8 items-center gap-1 self-start text-footnote font-medium text-ripple-muted-foreground @min-[520px]:hidden', indent, focusRing]}
 													aria-expanded={false}
 													onclick={() => (unfolded[p.id] = true)}
 												>{many ? 'Today and yesterday' : 'Yesterday'}<ChevronRight size={14} strokeWidth={2} aria-hidden="true" /></button>
 											{/if}
 											{@render text('Today', p.today, shut, [
-												'order-1 @min-[600px]:col-start-2 @min-[600px]:row-start-1',
-												line ? 'min-w-0 flex-1 text-ripple-muted-foreground @min-[600px]:text-ripple-surface-foreground' : 'pl-[2.875rem] @min-[600px]:pl-0',
-												fold && many && 'hidden @min-[600px]:block'
+												'order-1 @min-[520px]:col-start-2 @min-[520px]:row-start-1',
+												line ? 'min-w-0 flex-1 text-ripple-muted-foreground @min-[520px]:text-ripple-surface-foreground' : indent,
+												fold && many && 'hidden @min-[520px]:block'
 											].filter(Boolean).join(' '))}
 											{@render text('Yesterday', p.yesterday, shut, [
-												'order-3 @min-[600px]:col-start-3 @min-[600px]:row-start-1',
-												line ? 'hidden @min-[600px]:block' : 'pl-[2.875rem] @min-[600px]:pl-0',
-												fold && 'hidden @min-[600px]:block'
+												'order-3 @min-[520px]:col-start-3 @min-[520px]:row-start-1',
+												line ? (shut ? 'hidden @min-[520px]:[display:-webkit-box]' : 'hidden @min-[520px]:block') : indent,
+												fold && 'hidden @min-[520px]:block'
 											].filter(Boolean).join(' '))}
 										{/if}
 
 										{#if canExpand}
-											<ChevronRight size={16} strokeWidth={2} aria-hidden="true" class={['ml-auto shrink-0 text-ripple-muted-foreground transition-transform duration-150 motion-reduce:transition-none @min-[600px]:col-start-4 @min-[600px]:row-start-1 @min-[600px]:mt-0.5', !shut && 'rotate-90']} />
+											<ChevronRight size={16} strokeWidth={2} aria-hidden="true" class={['order-4 ml-auto shrink-0 text-ripple-muted-foreground transition-transform duration-150 motion-reduce:transition-none @min-[520px]:col-start-4 @min-[520px]:row-start-1 @min-[520px]:mt-0.5', !shut && 'rotate-90']} />
 										{/if}
-									</svelte:element>
+									{/snippet}
+									{#if canExpand}
+										<button type="button" class={rowClass} aria-expanded={!shut} onclick={() => (expanded[p.id] = !expanded[p.id])}>{@render body()}</button>
+									{:else}
+										<div class={rowClass}>{@render body()}</div>
+									{/if}
 								</li>
 							{/each}
 						</ul>

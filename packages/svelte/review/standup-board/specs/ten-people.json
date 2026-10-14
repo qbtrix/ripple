@@ -1,0 +1,82 @@
+{
+  "version": "1.0",
+  "state": {
+    "standup": {
+      "resolved": []
+    }
+  },
+  "ui": {
+    "type": "standup-board",
+    "bind": "{state.standup}",
+    "props": {
+      "team": "Product engineering",
+      "date": "2026-10-14",
+      "people": [
+        {
+          "name": "Lina Okafor",
+          "role": "DevOps",
+          "yesterday": "Closed ticket 300 and reviewed two pull requests",
+          "today": "Run the first staging migration",
+          "blocker": "Waiting on staging database credentials from the infra team."
+        },
+        {
+          "name": "Tomás Reyes",
+          "role": "Payments",
+          "yesterday": "Closed ticket 301 and reviewed two pull requests",
+          "today": "Test partial refunds",
+          "blocker": "The sandbox returns 502 on every refund call."
+        },
+        {
+          "name": "Aarav Mehta",
+          "role": "Backend",
+          "yesterday": "Closed ticket 302 and reviewed two pull requests",
+          "today": "Add pagination to the export API"
+        },
+        {
+          "name": "Mei Tanaka",
+          "role": "Frontend",
+          "yesterday": "Closed ticket 303 and reviewed two pull requests",
+          "today": "Hook settings to the profile API"
+        },
+        {
+          "name": "Priya Nair",
+          "role": "QA",
+          "yesterday": "Closed ticket 304 and reviewed two pull requests",
+          "today": "Run the regression suite"
+        },
+        {
+          "name": "Jonas Berg",
+          "role": "Mobile",
+          "yesterday": "Closed ticket 305 and reviewed two pull requests",
+          "today": "Triage beta crash reports",
+          "status": "done"
+        },
+        {
+          "name": "Sofia Rossi",
+          "role": "Data",
+          "yesterday": "Closed ticket 306 and reviewed two pull requests",
+          "today": "Backfill last month of events"
+        },
+        {
+          "name": "Kwame Asante",
+          "role": "Support",
+          "yesterday": "Closed ticket 307 and reviewed two pull requests",
+          "today": "Answer the weekend backlog"
+        },
+        {
+          "name": "Hana Kim",
+          "role": "Docs",
+          "yesterday": "Closed ticket 308 and reviewed two pull requests",
+          "today": "Write the release notes for 4.2",
+          "status": "done"
+        },
+        {
+          "name": "Rui Santos",
+          "role": "Design",
+          "today": "Back Monday",
+          "status": "away"
+        }
+      ]
+    }
+  }
+}

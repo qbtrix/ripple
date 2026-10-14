@@ -64,6 +64,11 @@ export const waivers: readonly Waiver[] = [
 		widget: 'data-grid',
 		check: 'overflow',
 		reason: 'a wide table scrolls sideways inside its own frame on a phone instead of squeezing its columns'
+	},
+	{
+		widget: 'standup-board',
+		check: 'clippedText',
+		reason: 'with 5 or more people, on-track and done rows clamp to one line (two at desktop width) and a tap expands them to the full text'
 	}
 ];
 
