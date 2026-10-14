@@ -81,9 +81,10 @@
     border-color: var(--ripple-control-border);
   }
 
+  /* A 1.5px live ring: the 1px border in accent plus half a pixel outside it. */
   .wf-running {
     border-color: var(--ripple-accent);
-    box-shadow: 0 0 0 1.5px var(--ripple-accent);
+    box-shadow: 0 0 0 0.5px var(--ripple-accent);
   }
 
   .wf-tile {

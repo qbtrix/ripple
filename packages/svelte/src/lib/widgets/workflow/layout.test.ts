@@ -157,6 +157,38 @@ describe('conditions and loops', () => {
     expect(plan(bare, 720).edges.map((e) => e.label)).toEqual(['Yes', 'No']);
   });
 
+  it('gives every fan-out exit its own channel and chip, and loops their own lanes', () => {
+    const ids = ['a', 'b', 'c', 'd'];
+    const g = sanitizeWorkflow(
+      [{ id: 'v', type: 'condition', label: 'Valid?' }, ...ids.map((id) => ({ id, label: id })), { id: 'm', label: 'Merge' }],
+      [...ids.map((id) => ({ from: 'v', to: id })), ...ids.map((id) => ({ from: id, to: 'm' }))],
+    );
+    const p = plan(g, 720);
+    expect(p.direction).toBe('LR');
+    const out = p.edges.filter((e) => e.from === 'v');
+    expect(out.map((e) => e.label)).toEqual(['Yes', 'No', '3', '4']);
+    expect(new Set(out.map((e) => e.chan)).size).toBe(out.length);
+    const into = p.edges.filter((e) => e.to === 'm');
+    expect(new Set(into.map((e) => e.chan)).size).toBe(into.length);
+    // On the narrow spine the skipped exits are loops; overlapping ones never share a lane,
+    // leaving the condition to the right of its plain exit.
+    const tb = plan(g, 360);
+    const loops = tb.edges.filter((e) => e.loop);
+    for (const group of [loops.filter((e) => e.from === 'v'), loops.filter((e) => e.to === 'm')])
+      expect(new Set(group.map((e) => e.lane)).size).toBe(group.length);
+    const v = tb.nodes.find((n) => n.id === 'v')!;
+    const pct = (e: (typeof tb.edges)[number]) => v.handles.find((h) => h.id === e.sourceHandle)!.pct;
+    const plainExit = tb.edges.find((e) => e.from === 'v' && !e.loop)!;
+    expect(loops.filter((e) => e.from === 'v').every((e) => pct(e) > pct(plainExit))).toBe(true);
+  });
+
+  it('keeps the overlays off the graph with a bottom gutter', () => {
+    const p = planWorkflow(chain(21).nodes, chain(21).edges, { width: 720, interactive: true, fitView: true, minimap: true });
+    expect(p.showMinimap && p.showControls).toBe(true);
+    const bottom = Math.max(...p.nodes.map((n) => n.y + n.h)) * p.zoom + p.viewport.y;
+    expect(bottom).toBeLessThanOrEqual(p.height - 96);
+  });
+
   it('a cycle does not inflate depth, and its back edge runs in an outside lane', () => {
     const g = sanitizeWorkflow(
       [{ id: 'm', label: 'Merge' }, { id: 'q', type: 'condition', label: 'Match?' }, { id: 'r', label: 'Retry' }, { id: 'p', type: 'output', label: 'Publish' }],

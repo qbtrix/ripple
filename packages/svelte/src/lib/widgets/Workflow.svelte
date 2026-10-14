@@ -4,14 +4,16 @@
 
   The model fills `nodes` and `edges`; layout.ts sanitises them once and plans
   the drawing for the measured card width: columns left to right at 480px and
-  up, one top-to-bottom spine below that, zoom held between 0.8 and 1, canvas
-  height following the graph (120 to 560px; it grows instead when the reader
-  cannot pan). Theming is the --xy-* to --ripple-* token map shared in spirit
-  with the C4 diagram, so it follows the host's light or dark theme; colorMode is
-  never set. The widget behaves like a card, not an editor: wheel and touch
-  scroll the page, nodes do not drag, the minimap shows only for a big graph in
-  a wide card, and the zoom pill only when something does not fit. The title row
-  carries a status count in place of a legend.
+  up (panning at the 0.8 floor when they do not fit), one top-to-bottom spine
+  below that, canvas height following the graph (120 to 560px; it grows instead
+  when the reader cannot pan). The plan also decides the overlays and keeps a
+  bottom gutter for them, so the minimap (a big graph in a wide card) and the
+  zoom pill (only when something does not fit) never cover a node at the
+  initial view. No frame of its own: the dot grid marks the canvas, and only
+  when the graph does not fit at zoom 1. Theming is the --xy-* to --ripple-*
+  token map shared in spirit with the C4 diagram, so it follows the host's
+  light or dark theme; colorMode is never set. Wheel and touch scroll the page,
+  nodes do not drag. The title row carries a status count in place of a legend.
 -->
 <script lang="ts">
   import { SvelteFlow, Background, BackgroundVariant, Controls, MiniMap, Position } from '@xyflow/svelte';
@@ -49,7 +51,7 @@
   let width = $state(0);
 
   const graph = $derived(sanitizeWorkflow(inputNodes, inputEdges));
-  const plan = $derived(planWorkflow(graph.nodes, graph.edges, { width, interactive: interactive !== false, fitView: fitView !== false }));
+  const plan = $derived(planWorkflow(graph.nodes, graph.edges, { width, interactive: interactive !== false, fitView: fitView !== false, minimap: minimap === true }));
 
   const flowNodes = $derived(
     plan.nodes.map((n): Node => {
@@ -91,8 +93,6 @@
     viewport = { ...plan.viewport };
   });
 
-  const showMinimap = $derived(minimap === true && plan.nodes.length >= 12 && width >= 560);
-  const showControls = $derived(interactive !== false && !plan.fitsAtOne);
 
   // Title-row count in place of a legend, only when some step is not idle.
   const count = $derived.by(() => {
@@ -148,11 +148,13 @@
       maxZoom={1.5}
       proOptions={{ hideAttribution: true }}
     >
-      <Background variant={BackgroundVariant.Dots} gap={20} size={1.25} />
-      {#if showControls}
+      {#if !plan.fitsAtOne}
+        <Background variant={BackgroundVariant.Dots} gap={20} size={1.25} />
+      {/if}
+      {#if plan.showControls}
         <Controls showLock={false} position="bottom-right" orientation="horizontal" />
       {/if}
-      {#if showMinimap}
+      {#if plan.showMinimap}
         <MiniMap position="bottom-left" width={120} height={80} nodeBorderRadius={4} />
       {/if}
     </SvelteFlow>
@@ -188,8 +190,10 @@
     overflow-wrap: anywhere;
   }
 
+  /* No auto margin: on the title's line space-between pushes the count right;
+     wrapped under a long title it starts at the left edge. */
   .wf-count {
-    margin: 0 0 0 auto;
+    margin: 0;
     display: flex;
     gap: 5px;
     font-size: var(--text-caption-1, 10px);
@@ -210,9 +214,6 @@
       flex-direction: column;
       align-items: flex-start;
     }
-    .wf-count {
-      margin-left: 0;
-    }
   }
 
   /* SvelteFlow's theme variables mapped to ripple tokens (the C4 diagram's map),
@@ -221,8 +222,6 @@
     width: 100%;
     position: relative;
     overflow: hidden;
-    border-radius: var(--ripple-radius, 10px);
-    border: 1px solid var(--ripple-border);
     /* An opaque ground for things that sit on the canvas (cards, chips,
        controls) over a possibly translucent host card; cards lift one step. */
     --wf-ground: oklch(from var(--ripple-surface-foreground) calc(1.13 - l * 0.96) calc(c * 0.5) h);
@@ -238,8 +237,8 @@
     --xy-controls-button-color-hover: var(--ripple-surface-foreground);
     --xy-controls-button-border-color: transparent;
     --xy-controls-box-shadow: none;
-    --xy-minimap-background-color: var(--wf-ground);
-    --xy-minimap-mask-background-color: color-mix(in oklab, var(--ripple-surface-foreground) 7%, transparent);
+    --xy-minimap-background-color: var(--ripple-surface);
+    --xy-minimap-mask-background-color: color-mix(in oklab, var(--ripple-surface-foreground) 4%, transparent);
     --xy-minimap-mask-stroke-color: var(--ripple-border);
     --xy-minimap-node-background-color: color-mix(in oklab, var(--ripple-muted-foreground) 45%, transparent);
     --xy-minimap-node-stroke-color: transparent;
@@ -311,12 +310,10 @@
   }
 
   .wf-canvas :global(.wf-chip span) {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
+    display: block;
     overflow: hidden;
-    overflow-wrap: break-word;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
 
   .wf-canvas :global(.svelte-flow__controls) {
