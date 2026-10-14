@@ -9,6 +9,7 @@
 // closed-key idea without the scan: an `icon` is honoured only when it is a key
 // of the map (workflow falls back to WORKFLOW_TYPE_ICONS by node type).
 // bulk-action-bar's BULK_ICONS is closed too, but an unknown name shows no icon.
+// audit-log's ACTOR_ICONS is closed the same way: an unknown actorIcon is absent.
 //
 // One map per enum in the doc, each its own export so a widget's bundle carries
 // only the icons it imports. A widget with an enum not listed here
@@ -16,6 +17,11 @@
 // Sizes: 16px in rows, 20px in tiles, stroke 1.75 (ICON).
 import type { LucideIcon } from '@lucide/svelte';
 import CircleDot from '@lucide/svelte/icons/circle-dot';
+// audit-log actors
+import Bot from '@lucide/svelte/icons/bot';
+import Server from '@lucide/svelte/icons/server';
+import Key from '@lucide/svelte/icons/key';
+import Shield from '@lucide/svelte/icons/shield';
 // stops
 import Landmark from '@lucide/svelte/icons/landmark';
 import Utensils from '@lucide/svelte/icons/utensils';
@@ -550,3 +556,15 @@ const isWorkflowIconKey = (k: unknown): k is keyof typeof WORKFLOW_ICONS => type
 export function workflowIcon(type: keyof typeof WORKFLOW_TYPE_ICONS, icon?: unknown): LucideIcon {
 	return isWorkflowIconKey(icon) ? WORKFLOW_ICONS[icon] : WORKFLOW_TYPE_ICONS[type];
 }
+
+/** audit-log `actorIcon`: honoured only as a key of this map. */
+export const ACTOR_ICONS = {
+	user: User,
+	users: Users,
+	bot: Bot,
+	cog: Cog,
+	server: Server,
+	key: Key,
+	shield: Shield,
+	mail: Mail
+} satisfies Record<string, LucideIcon>;

@@ -33,6 +33,7 @@ import PeoplePicker from './vertical/PeoplePicker.svelte';
 import ApiKey from './vertical/ApiKey.svelte';
 import TextEffect from './premium/TextEffect.svelte';
 import DataGrid from './data/DataGrid.svelte';
+import AuditLog from './vertical/AuditLog.svelte';
 
 /** Render and return the trimmed text content; fails the test if render throws. */
 function renderText(Component: any, props: Record<string, unknown>): string {
@@ -139,5 +140,14 @@ describe('non-string props do not crash widgets', () => {
     expect(() =>
       render(DataGrid, { props: { columns: [{ key: 'a', label: 'A' }], rows: [{ a: 1 }], defaultSort: 5 as unknown as string } })
     ).not.toThrow();
+  });
+
+  it('AuditLog tolerates non-array entries, junk items and a numeric target', () => {
+    expect(renderText(AuditLog, { entries: 'nope' as unknown as [] })).toContain('No events yet');
+    const text = renderText(AuditLog, {
+      entries: [null, 'stray', { id: 1, actor: 7, action: 'updated plan', target: 42 }] as unknown as []
+    });
+    expect(text).toContain('42');
+    expect(text).toContain('1 event');
   });
 });
