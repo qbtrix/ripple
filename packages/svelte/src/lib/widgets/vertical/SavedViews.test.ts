@@ -17,8 +17,9 @@ const radios = (c: HTMLElement) => Array.from(c.querySelectorAll<HTMLElement>('[
 
 describe('SavedViews', () => {
 	it('is a named radiogroup with exactly one tab stop on the selected view', () => {
-		const { container } = render(SavedViews, { props: { views: VIEWS, value: 'assigned' } });
-		expect(container.querySelector('[role="radiogroup"]')?.getAttribute('aria-label')).toBe('Saved views');
+		const { container, getByRole } = render(SavedViews, { props: { views: VIEWS, value: 'assigned' } });
+		// The group is display: contents for layout; it must still resolve by role and name.
+		expect(getByRole('radiogroup', { name: 'Saved views' })).toBeTruthy();
 		const r = radios(container);
 		expect(r.map((el) => el.tabIndex)).toEqual([-1, 0, -1, -1]);
 		expect(r[1].getAttribute('aria-checked')).toBe('true');

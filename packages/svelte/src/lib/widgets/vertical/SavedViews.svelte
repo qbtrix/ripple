@@ -6,16 +6,22 @@
   and segmented): the selected view is a raised chip with medium weight, the
   rest are quiet muted labels. Each chip is [icon] label count [pin]. On the
   selected chip count and pin keep the label ink (muted ink on the dark raised
-  fill drops under 3:1) and the count is set apart by weight. Elsewhere the count
-  is plain secondary ink (2,847 grouped, 12.4K compact from 10,000; the full
-  number is in the accessible name). A label never wraps inside its chip: it
-  ellipses (full text in title and aria-label) and the row wraps between chips,
-  so nothing ever scrolls sideways.
+  fill drops under 3:1) and the count is set apart by weight. On the other
+  chips the count shares the muted label ink: one step quieter (80% muted into
+  the surface) measures 3.3:1 on the light card, under 4.5:1, so the gap is
+  the only cue there. Counts read 2,847 grouped, 12.4K compact from 10,000; the
+  full number is in the accessible name. A label never wraps inside its chip:
+  it ellipses (full text in title and aria-label) and the row wraps between
+  chips, so nothing ever scrolls sideways.
 
-  The root is the size container. Below 480px chips get tighter padding and
-  New view is an icon-only square; below 400px view icons are dropped. More
-  than COLLAPSE_AT views fold to the first seven plus the selected one and an
-  "N more" disclosure (saved-views.ts holds the rule and the normaliser).
+  Chips, "N more" and New view share one flex flow: the radiogroup element is
+  `display: contents`, so it groups the radios for assistive tech without
+  boxing them, and the two buttons follow the last chip on its line (New view
+  pushed to the end by an auto margin). The root is the size container. Below
+  480px chips get tighter padding; below 400px view icons are dropped; below
+  280px New view is an icon-only square. More than COLLAPSE_AT views fold to
+  the first seven plus the selected one and an "N more" disclosure
+  (saved-views.ts holds the rule and the normaliser).
 
   Selection: `value` when it names a view, else the first pinned view, else the
   first; a default is committed once through onchange so state agrees. It is a
@@ -231,8 +237,7 @@
     min-width: 0;
   }
 
-  .sv__row,
-  .sv__group {
+  .sv__row {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -240,8 +245,9 @@
     min-width: 0;
   }
 
+  /* Groups the radios for assistive tech; layout belongs to .sv__row. */
   .sv__group {
-    max-width: 100%;
+    display: contents;
   }
 
   .sv__chip {
@@ -262,13 +268,21 @@
     flex-shrink: 0;
   }
 
-  /* Narrow: New view is an icon-only square. */
   .sv__new {
-    width: 2rem;
+    margin-inline-start: auto;
+    padding-inline: 10px;
   }
 
-  .sv__new-text {
-    display: none;
+  /* Tiny containers: New view is an icon-only square. */
+  @container (max-width: 279px) {
+    .sv__new {
+      width: 2rem;
+      padding-inline: 0;
+    }
+
+    .sv__new-text {
+      display: none;
+    }
   }
 
   @container (max-width: 399px) {
@@ -281,16 +295,6 @@
     .sv__chip {
       max-width: min(100%, 240px);
       padding-inline: 10px;
-    }
-
-    .sv__new {
-      width: auto;
-      margin-inline-start: auto;
-      padding-inline: 10px;
-    }
-
-    .sv__new-text {
-      display: inline;
     }
   }
 </style>
