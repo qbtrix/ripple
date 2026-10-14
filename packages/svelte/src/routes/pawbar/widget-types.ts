@@ -32,7 +32,7 @@ export const CHAT_WIDGET_TYPES: ReadonlySet<string> = new Set([
 	'quote', 'radio-group', 'range-bar', 'rating', 'reasoning-trace', 'recipe', 'report-layout',
 	'reveal', 'sankey', 'saved-views', 'search', 'section', 'segmented', 'seismograph', 'select',
 	'separator', 'settings-list', 'sheet', 'shimmer', 'sidebar', 'skeleton', 'slider', 'soul-status',
-	'source-card', 'sources-bar', 'sparkline', 'split', 'spotlight', 'stat', 'status-dot', 'steps',
+	'source-card', 'sources-bar', 'sparkline', 'split', 'spotlight', 'standup-board', 'stat', 'status-dot', 'steps',
 	'streak-bars', 'stream-text', 'switch', 'table', 'tabs', 'terminal', 'testimonial', 'text',
 	'text-effect', 'textarea', 'ticker', 'time-picker', 'timeline', 'timer', 'toast', 'todo-list',
 	'tool-call', 'tooltip', 'tree', 'tree-table', 'treemap', 'trend', 'video', 'virtual-list',

@@ -30,6 +30,7 @@ import { CHAT_WIDGET_TYPES } from './widget-types.js';
 import { weatherForecastEntry } from '$lib/manifest/entries/weather-forecast.js';
 import { weekScheduleEntry } from '$lib/manifest/entries/week-schedule.js';
 import { agendaEntry } from '$lib/manifest/entries/agenda.js';
+import { standupBoardEntry } from '$lib/manifest/entries/standup-board.js';
 import { isoSceneEntry } from '$lib/manifest/entries/iso-scene.js';
 import { bikeScene, engineScene, heartScene } from '$lib/widgets/composite/iso-scenes.js';
 import liveHeadphonesCard from './fixtures/headphones-comparison-card.json';
@@ -1062,6 +1063,7 @@ describe('app-like data cards', () => {
 		['weather forecast', weatherForecastEntry],
 		['week schedule', weekScheduleEntry],
 		['meeting agenda', agendaEntry],
+		['team standup', standupBoardEntry],
 		['iso scene', isoSceneEntry],
 		['bike drivetrain', { type: 'iso-scene', example: { type: 'iso-scene', bind: '{state.bike}', props: bikeScene } }],
 		['heart machine', { type: 'iso-scene', example: { type: 'iso-scene', props: heartScene } }]

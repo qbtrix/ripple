@@ -135,6 +135,7 @@ import { growthProjectionEntry } from './entries/growth-projection.js';
 import { billSplitEntry } from './entries/bill-split.js';
 import { intervalWorkoutEntry } from './entries/interval-workout.js';
 import { habitTrackerEntry } from './entries/habit-tracker.js';
+import { standupBoardEntry } from './entries/standup-board.js';
 import { notesEntry } from './entries/notes.js';
 import { placeResultsEntry } from './entries/place-results.js';
 import { productGridEntry } from './entries/product-grid.js';
@@ -485,6 +486,7 @@ export const manifestEntries: WidgetManifestEntry[] = [
   menuOrderEntry,
   intervalWorkoutEntry,
   habitTrackerEntry,
+  standupBoardEntry,
   notesEntry,
   placeResultsEntry,
   productGridEntry,

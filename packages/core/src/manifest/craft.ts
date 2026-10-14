@@ -92,6 +92,7 @@ export const DATA_PROPS: Readonly<Record<string, readonly string[]>> = {
 	'range-bar': ['min', 'max', 'current'],
 	recipe: ['minutes', 'serves', 'kcal', 'protein_g', 'ingredients'],
 	sparkline: ['values'],
+	'standup-board': ['people'],
 	stat: ['value', 'delta', 'deltaPercent'],
 	table: ['rows'],
 	timeline: ['events'],
@@ -471,6 +472,12 @@ export const intents: readonly Intent[] = [
 		ask: ['agenda', 'meeting', 'run of show'],
 		props: ['title', 'start', 'items'],
 		hints: ['start "HH:MM", minutes per item; bind a state key.']
+	},
+	{
+		widget: 'standup-board',
+		ask: ['standup', 'stand-up', 'blockers', 'blocker', 'blocked', 'team status', 'check-in', 'who is stuck'],
+		props: ['team', 'date', 'people', 'summary'],
+		hints: ['A team standup or check-in is one standup-board, never a kanban or a card per person: people[{name, role, yesterday, today, blocker, status}]. Write a blocker only when someone is stuck; leave it out otherwise. The widget counts open blockers itself.']
 	},
 	{
 		widget: 'place-results',

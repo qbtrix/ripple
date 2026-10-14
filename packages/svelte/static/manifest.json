@@ -1,7 +1,7 @@
 {
   "schema": "ripple.manifest/v1",
   "version": "0.8.0",
-  "generatedAt": "2026-10-13T15:33:48.272Z",
+  "generatedAt": "2026-10-14T02:27:22.513Z",
   "spec": {
     "uiField": "ui",
     "stateField": "state",
@@ -10762,6 +10762,76 @@
       }
     },
     {
+      "type": "standup-board",
+      "category": "composite",
+      "description": "Team standup: people[{name, role, yesterday, today, blocker, status}]. Blocked people first, open blockers counted for you, the viewer can resolve one. Bind value.",
+      "props": {
+        "team": {
+          "type": "string",
+          "required": false,
+          "description": "Card title, e.g. \"Payments team\". Default \"Standup\"."
+        },
+        "date": {
+          "type": "string",
+          "required": false,
+          "description": "ISO day \"2026-10-14\" or a short label."
+        },
+        "summary": {
+          "type": "string",
+          "required": false,
+          "description": "One sentence naming who is stuck. Leave out and the widget writes it from the people."
+        },
+        "people": {
+          "type": "Array<{ name: string; role?: string; avatar?: string; yesterday?: string; today?: string; blocker?: string; status?: \"blocked\" | \"on-track\" | \"done\" | \"away\" }>",
+          "required": true,
+          "description": "Up to 20 people. Write blocker only when someone is stuck (it makes them blocked). status \"away\" for someone off today, with today like \"Back Monday\". Never write a blocker count.",
+          "data": true
+        }
+      },
+      "example": {
+        "type": "standup-board",
+        "bind": "{state.standup}",
+        "props": {
+          "team": "Payments team",
+          "date": "2026-10-14",
+          "people": [
+            {
+              "name": "Lina Okafor",
+              "role": "DevOps",
+              "yesterday": "Set up the staging deploy pipeline",
+              "today": "Run the first staging migration",
+              "blocker": "Waiting on staging database credentials from the infra team."
+            },
+            {
+              "name": "Aarav Mehta",
+              "role": "Backend",
+              "yesterday": "Shipped the invoice export endpoint",
+              "today": "Add pagination to the export API"
+            },
+            {
+              "name": "Mei Tanaka",
+              "role": "Frontend",
+              "yesterday": "Built the settings page",
+              "today": "Hook settings to the profile API"
+            },
+            {
+              "name": "Priya Nair",
+              "role": "QA",
+              "yesterday": "Wrote refund test cases",
+              "today": "Run the regression suite",
+              "status": "done"
+            },
+            {
+              "name": "Rui Santos",
+              "role": "Design",
+              "today": "Back Monday",
+              "status": "away"
+            }
+          ]
+        }
+      }
+    },
+    {
       "type": "notes",
       "category": "composite",
       "description": "Notepad app: the visitor writes notes straight in, #tags become filter chips, pin, edit, delete with undo. Seed notes[{title, text, tags}]. Bind value.",
@@ -19141,6 +19211,28 @@
       ],
       "hints": [
         "start \"HH:MM\", minutes per item; bind a state key."
+      ]
+    },
+    {
+      "widget": "standup-board",
+      "ask": [
+        "standup",
+        "stand-up",
+        "blockers",
+        "blocker",
+        "blocked",
+        "team status",
+        "check-in",
+        "who is stuck"
+      ],
+      "props": [
+        "team",
+        "date",
+        "people",
+        "summary"
+      ],
+      "hints": [
+        "A team standup or check-in is one standup-board, never a kanban or a card per person: people[{name, role, yesterday, today, blocker, status}]. Write a blocker only when someone is stuck; leave it out otherwise. The widget counts open blockers itself."
       ]
     },
     {
