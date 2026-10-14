@@ -1,8 +1,12 @@
 <!--
   Grid.svelte: Ripple CSS grid layout widget. Numeric `columns` are equal
-  minmax(0,1fr) tracks; metric and stat children become bordered tiles that are
-  also size containers. An optional onclick makes the grid a keyboard-operable
-  role="button" (Enter/Space); without one it is a plain element.
+  minmax(0,1fr) tracks, set through --rg-cols / --rg-gap so the stylesheet can
+  reflow them: metric and stat children become bordered tiles (size containers)
+  and a row of tiles drops to fewer columns once a cell would fall under 140px.
+  Field atoms (control.ts FIELD, class `rfield`) become row subgrids, so the
+  label, control and message of fields in one row share row lines and the
+  controls line up whatever the label length. An optional onclick makes the
+  grid a keyboard-operable role="button" (Enter/Space).
 -->
 <script lang="ts">
   import { safeStyle } from '@ripple-ui/core';
@@ -36,14 +40,14 @@
 	);
 
 	const combinedStyle = $derived.by(() => {
-		const s: string[] = ['display:grid'];
-		if (typeof columns === 'number') s.push(`grid-template-columns:repeat(${columns},minmax(0,1fr))`);
+		const s: string[] = [];
+		if (typeof columns === 'number') s.push(`--rg-cols:${columns}`);
 		else s.push(`grid-template-columns:${columns}`);
 		if (rows) {
 			if (typeof rows === 'number') s.push(`grid-template-rows:repeat(${rows},1fr)`);
 			else s.push(`grid-template-rows:${rows}`);
 		}
-		if (gapValue) s.push(`gap:${gapValue}`);
+		if (gapValue) s.push(`--rg-gap:${gapValue}`);
 		if (style) s.push(...Object.entries(style).map(([k, v]) => `${k}:${v}`));
 		return safeStyle(s.join(';'));
 	});
@@ -61,7 +65,34 @@
 </div>
 
 <style>
-	.rgrid { min-width: 0; }
+	.rgrid {
+		display: grid;
+		grid-template-columns: repeat(var(--rg-cols, 1), minmax(0, 1fr));
+		gap: var(--rg-gap, 0px);
+		min-width: 0;
+	}
+	/* A row of tiles keeps --rg-cols columns while each is at least 140px, then
+	   reflows to fewer (the `- gap` keeps float error from dropping one early). */
+	.rgrid:has(> :global([data-ripple-tile])) {
+		grid-template-columns: repeat(auto-fit, minmax(max(140px, calc(100% / var(--rg-cols, 1) - var(--rg-gap, 0px))), 1fr));
+	}
+	/* Fields share row lines: label (bottom-aligned), control, message. Each
+	   field spans three rows, so the row gap is halved (a message adds the
+	   other half under itself) to keep field rows --rg-gap apart. */
+	.rgrid:has(> :global(.rfield)) { row-gap: calc(var(--rg-gap, 0px) / 2); }
+	.rgrid > :global(.rfield) {
+		display: grid;
+		grid-row: span 3;
+		grid-template-rows: subgrid;
+		grid-template-columns: minmax(0, 1fr);
+		row-gap: 6px;
+	}
+	.rgrid > :global(.rfield > *) { grid-column: 1; grid-row: 2; }
+	.rgrid > :global(.rfield > :is(label, [data-field-label]):first-child) { grid-row: 1; align-self: end; }
+	.rgrid > :global(.rfield > :is([data-slot$='-error'], [data-slot$='-helper'])) {
+		grid-row: 3;
+		margin-bottom: calc(var(--rg-gap, 0px) / 2);
+	}
 	/* Metric and stat children read as tiles inside a grid. Each tile is a
 	   size container, so the atom sizes its value from its own box. */
 	.rgrid > :global([data-ripple-tile]) {

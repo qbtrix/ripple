@@ -65,7 +65,7 @@
 
 <div class={FIELD}>
   {#if label}
-    <span class={FIELD_LABEL}>
+    <span class={FIELD_LABEL} data-field-label>
       {label}
     </span>
   {/if}

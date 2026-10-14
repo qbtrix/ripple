@@ -4,8 +4,9 @@
   and trend with the label at the right) and horizontal (label left, value
   right). Every variant forwards the node id (id + data-ripple-node).
   As a tile (a direct child of grid or dashboard, which make tiles containers)
-  every variant stacks label first, top-aligned, with one value size taken from
-  the tile's own box, so a row of tiles shares the label and value baselines.
+  every variant stacks label first, top-aligned, with the one tile value size
+  (title-3, stepping down in a narrow tile) that stat tiles share, so a sheet of
+  tiles sets every number in one style.
   A 7-figure number steps its font down with the tile and, under 100px, swaps
   to the compact form ('12.8M'). The value is never clipped.
 -->
@@ -95,7 +96,7 @@
     max-width: 100%;
   }
   :global(:is(.rdash, .rgrid)) > .m-root .m-fit {
-    font-size: clamp(var(--text-title-3), 17cqi, var(--text-title-2));
+    font-size: clamp(var(--text-body), 22cqi, var(--text-title-3));
     line-height: 1.25;
   }
   @container (max-width: 99px) {

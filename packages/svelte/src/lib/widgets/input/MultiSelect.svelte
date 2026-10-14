@@ -2,6 +2,7 @@
 <script lang="ts">
   import { Popover as P } from 'bits-ui';
   import { cn } from '$lib/utils.js';
+  import { FIELD } from '$lib/components/ui/control.js';
   import { canonicalOptions } from '$lib/utils/safe-props.js';
   import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
   import CheckIcon from '@lucide/svelte/icons/check';
@@ -125,7 +126,7 @@
   const overflowCount = $derived(Math.max(0, selected.length - maxChips));
 </script>
 
-<div class={cn('flex flex-col gap-1.5', className)} style={styleString}>
+<div class={cn(FIELD, className)} style={styleString}>
   {#if label}
     <label for={id} class="text-sm font-medium">{label}</label>
   {/if}

@@ -3,8 +3,10 @@
 // number-input stack FIELD (label, 6px gap, control) and size the control box
 // with CONTROL_H at md. Every field and inline (switch, checkbox, radio) label
 // uses FIELD_LABEL's 1.35 line height, so wrapped labels read the same.
+// `rfield` is the hook Grid uses to put fields in one row on shared row lines;
+// a label that is not a <label> element carries data-field-label for it.
 
-export const FIELD = 'flex min-w-0 flex-col gap-1.5';
+export const FIELD = 'rfield flex min-w-0 flex-col gap-1.5';
 
 export const FIELD_LABEL = 'text-sm font-medium leading-[1.35] text-ripple-surface-foreground';
 

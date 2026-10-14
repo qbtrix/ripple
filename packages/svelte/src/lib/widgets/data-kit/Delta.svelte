@@ -2,8 +2,9 @@
      An arrow and a signed value in the tone's readable text colour on a soft
      tint of that tone (never a solid accent pill); neutral uses the same soft
      tint recipe in muted ink. `sentiment` picks the tone, `dir` the arrow, so
-     "response time down" can be good news in green. The pill never outgrows its
-     box: in a narrow tile the text wraps at its spaces inside the pill. -->
+     "response time down" can be good news in green. The pill stays on one line
+     (arrow and value never part); a host with a narrow box swaps in a shorter
+     text, as stat does with its percent-only delta. -->
 <script lang="ts">
   import { cn } from '$lib/utils.js';
   import ArrowUp from '@lucide/svelte/icons/arrow-up';
@@ -34,7 +35,7 @@
   data-slot={slot ?? 'delta'}
   data-sentiment={tone}
   class={cn(
-    'inline-flex max-w-full shrink-0 items-center gap-0.5 rounded-md [&>svg]:shrink-0 px-1.5 py-0.5 text-[11px] font-medium leading-4 tabular-nums',
+    'inline-flex max-w-full shrink-0 items-center whitespace-nowrap gap-0.5 rounded-md [&>svg]:shrink-0 px-1.5 py-0.5 text-[11px] font-medium leading-4 tabular-nums',
     tone === 'positive' && 'bg-ripple-success/12 text-ripple-success-text',
     tone === 'negative' && 'bg-ripple-error/10 text-ripple-error-text',
     tone === 'neutral' && 'bg-ripple-muted-foreground/10 text-ripple-muted-foreground',

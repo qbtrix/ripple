@@ -11,10 +11,12 @@
      Accessible name: `label`, else `aria-label`, else the enclosing PropertyRow's
      label (input/field-name.ts), and only then the unit.
      The root is min-w-0 in both modes, so a field in a grid or flex track
-     shrinks with it instead of pushing its siblings out of a dialog.
+     shrinks with it instead of pushing its siblings out of a dialog. A labelled
+     default field is a form field (control.ts FIELD): it fills its column like
+     input and select; an unlabelled stepper caps at 14rem.
      `name` is rendered on the native input so a static <form> POST submits it. -->
 <script lang="ts">
-  import { FIELD_LABEL } from '$lib/components/ui/control.js';
+  import { FIELD, FIELD_LABEL } from '$lib/components/ui/control.js';
   import { cn } from '$lib/utils.js';
   import MinusIcon from '@lucide/svelte/icons/minus';
   import PlusIcon from '@lucide/svelte/icons/plus';
@@ -117,15 +119,15 @@
   const cantIncrement = $derived(typeof max === 'number' && typeof value === 'number' && value >= max);
 </script>
 
-<div class={cn('flex min-w-0 flex-col gap-1.5', compact && 'w-full', className)} style={styleString}>
+<div class={cn(compact ? 'flex w-full min-w-0 flex-col gap-1.5' : FIELD, label && !compact && 'w-full', className)} style={styleString}>
   {#if label && !compact}
     <label for={id} class={FIELD_LABEL}>{label}</label>
   {/if}
 
   <div
     class={cn(
-      'inline-flex h-9 w-full max-w-[14rem] items-stretch overflow-hidden rounded-md border border-input bg-background shadow-xs transition-shadow',
-      compact && 'h-7 max-w-none',
+      'inline-flex h-9 w-full items-stretch overflow-hidden rounded-md border border-input bg-background shadow-xs transition-shadow',
+      compact ? 'h-7' : !label && 'max-w-[14rem]',
       'focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/40',
       disabled && 'cursor-not-allowed opacity-50'
     )}

@@ -1,8 +1,9 @@
 <!--
   Stat.svelte: single metric display (label + formatted value + optional delta).
-  In a grid or dashboard tile the value is sized from the tile's own box and,
-  under 140px, swaps to the compact form ('$45.2K'); the delta wraps under the
-  value and never overflows. Values are model output, so formatValue never paints "NaN" (non-finite
+  In a grid or dashboard tile the value takes the tile value size metric uses
+  (`size: sm` is the one smaller step) and, under 140px of tile, swaps to the
+  compact form ('$45.2K') while a two-part delta drops to its percent alone;
+  the delta pill stays on one line. Values are model output, so formatValue never paints "NaN" (non-finite
   numbers render blank, strings pass through verbatim) and a plain number is
   rounded for display by magnitude (0 decimals from 100, 1 from 10, else 2)
   unless `decimals` / `precision` pins the digits. Status-coloured text uses
@@ -144,7 +145,10 @@
     return c !== displayValue ? c : '';
   });
   const compactDelta = $derived.by(() => {
-    const c = hasDelta && displayDelta.length > 7 ? formatDelta(true) : displayDelta;
+    if (!hasDelta) return '';
+    const pct = deltaPercent !== undefined ? `${deltaPercent > 0 ? '+' : ''}${deltaPercent}%` : '';
+    const c = deltaFormat === 'both' && delta !== undefined && pct ? pct
+      : displayDelta.length > 7 ? formatDelta(true) : displayDelta;
     return c !== displayDelta ? c : '';
   });
 
@@ -211,12 +215,15 @@
 
 <style>
   /* Sized from the tile's own box (grid and dashboard make tiles containers):
-     the value steps down toward text-body in a narrow tile, and under 140px the
-     compact forms replace the full ones. Without a container, the max applies. */
-  .stat-fit { font-size: clamp(var(--text-body), 22cqi, var(--stat-fs)); line-height: 1.25; }
+     md and lg take metric's tile value size, sm stays one step smaller, and
+     under 140px the compact forms replace the full ones. */
+  .stat-fit { font-size: var(--stat-fs); line-height: 1.25; }
   [data-size='sm'] .stat-fit { --stat-fs: var(--text-body); }
   [data-size='md'] .stat-fit { --stat-fs: var(--text-title-3); }
   [data-size='lg'] .stat-fit { --stat-fs: var(--text-title-2); }
+  :global(:is(.rdash, .rgrid)) > [data-ripple-tile]:not([data-size='sm']) .stat-fit {
+    font-size: clamp(var(--text-body), 22cqi, var(--text-title-3));
+  }
   [data-ripple-tile-value] > :global(.stat-compact) { display: none; }
   @container (max-width: 139px) {
     [data-ripple-tile-value] > :global(.stat-full) { display: none; }
