@@ -42,7 +42,7 @@ export interface Tick {
 	/** 0..1 along the range. */
 	x: number;
 	text: string;
-	/** Right-aligned on its tick (the last label, where left-aligned would run off the track). */
+	/** Right-aligned on its tick (only the Today label, at the track end). */
 	end?: boolean;
 }
 
@@ -246,7 +246,7 @@ export interface Scale {
  * the first of (unit, 1) and (unit, 2) steps, from viewMode's unit upward,
  * whose labels sit at least `minGap` px apart (44 wide, 64 narrow) with no
  * label dropped for crowding, so spacing stays even. Labels sit left aligned
- * on their tick (right aligned at the end), never past either edge, at most
+ * on their tick; one that would cross the track end is dropped. At most
  * `maxLabels`. Lines: every base unit while 6px apart (minor), plus the
  * label unit's (major).
  */
@@ -300,16 +300,15 @@ function labelsFor(r: Range, unit: Unit, k: number, w: number, minGap: number, c
 		const x = frac(t, r);
 		const px = x * w;
 		const lw = labelPx(text);
-		const end = px + lw > w;
-		if (end && px - lw < 0) continue;
+		// A label that would cross the track end is dropped, never squeezed in.
+		if (px + lw > w) continue;
 		const prev = labels.length ? labels[labels.length - 1].x * w : -Infinity;
-		if ((end ? px - lw : px) < lastEnd || px - prev < minGap) {
-			// A crowded last label at the edge is just dropped; one mid-track means the step is too fine.
-			if (!end) crowded = true;
+		if (px < lastEnd || px - prev < minGap) {
+			crowded = true;
 			continue;
 		}
-		labels.push(end ? { x, text, end } : { x, text });
-		lastEnd = px + (end ? 0 : lw) + 8;
+		labels.push({ x, text });
+		lastEnd = px + lw + 8;
 		lastYear = year;
 	}
 	return { labels, crowded };
@@ -317,9 +316,16 @@ function labelsFor(r: Range, unit: Unit, k: number, w: number, minGap: number, c
 
 /**
  * Where the Today label goes: right of the line, or left (`end`) when that
- * hides fewer tick labels; the tick labels it would touch drop out.
+ * hides fewer tick labels. Today outranks every tick and is spaced like one:
+ * a tick label stays only if its left edge is at least `gap` px (44 wide, 64
+ * narrow) from Today's and a clear 16px separates the two boxes.
  */
-export function placeToday(labels: readonly Tick[], today: number, w: number): { labels: Tick[]; end: boolean } {
+export function placeToday(
+	labels: readonly Tick[],
+	today: number,
+	w: number,
+	gap = 44
+): { labels: Tick[]; end: boolean } {
 	const tw = labelPx('Today');
 	const px = today * w;
 	const span = (l: Tick) => {
@@ -328,7 +334,7 @@ export function placeToday(labels: readonly Tick[], today: number, w: number): {
 	};
 	const keep = (from: number, to: number) => labels.filter((l) => {
 		const [a, b] = span(l);
-		return b + 4 <= from || a >= to + 4;
+		return Math.abs(a - from) >= gap && (b + 16 <= from || a >= to + 16);
 	});
 	const right = px + tw <= w ? keep(px, px + tw) : undefined;
 	const left = px - tw >= 0 ? keep(px - tw, px) : undefined;

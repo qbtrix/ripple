@@ -7,16 +7,21 @@
   gantt-scale.ts (pure, unit tested); this file only lays it out.
 
   Layout switches on the widget's own width (container query, 480px):
-  - wide: name column + track, 1px elbow connectors for dependencies;
-  - narrow: two-line rows (name with dates and percent, then the bar), and
-    a dependency reads "After X" instead of a drawn line.
+  - wide: name column + track, grid and today line over the track column,
+    1px elbow connectors that drop through row gaps clear of other bars;
+  - narrow: one non-wrapping name/meta line, an optional "After X" line, then
+    the track. Grid and today line are drawn inside each track strip only,
+    so no line crosses text.
   The tick unit steps up from `viewMode` until labels fit (gantt-scale.ts),
   so the measured track width feeds the scale; unmeasured (SSR, jsdom) it
   assumes a 640px card. `height` is a maximum: the card is as tall as its
   rows and scrolls vertically under a sticky summary and scale beyond it.
-  Colours are --ripple-* tokens only; bars are the accent over an accent
-  tint, with a card-coloured notch between the done part and the rest
-  (their own contrast is under 3:1; GanttChart.test.ts measures it).
+  The Today label outranks tick labels and is spaced like one (gantt-scale.ts).
+  Colours are --ripple-* tokens only; bars are the accent over a 40% accent
+  tint laid on the surface (opaque, so grid lines stay behind it, and still
+  1.4:1 on a host card a step lighter than --ripple-surface), with a
+  card-coloured notch between the done part and the rest, since solid on
+  tint stays under 3:1 (GanttChart.test.ts measures it).
   The root forwards `id` and data-ripple-node for the visual editor.
 -->
 <script lang="ts">
@@ -120,31 +125,50 @@
 	const today = $derived(range && TODAY >= range.min && TODAY <= range.max ? frac(TODAY, range) : undefined);
 	// Tick labels give way to the Today label.
 	const axis = $derived(
-		today === undefined ? { labels: scale?.labels ?? [], end: false } : placeToday(scale?.labels ?? [], today, width)
+		today === undefined
+			? { labels: scale?.labels ?? [], end: false }
+			: placeToday(scale?.labels ?? [], today, width, narrow ? 64 : 44)
 	);
 
 	const pos = (t: number) => (range ? frac(t, range) * 100 : 0);
 
-	// Elbow connectors in px over the track, wide layout only.
+	// Elbow connectors in px over the track, wide layout only. Each leaves the
+	// predecessor's end, runs along the row gap next to it, drops at a column
+	// left of the successor's start that no row in between covers, then
+	// enters the successor. Marks are [left, right] px per row.
 	const links = $derived.by(() => {
 		if (!range || narrow) return [];
 		const px = (t: number) => frac(t, range) * width;
+		const marks = rows.map((r): [number, number] =>
+			r.start === undefined || r.end === undefined
+				? [0, 64]
+				: r.milestone
+					? [px(r.start) - 7, px(r.start) + 7]
+					: [px(r.start), Math.max(px(r.end), px(r.start) + 4)]
+		);
 		const out: { line: string; head: string }[] = [];
 		rows.forEach((r, i) => {
 			if (r.start === undefined) return;
 			for (const d of r.deps) {
 				const p = rows[d];
 				if (p.start === undefined || p.end === undefined) continue;
-				const x1 = Math.max(px(p.end), px(p.start) + 4) + (p.milestone ? 6 : 0);
-				const x2 = px(r.start) - (r.milestone ? 7 : 0);
+				const x1 = marks[d][1];
+				const x2 = marks[i][0];
 				const y1 = d * rowH + rowH / 2;
 				const y2 = i * rowH + rowH / 2;
-				const gap = i > d ? i * rowH : (i + 1) * rowH;
-				const line =
-					x2 - x1 >= 10
-						? `M${x1} ${y1}H${x1 + 5}V${y2}H${x2 - 1}`
-						: `M${x1} ${y1}H${x1 + 5}V${gap}H${x2 - 8}V${y2}H${x2 - 1}`;
-				out.push({ line, head: `M${x2} ${y2}l-4 -3v6z` });
+				const gap = i > d ? (d + 1) * rowH : d * rowH;
+				const between = rows.map((_, j) => j).filter((j) => j > Math.min(d, i) && j < Math.max(d, i));
+				let xc = x2 - 8;
+				for (let n = 0; n <= between.length; n++) {
+					const hit = between.find((j) => xc >= marks[j][0] - 6 && xc <= marks[j][1] + 6);
+					if (hit === undefined) break;
+					xc = marks[hit][0] - 8;
+				}
+				xc = Math.max(xc, 1);
+				out.push({
+					line: `M${x1} ${y1}H${x1 + 5}V${gap}H${xc}V${y2}H${x2 - 1}`,
+					head: `M${x2} ${y2}l-4 -3v6z`
+				});
 			}
 		});
 		return out;
@@ -170,6 +194,14 @@
 	</span>
 	{#if after}<span class="g-after text-callout">{after}</span>{/if}
 	<span class="g-track">
+		{#if narrow}
+			{#each scale?.lines ?? [] as l (l.x)}
+				<span class={['g-line', !l.major && 'g-line--minor']} style="left: {l.x * 100}%"></span>
+			{/each}
+			{#if today !== undefined}
+				<span class="g-today" style="left: {today * 100}%"></span>
+			{/if}
+		{/if}
 		{#if r.start === undefined || r.end === undefined}
 			<span class="g-chip text-callout">No dates</span>
 		{:else if r.milestone}
@@ -213,11 +245,13 @@
 		<div class="g-scroll" class:g-gutter={overflowing} bind:this={scrollEl}>
 			<div class="g-body" role="list" style="--row-h: {rowH}px">
 				<div class="g-grid" aria-hidden="true">
-					{#each scale?.lines ?? [] as l (l.x)}
-						<span class={['g-line', !l.major && 'g-line--minor']} style="left: {l.x * 100}%"></span>
-					{/each}
-					{#if today !== undefined}
-						<span class="g-today" style="left: {today * 100}%"></span>
+					{#if !narrow}
+						{#each scale?.lines ?? [] as l (l.x)}
+							<span class={['g-line', !l.major && 'g-line--minor']} style="left: {l.x * 100}%"></span>
+						{/each}
+						{#if today !== undefined}
+							<span class="g-today" style="left: {today * 100}%"></span>
+						{/if}
 					{/if}
 					{#if links.length}
 						<svg class="g-links" width={width} height={rows.length * rowH} viewBox="0 0 {width} {rows.length * rowH}">
@@ -419,17 +453,16 @@
 		outline-offset: -2px;
 	}
 
-	/* The meta wraps under a long name instead of squeezing it. */
+	/* One line: the name takes what is left and ends in an ellipsis. */
 	.g-label {
 		display: flex;
-		flex-wrap: wrap;
 		align-items: baseline;
 		column-gap: 8px;
 		min-width: 0;
 	}
 
 	.g-name {
-		flex: 0 1 auto;
+		flex: 1 1 0;
 		min-width: 0;
 		overflow: hidden;
 		text-overflow: ellipsis;
@@ -473,7 +506,9 @@
 		transform: translateY(-50%);
 		border-radius: 3px;
 		overflow: hidden;
-		background: color-mix(in oklab, var(--ripple-accent) 32%, var(--ripple-surface));
+		background:
+			linear-gradient(color-mix(in srgb, var(--ripple-accent) 40%, transparent) 0 0),
+			var(--ripple-surface);
 		box-shadow: inset 0 0 0 1px var(--ripple-accent);
 	}
 

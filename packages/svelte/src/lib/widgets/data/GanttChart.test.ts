@@ -4,7 +4,8 @@
 import { cleanup, fireEvent, render } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import GanttChart from './GanttChart.svelte';
-import { contrast, mix, toRgb, type Lab } from '../../ui/__fixtures__/contrast.js';
+import { frac, parseTasks, rangeOf } from './gantt-scale.js';
+import { contrast, over, toRgb, type Lab } from '../../ui/__fixtures__/contrast.js';
 
 afterEach(() => cleanup());
 
@@ -64,6 +65,31 @@ describe('gantt', () => {
 		expect(plain.container.querySelectorAll('button')).toHaveLength(0);
 	});
 
+	it('drops connectors only where no row in between has a bar', () => {
+		const tasks = [
+			{ id: 'audit', name: 'Audit', start: '2026-07-06', end: '2026-07-17', progress: 80 },
+			{ id: 'rewrite', name: 'Rewrite', start: '2026-07-13', end: '2026-08-07', dependencies: 'audit' },
+			{ id: 'qa', name: 'QA', start: '2026-08-07', end: '2026-08-10', dependencies: 'rewrite' },
+			{ id: 'translate', name: 'Translate', start: '2026-08-03', end: '2026-08-21', dependencies: 'rewrite' },
+			{ id: 'ship', name: 'Ship', start: '2026-08-24', end: '2026-08-24', dependencies: 'qa, translate' },
+			{ id: 'retro', name: 'Retro', start: '2026-08-26', end: '2026-08-28', dependencies: 'ship' }
+		];
+		const { container } = render(GanttChart, { props: { tasks } });
+		const svg = container.querySelector('svg.g-links')!;
+		const w = Number(svg.getAttribute('width'));
+		const rowH = Number(svg.getAttribute('height')) / tasks.length;
+		// Each row's mark in px, from the same range the widget draws on (jsdom drops min() in styles).
+		const range = rangeOf(parseTasks(tasks))!;
+		const marks = parseTasks(tasks).map((r) => [frac(r.start!, range) * w - 5, frac(r.end!, range) * w + 5]);
+		const paths = [...container.querySelectorAll('path.g-link')].map((p) => p.getAttribute('d')!);
+		expect(paths).toHaveLength(6);
+		for (const d of paths) {
+			const [, , y1, , , xc, y2] = d.match(/^M([\d.-]+) ([\d.-]+)H([\d.-]+)V([\d.-]+)H([\d.-]+)V([\d.-]+)H/)!.map(Number);
+			const [a, b] = [Math.round((y1 - rowH / 2) / rowH), Math.round((y2 - rowH / 2) / rowH)].sort((p, q) => p - q);
+			for (let j = a + 1; j < b; j++) expect(xc < marks[j][0] || xc > marks[j][1]).toBe(true);
+		}
+	});
+
 	it('forwards the node id on its root', () => {
 		const { container } = render(GanttChart, { props: { id: 'n-gantt', tasks: ODD.slice(0, 1) } });
 		const root = container.querySelector('#n-gantt');
@@ -89,15 +115,18 @@ it('bars read on the card in both themes: tint 1.4:1, solid accent 3:1', async (
 	// @ts-ignore vitest empties .svelte?raw; read the file the way status-text.test.ts reads theme.css.
 	const { readFileSync } = await import('node:fs');
 	const src: string = readFileSync('src/lib/widgets/data/GanttChart.svelte', 'utf8');
-	const m = src.match(/background: color-mix\(in oklab, var\(--ripple-accent\) (\d+)%, var\(--ripple-surface\)\)/);
+	const m = src.match(/linear-gradient\(color-mix\(in srgb, var\(--ripple-accent\) (\d+)%, transparent\) 0 0\),\s*var\(--ripple-surface\);/);
 	expect(m).not.toBeNull();
 	const p = Number(m![1]) / 100;
-	const accent = hex('#1877f2');
-	for (const card of ['#efeee8', '#1d1d1a', '#ffffff']) {
+	const accent = toRgb(hex('#1877f2'));
+	// Site light and dark cards, white, and the lighter dark card the playground shows.
+	for (const card of ['#efeee8', '#1d1d1a', '#262621', '#ffffff']) {
 		const c = toRgb(hex(card));
-		expect(contrast(toRgb(mix(accent, hex(card), p)), c)).toBeGreaterThanOrEqual(1.4);
-		expect(contrast(toRgb(accent), c)).toBeGreaterThanOrEqual(3);
+		expect(contrast(over(accent, p, c), c)).toBeGreaterThanOrEqual(1.4);
+		expect(contrast(accent, c)).toBeGreaterThanOrEqual(3);
 	}
-	// The solid part sits under 3:1 on the tint, so a card-coloured notch separates them.
+	// The tint sits on --ripple-surface; a host card one step lighter still reads.
+	expect(contrast(over(accent, p, toRgb(hex('#1d1d1a'))), toRgb(hex('#262621')))).toBeGreaterThanOrEqual(1.4);
+	// Solid on tint cannot reach 3:1 while the tint clears 1.4:1, so a card-coloured notch separates them.
 	expect(src).toMatch(/\.g-done \{[^}]*box-shadow: 2px 0 0 var\(--ripple-surface\)/);
 });

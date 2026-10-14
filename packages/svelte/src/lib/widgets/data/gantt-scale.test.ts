@@ -144,11 +144,11 @@ describe('scaleOf', () => {
 		const r = rangeOf(parseTasks([{ name: 'Kickoff', start: '2026-06-08', end: '2026-06-10' }]))!;
 		expect(scaleOf(r, 'Quarter Day', 2000).unit).toBe('h6');
 		expect(scaleOf(r, 'Day', 600).unit).toBe('day');
-		expect(scaleOf(r, 'Day', 600).labels.map((l) => l.text)).toEqual(['Mon 8', 'Tue 9', 'Wed 10']);
+		expect(scaleOf(r, 'Day', 600).labels.map((l) => l.text)).toEqual(['Mon 8', 'Tue 9']);
 	});
 
 	it('labels months with the year at a year boundary', () => {
-		const r = rangeOf(parseTasks([{ name: 'Run', start: '2026-08-03', end: '2027-01-04' }]))!;
+		const r = rangeOf(parseTasks([{ name: 'Run', start: '2026-08-03', end: '2027-02-15' }]))!;
 		const texts = scaleOf(r, 'Month', 480).labels.map((l) => l.text);
 		expect(texts).toContain('Sep');
 		expect(texts).toContain('Jan 2027');
@@ -180,6 +180,30 @@ describe('scaleOf', () => {
 		expect(right.labels.map((l) => l.text)).toEqual(['Aug', 'Sep', 'Nov']);
 		const atEdge = placeToday(labels, 0.99, 400);
 		expect(atEdge.end).toBe(true);
+	});
+
+	it('spaces Today from every tick label like a tick: left edges gap apart, boxes 16px clear', () => {
+		const labels = [0.1, 0.3, 0.5, 0.7, 0.9].map((x) => ({ x, text: 'Oct' }));
+		for (const [today, gap] of [[0.45, 44], [0.62, 64], [0.97, 64]] as const) {
+			const w = 380;
+			const placed = placeToday(labels, today, w, gap);
+			const tw = labelPx('Today');
+			const from = today * w - (placed.end ? tw : 0);
+			for (const l of placed.labels) {
+				const a = l.x * w;
+				const b = a + labelPx(l.text);
+				expect(Math.abs(a - from)).toBeGreaterThanOrEqual(gap);
+				expect(b + 16 <= from || a >= from + tw + 16).toBe(true);
+			}
+		}
+	});
+
+	it('drops a tick whose label would cross the track end', () => {
+		const r = rangeOf(parseTasks([{ name: 'Run', start: '2026-05-04', end: '2026-05-31' }]))!;
+		const w = 660;
+		const s = scaleOf(r, 'Week', w);
+		for (const l of s.labels) expect(l.x * w + labelPx(l.text)).toBeLessThanOrEqual(w);
+		expect(s.labels.every((l) => !l.end)).toBe(true);
 	});
 
 	it('keeps viewMode visible on a six-week range: day lines in Day, fewer in Week', () => {
