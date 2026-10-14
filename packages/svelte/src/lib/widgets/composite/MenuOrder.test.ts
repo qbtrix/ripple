@@ -14,6 +14,7 @@ import {
 	MAX_LINES,
 	buildCart,
 	contactErrors,
+	idWords,
 	toItems,
 	toLines,
 	totalOf,
@@ -290,6 +291,78 @@ describe('menu-order — stages', () => {
 });
 
 const tile = (name: RegExp) => screen.getByLabelText(name).closest('label')!;
+
+describe('menu-order — menu layout', () => {
+	const modelOnly: MenuItem[] = [
+		{ product_id: 'smash-burger', name: 'Double Smash Burger', kind: 'main', category: 'Burgers' },
+		{ product_id: 'mushroom-swiss', name: 'Mushroom Swiss', kind: 'main', category: 'Burgers' },
+		{ product_id: 'shoestring-fries', name: 'Shoestring Fries', kind: 'side', category: 'Sides' },
+		{ product_id: 'malted-shake', name: 'Malted Vanilla Shake', kind: 'dessert', category: 'Shakes' }
+	];
+	const many = (n: number): MenuItem[] =>
+		Array.from({ length: n }, (_, i) => ({ product_id: `p${i}`, name: `Dish ${i}`, category: i % 2 ? 'Mains' : 'Sides' }));
+
+	it('names an item by its id in words when the name is missing', () => {
+		expect(idWords('garlic-knots')).toBe('Garlic knots');
+		expect(idWords('only_an id')).toBe('Only an id');
+		expect(idWords('  ')).toBe('');
+		expect(idWords(7)).toBe('');
+	});
+
+	it('draws a settled card with no placeholders, and named rows for nameless items', () => {
+		const { container } = render(MenuOrder, {
+			props: { items: [...modelOnly, { product_id: 'garlic-knots', name: '' }, { id: 'only-an-id' }, { description: 'x' }] }
+		});
+		expect(container.querySelector('[data-placeholder]')).toBeNull();
+		expect(container.querySelector('.bg-ripple-muted[aria-hidden="true"]')).toBeNull();
+		expect(screen.getByText('Garlic knots')).toBeTruthy();
+		expect(screen.getByText('Only an id')).toBeTruthy();
+		expect(screen.getByText('Unnamed item')).toBeTruthy();
+		expect(container.textContent).not.toMatch(/n\/a|NaN|undefined/);
+	});
+
+	it('shows placeholders only while the spec streams in', () => {
+		const { container } = render(MenuOrder, { props: { items: [{ product_id: 'p1' }] }, context: new Map([['ui-streaming', () => 'active']]) });
+		expect(container.querySelectorAll('[data-placeholder]').length).toBe(2);
+	});
+
+	it('groups a model-only menu under category headings with a count headline and no chips', () => {
+		const { container } = render(MenuOrder, { props: { items: modelOnly, featured: { id: 'mushroom-swiss', reason: 'Vegetarian.' } } });
+		expect(screen.getByText('4 items · 3 categories')).toBeTruthy();
+		expect(screen.queryByRole('group', { name: 'Categories' })).toBeNull();
+		expect(screen.getByRole('article', { name: 'Picked for you' })).toBeTruthy();
+		expect(screen.getByRole('list', { name: 'Burgers' }).querySelectorAll('li')).toHaveLength(1); // the pick is not listed twice
+		expect(screen.getByRole('list', { name: 'Sides' })).toBeTruthy();
+		expect(container.querySelector('article:not([aria-label])')).toBeNull(); // rows, not boxed cards
+	});
+
+	it('draws one pick and no list for a one-item menu', () => {
+		const { container } = render(MenuOrder, { props: { items: [modelOnly[0]], featured: { id: 'smash-burger' } } });
+		expect(screen.getByRole('article', { name: 'Picked for you' })).toBeTruthy();
+		expect(container.querySelector('ul')).toBeNull();
+	});
+
+	it('shows wrapping category chips only from 8 items', () => {
+		render(MenuOrder, { props: { items: many(7) } });
+		expect(screen.queryByRole('group', { name: 'Categories' })).toBeNull();
+		cleanup();
+		render(MenuOrder, { props: { items: many(8) } });
+		const chips = screen.getByRole('group', { name: 'Categories' });
+		expect(chips.className).toContain('flex-wrap');
+		expect(chips.className).not.toContain('overflow-x-auto');
+	});
+
+	it('reads a zero price as Free and still lets it be ordered', () => {
+		render(MenuOrder, { props: { items: [{ product_id: 'water', name: 'Tap Water', price: 0 }], checkout: true } });
+		expect(screen.getByText('Free')).toBeTruthy();
+		expect(btn('Add Tap Water')).toBeTruthy();
+	});
+
+	it('uses photo cards once any item has a photo', () => {
+		const { container } = render(MenuOrder, { props: { items: [{ ...fries, image: 'https://images.unsplash.com/photo-1' }, shake] } });
+		expect(container.querySelectorAll('article')).toHaveLength(2);
+	});
+});
 
 describe('menu-order — customise tiles', () => {
 	const openBurger = async (props: Record<string, unknown> = {}) => {

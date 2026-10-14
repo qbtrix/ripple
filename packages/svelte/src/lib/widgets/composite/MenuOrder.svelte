@@ -1,9 +1,17 @@
 <!--
   widgets/composite/MenuOrder.svelte — `menu-order`: order from a menu inside a
-  chat card (design doc 2026-10-09 §3.3, §4). One node, four stages: menu
-  (category chips, the featured pick, photo cards with steppers), customise
-  (option tiles, details below), details (pickup or delivery, name, contact) and review
-  (lines, options, fee, total). One primary button per stage, in a sticky bar
+  chat card (design doc 2026-10-09 §3.3, §4). One node, four stages: menu,
+  customise (option tiles, details below), details (pickup or delivery, name,
+  contact) and review (lines, options, fee, total).
+
+  Menu: the layout follows the data. No photo at all (the model-only chat
+  case) gives a grouped list: category headings, hairline rows (bare kind
+  glyph, name, description, price and control at the right), two newspaper
+  columns from 560px. Any photo gives photo cards. The pick ("Picked for you")
+  is a tinted row above the groups, never listed twice. Chips show only for 2+
+  categories and 8+ items, and wrap. Placeholders (track bars) show only while
+  the spec streams in ('ui-streaming' is 'active'); a settled card collapses a
+  missing price and names a nameless item by its id in words. Price 0 is Free. One primary button per stage, in a sticky bar
   that carries the running total. Customise joins the stage rail only once an
   item with options is in play, so no skipped stage shows as done.
 
@@ -33,13 +41,12 @@
   prop into $state: lines derive from `cart` (or `preset` until the first edit).
 -->
 <script lang="ts">
-	import { tick } from 'svelte';
+	import { getContext, tick } from 'svelte';
 	import { prefersReducedMotion } from 'svelte/motion';
 	import type { HTMLInputAttributes } from 'svelte/elements';
 	import { safeUrl } from '@ripple-ui/core';
 	import Plus from '@lucide/svelte/icons/plus';
 	import Minus from '@lucide/svelte/icons/minus';
-	import Sparkles from '@lucide/svelte/icons/sparkles';
 	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
 	import Store from '@lucide/svelte/icons/store';
 	import Bike from '@lucide/svelte/icons/bike';
@@ -70,6 +77,7 @@
 		defaultIds,
 		deliveryFee,
 		featuredOf,
+		idWords,
 		itemCount,
 		lineKey,
 		presetLines,
@@ -150,10 +158,20 @@
 	// grid of empty photo boxes. One real photo switches the cards to photos.
 	const photos = $derived(menu.some((i) => safeUrl(i.image, { kind: 'resource' }) !== undefined));
 
+	// Placeholders only while the spec is still streaming in. A settled card
+	// (or a plain one) shows what it has: a missing price collapses, a missing
+	// name reads as its id in words. Read the getter inside $derived, never at mount.
+	const streamPhase = getContext<(() => 'active' | 'done' | undefined) | undefined>('ui-streaming');
+	const streaming = $derived(streamPhase?.() === 'active');
+	const label = (i: Item) => i.name || idWords(i.product_id ?? i.id) || 'Unnamed item';
+	const priceText = (p: number) => (p === 0 ? 'Free' : fmt(p));
+
 	const headline = $derived.by(() => {
 		const prices = menu.map((i) => i.price).filter((p): p is number => p !== undefined);
 		const parts = [`${menu.length} ${menu.length === 1 ? 'item' : 'items'}`];
-		if (prices.length) parts.push(`from ${fmt(Math.min(...prices))}`);
+		const paid = prices.filter((p) => p > 0);
+		if (paid.length) parts.push(`from ${fmt(Math.min(...paid))}`);
+		else if (!prices.length && categories.length > 1) parts.push(`${categories.length} categories`);
 		if (orderable) parts.push(modes.length > 1 ? 'pickup or delivery' : modes[0]);
 		return menu.length ? parts.join(' · ') : '';
 	});
@@ -201,6 +219,17 @@
 
 	const active = $derived(categories.includes(filter) ? filter : '');
 	const shown = $derived(menu.filter((i) => (active ? i.category === active : i !== pick?.item)));
+	// Chips only for a long menu; a short one reads by its group headings.
+	const chips = $derived(categories.length > 1 && menu.length >= 8);
+	// Groups under category headings ("All", 2+ categories), uncategorised last
+	// as "Other"; one unnamed group otherwise. `start` runs the rise stagger on.
+	const groups = $derived.by(() => {
+		const sets = !active && categories.length > 1 ? [...categories, ''].map((c) => ({ name: c || 'Other', items: shown.filter((i) => i.category === c) })) : [{ name: '', items: shown }];
+		let start = 0;
+		return sets.filter((g) => g.items.length).map((g) => ({ ...g, start: (start += g.items.length) - g.items.length }));
+	});
+	// Several groups in list mode flow as two newspaper columns from 560px.
+	const cols = $derived(!photos && groups.length > 1);
 	const draftItem = $derived.by(() => {
 		const d = draft;
 		const item = d ? itemOf(d.pid) : undefined;
@@ -313,17 +342,21 @@
 
 {#snippet price(item: Item, cls = 'text-body-emph')}
 	{#if item.price !== undefined}
-		<span class={['shrink-0 tabular-nums', cls]}>{fmt(item.price)}</span>
-	{:else}
-		<span class="mt-0.5 h-3.5 w-10 shrink-0 rounded bg-ripple-muted" aria-hidden="true"></span>
+		<span class={['shrink-0 tabular-nums', cls]}>{priceText(item.price)}</span>
+	{:else if streaming}
+		<span class="mt-1 h-3.5 w-10 shrink-0 rounded bg-ripple-track" aria-hidden="true" data-placeholder></span>
 	{/if}
 {/snippet}
 
-{#snippet name(item: Item, cls: string)}
-	{#if item.name}
-		<h3 class={['min-w-0 flex-1 text-pretty', cls]}>{item.name}</h3>
+{#snippet name(item: Item, cls: string, level = 'h3')}
+	{#if item.name || !streaming}
+		<svelte:element
+			this={level}
+			class={['min-w-0 flex-1 text-pretty break-words', !item.name && !item.product_id && !item.id && 'text-ripple-muted-foreground italic', cls]}
+			>{label(item)}</svelte:element
+		>
 	{:else}
-		<span class="mt-0.5 h-3.5 w-2/3 rounded bg-ripple-muted" aria-hidden="true"></span>
+		<span class="mt-1 h-3.5 w-2/3 rounded bg-ripple-track" aria-hidden="true" data-placeholder></span>
 	{/if}
 {/snippet}
 
@@ -354,11 +387,11 @@
 		{@const q = qtyOf(item)}
 		{#if item.groups.length}
 			{#if q > 0}<span class="text-footnote font-medium tabular-nums text-ripple-muted-foreground">{q} in order</span>{/if}
-			<button type="button" class={SECONDARY} disabled={full} aria-label="Choose options for {item.name}" onclick={() => open(item)}>Choose</button>
+			<button type="button" class={SECONDARY} disabled={full} aria-label="Choose options for {label(item)}" onclick={() => open(item)}>Choose</button>
 		{:else if q > 0}
-			{@render stepper(q, item.name, () => stepItem(item, -1), () => stepItem(item, 1))}
+			{@render stepper(q, label(item), () => stepItem(item, -1), () => stepItem(item, 1))}
 		{:else}
-			<button type="button" class={SECONDARY} disabled={full} aria-label="Add {item.name}" onclick={() => stepItem(item, 1)}>
+			<button type="button" class={SECONDARY} disabled={full} aria-label="Add {label(item)}" onclick={() => stepItem(item, 1)}>
 				<Plus size={14} strokeWidth={2} aria-hidden="true" />Add
 			</button>
 		{/if}
@@ -368,26 +401,42 @@
 {#snippet card(item: Item)}
 	<article
 		class={[
-			'flex h-full gap-3 rounded-ripple border p-2 transition-colors',
-			photos && '@min-[560px]:flex-col @min-[560px]:gap-2',
+			'flex gap-3 rounded-ripple border p-2 transition-colors @min-[560px]:flex-col @min-[560px]:gap-2',
 			qtyOf(item) > 0 ? 'border-ripple-accent bg-ripple-accent/8' : 'border-ripple-border bg-ripple-surface'
 		]}
 	>
-		{#if photos}
-			<PhotoTile src={safeUrl(item.image, { kind: 'resource' })} ratio="4:3" icon={kindIcon(MENU_ICONS, item.kind)} iconSize={24} class="w-24 shrink-0 self-start @min-[560px]:w-full" />
-		{:else}
-			<PhotoTile ratio="1:1" icon={kindIcon(MENU_ICONS, item.kind)} class="w-11 shrink-0 self-start" />
-		{/if}
+		<PhotoTile src={safeUrl(item.image, { kind: 'resource' })} ratio="4:3" icon={kindIcon(MENU_ICONS, item.kind)} iconSize={24} class="w-24 shrink-0 self-start @min-[560px]:w-full" />
 		<div class="flex min-w-0 flex-1 flex-col gap-1">
 			<div class="flex items-start gap-2">
-				{@render name(item, 'text-headline')}
+				{@render name(item, 'text-body-emph', 'h4')}
 				{@render price(item)}
 			</div>
-			{#if item.description}<p class="line-clamp-2 text-callout text-ripple-muted-foreground">{item.description}</p>{/if}
+			{#if item.description}<p class="text-callout text-pretty text-ripple-muted-foreground">{item.description}</p>{/if}
 			{@render tags(item)}
 			<div class="mt-auto flex items-center justify-end gap-2 pt-1 empty:hidden">{@render control(item)}</div>
 		</div>
 	</article>
+{/snippet}
+
+{#snippet row(item: Item, level: string)}
+	{@const KindIcon = kindIcon(MENU_ICONS, item.kind)}
+	<div
+		class={[
+			'relative grid min-h-11 grid-cols-[16px_minmax(0,1fr)_auto] items-start gap-x-2.5 px-2.5 py-2.5',
+			qtyOf(item) > 0 && 'before:absolute before:inset-y-1.5 before:left-0 before:w-0.5 before:rounded-full before:bg-ripple-accent'
+		]}
+	>
+		<KindIcon size={16} strokeWidth={1.75} class="mt-0.5 text-ripple-muted-foreground" aria-hidden="true" />
+		<div class="flex min-w-0 flex-col gap-0.5">
+			{@render name(item, 'text-body-emph', level)}
+			{#if item.description}<p class="text-callout text-pretty text-ripple-muted-foreground">{item.description}</p>{/if}
+			{#if item.tags.length}<div class="pt-1">{@render tags(item)}</div>{/if}
+		</div>
+		<div class="flex flex-col items-end gap-1.5 empty:hidden">
+			{@render price(item)}
+			{@render control(item)}
+		</div>
+	</div>
 {/snippet}
 
 {#snippet back(to: Stage, label: string)}
@@ -437,19 +486,20 @@
 	{#key view}
 		<div class="flex min-w-0 flex-col gap-3" in:slide={{ dir }}>
 			{#if view === 'menu'}
-				{#if categories.length > 1}
-					<div class="flex gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none]" role="group" aria-label="Categories">
+				{#if chips}
+					<div class="flex flex-wrap gap-1.5" role="group" aria-label="Categories">
 						{#each ['', ...categories] as c, i (`${c}:${i}`)}
 							<button
 								type="button"
 								aria-pressed={active === c}
+								title={c.length > 20 ? c : undefined}
 								class={[
-									'h-7 shrink-0 rounded-full border px-3 text-callout font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ripple-ring',
+									'h-7 max-w-full truncate rounded-full border px-3 text-callout font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ripple-ring',
 									active === c
 										? 'border-ripple-accent bg-ripple-accent text-ripple-accent-foreground'
 										: 'border-ripple-border text-ripple-muted-foreground hover:bg-ripple-muted hover:text-ripple-surface-foreground'
 								]}
-								onclick={() => (filter = c)}>{c || 'All'}</button
+								onclick={() => (filter = c)}>{c.length > 20 ? `${c.slice(0, 19).trimEnd()}…` : c || 'All'}</button
 							>
 						{/each}
 					</div>
@@ -462,41 +512,66 @@
 				{:else}
 					{#if pick && !active}
 						{@const f = pick.item}
-						<article
-							class={[
-								'gap-3 rounded-ripple border border-ripple-accent bg-ripple-accent/8 p-2 @min-[560px]:p-3',
-								photos ? 'grid @min-[560px]:grid-cols-[2fr_3fr]' : 'flex'
-							]}
-							aria-label="Best pick"
-						>
+						{@const PickIcon = kindIcon(MENU_ICONS, f.kind)}
+						<article class={['rounded-ripple bg-ripple-accent/8', photos ? 'grid gap-3 p-2 @min-[560px]:grid-cols-[2fr_3fr] @min-[560px]:p-3' : 'p-2.5']} aria-label="Picked for you">
 							{#if photos}
-								<PhotoTile src={safeUrl(f.image, { kind: 'resource' })} ratio="16:9" icon={kindIcon(MENU_ICONS, f.kind)} iconSize={32} class="max-h-[200px] w-full self-center" />
-							{:else}
-								<PhotoTile ratio="1:1" icon={kindIcon(MENU_ICONS, f.kind)} iconSize={24} class="w-14 shrink-0 self-start" />
+								<PhotoTile src={safeUrl(f.image, { kind: 'resource' })} ratio="16:9" icon={PickIcon} iconSize={32} class="max-h-[200px] w-full self-center" />
 							{/if}
-							<div class="flex min-w-0 flex-1 flex-col gap-1.5">
-								<p class="flex items-center gap-1 text-caption-1 font-medium tracking-[0.04em] uppercase">
-									<Sparkles size={12} strokeWidth={2} aria-hidden="true" />Best pick
-								</p>
-								<div class="flex items-start gap-2">
-									{@render name(f, 'text-title-3 font-semibold')}
-									{@render price(f, 'text-headline')}
+							<div class={photos ? 'flex min-w-0 flex-1 flex-col gap-1' : 'grid grid-cols-[16px_minmax(0,1fr)_auto] items-start gap-x-2.5 gap-y-0.5'}>
+								<p class={['text-caption-1 font-medium text-ripple-accent-text', !photos && 'col-span-2 col-start-2']}>Picked for you</p>
+								{#if !photos}<PickIcon size={16} strokeWidth={1.75} class="mt-0.5 text-ripple-muted-foreground" aria-hidden="true" />{/if}
+								<div class="flex min-w-0 flex-col gap-0.5">
+									{#if photos}
+										<div class="flex items-start gap-2">
+											{@render name(f, 'text-headline font-semibold')}
+											{@render price(f, 'text-headline')}
+										</div>
+									{:else}
+										{@render name(f, 'text-body-emph')}
+									{/if}
+									{#if pick.reason}
+										<p class="text-callout text-pretty">{pick.reason}</p>
+									{:else if f.description}
+										<p class="text-callout text-pretty text-ripple-muted-foreground">{f.description}</p>
+									{/if}
+									{#if f.tags.length}<div class="pt-1">{@render tags(f)}</div>{/if}
+									{#if photos}<div class="mt-auto flex items-center justify-end gap-2 pt-1 empty:hidden">{@render control(f)}</div>{/if}
 								</div>
-								{#if pick.reason}
-									<p class="text-callout text-pretty">{pick.reason}</p>
-								{:else if f.description}
-									<p class="line-clamp-2 text-callout text-ripple-muted-foreground">{f.description}</p>
+								{#if !photos}
+									<div class="flex flex-col items-end gap-1.5 empty:hidden">
+										{@render price(f)}
+										{@render control(f)}
+									</div>
 								{/if}
-								{@render tags(f)}
-								<div class="mt-auto flex items-center justify-end gap-2 pt-1 empty:hidden">{@render control(f)}</div>
 							</div>
 						</article>
 					{/if}
-					<ul class="grid gap-2 @min-[560px]:grid-cols-2 @min-[720px]:grid-cols-3" aria-label="Menu">
-						{#each shown as item, i (item.key)}
-							<li class="min-w-0" in:rise={{ index: i }}>{@render card(item)}</li>
+					{#if groups.length}
+						<div class={['flex min-w-0 flex-col gap-3', cols && '@min-[560px]:block @min-[560px]:columns-2 @min-[560px]:gap-x-6']}>
+						{#each groups as g, gi (gi)}
+							<section class={['flex min-w-0 break-inside-avoid flex-col', cols && '@min-[560px]:[&:not(:last-child)]:mb-3']}>
+								{#if g.name}
+									<h3 id="{uid}-cat{gi}" class="border-b border-ripple-border pb-1.5 text-subheadline font-semibold text-pretty">{g.name}</h3>
+								{/if}
+								{#if photos}
+									<ul class={['grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-2', g.name && 'pt-2']} aria-label={g.name ? undefined : 'Menu'} aria-labelledby={g.name ? `${uid}-cat${gi}` : undefined}>
+										{#each g.items as item, i (item.key)}
+											<li class="min-w-0" in:rise={{ index: g.start + i }}>{@render card(item)}</li>
+										{/each}
+									</ul>
+								{:else}
+									<ul class={['grid', groups.length === 1 && '@min-[560px]:grid-cols-2 @min-[560px]:gap-x-6']} aria-label={g.name ? undefined : 'Menu'} aria-labelledby={g.name ? `${uid}-cat${gi}` : undefined}>
+										{#each g.items as item, i (item.key)}
+											<li class={['min-w-0 border-t border-ripple-border first:border-t-0', groups.length === 1 && '@min-[560px]:nth-2:border-t-0']} in:rise={{ index: g.start + i }}>
+												{@render row(item, g.name ? 'h4' : 'h3')}
+											</li>
+										{/each}
+									</ul>
+								{/if}
+							</section>
 						{/each}
-					</ul>
+						</div>
+					{/if}
 					{#if full}
 						<p class="text-footnote text-ripple-warning-text">This order has {MAX_LINES} lines, the most one order can hold.</p>
 					{/if}
@@ -511,7 +586,7 @@
 							<PhotoTile src={safeUrl(item.image, { kind: 'resource' })} ratio="4:3" icon={KindIcon} iconSize={28} class="w-24 shrink-0 self-start @min-[720px]:w-full" />
 						{:else}
 							<div
-								class="grid aspect-square w-16 shrink-0 content-center justify-items-center gap-2 self-start rounded-ripple bg-ripple-accent/8 text-ripple-accent ring-1 ring-ripple-accent/15 ring-inset @min-[720px]:aspect-[4/3] @min-[720px]:w-full"
+								class="grid aspect-square w-16 shrink-0 content-center justify-items-center gap-2 self-start rounded-ripple bg-ripple-accent/8 text-ripple-accent-text ring-1 ring-ripple-accent/15 ring-inset @min-[720px]:aspect-[4/3] @min-[720px]:w-full"
 								aria-hidden="true"
 								data-fallback
 							>
@@ -737,7 +812,7 @@
 	{/key}
 
 	{#if orderable && (count > 0 || view !== 'menu')}
-		<div class="sticky bottom-0 z-10 flex items-center gap-3 rounded-ripple border border-ripple-border bg-ripple-popover px-3 py-2 text-ripple-popover-foreground">
+		<div class="sticky bottom-0 z-10 flex items-center gap-3 rounded-ripple bg-ripple-muted py-2 pr-2 pl-3 text-ripple-surface-foreground">
 			<p class="min-w-0 flex-1 truncate text-callout" aria-live="polite">
 				{#if count > 0}
 					<span class="font-medium tabular-nums">{count} {count === 1 ? 'item' : 'items'}</span><span class="text-ripple-muted-foreground"
