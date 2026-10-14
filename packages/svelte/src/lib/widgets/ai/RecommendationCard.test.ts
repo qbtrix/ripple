@@ -79,7 +79,8 @@ describe('RecommendationCard — the sentence', () => {
     expect(body.textContent?.replace(/\s+/g, ' ').trim()).toBe(
       'Reorder waffle cones from CCone King with lead time 7 days'
     );
-    const value = within(body as HTMLElement).getByText('7 days');
+    // Chip wraps its label in an inner span; the tone classes sit on the chip root.
+    const value = within(body as HTMLElement).getByText('7 days').parentElement!;
     // The raw success token on its tint is 2.1:1 in light; the chip must carry the mixed text colour.
     expect(value.className).toContain('text-[color-mix(in_oklab,var(--ripple-success)_55%');
     expect(value.className).not.toMatch(/(^|\s)text-ripple-success(\s|$)/);
