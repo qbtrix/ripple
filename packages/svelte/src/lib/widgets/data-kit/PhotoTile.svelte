@@ -9,7 +9,8 @@
   renders only when that call returns a URL. Width comes from the caller's
   class (`w-24`, `w-full`); a hero adds `max-h-[200px]`. A caller with a
   better fallback than the icon (link-preview's domain letter) passes the
-  `fallback` snippet; it fills the box in place of the icon.
+  `fallback` snippet; it fills the box in place of the icon. `onload` and
+  `onerror` tell the caller how the photo went (menu-order drops failed tiles).
 -->
 <script lang="ts">
 	import type { LucideIcon } from '@lucide/svelte';
@@ -34,9 +35,11 @@
 		caption?: boolean;
 		/** Replaces the icon tile when the image is missing, refused or failed. */
 		fallback?: Snippet;
+		onload?: () => void;
+		onerror?: () => void;
 	}
 
-	let { src, alt = '', ratio = '1:1', icon, iconSize = 20, class: className, id, style, fit = 'cover', caption = false, fallback }: Props = $props();
+	let { src, alt = '', ratio = '1:1', icon, iconSize = 20, class: className, id, style, fit = 'cover', caption = false, fallback, onload, onerror }: Props = $props();
 
 	// 'auto' leaves the box to its own width/height (the image atom); the fallback then keeps a floor height, and its floor width never exceeds the track it sits in.
 	const RATIO: Record<Ratio, string> = { '4:3': 'aspect-[4/3]', '1:1': 'aspect-square', '16:9': 'aspect-video', auto: '' };
@@ -61,8 +64,8 @@
 			decoding="async"
 			style:object-fit={fit}
 			class={['block size-full transition-opacity duration-150 ease-ripple-out', phase === 'loaded' ? 'opacity-100' : 'opacity-0']}
-			onload={() => (loadedUrl = url)}
-			onerror={() => (failedUrl = url)}
+			onload={() => ((loadedUrl = url), onload?.())}
+			onerror={() => ((failedUrl = url), onerror?.())}
 		/>
 	{:else if fallback}
 		{@render fallback()}

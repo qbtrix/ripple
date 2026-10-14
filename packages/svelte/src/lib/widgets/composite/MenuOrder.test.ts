@@ -14,6 +14,7 @@ import {
 	MAX_LINES,
 	buildCart,
 	contactErrors,
+	idWords,
 	toItems,
 	toLines,
 	totalOf,
@@ -291,6 +292,150 @@ describe('menu-order — stages', () => {
 
 const tile = (name: RegExp) => screen.getByLabelText(name).closest('label')!;
 
+describe('menu-order — menu layout', () => {
+	const modelOnly: MenuItem[] = [
+		{ product_id: 'smash-burger', name: 'Double Smash Burger', kind: 'main', category: 'Burgers' },
+		{ product_id: 'mushroom-swiss', name: 'Mushroom Swiss', kind: 'main', category: 'Burgers' },
+		{ product_id: 'shoestring-fries', name: 'Shoestring Fries', kind: 'side', category: 'Sides' },
+		{ product_id: 'malted-shake', name: 'Malted Vanilla Shake', kind: 'dessert', category: 'Shakes' }
+	];
+	const many = (n: number): MenuItem[] =>
+		Array.from({ length: n }, (_, i) => ({ product_id: `p${i}`, name: `Dish ${i}`, category: i % 2 ? 'Mains' : 'Sides' }));
+
+	it('names an item by its id in words when the name is missing', () => {
+		expect(idWords('garlic-knots')).toBe('Garlic knots');
+		expect(idWords('only_an id')).toBe('Only an id');
+		expect(idWords('  ')).toBe('');
+		expect(idWords(7)).toBe('');
+	});
+
+	it('draws a settled card with no placeholders, and named rows for nameless items', () => {
+		const { container } = render(MenuOrder, {
+			props: { items: [...modelOnly, { product_id: 'garlic-knots', name: '' }, { id: 'only-an-id' }, { description: 'x' }] }
+		});
+		expect(container.querySelector('[data-placeholder]')).toBeNull();
+		expect(container.querySelector('.bg-ripple-muted[aria-hidden="true"]')).toBeNull();
+		expect(screen.getByText('Garlic knots')).toBeTruthy();
+		expect(screen.getByText('Only an id')).toBeTruthy();
+		expect(screen.getByText('Unnamed item')).toBeTruthy();
+		expect(container.textContent).not.toMatch(/n\/a|NaN|undefined/);
+	});
+
+	it('shows placeholders only while the spec streams in', () => {
+		const { container } = render(MenuOrder, { props: { items: [{ product_id: 'p1' }] }, context: new Map([['ui-streaming', () => 'active']]) });
+		expect(container.querySelectorAll('[data-placeholder]').length).toBe(2);
+	});
+
+	it('groups a model-only menu under category headings with a count headline and no chips', () => {
+		const { container } = render(MenuOrder, { props: { items: modelOnly, featured: { id: 'mushroom-swiss', reason: 'Vegetarian.' } } });
+		expect(screen.getByText('4 items · 3 categories')).toBeTruthy();
+		expect(screen.queryByRole('group', { name: 'Categories' })).toBeNull();
+		expect(screen.getByRole('article', { name: 'Picked for you' })).toBeTruthy();
+		expect(screen.getByRole('list', { name: 'Burgers' }).querySelectorAll('li')).toHaveLength(1); // the pick is not listed twice
+		expect(screen.getByRole('list', { name: 'Sides' })).toBeTruthy();
+		expect(container.querySelector('article:not([aria-label])')).toBeNull(); // rows, not boxed cards
+	});
+
+	it('draws one pick and no list for a one-item menu', () => {
+		const { container } = render(MenuOrder, { props: { items: [modelOnly[0]], featured: { id: 'smash-burger' } } });
+		expect(screen.getByRole('article', { name: 'Picked for you' })).toBeTruthy();
+		expect(container.querySelector('ul')).toBeNull();
+	});
+
+	it('shows wrapping category chips only from 8 items', () => {
+		render(MenuOrder, { props: { items: many(7) } });
+		expect(screen.queryByRole('group', { name: 'Categories' })).toBeNull();
+		cleanup();
+		render(MenuOrder, { props: { items: many(8) } });
+		const chips = screen.getByRole('group', { name: 'Categories' });
+		expect(chips.className).toContain('flex-wrap');
+		expect(chips.className).not.toContain('overflow-x-auto');
+	});
+
+	it('reads a zero price as Free and still lets it be ordered', () => {
+		render(MenuOrder, { props: { items: [{ product_id: 'water', name: 'Tap Water', price: 0 }], checkout: true } });
+		expect(screen.getByText('Free')).toBeTruthy();
+		expect(btn('Add Tap Water')).toBeTruthy();
+	});
+
+	it('uses photo cards in one ungrouped grid once any item has a photo, each with a photo slot', async () => {
+		const { container } = render(MenuOrder, {
+			props: { items: [{ ...fries, image: 'https://images.unsplash.com/photo-1' }, { ...fries, id: 'curly', product_id: 'curly', name: 'Curly Fries', image: 'https://img.example/2' }, shake] }
+		});
+		expect(container.querySelectorAll('article')).toHaveLength(3);
+		expect(screen.getByRole('list', { name: 'Menu' }).querySelectorAll('li')).toHaveLength(3);
+		expect(container.querySelector('h3')).toBeNull(); // no per-category headings stranding single cards
+		await fireEvent.error(container.querySelectorAll('img')[1]);
+		expect([...container.querySelectorAll('[data-state]')].map((t) => t.getAttribute('data-state'))).toEqual(['loading', 'fallback', 'fallback']);
+	});
+
+	it('falls back to the list once every photo fails, with no grey tiles', async () => {
+		const { container } = render(MenuOrder, { props: { items: [{ ...fries, image: 'https://img.example/1' }, { ...shake, image: 'https://img.example/2' }] } });
+		for (const img of container.querySelectorAll('img')) await fireEvent.error(img);
+		expect(container.querySelector('article')).toBeNull();
+		expect(container.querySelector('[data-state]')).toBeNull();
+	});
+
+	it('clamps names to two lines with the full name in title, behind a bare muted kind glyph', () => {
+		const { container } = render(MenuOrder, { props: { items: [fries, { ...shake, kind: 'pizza' }] } });
+		const name = screen.getByText('Shoestring Fries');
+		expect(name.className).toContain('line-clamp-2');
+		expect(name.getAttribute('title')).toBe('Shoestring Fries');
+		const glyphs = container.querySelectorAll('li svg[aria-hidden="true"]');
+		expect(glyphs).toHaveLength(2); // an unknown kind still gets the fallback glyph
+		expect(glyphs[0].getAttribute('class')).toContain('text-ripple-muted-foreground');
+	});
+
+	it('starts the headline at the lowest price of 0 or more, never at a credit', () => {
+		render(MenuOrder, { props: { items: [fries, { product_id: 'water', name: 'Tap Water', price: 0 }, { product_id: 'credit', name: 'Credit', price: -2 }] } });
+		expect(screen.getByText('3 items · from Free')).toBeTruthy();
+		cleanup();
+		render(MenuOrder, { props: { items: [fries, { product_id: 'credit', name: 'Credit', price: -2 }] } });
+		expect(screen.getByText('2 items · from $3.49')).toBeTruthy();
+	});
+
+	it('uses two columns in every group once any group has 2+ items, else one', () => {
+		render(MenuOrder, { props: { items: [fries, { ...fries, product_id: 'curly', name: 'Curly Fries' }, shake] } });
+		expect(screen.getByRole('list', { name: 'Sides' }).className).toContain('grid-cols-2');
+		expect(screen.getByRole('list', { name: 'Shakes' }).className).toContain('grid-cols-2');
+		cleanup();
+		render(MenuOrder, { props: { items: [fries, shake] } });
+		expect(screen.getByRole('list', { name: 'Sides' }).className).not.toContain('grid-cols-2');
+	});
+
+	it('marks a chosen photo card with an accent rim, not the tint the pick wears', () => {
+		const { container } = render(MenuOrder, {
+			props: { items: [{ ...fries, image: 'https://img.example/1' }, { ...shake, image: 'https://img.example/2' }], checkout: true, preset: [{ id: 'shoestring-fries', qty: 1 }] }
+		});
+		const [picked, other] = container.querySelectorAll('article');
+		expect(picked.className).toContain('ring-ripple-accent');
+		expect(picked.className).not.toContain('bg-ripple-accent');
+		expect(other.className).not.toContain('ring-ripple-accent');
+		expect(picked.className).toContain('h-full');
+	});
+
+	it('explains a maxed-out stepper and shows the price of an item that cannot be ordered in normal ink', () => {
+		render(MenuOrder, { props: { items: [fries, { name: 'Ask the server', price: 16 }], checkout: true, preset: [{ id: 'shoestring-fries', qty: 20 }] } });
+		const plus = btn('Add one Shoestring Fries') as HTMLButtonElement;
+		expect(plus.disabled).toBe(true);
+		expect(plus.title).toBe('Up to 20');
+		expect(screen.getByText('$16.00').className).not.toContain('text-ripple-muted-foreground');
+		expect(screen.getByText('$3.49').className).not.toContain('text-ripple-muted-foreground');
+	});
+
+	it('shows the item subtotal in the bar; the review adds the delivery fee', () => {
+		render(MenuOrder, { props: { items, checkout: true, fulfilment: ['delivery'], fee: 4.5, preset: [{ id: 'fries', qty: 2 }] } });
+		expect(screen.getByText('2 items')).toBeTruthy();
+		expect(screen.getByText('$6.98')).toBeTruthy();
+	});
+
+	it('highlights a repeated product_id once, though both rows share its line', () => {
+		const { container } = render(MenuOrder, { props: { items: [fries, { ...fries, id: 'fries-2' }], checkout: true, preset: [{ id: 'fries', qty: 2 }] } });
+		expect(container.querySelectorAll('[role="group"][aria-label^="Quantity"]')).toHaveLength(1);
+		expect(container.querySelectorAll('li > div.before\\:bg-ripple-accent')).toHaveLength(1);
+	});
+});
+
 describe('menu-order — customise tiles', () => {
 	const openBurger = async (props: Record<string, unknown> = {}) => {
 		const r = render(MenuOrder, { props: { items, checkout: true, ...props } });
@@ -365,7 +510,7 @@ describe('menu-order — customise tiles', () => {
 		const { container } = await openBurger();
 		const tileEl = container.querySelector('[data-fallback]')!;
 		expect(tileEl.textContent).toContain('Double Smash Burger');
-		expect(tileEl.querySelector('.lucide-hamburger')).not.toBeNull();
+		expect(tileEl.querySelector('.lucide-utensils-crossed')).not.toBeNull();
 	});
 });
 
