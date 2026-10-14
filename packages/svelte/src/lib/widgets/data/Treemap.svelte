@@ -5,20 +5,24 @@
 
   Frame: an optional header (title left, compact total right in muted
   tabular figures), then the plot, edge to edge, `height` px (min 160). No
-  chrome at root. A group gets a 20px caption strip in card colour, only when
-  it is at least 64px tall. Tiles are one hue: --ripple-accent mixed into
-  --ripple-surface on treemap.ts's RAMP, gaps show the card. Ink is always the
-  surface ink; the value line is that ink at INK_ALPHA.
+  chrome at root. A top-level group gets a 20px caption strip in card colour,
+  only when it is at least 64px tall and wide. Tiles are one hue:
+  --ripple-accent mixed into --ripple-surface on treemap.ts's RAMP, gaps show
+  the card. Ink is always the surface ink; the value line is that ink at
+  INK_ALPHA.
 
-  Labels sit top-left and are whole or absent: after each layout every label
-  is measured once; one that overflows its tile drops its value line, then
-  hides. Never an ellipsis. `showLabels: false` hides leaf labels only.
+  Labels sit top-left and are whole or absent. A long name wraps, up to four
+  lines in a tall tile so a big tile never sits blank; after each layout every
+  label is measured once, and one that overflows its tile drops its value
+  line, then hides. Never an ellipsis. `showLabels: false` hides leaf labels
+  only.
 
-  Zoom: a caption, or a nested tile, zooms into its top-level group; a
-  top-level leaf only shows its readout (tap on touch). While zoomed a
-  breadcrumb row shows (a back button instead when `showBreadcrumb` is false)
-  and Escape goes up one level. Zoom resets when `data` changes. One shared
-  readout follows the hovered, focused or tapped tile and stays in the plot.
+  Zoom: a caption, or a nested tile, zooms into its top-level group, one level
+  at a time; a top-level leaf only shows its readout (tap on touch). While
+  zoomed a breadcrumb row shows (a back button instead when `showBreadcrumb`
+  is false) and Escape goes up one level. Zoom resets when `data` changes.
+  One shared readout follows the hovered, focused or tapped tile and stays in
+  the plot.
   `colors` and node `color` are accepted and ignored.
 -->
 <script module lang="ts">
@@ -124,7 +128,8 @@
 		void showLabels;
 		const el = plotEl;
 		if (!el) return;
-		tick().then(() => {
+		// After the DOM update and once webfonts are in, so widths are final.
+		Promise.all([tick(), document.fonts?.ready]).then(() => {
 			for (const label of el.querySelectorAll<HTMLElement>('[data-tm-label]')) fit(label);
 		});
 	});
@@ -135,9 +140,9 @@
 
 	function fit(label: HTMLElement) {
 		label.dataset.fit = 'full';
-		const bad = () => overflows(label) || overflows(label.querySelector('.tm-name'));
+		const bad = () => overflows(label) || overflows(label.querySelector('[data-tm-name]'));
 		if (!bad()) return;
-		if (label.querySelector('.tm-meta')) {
+		if (label.querySelector('[data-tm-meta]')) {
 			label.dataset.fit = 'name';
 			if (!bad()) return;
 		}
@@ -254,17 +259,19 @@
 						{@const w = r.x1 - r.x0}
 						{@const h = r.y1 - r.y0}
 						{#if r.group}
-							{#if r.caption && w >= 48}
+							{#if r.caption}
 								<button
 									type="button"
-									class="tm-caption text-subheadline"
+									class="tm-caption"
 									style="left:{pct(r.x0)};top:{r.y0}px;width:{pct(r.x1 - r.x0)}"
 									aria-label={aria(r)}
 									onclick={() => onTile(r)}
 									onpointerenter={() => (active = r.id)}
 									onfocus={() => (active = r.id)}
 								>
-									<span data-tm-label class="tm-caption-text">{r.name} · {share(r.value, total)}</span>
+									<span data-tm-label class="tm-caption-text" aria-hidden="true"
+										><span data-tm-name>{r.name}</span><span data-tm-meta>{` · ${share(r.value, total)}`}</span></span
+									>
 								</button>
 							{/if}
 						{:else}
@@ -280,9 +287,9 @@
 							>
 								{#if tier !== 'none'}
 									<span data-tm-label class="tm-label" aria-hidden="true">
-										<span class="tm-name">{r.name}</span>
+										<span class="tm-name" data-tm-name>{r.name}</span>
 										{#if tier === 'full'}
-											<span class="tm-meta">{num(r.value, { compact: true })} · {share(r.value, total)}</span>
+											<span class="tm-meta" data-tm-meta>{num(r.value, { compact: true })} · {share(r.value, total)}</span>
 										{/if}
 									</span>
 								{/if}
@@ -393,8 +400,9 @@
 		font: inherit;
 		text-align: left;
 		cursor: pointer;
-		transition-property: left, top, width, height, background-color;
-		transition-duration: 200ms;
+		/* Colour only: a moving box would be measured mid-flight by fit(). */
+		transition-property: background-color, color;
+		transition-duration: 160ms;
 		transition-timing-function: var(--ripple-ease-out);
 	}
 	.tm-tile {
@@ -426,7 +434,7 @@
 		font-size: 12px;
 		line-height: 15px;
 		font-weight: var(--weight-medium, 500);
-		max-height: 30px;
+		max-height: 60px;
 		overflow: hidden;
 		overflow-wrap: normal;
 	}
@@ -437,7 +445,7 @@
 		white-space: nowrap;
 		color: color-mix(in oklab, var(--ripple-surface-foreground) var(--tm-meta), transparent);
 	}
-	.tm-label:global([data-fit='name']) .tm-meta {
+	[data-tm-label]:global([data-fit='name']) [data-tm-meta] {
 		display: none;
 	}
 	[data-tm-label]:global([data-fit='none']) {
@@ -446,6 +454,7 @@
 
 	.tm-caption {
 		height: 20px;
+		font-size: 11px;
 		padding: 0 var(--tm-inset) 0 2px;
 		background: none;
 		color: var(--ripple-muted-foreground);

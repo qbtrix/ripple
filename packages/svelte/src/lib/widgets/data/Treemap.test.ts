@@ -61,7 +61,9 @@ test('layout: no root band, captions only on tall groups', () => {
 	expect(Math.min(...rects.map((r) => r.y0))).toBe(0);
 	const tall = rects.find((r) => r.name === 'Utilities')!;
 	const kids = rects.filter((r) => r.parentName === 'Utilities');
-	expect(tall.caption).toBe(tall.y1 - tall.y0 >= 64);
+	expect(tall.caption).toBe(tall.y1 - tall.y0 >= 64 && tall.x1 - tall.x0 >= 64);
+	// Deeper groups never get a caption strip.
+	expect(layout(sanitize([{ name: 'a', children: [{ name: 'b', children: [{ name: 'c', value: 1 }, { name: 'd', value: 1 }] }] }]), 600, 320).filter((r) => r.caption).map((r) => r.name)).toEqual(['a']);
 	if (tall.caption) for (const k of kids) expect(k.y0).toBeGreaterThanOrEqual(tall.y0 + CAPTION - 2);
 	// Children share their top-level group's colour step.
 	for (const k of kids) expect(k.step).toBe(tall.step);

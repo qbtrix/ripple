@@ -8,6 +8,8 @@
 // that sums to 0 or less drops, and so does a group whose children all drop;
 // a blank name reads "Unnamed". Node `color` is ignored: one hue is the design.
 //
+// Captions: only a top-level group gets one (deeper levels show on zoom).
+//
 // Colour: top-level tiles (children of the current root) are ranked by value
 // onto RAMP, the percent of --ripple-accent mixed into --ripple-surface;
 // descendants inherit their top-level step. Hover adds LIFT. Ink on a tile is
@@ -27,6 +29,7 @@ export const TOP_GAP = 4;
 /** Caption strip on a group tall enough to pay for it. */
 export const CAPTION = 20;
 export const CAPTION_MIN_HEIGHT = 64;
+export const CAPTION_MIN_WIDTH = 64;
 const MAX_DEPTH = 8;
 
 export type TreeNode = { id: string; name: string; value: number; children?: TreeNode[] };
@@ -97,6 +100,11 @@ export function labelTier(w: number, h: number): 'full' | 'name' | 'none' {
 	return 'none';
 }
 
+/** Only top-level groups pay for a caption, and only when the tile is big enough. */
+function hasCaption(d: { depth: number; x0: number; x1: number; y0: number; y1: number }): boolean {
+	return d.depth === 1 && d.y1 - d.y0 >= CAPTION_MIN_HEIGHT && d.x1 - d.x0 >= CAPTION_MIN_WIDTH;
+}
+
 /** Squarified layout of `nodes` in a w x h box, flattened, root excluded. */
 export function layout(nodes: TreeNode[], w: number, h: number): Rect[] {
 	if (!nodes.length || !(w > 0) || !(h > 0)) return [];
@@ -109,7 +117,7 @@ export function layout(nodes: TreeNode[], w: number, h: number): Rect[] {
 		.paddingInner((d) => (d.depth === 0 ? TOP_GAP : GAP))
 		// d3 sets a node's own box before it asks for its padding, so the
 		// caption can depend on the group's height in one pass.
-		.paddingTop((d) => (d.depth > 0 && d.y1 - d.y0 >= CAPTION_MIN_HEIGHT ? CAPTION : 0))(tree);
+		.paddingTop((d) => (hasCaption(d) ? CAPTION : 0))(tree);
 
 	const step = new Map<string, number>();
 	root.children?.forEach((c, i) => step.set(c.data.id, Math.min(i, RAMP.length - 1)));
@@ -124,7 +132,7 @@ export function layout(nodes: TreeNode[], w: number, h: number): Rect[] {
 			value: d.value ?? 0,
 			depth: d.depth,
 			group,
-			caption: group && d.y1 - d.y0 >= CAPTION_MIN_HEIGHT,
+			caption: group && hasCaption(d),
 			x0: d.x0,
 			y0: d.y0,
 			x1: d.x1,
