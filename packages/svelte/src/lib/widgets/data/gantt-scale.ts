@@ -14,7 +14,10 @@
 //   first row; unknown ids, self references and edges that close a cycle drop.
 // - The tick unit starts from viewMode and steps up (day, week, month,
 //   quarter, year) until labels sit at least minGap px apart, so the range
-//   always fits the width and nothing scrolls sideways.
+//   always fits the width and nothing scrolls sideways. A last label that
+//   would cross the track end is right-aligned on its tick instead.
+// - Today is its own label, centred on its line; only a tick label whose box
+//   it overlaps gives way, never the whole unit.
 import { dateKey, finite, plain } from '../data-kit/format.js';
 
 export type ViewMode = 'Quarter Day' | 'Half Day' | 'Day' | 'Week' | 'Month' | 'Year';
@@ -42,7 +45,7 @@ export interface Tick {
 	/** 0..1 along the range. */
 	x: number;
 	text: string;
-	/** Right-aligned on its tick (only the Today label, at the track end). */
+	/** Right-aligned on its tick (a last label that would cross the track end). */
 	end?: boolean;
 }
 
@@ -246,15 +249,16 @@ export interface Scale {
  * the first of (unit, 1) and (unit, 2) steps, from viewMode's unit upward,
  * whose labels sit at least `minGap` px apart (44 wide, 64 narrow) with no
  * label dropped for crowding, so spacing stays even. Labels sit left aligned
- * on their tick; one that would cross the track end is dropped. At most
- * `maxLabels`. Lines: every base unit while 6px apart (minor), plus the
- * label unit's (major).
+ * on their tick; one that would cross the track end is right-aligned on it
+ * if that clears the previous label, else dropped. At most `maxLabels`.
+ * Lines: every base unit while `minLine` px apart (minor, default 6), plus
+ * the label unit's (major).
  */
 export function scaleOf(
 	r: Range,
 	viewMode: unknown,
 	width: number,
-	opts: { minGap?: number; maxLabels?: number } = {}
+	opts: { minGap?: number; maxLabels?: number; minLine?: number } = {}
 ): Scale {
 	const minGap = opts.minGap ?? 44;
 	const max = opts.maxLabels ?? Infinity;
@@ -280,7 +284,7 @@ export function scaleOf(
 	const labels = pick.labels.length > max ? pick.labels.filter((_, i) => i % Math.ceil(pick.labels.length / max) === 0) : pick.labels;
 
 	const major = boundaries(r, pick.unit, pick.k).map((t) => frac(t, r));
-	const minor = APPROX[base] * pxPerMs >= 6 ? boundaries(r, base).map((t) => frac(t, r)) : [];
+	const minor = APPROX[base] * pxPerMs >= (opts.minLine ?? 6) ? boundaries(r, base).map((t) => frac(t, r)) : [];
 	const seen = new Set(major.map((x) => x.toFixed(6)));
 	const lines = [
 		...major.map((x) => ({ x, major: true })),
@@ -300,9 +304,13 @@ function labelsFor(r: Range, unit: Unit, k: number, w: number, minGap: number, c
 		const x = frac(t, r);
 		const px = x * w;
 		const lw = labelPx(text);
-		// A label that would cross the track end is dropped, never squeezed in.
-		if (px + lw > w) continue;
+		// Past the track end a label flips to end on its tick, or is dropped.
+		const end = px + lw > w;
 		const prev = labels.length ? labels[labels.length - 1].x * w : -Infinity;
+		if (end) {
+			if (px - lw >= Math.max(lastEnd + 8, 0) && px - prev >= minGap) labels.push({ x, text, end });
+			continue;
+		}
 		if (px < lastEnd || px - prev < minGap) {
 			crowded = true;
 			continue;
@@ -315,39 +323,39 @@ function labelsFor(r: Range, unit: Unit, k: number, w: number, minGap: number, c
 }
 
 /**
- * Where the Today label goes: right of the line, or left (`end`) when that
- * hides fewer tick labels. Today outranks every tick and is spaced like one:
- * a tick label stays only if its left edge is at least `gap` px (44 wide, 64
- * narrow) from Today's and a clear 16px separates the two boxes.
+ * The Today label, centred on its line (`start`/`end` when centring would
+ * cross a track edge). Only tick labels whose box it overlaps (2px clear,
+ * on the generous labelPx estimate) give way; every other tick stays.
  */
 export function placeToday(
 	labels: readonly Tick[],
 	today: number,
-	w: number,
-	gap = 44
-): { labels: Tick[]; end: boolean } {
+	w: number
+): { labels: Tick[]; align: 'center' | 'start' | 'end' } {
 	const tw = labelPx('Today');
 	const px = today * w;
-	const span = (l: Tick) => {
-		const from = l.x * w - (l.end ? labelPx(l.text) : 0);
-		return [from, from + labelPx(l.text)];
-	};
-	const keep = (from: number, to: number) => labels.filter((l) => {
-		const [a, b] = span(l);
-		return Math.abs(a - from) >= gap && (b + 16 <= from || a >= to + 16);
+	const align = px - tw / 2 < 0 ? 'start' : px + tw / 2 > w ? 'end' : 'center';
+	const from = align === 'start' ? px : align === 'end' ? px - tw : px - tw / 2;
+	const kept = labels.filter((l) => {
+		const a = l.x * w - (l.end ? labelPx(l.text) : 0);
+		return a + labelPx(l.text) + 2 <= from || a >= from + tw + 2;
 	});
-	const right = px + tw <= w ? keep(px, px + tw) : undefined;
-	const left = px - tw >= 0 ? keep(px - tw, px) : undefined;
-	if (right && (!left || right.length >= left.length)) return { labels: right, end: false };
-	return { labels: left ?? keep(px, px + tw), end: !!left };
+	return { labels: kept, align };
 }
 
-/** "May 10 – 24", "May 10 – Jun 2", "Dec 7, 2026 – Jan 4, 2027"; one day reads "May 24". */
+/**
+ * "May 10 – 24", "May 10 – Jun 2", "Dec 7, 2026 – Jan 4, 2027"; one day reads
+ * "May 24"; a span of 90+ days across years drops the days, "Mar 2025 – Feb 2028".
+ */
 export function rowDates(a: number, b: number): string {
 	const da = new Date(a);
 	const db = new Date(b);
 	if (Math.floor(a / DAY) === Math.floor(b / DAY)) return day(a);
-	if (da.getUTCFullYear() !== db.getUTCFullYear()) return `${day(a, true)} – ${day(b, true)}`;
+	if (da.getUTCFullYear() !== db.getUTCFullYear()) {
+		if (b - a < 90 * DAY) return `${day(a, true)} – ${day(b, true)}`;
+		const my = (t: number) => fmt(t, { month: 'short', year: 'numeric' });
+		return `${my(a)} – ${my(b)}`;
+	}
 	if (da.getUTCMonth() === db.getUTCMonth()) return `${day(a)} – ${db.getUTCDate()}`;
 	return `${day(a)} – ${day(b)}`;
 }

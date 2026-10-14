@@ -4,6 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import {
 	afterText,
+	frac,
 	overallPercent,
 	parseProgress,
 	labelPx,
@@ -144,7 +145,7 @@ describe('scaleOf', () => {
 		const r = rangeOf(parseTasks([{ name: 'Kickoff', start: '2026-06-08', end: '2026-06-10' }]))!;
 		expect(scaleOf(r, 'Quarter Day', 2000).unit).toBe('h6');
 		expect(scaleOf(r, 'Day', 600).unit).toBe('day');
-		expect(scaleOf(r, 'Day', 600).labels.map((l) => l.text)).toEqual(['Mon 8', 'Tue 9']);
+		expect(scaleOf(r, 'Day', 600).labels.map((l) => l.text)).toEqual(['Mon 8', 'Tue 9', 'Wed 10']);
 	});
 
 	it('labels months with the year at a year boundary', () => {
@@ -168,42 +169,52 @@ describe('scaleOf', () => {
 		expect(new Set(gaps).size).toBe(1);
 	});
 
-	it('puts Today on the side that hides fewer tick labels', () => {
+	it('centres Today on its line and drops only the tick label it overlaps', () => {
 		const labels = [
 			{ x: 0.1, text: 'Aug' },
 			{ x: 0.3, text: 'Sep' },
 			{ x: 0.5, text: 'Oct' },
 			{ x: 0.7, text: 'Nov' }
 		];
-		const right = placeToday(labels, 0.52, 400);
-		expect(right.end).toBe(false);
-		expect(right.labels.map((l) => l.text)).toEqual(['Aug', 'Sep', 'Nov']);
-		const atEdge = placeToday(labels, 0.99, 400);
-		expect(atEdge.end).toBe(true);
+		const mid = placeToday(labels, 0.52, 400);
+		expect(mid.align).toBe('center');
+		expect(mid.labels.map((l) => l.text)).toEqual(['Aug', 'Sep', 'Nov']);
+		// Clear of every tick: nothing gives way.
+		expect(placeToday(labels, 0.4, 400).labels).toHaveLength(4);
+		expect(placeToday(labels, 0.99, 400).align).toBe('end');
+		expect(placeToday(labels, 0.01, 400).align).toBe('start');
 	});
 
-	it('spaces Today from every tick label like a tick: left edges gap apart, boxes 16px clear', () => {
-		const labels = [0.1, 0.3, 0.5, 0.7, 0.9].map((x) => ({ x, text: 'Oct' }));
-		for (const [today, gap] of [[0.45, 44], [0.62, 64], [0.97, 64]] as const) {
-			const w = 380;
-			const placed = placeToday(labels, today, w, gap);
-			const tw = labelPx('Today');
-			const from = today * w - (placed.end ? tw : 0);
-			for (const l of placed.labels) {
-				const a = l.x * w;
-				const b = a + labelPx(l.text);
-				expect(Math.abs(a - from)).toBeGreaterThanOrEqual(gap);
-				expect(b + 16 <= from || a >= from + tw + 16).toBe(true);
-			}
+	it('keeps 2026, 2027 and 2028 beside Today on a three-year range in a phone card', () => {
+		const r = rangeOf(EXTREME)!;
+		const today = frac(Date.UTC(2026, 9, 14), r);
+		for (const w of [296, 324]) {
+			const s = scaleOf(r, 'Quarter Day', w, { minGap: 64, maxLabels: 4, minLine: 16 });
+			const placed = placeToday(s.labels, today, w);
+			expect(placed.labels.map((l) => l.text)).toEqual(['2026', '2027', '2028']);
 		}
 	});
 
-	it('drops a tick whose label would cross the track end', () => {
-		const r = rangeOf(parseTasks([{ name: 'Run', start: '2026-05-04', end: '2026-05-31' }]))!;
-		const w = 660;
-		const s = scaleOf(r, 'Week', w);
-		for (const l of s.labels) expect(l.x * w + labelPx(l.text)).toBeLessThanOrEqual(w);
-		expect(s.labels.every((l) => !l.end)).toBe(true);
+	it('right-aligns a last tick that would cross the track end instead of dropping it', () => {
+		const r = rangeOf(EXTREME)!;
+		const w = 296;
+		const s = scaleOf(r, 'Year', w, { minGap: 64, maxLabels: 4 });
+		const last = s.labels[s.labels.length - 1];
+		expect(last).toMatchObject({ text: '2028', end: true });
+		for (const l of s.labels) {
+			const from = l.x * w - (l.end ? labelPx(l.text) : 0);
+			expect(from).toBeGreaterThanOrEqual(0);
+			expect(from + labelPx(l.text)).toBeLessThanOrEqual(w);
+		}
+	});
+
+	it('spaces faint lines at least minLine apart', () => {
+		const r = rangeOf(parseTasks([{ name: 'Run', start: '2026-09-01', end: '2026-10-09' }]))!;
+		const w = 300;
+		const xs = scaleOf(r, 'Day', w, { minGap: 64, maxLabels: 4, minLine: 16 })
+			.lines.map((l) => l.x * w)
+			.sort((a, b) => a - b);
+		for (let i = 1; i < xs.length; i++) expect(xs[i] - xs[i - 1]).toBeGreaterThanOrEqual(16);
 	});
 
 	it('keeps viewMode visible on a six-week range: day lines in Day, fewer in Week', () => {
@@ -235,6 +246,7 @@ describe('text', () => {
 		expect(rowDates(rows[1].start!, rows[1].end!)).toBe('May 10 – 24');
 		expect(rowDates(D('2026-05-24'), D('2026-06-02'))).toBe('May 24 – Jun 2');
 		expect(rowDates(D('2026-12-07'), D('2027-01-04'))).toBe('Dec 7, 2026 – Jan 4, 2027');
+		expect(rowDates(D('2025-03-01'), D('2028-02-29'))).toBe('Mar 2025 – Feb 2028');
 	});
 
 	it('builds the accessible name and the narrow After line from data', () => {

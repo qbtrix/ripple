@@ -81,12 +81,16 @@ describe('gantt', () => {
 		// Each row's mark in px, from the same range the widget draws on (jsdom drops min() in styles).
 		const range = rangeOf(parseTasks(tasks))!;
 		const marks = parseTasks(tasks).map((r) => [frac(r.start!, range) * w - 5, frac(r.end!, range) * w + 5]);
-		const paths = [...container.querySelectorAll('path.g-link')].map((p) => p.getAttribute('d')!);
+		const links = container.querySelectorAll('path.g-link');
+		// One path for every connector, so shared trunks never double in ink.
+		expect(links).toHaveLength(1);
+		const paths = links[0].getAttribute('d')!.split(/(?=M)/);
 		expect(paths).toHaveLength(6);
 		for (const d of paths) {
-			const [, , y1, , , xc, y2] = d.match(/^M([\d.-]+) ([\d.-]+)H([\d.-]+)V([\d.-]+)H([\d.-]+)V([\d.-]+)H/)!.map(Number);
-			const [a, b] = [Math.round((y1 - rowH / 2) / rowH), Math.round((y2 - rowH / 2) / rowH)].sort((p, q) => p - q);
-			for (let j = a + 1; j < b; j++) expect(xc < marks[j][0] || xc > marks[j][1]).toBe(true);
+			const [, , , g1, xc, g2] = d.match(/^M([\d.-]+) ([\d.-]+)V([\d.-]+)H([\d.-]+)V([\d.-]+)H([\d.-]+)V([\d.-]+)H/)!.map(Number);
+			// The xc column runs between the two gaps: it must clear every row strictly between them.
+			const [a, b] = [g1, g2].map((g) => Math.round((g + 0.5) / rowH)).sort((p, q) => p - q);
+			for (let j = a; j < b; j++) expect(xc < marks[j][0] || xc > marks[j][1]).toBe(true);
 		}
 	});
 
@@ -127,6 +131,7 @@ it('bars read on the card in both themes: tint 1.4:1, solid accent 3:1', async (
 	}
 	// The tint sits on --ripple-surface; a host card one step lighter still reads.
 	expect(contrast(over(accent, p, toRgb(hex('#1d1d1a'))), toRgb(hex('#262621')))).toBeGreaterThanOrEqual(1.4);
-	// Solid on tint cannot reach 3:1 while the tint clears 1.4:1, so a card-coloured notch separates them.
-	expect(src).toMatch(/\.g-done \{[^}]*box-shadow: 2px 0 0 var\(--ripple-surface\)/);
+	// No seam between the done part and the rest: a surface notch read as a glitch near
+	// high progress (review round 2), so the fill/tint edge is the only divider.
+	expect(src).not.toMatch(/\.g-done \{[^}]*box-shadow/);
 });
