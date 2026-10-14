@@ -1,7 +1,7 @@
 {
   "schema": "ripple.manifest/v1",
   "version": "0.8.0",
-  "generatedAt": "2026-10-14T09:34:15.214Z",
+  "generatedAt": "2026-10-14T16:23:33.506Z",
   "spec": {
     "uiField": "ui",
     "stateField": "state",
@@ -14957,12 +14957,12 @@
     {
       "type": "saved-views",
       "category": "vertical",
-      "description": "Tabbed view selector for saved filters/sorts. Renders as tab bar with optional count badges and pin stars.",
+      "description": "Saved filter views as chips with optional counts.",
       "props": {
         "views": {
           "type": "Array<{ id: string; label: string; icon?: string; pinned?: boolean; count?: number }>",
           "required": true,
-          "description": "Saved view tabs."
+          "description": "Saved views."
         },
         "value": {
           "type": "string | null",

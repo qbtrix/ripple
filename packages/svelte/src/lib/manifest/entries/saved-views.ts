@@ -3,9 +3,9 @@ import type { WidgetManifestEntry } from '../index.js';
 export const savedViewsEntry: WidgetManifestEntry = {
   type: 'saved-views',
   category: 'vertical',
-  description: 'Tabbed view selector for saved filters/sorts. Renders as tab bar with optional count badges and pin stars.',
+  description: 'Saved filter views as chips with optional counts.',
   props: {
-    views: { type: 'Array<{ id: string; label: string; icon?: string; pinned?: boolean; count?: number }>', required: true, description: 'Saved view tabs.' },
+    views: { type: 'Array<{ id: string; label: string; icon?: string; pinned?: boolean; count?: number }>', required: true, description: 'Saved views.' },
     value: { type: 'string | null', required: false, description: 'Currently active view id (use with bind).' },
     canCreate: { type: 'boolean', required: false, description: 'Show "+ New view" button.' },
   },
