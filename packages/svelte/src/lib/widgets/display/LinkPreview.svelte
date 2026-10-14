@@ -5,7 +5,7 @@
      empty grey slab. The only image sinks go through safeUrl. -->
 <script lang="ts">
   import PhotoTile from '$lib/widgets/data-kit/PhotoTile.svelte';
-  import { safeUrl } from '@ripple-ui/core';
+  import { safeStyle, safeUrl } from '@ripple-ui/core';
   import { cn } from '$lib/utils.js';
   import { nameTint } from '$lib/widgets/data-kit/tint.js';
   import LinkIcon from '@lucide/svelte/icons/link';
@@ -82,9 +82,9 @@
         )}
       >
         <!-- PhotoTile: the domain letter tile when the image is refused or fails. -->
-        <PhotoTile src={image} ratio="auto" class="size-full" style="border-radius:0">
+        <PhotoTile src={safeUrl(image, { kind: 'resource' })} ratio="auto" class="size-full" style="border-radius:0">
           {#snippet fallback()}
-            <div class="grid size-full place-items-center" style={nameTint(derivedDomain)} aria-hidden="true">
+            <div class="grid size-full place-items-center" style={safeStyle(nameTint(derivedDomain))} aria-hidden="true">
               <span class="text-2xl font-semibold leading-none">{letter}</span>
             </div>
           {/snippet}

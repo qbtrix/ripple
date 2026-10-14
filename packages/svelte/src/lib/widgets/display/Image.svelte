@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { safeStyle } from '@ripple-ui/core';
+  import { safeStyle, safeUrl } from '@ripple-ui/core';
   import PhotoTile from '$lib/widgets/data-kit/PhotoTile.svelte';
   import ImageIcon from '@lucide/svelte/icons/image';
   interface Props {
@@ -34,4 +34,4 @@
 
 <!-- PhotoTile owns loading, missing, refused and failed src: a designed icon
      tile at the requested size, never the browser's broken-image glyph. -->
-<PhotoTile {id} {src} {alt} {fit} ratio="auto" icon={ImageIcon} caption class="block max-w-full {className ?? ''}" style={combinedStyle} />
+<PhotoTile {id} src={safeUrl(src, { kind: 'resource' })} {alt} {fit} ratio="auto" icon={ImageIcon} caption class="block max-w-full {className ?? ''}" style={combinedStyle} />

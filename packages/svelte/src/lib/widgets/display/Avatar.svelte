@@ -14,7 +14,7 @@
       reads as an intentional placeholder in light/dark.
 -->
 <script lang="ts">
-  import { safeUrl } from '@ripple-ui/core';
+  import { safeStyle, safeUrl } from '@ripple-ui/core';
   import { cn } from '$lib/utils.js';
   import * as Avatar from '$lib/components/ui/avatar/index.js';
   import { asText } from '$lib/widgets/text-coerce';
@@ -64,7 +64,7 @@
   <Avatar.Image src={safeUrl(src, { kind: 'resource' })} {alt} />
   <Avatar.Fallback
     class="bg-ripple-track text-ripple-muted-foreground font-medium tracking-tight"
-    style={initials ? nameTint(asText(alt) || initials) : undefined}
+    style={safeStyle(initials ? nameTint(asText(alt) || initials) : '')}
   >
     {#if initials}
       {initials}

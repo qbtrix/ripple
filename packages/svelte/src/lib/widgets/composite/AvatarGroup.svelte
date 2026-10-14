@@ -7,7 +7,7 @@
 -->
 
 <script lang="ts">
-  import { safeUrl } from '@ripple-ui/core';
+  import { safeStyle, safeUrl } from '@ripple-ui/core';
   import { cn } from '$lib/utils.js';
   import * as Avatar from '$lib/components/ui/avatar/index.js';
   import { asText } from '$lib/widgets/text-coerce';
@@ -69,7 +69,7 @@
       {/if}
       <Avatar.Fallback
         class={size === 'sm' ? 'text-[9px] font-semibold' : 'text-xs font-medium'}
-        style={initials(user) ? nameTint(asText(user.alt) || initials(user)) : undefined}
+        style={safeStyle(initials(user) ? nameTint(asText(user.alt) || initials(user)) : '')}
       >{initials(user)}</Avatar.Fallback>
     </Avatar.Root>
   {/each}

@@ -9,3 +9,10 @@ test('a name always maps to the same hue, outside the accent blue band', () => {
 	}
 	expect(nameTint('Mara')).toBe(nameTint('  mara '));
 });
+
+test('the tint survives safeStyle (avatars and letter tiles render it through the guard)', async () => {
+	const { safeStyle } = await import('@ripple-ui/core');
+	const out = safeStyle(nameTint('Mara'));
+	expect(out).toContain('background-color:color-mix(');
+	expect(out).toContain('color:color-mix(');
+});
