@@ -7,18 +7,22 @@
   Menu: the layout follows the photos that load. With none (the model-only
   chat case, or every photo failed) it is a grouped list: full-width category
   headings, then hairline rows (muted kind glyph, name and description
-  clamped to 2 lines, price and control at the right, side by side when the
-  row has no description or tags), two columns from 560px in a group of 2+. Any
-  photo still loading or loaded gives photo cards; a failed photo drops its
-  tile. The pick ("Picked for you") is a tinted row above the groups, never
-  listed twice. Chips show only for 2+ categories and 8+ items, and wrap.
+  clamped to 2 lines; every row has the price top-right on the name's first
+  line with the control under it), two columns from 560px in a group of 2+.
+  Any photo still loading or loaded gives photo cards in one auto-fill grid
+  with no category headings (small groups would strand one card per row); a
+  failed photo keeps its slot with the kind icon. Glyphs come from DISH: the
+  generic kinds draw neutral dishes, never a specific food. The pick ("Picked
+  for you") is a tinted row above the groups, its name on the rows' text edge,
+  never listed twice. Chips show only for 2+ categories and 8+ items, and wrap.
   Placeholders show only while the spec streams in ('ui-streaming' is
   'active'); a settled card collapses a missing price and names a nameless
-  item by its id in words. Price 0 is Free. A repeated product_id shares one
+  item by its id in words. Price 0 is Free; the headline's "from" counts only
+  prices above 0. A repeated product_id shares one
   cart line and only its first row is highlighted. One primary button per
   stage, in a sticky footer bar (hairline top, inset like the rows) that
   carries the item count and subtotal (the review adds the fee). A priced item
-  that cannot be ordered shows its price muted. Customise joins the stage rail only once an item with
+  that cannot be ordered shows its price like any other, with no control. Customise joins the stage rail only once an item with
   options is in play, so no skipped stage shows as done.
 
   Customise: the item's photo, or a tinted tile with its kind icon and name;
@@ -57,6 +61,9 @@
 	import Store from '@lucide/svelte/icons/store';
 	import Bike from '@lucide/svelte/icons/bike';
 	import Check from '@lucide/svelte/icons/check';
+	import UtensilsCrossed from '@lucide/svelte/icons/utensils-crossed';
+	import Soup from '@lucide/svelte/icons/soup';
+	import HandPlatter from '@lucide/svelte/icons/hand-platter';
 	import {
 		PhotoTile,
 		SectionCard,
@@ -144,10 +151,16 @@
 		'inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-md bg-ripple-accent px-3.5 text-body-emph text-ripple-accent-foreground tabular-nums transition-[filter] hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ripple-ring disabled:cursor-not-allowed disabled:opacity-50';
 	const SECONDARY =
 		'inline-flex h-7 shrink-0 items-center gap-1 rounded-md border border-ripple-border bg-ripple-surface px-2.5 text-callout font-medium text-ripple-surface-foreground transition-colors hover:bg-ripple-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ripple-ring disabled:cursor-not-allowed disabled:opacity-50';
+	// Disabled keeps pointer events so the capped + still shows its "Up to" title.
 	const STEP =
-		'grid size-7 place-items-center rounded-md text-ripple-muted-foreground transition-colors hover:bg-ripple-muted hover:text-ripple-surface-foreground focus-visible:outline-2 focus-visible:outline-ripple-ring disabled:pointer-events-none disabled:opacity-40';
+		'grid size-7 place-items-center rounded-md text-ripple-muted-foreground transition-colors hover:bg-ripple-muted hover:text-ripple-surface-foreground focus-visible:outline-2 focus-visible:outline-ripple-ring disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-ripple-muted-foreground';
 	const QUIET =
 		'inline-flex h-7 items-center gap-1 rounded-md px-1.5 text-callout text-ripple-muted-foreground transition-colors hover:bg-ripple-muted hover:text-ripple-surface-foreground focus-visible:outline-2 focus-visible:outline-ripple-ring';
+
+	// Kind glyphs: the shared map minus its specific foods for the generic kinds
+	// (a burger beside sushi misleads); an unknown kind gets a plate, not a dot.
+	const DISH = { ...MENU_ICONS, main: UtensilsCrossed, side: Soup };
+	const glyph = (kind: unknown) => (typeof kind === 'string' && Object.hasOwn(DISH, kind) ? DISH[kind as keyof typeof DISH] : HandPlatter);
 
 	// ── Menu data (derived from props; streaming-safe) ─────────────────────
 	const menu = $derived(toItems(items));
@@ -185,7 +198,7 @@
 	const headline = $derived.by(() => {
 		const prices = menu.map((i) => i.price).filter((p): p is number => p !== undefined);
 		const parts = [`${menu.length} ${menu.length === 1 ? 'item' : 'items'}`];
-		const real = prices.filter((p) => p >= 0); // a negative credit is not a starting price
+		const real = prices.filter((p) => p > 0); // a free item or a credit is not a starting price
 		if (real.length) parts.push(`from ${priceText(Math.min(...real))}`);
 		else if (!prices.length && categories.length > 1) parts.push(`${categories.length} categories`);
 		if (orderable) parts.push(modes.length > 1 ? 'pickup or delivery' : modes[0]);
@@ -242,7 +255,8 @@
 	// Groups under category headings ("All", 2+ categories), uncategorised last
 	// as "Other"; one unnamed group otherwise. `start` runs the rise stagger on.
 	const groups = $derived.by(() => {
-		const sets = !active && categories.length > 1 ? [...categories, ''].map((c) => ({ name: c || 'Other', items: shown.filter((i) => i.category === c) })) : [{ name: '', items: shown }];
+		// Photo cards flow in one grid: a heading per small group strands cards.
+		const sets = !active && !photos && categories.length > 1 ? [...categories, ''].map((c) => ({ name: c || 'Other', items: shown.filter((i) => i.category === c) })) : [{ name: '', items: shown }];
 		let start = 0;
 		return sets.filter((g) => g.items.length).map((g) => ({ ...g, start: (start += g.items.length) - g.items.length }));
 	});
@@ -358,7 +372,7 @@
 
 {#snippet price(item: Item, cls = 'text-body-emph')}
 	{#if item.price !== undefined}
-		<span class={['shrink-0 tabular-nums', cls, orderable && !canOrder(item) && 'text-ripple-muted-foreground']}>{priceText(item.price)}</span>
+		<span class={['shrink-0 tabular-nums', cls]}>{priceText(item.price)}</span>
 	{:else if streaming}
 		<span class="mt-1 h-3.5 w-10 shrink-0 rounded bg-ripple-track" aria-hidden="true" data-placeholder></span>
 	{/if}
@@ -392,7 +406,7 @@
 			<Minus size={14} strokeWidth={2} aria-hidden="true" />
 		</button>
 		<span class="min-w-6 text-center text-body-emph tabular-nums">{q}</span>
-		<button type="button" class={STEP} aria-label="Add one {label}" title={q >= MAX_QTY ? `Max ${MAX_QTY}` : undefined} disabled={q >= MAX_QTY} onclick={inc}>
+		<button type="button" class={STEP} aria-label="Add one {label}" title={q >= MAX_QTY ? `Up to ${MAX_QTY}` : undefined} disabled={q >= MAX_QTY} onclick={inc}>
 			<Plus size={14} strokeWidth={2} aria-hidden="true" />
 		</button>
 	</div>
@@ -422,9 +436,7 @@
 			chosen(item) ? 'bg-ripple-accent/8' : 'bg-ripple-surface'
 		]}
 	>
-		{#if hasPhoto(item)}
-			<PhotoTile src={safeUrl(item.image, { kind: 'resource' })} ratio="4:3" icon={kindIcon(MENU_ICONS, item.kind)} iconSize={24} class="w-24 shrink-0 self-start @min-[560px]:w-full" onerror={() => fail(item)} />
-		{/if}
+		<PhotoTile src={safeUrl(item.image, { kind: 'resource' })} ratio="4:3" icon={glyph(item.kind)} iconSize={24} class="w-24 shrink-0 self-start @min-[560px]:w-full" onerror={() => fail(item)} />
 		<div class="flex min-w-0 flex-1 flex-col gap-1">
 			<div class="flex items-start gap-2">
 				{@render name(item, 'text-body-emph', 'h4')}
@@ -438,8 +450,7 @@
 {/snippet}
 
 {#snippet row(item: Item, level: string)}
-	{@const Glyph = kindIcon(MENU_ICONS, item.kind)}
-	{@const bare = !item.description && !item.tags.length}
+	{@const Glyph = glyph(item.kind)}
 	<div
 		class={[
 			'relative grid min-h-11 grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-x-2.5 px-2.5 py-2.5',
@@ -452,7 +463,7 @@
 			{#if item.description}<p class="line-clamp-2 text-callout text-pretty text-ripple-muted-foreground">{item.description}</p>{/if}
 			{#if item.tags.length}<div class="pt-1">{@render tags(item)}</div>{/if}
 		</div>
-		<div class={['flex empty:hidden', bare ? '-my-1 items-center gap-2.5' : 'flex-col items-end gap-1.5']}>
+		<div class="flex flex-col items-end gap-1.5 empty:hidden">
 			{@render price(item)}
 			{@render control(item)}
 		</div>
@@ -535,10 +546,14 @@
 						{@const shot = photos && hasPhoto(f)}
 						<article class={['rounded-ripple bg-ripple-accent/8', shot ? 'grid gap-3 p-2 @min-[560px]:grid-cols-[2fr_3fr] @min-[560px]:p-3' : 'p-2.5']} aria-label="Picked for you">
 							{#if shot}
-								<PhotoTile src={safeUrl(f.image, { kind: 'resource' })} ratio="16:9" icon={kindIcon(MENU_ICONS, f.kind)} iconSize={32} class="max-h-[200px] w-full self-center" onerror={() => fail(f)} />
+								<PhotoTile src={safeUrl(f.image, { kind: 'resource' })} ratio="16:9" icon={glyph(f.kind)} iconSize={32} class="max-h-[200px] w-full self-center" onerror={() => fail(f)} />
 							{/if}
-							<div class={photos ? 'flex min-w-0 flex-1 flex-col gap-1' : 'grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-2.5 gap-y-0.5'}>
-								<p class={['text-caption-1 font-medium text-ripple-accent-text', !photos && 'col-span-2']}>Picked for you</p>
+							<div class={photos ? 'flex min-w-0 flex-1 flex-col gap-1' : 'grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-x-2.5 gap-y-0.5'}>
+								<p class={['text-caption-1 font-medium text-ripple-accent-text', !photos && 'col-span-2 col-start-2']}>Picked for you</p>
+								{#if !photos}
+									{@const Glyph = glyph(f.kind)}
+									<Glyph size={16} strokeWidth={1.75} class="mt-0.5 text-ripple-muted-foreground" aria-hidden="true" />
+								{/if}
 								<div class="flex min-w-0 flex-col gap-0.5">
 									{#if photos}
 										<div class="flex items-start gap-2">
@@ -597,7 +612,7 @@
 				{/if}
 			{:else if view === 'customise' && draftItem && draft}
 				{@const item = draftItem}
-				{@const KindIcon = kindIcon(MENU_ICONS, item.kind)}
+				{@const KindIcon = glyph(item.kind)}
 				{@render back(draft.edit ? 'review' : 'menu', draft.edit ? 'Review' : 'Menu')}
 				<div class="flex flex-col gap-3 @min-[720px]:grid @min-[720px]:grid-cols-[1fr_2fr] @min-[720px]:items-start">
 					<div class="flex gap-3 @min-[720px]:sticky @min-[720px]:top-2 @min-[720px]:flex-col">

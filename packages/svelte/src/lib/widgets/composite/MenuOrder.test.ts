@@ -358,9 +358,15 @@ describe('menu-order — menu layout', () => {
 		expect(btn('Add Tap Water')).toBeTruthy();
 	});
 
-	it('uses photo cards once any item has a photo', () => {
-		const { container } = render(MenuOrder, { props: { items: [{ ...fries, image: 'https://images.unsplash.com/photo-1' }, shake] } });
-		expect(container.querySelectorAll('article')).toHaveLength(2);
+	it('uses photo cards in one ungrouped grid once any item has a photo, each with a photo slot', async () => {
+		const { container } = render(MenuOrder, {
+			props: { items: [{ ...fries, image: 'https://images.unsplash.com/photo-1' }, { ...fries, id: 'curly', product_id: 'curly', name: 'Curly Fries', image: 'https://img.example/2' }, shake] }
+		});
+		expect(container.querySelectorAll('article')).toHaveLength(3);
+		expect(screen.getByRole('list', { name: 'Menu' }).querySelectorAll('li')).toHaveLength(3);
+		expect(container.querySelector('h3')).toBeNull(); // no per-category headings stranding single cards
+		await fireEvent.error(container.querySelectorAll('img')[1]);
+		expect([...container.querySelectorAll('[data-state]')].map((t) => t.getAttribute('data-state'))).toEqual(['loading', 'fallback', 'fallback']);
 	});
 
 	it('falls back to the list once every photo fails, with no grey tiles', async () => {
@@ -380,9 +386,12 @@ describe('menu-order — menu layout', () => {
 		expect(glyphs[0].getAttribute('class')).toContain('text-ripple-muted-foreground');
 	});
 
-	it('starts the headline at the lowest non-negative price, Free included', () => {
+	it('starts the headline at the lowest price above 0, and drops "from" when none is', () => {
 		render(MenuOrder, { props: { items: [fries, { product_id: 'water', name: 'Tap Water', price: 0 }, { product_id: 'credit', name: 'Credit', price: -2 }] } });
-		expect(screen.getByText('3 items · from Free')).toBeTruthy();
+		expect(screen.getByText('3 items · from $3.49')).toBeTruthy();
+		cleanup();
+		render(MenuOrder, { props: { items: [{ product_id: 'water', name: 'Tap Water', price: 0 }] } });
+		expect(screen.getByText('1 item')).toBeTruthy();
 	});
 
 	it('splits a group into two columns only when it has 2+ items', () => {
@@ -391,12 +400,12 @@ describe('menu-order — menu layout', () => {
 		expect(screen.getByRole('list', { name: 'Shakes' }).className).not.toContain('grid-cols-2');
 	});
 
-	it('explains a maxed-out stepper and mutes the price of an item that cannot be ordered', () => {
+	it('explains a maxed-out stepper and shows the price of an item that cannot be ordered in normal ink', () => {
 		render(MenuOrder, { props: { items: [fries, { name: 'Ask the server', price: 16 }], checkout: true, preset: [{ id: 'shoestring-fries', qty: 20 }] } });
 		const plus = btn('Add one Shoestring Fries') as HTMLButtonElement;
 		expect(plus.disabled).toBe(true);
-		expect(plus.title).toBe('Max 20');
-		expect(screen.getByText('$16.00').className).toContain('text-ripple-muted-foreground');
+		expect(plus.title).toBe('Up to 20');
+		expect(screen.getByText('$16.00').className).not.toContain('text-ripple-muted-foreground');
 		expect(screen.getByText('$3.49').className).not.toContain('text-ripple-muted-foreground');
 	});
 
@@ -487,7 +496,7 @@ describe('menu-order — customise tiles', () => {
 		const { container } = await openBurger();
 		const tileEl = container.querySelector('[data-fallback]')!;
 		expect(tileEl.textContent).toContain('Double Smash Burger');
-		expect(tileEl.querySelector('.lucide-hamburger')).not.toBeNull();
+		expect(tileEl.querySelector('.lucide-utensils-crossed')).not.toBeNull();
 	});
 });
 
