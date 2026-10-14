@@ -1,5 +1,12 @@
+// NodeRenderer.slots.test.ts: `slot` children land in the widget's named slot,
+// and an absent named slot never clobbers a data prop of the same name. Several
+// widgets take `actions` (or `footer`) as model data; NodeRenderer passes a slot
+// snippet only when that slot has children, so the model's array survives.
+
 import { render } from '@testing-library/svelte';
-import { expect, test } from 'vitest';
+import { tick } from 'svelte';
+import { describe, expect, test } from 'vitest';
+import { manifestEntries } from '$lib/manifest/index.js';
 import Ripple from '$lib/Ripple.svelte';
 import type { UINode } from '@ripple-ui/core';
 
@@ -84,4 +91,46 @@ test('existing no-slot specs render identically (regression guard)', () => {
   });
   expect(container.querySelector('[data-slot="card-header"]')?.textContent).toContain('Hello');
   expect(container.querySelector('[data-slot="card-body"]')?.textContent).toContain('world');
+});
+
+const mount = async (ui: Record<string, unknown>) => {
+	const { container } = render(Ripple, { props: { spec: { version: '1.0', state: {}, ui } as never } });
+	await tick();
+	return container;
+};
+
+const buttonNames = (c: HTMLElement) =>
+	[...c.querySelectorAll('button')].map((b) => b.textContent?.trim() ?? '');
+
+describe('slot snippets never clobber data props', () => {
+	test('bulk-action-bar keeps its actions array', async () => {
+		const example = manifestEntries.find((e) => e.type === 'bulk-action-bar')!.example!;
+		const c = await mount(example as Record<string, unknown>);
+		const names = buttonNames(c);
+		for (const label of ['Assign role', 'Send email', 'Delete']) expect(names).toContain(label);
+	});
+
+	test('entity-detail keeps its actions array', async () => {
+		const c = await mount({
+			type: 'entity-detail',
+			props: { title: 'Northwind', actions: [{ id: 'edit', label: 'Edit record' }, { id: 'share', label: 'Share record' }] }
+		});
+		const names = buttonNames(c);
+		expect(names).toContain('Edit record');
+		expect(names).toContain('Share record');
+	});
+
+	test('report-layout keeps its footer string', async () => {
+		const c = await mount({ type: 'report-layout', props: { title: 'Quarterly report', footer: 'Internal use only.' } });
+		expect(c.textContent).toContain('Internal use only.');
+	});
+
+	test('page-header still renders slot: "actions" children', async () => {
+		const c = await mount({
+			type: 'page-header',
+			props: { title: 'Projects' },
+			children: [{ type: 'button', slot: 'actions', props: { label: 'New project' } }]
+		});
+		expect(c.textContent).toContain('New project');
+	});
 });

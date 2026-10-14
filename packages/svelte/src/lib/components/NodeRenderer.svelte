@@ -562,12 +562,13 @@
 			'data-ripple-node': node.id,
 			'data-ripple-type': node.type
 		}}
-		<!-- The default-children snippet is passed as a PROP (below) and only when
-		     `defaultKids` is non-empty. Inlining it as component content passed an
-		     always-truthy `children` to every widget, so a widget could not tell
-		     "renderer, zero kids" from "hand-written caller with kids" — which is
-		     why `hasChildren` had to exist. Matching header/footer/sidebar/topbar/
-		     actions makes `children` a truthful signal for both callers. -->
+		<!-- Slot snippets are passed as PROPS (below), each only when its slot has
+		     kids, so `children` is a truthful signal ("renderer, zero kids" looks
+		     like "no children"). The named slots (header, footer, sidebar, topbar,
+		     actions) are spread in only when present, never set to `undefined`:
+		     several widgets take a DATA prop of the same name (an `actions` array,
+		     a `footer` string), and an explicit `undefined` after the widgetProps
+		     spread would clobber it. An absent slot leaves the data prop alone. -->
 		{#snippet defaultSnippet()}
 			{#each defaultKids as child, i (defaultKeys[i])}
 				<Self node={child} {loopContext} />
@@ -614,22 +615,22 @@
 			<div data-ripple-motion data-ripple-node={node.id} class="block" use:withMotion={node.motion}>
 				<WidgetComponent
 					{...widgetProps}
-					header={headerKids.length > 0 ? headerSnippet : undefined}
-					footer={footerKids.length > 0 ? footerSnippet : undefined}
-					sidebar={sidebarKids.length > 0 ? sidebarSnippet : undefined}
-					topbar={topbarKids.length > 0 ? topbarSnippet : undefined}
-					actions={actionsKids.length > 0 ? actionsSnippet : undefined}
+					{...(headerKids.length > 0 ? { header: headerSnippet } : {})}
+					{...(footerKids.length > 0 ? { footer: footerSnippet } : {})}
+					{...(sidebarKids.length > 0 ? { sidebar: sidebarSnippet } : {})}
+					{...(topbarKids.length > 0 ? { topbar: topbarSnippet } : {})}
+					{...(actionsKids.length > 0 ? { actions: actionsSnippet } : {})}
 					children={defaultKids.length > 0 ? defaultSnippet : undefined}
 				/>
 			</div>
 		{:else}
 			<WidgetComponent
 				{...widgetProps}
-				header={headerKids.length > 0 ? headerSnippet : undefined}
-				footer={footerKids.length > 0 ? footerSnippet : undefined}
-				sidebar={sidebarKids.length > 0 ? sidebarSnippet : undefined}
-				topbar={topbarKids.length > 0 ? topbarSnippet : undefined}
-				actions={actionsKids.length > 0 ? actionsSnippet : undefined}
+				{...(headerKids.length > 0 ? { header: headerSnippet } : {})}
+				{...(footerKids.length > 0 ? { footer: footerSnippet } : {})}
+				{...(sidebarKids.length > 0 ? { sidebar: sidebarSnippet } : {})}
+				{...(topbarKids.length > 0 ? { topbar: topbarSnippet } : {})}
+				{...(actionsKids.length > 0 ? { actions: actionsSnippet } : {})}
 				children={defaultKids.length > 0 ? defaultSnippet : undefined}
 			/>
 		{/if}
