@@ -288,7 +288,6 @@
 	.kb-lane {
 		min-width: 0;
 		padding: 0.625rem 0;
-		border-radius: calc(var(--ripple-radius) + 2px);
 		transition:
 			background-color 150ms var(--ripple-ease-out),
 			box-shadow 150ms var(--ripple-ease-out);
@@ -351,9 +350,8 @@
 	.kb-card {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr) auto auto;
-		grid-template-areas: 'name badge move' 'desc desc move';
+		grid-template-areas: 'name badge move' 'desc desc desc';
 		align-items: start;
-		column-gap: 0.5rem;
 		row-gap: 0.125rem;
 		min-width: 0;
 		padding: 0.5rem 0;
@@ -399,7 +397,7 @@
 	.kb-badge {
 		grid-area: badge;
 		max-width: 50cqi;
-		margin-top: 1px;
+		margin: 1px 0 0 0.5rem;
 		padding: 0.0625rem 0.4375rem;
 		border-radius: 9999px;
 		background: var(--ripple-muted);
@@ -425,7 +423,7 @@
 		justify-content: center;
 		width: 24px;
 		height: 24px;
-		margin: -4px -4px 0 0;
+		margin: -4px -4px -4px 0.25rem;
 		border: 0;
 		border-radius: calc(var(--ripple-radius) - 2px);
 		background: transparent;
@@ -454,7 +452,7 @@
 		padding: 0.25rem 0;
 		border: 0;
 		background: none;
-		font: inherit;
+		font-family: inherit;
 		font-weight: 500;
 		color: var(--ripple-accent-text);
 		cursor: pointer;
@@ -496,6 +494,7 @@
 
 		.kb-lane {
 			padding: 0.5rem;
+			border-radius: calc(var(--ripple-radius) + 2px);
 			background: var(--ripple-muted);
 		}
 
