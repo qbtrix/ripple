@@ -175,9 +175,10 @@
   )}
   style={styleString}
 >
-  <!-- Wraps: on a narrow card the argument chip (natural width, at least
-       16ch) drops to its own line whole rather than truncating to a few
-       characters; the right-hand group is pushed right by its first ml-auto. -->
+  <!-- One header row: the name button has a small flex-basis, so the name
+       truncates before the duration/time/status group (one nowrap unit)
+       wraps. Only a long argument chip (natural width, at least 16ch) drops
+       to its own line, whole, rather than truncating to a few characters. -->
   <div class="flex flex-wrap items-center gap-x-2 gap-y-1 px-2.5 py-1.5">
     <button
       type="button"
@@ -185,10 +186,7 @@
       aria-controls={bodyId}
       onclick={toggle}
       class={cn(
-        'group -mx-1 flex min-w-0 shrink items-center gap-2 rounded-md px-1 py-0.5 text-left transition-colors duration-100 hover:bg-ripple-accent/10',
-        // With no chip there is nothing else competing for the row, so the
-        // disclosure keeps the full-width hit area it had before the re-skin.
-        !chipText && 'flex-1'
+        'group -mx-1 flex min-w-0 flex-1 basis-[10ch] items-center gap-2 rounded-md px-1 py-0.5 text-left transition-colors duration-100 hover:bg-ripple-accent/10'
       )}
     >
       <!-- The source's trick: the glyph gives way to a chevron on hover/open. -->
@@ -249,26 +247,27 @@
       </div>
     {/if}
 
+    <div class="ml-auto flex shrink-0 items-center gap-2">
     {#if duration}
       <span
-        class="ml-auto inline-flex shrink-0 items-center gap-1 text-[11px] tabular-nums text-ripple-muted-foreground"
+        class="inline-flex shrink-0 items-center gap-1 text-[11px] tabular-nums text-ripple-muted-foreground"
       >
         <ClockIcon size={11} aria-hidden="true" />{duration}
       </span>
     {/if}
     {#if time}
-      <span class={cn('shrink-0 text-[11px] text-ripple-muted-foreground', !duration && 'ml-auto')}>{time}</span>
+      <span class="shrink-0 text-[11px] text-ripple-muted-foreground">{time}</span>
     {/if}
 
     <span
       class={cn(
         'inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-medium ring-1',
-        !duration && !time && 'ml-auto',
         statusMeta.cls
       )}
     >
       {statusMeta.label}
     </span>
+    </div>
   </div>
 
   <!-- The height animation: body stays mounted, the grid row goes 0fr → 1fr. -->
