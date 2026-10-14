@@ -362,6 +362,33 @@ describe('menu-order — menu layout', () => {
 		const { container } = render(MenuOrder, { props: { items: [{ ...fries, image: 'https://images.unsplash.com/photo-1' }, shake] } });
 		expect(container.querySelectorAll('article')).toHaveLength(2);
 	});
+
+	it('falls back to the list once every photo fails, with no grey tiles', async () => {
+		const { container } = render(MenuOrder, { props: { items: [{ ...fries, image: 'https://img.example/1' }, { ...shake, image: 'https://img.example/2' }] } });
+		for (const img of container.querySelectorAll('img')) await fireEvent.error(img);
+		expect(container.querySelector('article')).toBeNull();
+		expect(container.querySelector('[data-state]')).toBeNull();
+	});
+
+	it('clamps names to two lines with the full name in title, and draws no kind glyph in a row', () => {
+		const { container } = render(MenuOrder, { props: { items: [fries, shake] } });
+		const name = screen.getByText('Shoestring Fries');
+		expect(name.className).toContain('line-clamp-2');
+		expect(name.getAttribute('title')).toBe('Shoestring Fries');
+		expect(container.querySelector('li svg')).toBeNull();
+	});
+
+	it('shows the item subtotal in the bar; the review adds the delivery fee', () => {
+		render(MenuOrder, { props: { items, checkout: true, fulfilment: ['delivery'], fee: 4.5, preset: [{ id: 'fries', qty: 2 }] } });
+		expect(screen.getByText('2 items')).toBeTruthy();
+		expect(screen.getByText('$6.98')).toBeTruthy();
+	});
+
+	it('highlights a repeated product_id once, though both rows share its line', () => {
+		const { container } = render(MenuOrder, { props: { items: [fries, { ...fries, id: 'fries-2' }], checkout: true, preset: [{ id: 'fries', qty: 2 }] } });
+		expect(container.querySelectorAll('[role="group"][aria-label^="Quantity"]')).toHaveLength(1);
+		expect(container.querySelectorAll('li > div.before\\:bg-ripple-accent')).toHaveLength(1);
+	});
 });
 
 describe('menu-order — customise tiles', () => {

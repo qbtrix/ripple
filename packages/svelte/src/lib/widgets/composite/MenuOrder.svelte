@@ -4,16 +4,20 @@
   customise (option tiles, details below), details (pickup or delivery, name,
   contact) and review (lines, options, fee, total).
 
-  Menu: the layout follows the data. No photo at all (the model-only chat
-  case) gives a grouped list: category headings, hairline rows (bare kind
-  glyph, name, description, price and control at the right), two newspaper
-  columns from 560px. Any photo gives photo cards. The pick ("Picked for you")
-  is a tinted row above the groups, never listed twice. Chips show only for 2+
-  categories and 8+ items, and wrap. Placeholders (track bars) show only while
-  the spec streams in ('ui-streaming' is 'active'); a settled card collapses a
-  missing price and names a nameless item by its id in words. Price 0 is Free. One primary button per stage, in a sticky bar
-  that carries the running total. Customise joins the stage rail only once an
-  item with options is in play, so no skipped stage shows as done.
+  Menu: the layout follows the photos that load. With none (the model-only
+  chat case, or every photo failed) it is a grouped list: full-width category
+  headings, then hairline rows (name and description clamped to 2 lines,
+  price and control at the right), two columns per group from 560px. Any
+  photo still loading or loaded gives photo cards; a failed photo drops its
+  tile. The pick ("Picked for you") is a tinted row above the groups, never
+  listed twice. Chips show only for 2+ categories and 8+ items, and wrap.
+  Placeholders show only while the spec streams in ('ui-streaming' is
+  'active'); a settled card collapses a missing price and names a nameless
+  item by its id in words. Price 0 is Free. A repeated product_id shares one
+  cart line and only its first row is highlighted. One primary button per
+  stage, in a sticky footer bar that carries the item count and subtotal (the
+  review adds the fee). Customise joins the stage rail only once an item with
+  options is in play, so no skipped stage shows as done.
 
   Customise: the item's photo, or a tinted tile with its kind icon and name;
   a live line of what is chosen and the running price; then one card per
@@ -154,9 +158,19 @@
 	const pick = $derived(featuredOf(menu, featured));
 	const categories = $derived([...new Set(menu.map((i) => i.category).filter(Boolean))]);
 	const itemOf = (pid: string) => menu.find((i) => i.product_id === pid);
-	// A menu with no photo at all reads as a list (small icon tiles), not a
-	// grid of empty photo boxes. One real photo switches the cards to photos.
-	const photos = $derived(menu.some((i) => safeUrl(i.image, { kind: 'resource' }) !== undefined));
+	// Photo URLs that failed to load. A failed photo drops its tile; when no
+	// photo is left loading or loaded the menu reads as a list, not a grid of
+	// grey boxes. Pending counts as a photo so the images get to load at all.
+	let failed = $state<string[]>([]);
+	const hasPhoto = (i: Item) => {
+		const u = safeUrl(i.image, { kind: 'resource' });
+		return u !== undefined && !failed.includes(u);
+	};
+	const fail = (i: Item) => {
+		const u = safeUrl(i.image, { kind: 'resource' });
+		if (u && !failed.includes(u)) failed.push(u);
+	};
+	const photos = $derived(menu.some(hasPhoto));
 
 	// Placeholders only while the spec is still streaming in. A settled card
 	// (or a plain one) shows what it has: a missing price collapses, a missing
@@ -186,6 +200,8 @@
 	const total = $derived(totalOf(lines, mode, feeAmount));
 	const full = $derived(lines.length >= MAX_LINES);
 	const qtyOf = (item: Item) => lines.reduce((n, l) => (l.product_id === item.product_id ? n + l.qty : n), 0);
+	// A repeated product_id shares its cart line: only the first row shows it as chosen.
+	const chosen = (item: Item) => qtyOf(item) > 0 && menu.find((i) => i.product_id === item.product_id) === item;
 	const optionNames = (line: CartLine) => chosenNames(itemOf(line.product_id)?.groups ?? [], line.option_ids).join(', ');
 
 	function commit(raw: unknown, nextMode: Fulfilment = mode) {
@@ -228,8 +244,6 @@
 		let start = 0;
 		return sets.filter((g) => g.items.length).map((g) => ({ ...g, start: (start += g.items.length) - g.items.length }));
 	});
-	// Several groups in list mode flow as two newspaper columns from 560px.
-	const cols = $derived(!photos && groups.length > 1);
 	const draftItem = $derived.by(() => {
 		const d = draft;
 		const item = d ? itemOf(d.pid) : undefined;
@@ -352,8 +366,8 @@
 	{#if item.name || !streaming}
 		<svelte:element
 			this={level}
-			class={['min-w-0 flex-1 text-pretty break-words', !item.name && !item.product_id && !item.id && 'text-ripple-muted-foreground italic', cls]}
-			>{label(item)}</svelte:element
+			class={['line-clamp-2 min-w-0 flex-1 text-pretty break-words', !item.name && !item.product_id && !item.id && 'text-ripple-muted-foreground italic', cls]}
+			title={label(item)}>{label(item)}</svelte:element
 		>
 	{:else}
 		<span class="mt-1 h-3.5 w-2/3 rounded bg-ripple-track" aria-hidden="true" data-placeholder></span>
@@ -384,7 +398,7 @@
 
 {#snippet control(item: Item)}
 	{#if canOrder(item)}
-		{@const q = qtyOf(item)}
+		{@const q = chosen(item) ? qtyOf(item) : 0}
 		{#if item.groups.length}
 			{#if q > 0}<span class="text-footnote font-medium tabular-nums text-ripple-muted-foreground">{q} in order</span>{/if}
 			<button type="button" class={SECONDARY} disabled={full} aria-label="Choose options for {label(item)}" onclick={() => open(item)}>Choose</button>
@@ -402,16 +416,19 @@
 	<article
 		class={[
 			'flex gap-3 rounded-ripple border p-2 transition-colors @min-[560px]:flex-col @min-[560px]:gap-2',
-			qtyOf(item) > 0 ? 'border-ripple-accent bg-ripple-accent/8' : 'border-ripple-border bg-ripple-surface'
+			'border-ripple-border',
+			chosen(item) ? 'bg-ripple-accent/8' : 'bg-ripple-surface'
 		]}
 	>
-		<PhotoTile src={safeUrl(item.image, { kind: 'resource' })} ratio="4:3" icon={kindIcon(MENU_ICONS, item.kind)} iconSize={24} class="w-24 shrink-0 self-start @min-[560px]:w-full" />
+		{#if hasPhoto(item)}
+			<PhotoTile src={safeUrl(item.image, { kind: 'resource' })} ratio="4:3" icon={kindIcon(MENU_ICONS, item.kind)} iconSize={24} class="w-24 shrink-0 self-start @min-[560px]:w-full" onerror={() => fail(item)} />
+		{/if}
 		<div class="flex min-w-0 flex-1 flex-col gap-1">
 			<div class="flex items-start gap-2">
 				{@render name(item, 'text-body-emph', 'h4')}
 				{@render price(item)}
 			</div>
-			{#if item.description}<p class="text-callout text-pretty text-ripple-muted-foreground">{item.description}</p>{/if}
+			{#if item.description}<p class="line-clamp-2 text-callout text-pretty text-ripple-muted-foreground">{item.description}</p>{/if}
 			{@render tags(item)}
 			<div class="mt-auto flex items-center justify-end gap-2 pt-1 empty:hidden">{@render control(item)}</div>
 		</div>
@@ -419,17 +436,15 @@
 {/snippet}
 
 {#snippet row(item: Item, level: string)}
-	{@const KindIcon = kindIcon(MENU_ICONS, item.kind)}
 	<div
 		class={[
-			'relative grid min-h-11 grid-cols-[16px_minmax(0,1fr)_auto] items-start gap-x-2.5 px-2.5 py-2.5',
-			qtyOf(item) > 0 && 'before:absolute before:inset-y-1.5 before:left-0 before:w-0.5 before:rounded-full before:bg-ripple-accent'
+			'relative grid min-h-11 grid-cols-[minmax(0,1fr)_auto] items-start gap-x-2.5 px-2.5 py-2.5',
+			chosen(item) && 'before:absolute before:inset-y-1.5 before:left-0 before:w-0.5 before:rounded-full before:bg-ripple-accent'
 		]}
 	>
-		<KindIcon size={16} strokeWidth={1.75} class="mt-0.5 text-ripple-muted-foreground" aria-hidden="true" />
 		<div class="flex min-w-0 flex-col gap-0.5">
 			{@render name(item, 'text-body-emph', level)}
-			{#if item.description}<p class="text-callout text-pretty text-ripple-muted-foreground">{item.description}</p>{/if}
+			{#if item.description}<p class="line-clamp-2 text-callout text-pretty text-ripple-muted-foreground">{item.description}</p>{/if}
 			{#if item.tags.length}<div class="pt-1">{@render tags(item)}</div>{/if}
 		</div>
 		<div class="flex flex-col items-end gap-1.5 empty:hidden">
@@ -512,14 +527,13 @@
 				{:else}
 					{#if pick && !active}
 						{@const f = pick.item}
-						{@const PickIcon = kindIcon(MENU_ICONS, f.kind)}
-						<article class={['rounded-ripple bg-ripple-accent/8', photos ? 'grid gap-3 p-2 @min-[560px]:grid-cols-[2fr_3fr] @min-[560px]:p-3' : 'p-2.5']} aria-label="Picked for you">
-							{#if photos}
-								<PhotoTile src={safeUrl(f.image, { kind: 'resource' })} ratio="16:9" icon={PickIcon} iconSize={32} class="max-h-[200px] w-full self-center" />
+						{@const shot = photos && hasPhoto(f)}
+						<article class={['rounded-ripple bg-ripple-accent/8', shot ? 'grid gap-3 p-2 @min-[560px]:grid-cols-[2fr_3fr] @min-[560px]:p-3' : 'p-2.5']} aria-label="Picked for you">
+							{#if shot}
+								<PhotoTile src={safeUrl(f.image, { kind: 'resource' })} ratio="16:9" icon={kindIcon(MENU_ICONS, f.kind)} iconSize={32} class="max-h-[200px] w-full self-center" onerror={() => fail(f)} />
 							{/if}
-							<div class={photos ? 'flex min-w-0 flex-1 flex-col gap-1' : 'grid grid-cols-[16px_minmax(0,1fr)_auto] items-start gap-x-2.5 gap-y-0.5'}>
-								<p class={['text-caption-1 font-medium text-ripple-accent-text', !photos && 'col-span-2 col-start-2']}>Picked for you</p>
-								{#if !photos}<PickIcon size={16} strokeWidth={1.75} class="mt-0.5 text-ripple-muted-foreground" aria-hidden="true" />{/if}
+							<div class={photos ? 'flex min-w-0 flex-1 flex-col gap-1' : 'grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-2.5 gap-y-0.5'}>
+								<p class={['text-caption-1 font-medium text-ripple-accent-text', !photos && 'col-span-2']}>Picked for you</p>
 								<div class="flex min-w-0 flex-col gap-0.5">
 									{#if photos}
 										<div class="flex items-start gap-2">
@@ -532,7 +546,7 @@
 									{#if pick.reason}
 										<p class="text-callout text-pretty">{pick.reason}</p>
 									{:else if f.description}
-										<p class="text-callout text-pretty text-ripple-muted-foreground">{f.description}</p>
+										<p class="line-clamp-2 text-callout text-pretty text-ripple-muted-foreground">{f.description}</p>
 									{/if}
 									{#if f.tags.length}<div class="pt-1">{@render tags(f)}</div>{/if}
 									{#if photos}<div class="mt-auto flex items-center justify-end gap-2 pt-1 empty:hidden">{@render control(f)}</div>{/if}
@@ -547,9 +561,9 @@
 						</article>
 					{/if}
 					{#if groups.length}
-						<div class={['flex min-w-0 flex-col gap-3', cols && '@min-[560px]:block @min-[560px]:columns-2 @min-[560px]:gap-x-6']}>
+						<div class="flex min-w-0 flex-col gap-3">
 						{#each groups as g, gi (gi)}
-							<section class={['flex min-w-0 break-inside-avoid flex-col', cols && '@min-[560px]:[&:not(:last-child)]:mb-3']}>
+							<section class="flex min-w-0 flex-col">
 								{#if g.name}
 									<h3 id="{uid}-cat{gi}" class="border-b border-ripple-border pb-1.5 text-subheadline font-semibold text-pretty">{g.name}</h3>
 								{/if}
@@ -560,9 +574,9 @@
 										{/each}
 									</ul>
 								{:else}
-									<ul class={['grid', groups.length === 1 && '@min-[560px]:grid-cols-2 @min-[560px]:gap-x-6']} aria-label={g.name ? undefined : 'Menu'} aria-labelledby={g.name ? `${uid}-cat${gi}` : undefined}>
+									<ul class="grid @min-[560px]:grid-cols-2 @min-[560px]:gap-x-6" aria-label={g.name ? undefined : 'Menu'} aria-labelledby={g.name ? `${uid}-cat${gi}` : undefined}>
 										{#each g.items as item, i (item.key)}
-											<li class={['min-w-0 border-t border-ripple-border first:border-t-0', groups.length === 1 && '@min-[560px]:nth-2:border-t-0']} in:rise={{ index: g.start + i }}>
+											<li class="min-w-0 border-t border-ripple-border first:border-t-0 @min-[560px]:nth-2:border-t-0" in:rise={{ index: g.start + i }}>
 												{@render row(item, g.name ? 'h4' : 'h3')}
 											</li>
 										{/each}
@@ -812,12 +826,12 @@
 	{/key}
 
 	{#if orderable && (count > 0 || view !== 'menu')}
-		<div class="sticky bottom-0 z-10 flex items-center gap-3 rounded-ripple bg-ripple-muted py-2 pr-2 pl-3 text-ripple-surface-foreground">
+		<div class="sticky bottom-0 z-10 flex items-center gap-3 border-t border-ripple-border bg-ripple-surface pt-2.5 pb-1 text-ripple-surface-foreground">
 			<p class="min-w-0 flex-1 truncate text-callout" aria-live="polite">
 				{#if count > 0}
 					<span class="font-medium tabular-nums">{count} {count === 1 ? 'item' : 'items'}</span><span class="text-ripple-muted-foreground"
 						>{' · '}</span
-					><span class="tabular-nums">{fmt(total)}</span>
+					><span class="tabular-nums">{fmt(subtotal)}</span>
 				{:else}
 					<span class="text-ripple-muted-foreground">Nothing added yet</span>
 				{/if}

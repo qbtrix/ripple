@@ -6,7 +6,8 @@
   widget's own stages need: every stage named up front, done stages marked
   with a check, and done stages clickable through `onselect` to go back.
   `disabled` keeps it inert until card.final. Below 360px of container width
-  only the current stage keeps its label.
+  done stages drop their label (the check and aria-label carry it) and the
+  chips tighten, so the steps ahead stay named on a phone.
 -->
 <script lang="ts">
 	import Check from '@lucide/svelte/icons/check';
@@ -146,8 +147,16 @@
 	}
 
 	@container (max-width: 359px) {
-		.stage-rail__item:not([data-state='current']) .stage-rail__label {
+		.stage-rail__item[data-state='done'] .stage-rail__label {
 			display: none;
+		}
+
+		.stage-rail__chip {
+			padding-inline: 0.4rem;
+		}
+
+		.stage-rail__item + .stage-rail__item::before {
+			width: 0.25rem;
 		}
 	}
 </style>
