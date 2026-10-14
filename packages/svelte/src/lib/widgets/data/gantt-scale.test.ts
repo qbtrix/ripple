@@ -9,7 +9,7 @@ import {
 	parseProgress,
 	labelPx,
 	parseTasks,
-	placeToday,
+	todayAlign,
 	rangeOf,
 	rowDates,
 	rowLabel,
@@ -169,30 +169,16 @@ describe('scaleOf', () => {
 		expect(new Set(gaps).size).toBe(1);
 	});
 
-	it('centres Today on its line and drops only the tick label it overlaps', () => {
-		const labels = [
-			{ x: 0.1, text: 'Aug' },
-			{ x: 0.3, text: 'Sep' },
-			{ x: 0.5, text: 'Oct' },
-			{ x: 0.7, text: 'Nov' }
-		];
-		const mid = placeToday(labels, 0.52, 400);
-		expect(mid.align).toBe('center');
-		expect(mid.labels.map((l) => l.text)).toEqual(['Aug', 'Sep', 'Nov']);
-		// Clear of every tick: nothing gives way.
-		expect(placeToday(labels, 0.4, 400).labels).toHaveLength(4);
-		expect(placeToday(labels, 0.99, 400).align).toBe('end');
-		expect(placeToday(labels, 0.01, 400).align).toBe('start');
-	});
-
-	it('keeps 2026, 2027 and 2028 beside Today on a three-year range in a phone card', () => {
+	it('keeps every tick label on a three-year range in a phone card; Today has its own lane', () => {
 		const r = rangeOf(EXTREME)!;
 		const today = frac(Date.UTC(2026, 9, 14), r);
 		for (const w of [296, 324]) {
 			const s = scaleOf(r, 'Quarter Day', w, { minGap: 64, maxLabels: 4, minLine: 16 });
-			const placed = placeToday(s.labels, today, w);
-			expect(placed.labels.map((l) => l.text)).toEqual(['2026', '2027', '2028']);
+			expect(s.labels.map((l) => l.text)).toEqual(['2026', '2027', '2028']);
+			expect(todayAlign(today, w)).toBe('center');
 		}
+		expect(todayAlign(0.99, 400)).toBe('end');
+		expect(todayAlign(0.01, 400)).toBe('start');
 	});
 
 	it('right-aligns a last tick that would cross the track end instead of dropping it', () => {
@@ -255,5 +241,10 @@ describe('text', () => {
 		expect(afterText(rows[1], rows)).toBe('After Design');
 		expect(afterText(rows[2], rows)).toBe('After Design +1');
 		expect(afterText(rows[0], rows)).toBe('');
+		const long = parseTasks([
+			{ id: 'a', name: 'Audit every onboarding email template', start: '2026-07-06', end: '2026-07-17' },
+			{ id: 'b', name: 'Rewrite', start: '2026-07-13', end: '2026-08-07', dependencies: 'a' }
+		]);
+		expect(afterText(long[1], long)).toBe('After Audit every onboard…');
 	});
 });

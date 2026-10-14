@@ -7,22 +7,26 @@
   gantt-scale.ts (pure, unit tested); this file only lays it out.
 
   Layout switches on the widget's own width (container query, 480px):
-  - wide: name column + track, grid and today hairline over the track
-    column, a muted percent (or dates) label just past each bar (the range
-    stretches right until every one fits), and 1px
-    elbow connectors drawn as ONE path (shared trunks never double in ink):
+  - wide: name column + track, grid lines over the track column, a muted
+    percent (or dates) label just past each bar (the range stretches right
+    until every one fits), and 1px elbow connectors drawn as ONE path (shared trunks never double in ink):
     down from the predecessor's end corner, along the row gap, down a clear
     column, along the gap above the successor, then into its start;
-  - narrow: name and meta on one line, the meta wrapping under the name
-    rather than cutting it, an optional "After X" line, then the track.
-    Grid lines sit inside each track strip (16px minimum spacing); today is
-    one faint accent band through all rows, so no line crosses text.
+  - narrow: the name, then one muted meta line on every row
+    ("dates · percent · After X", X capped at 20 characters), then the
+    track. Grid lines and the today tick sit inside each dated track strip
+    (16px minimum spacing), so no line crosses text.
   The tick unit steps up from `viewMode` until labels fit (gantt-scale.ts),
   so the measured track width feeds the scale; unmeasured (SSR, jsdom) it
   assumes a 640px card. `height` is a maximum: the card is as tall as its
   rows and scrolls vertically under a sticky summary and scale beyond it.
-  The Today label is centred on its line with a short cap down to the rows;
-  only a tick label it overlaps gives way.
+  Wide minor lines under 12px apart move out of the track into 4px ruler
+  stubs on the header hairline.
+  The Today label has its own lane under the tick labels, on the header
+  hairline, so every tick label stays. The today line is drawn per row
+  inside the track: narrow it is a tick in each dated track strip, wide it
+  spans the row and breaks around an end label it would cross. Connectors
+  keep 12px clear of bars they pass (6px when nothing wider is free).
   Colours are --ripple-* tokens only; bars are a 40% accent tint laid on the
   surface (opaque, so grid lines stay behind it) with a 1px accent edge, and
   the done part is a solid accent fill clipped to the bar's radius.
@@ -41,12 +45,12 @@
 		overallPercent,
 		parseTasks,
 		percentText,
-		placeToday,
 		rangeOf,
 		rowDates,
 		rowLabel,
 		scaleOf,
 		spanText,
+		todayAlign,
 		type GanttRow,
 		type ViewMode
 	} from './gantt-scale.js';
@@ -158,12 +162,13 @@
 
 	// Today shows only inside the data's own range, not the label stretch.
 	const today = $derived(range && base && TODAY >= base.min && TODAY <= base.max ? frac(TODAY, range) : undefined);
-	// Tick labels give way to the Today label.
-	const axis = $derived(
-		today === undefined
-			? { labels: scale?.labels ?? [], align: 'center' as const }
-			: placeToday(scale?.labels ?? [], today, width)
-	);
+	// Minor lines closer than 12px read as a stripe over the bars: in the wide
+	// layout they become short ruler stubs under the tick labels instead, so
+	// a finer viewMode still shows.
+	const ruler = $derived(!narrow && !!scale && scale.minorPx < 12);
+	const trackLines = $derived((scale?.lines ?? []).filter((l) => l.major || !ruler));
+	const stubs = $derived(ruler ? (scale?.lines ?? []).filter((l) => !l.major) : []);
+	const align = $derived(today === undefined ? 'center' : todayAlign(today, width));
 
 	const pos = (t: number) => (range ? frac(t, range) * 100 : 0);
 
@@ -176,6 +181,18 @@
 			const b = r.milestone ? a + 6 : Math.max(frac(r.end, range) * width, a + 4);
 			const to = b + endGap(r) + labelPx(text);
 			return to <= width + 0.5 ? { text, from: a, to } : undefined;
+		})
+	);
+
+	// Wide rows whose end label spans the today x: the today line breaks
+	// around the label instead of crossing its text.
+	const gapAt = $derived(
+		ends.map((e, i) => {
+			const r = rows[i];
+			if (!e || today === undefined || r.start === undefined || r.end === undefined) return false;
+			const x = today * width;
+			const from = (r.milestone ? e.from + 6 : Math.max(frac(r.end, range!) * width, e.from + 4)) + endGap(r);
+			return x >= from - 3 && x <= e.to + 3;
 		})
 	);
 
@@ -216,12 +233,14 @@
 				const between = rows.map((_, j) => j).filter((j) => j > Math.min(d, i) && j < Math.max(d, i));
 				// The drop column: xs if clear, else the clear edge of a row in
 				// between that keeps the elbow shortest.
-				const clear = (x: number) => x >= 1 && x <= width - 1 && between.every((j) => x < marks[j][0] - 6 || x > marks[j][1] + 6);
+				// 12px clear of any bar it passes so it never reads as that bar's
+				// link; 6px when nothing that wide is free.
 				const cost = (x: number) => Math.abs(x - x1) + Math.abs(x - xs);
-				const xc =
-					[xs, ...between.flatMap((j) => [crisp(marks[j][0] - 8), crisp(marks[j][1] + 8)])]
-						.filter(clear)
-						.sort((p, q) => cost(p) - cost(q))[0] ?? 1.5;
+				const pick = (c: number) =>
+					[xs, x1, ...between.flatMap((j) => [crisp(marks[j][0] - c - 2), crisp(marks[j][1] + c + 2)])]
+						.filter((x) => x >= 1 && x <= width - 1 && between.every((j) => x < marks[j][0] - c || x > marks[j][1] + c))
+						.sort((p, q) => cost(p) - cost(q))[0];
+				const xc = pick(12) ?? pick(6) ?? 1.5;
 				line += `M${x1} ${y1}V${g1}H${xc}V${g2}H${xs}V${y2}H${x2 - 1}`;
 				head += `M${x2} ${y2}l-4 -3v6z`;
 			}
@@ -229,9 +248,10 @@
 		return { line, head };
 	});
 
+	// Narrow line 2, same shape on every row: dates · percent · After X.
 	function meta(r: GanttRow): string {
-		if (r.start === undefined || r.end === undefined) return percentText(r.progress);
-		return [rowDates(r.start, r.end), percentText(r.progress)].filter(Boolean).join(' · ');
+		const dates = r.start === undefined || r.end === undefined ? '' : rowDates(r.start, r.end);
+		return [dates, percentText(r.progress), afterText(r, rows)].filter(Boolean).join(' · ');
 	}
 
 	const maxH = $derived(/^\d+(\.\d+)?$/.test(String(height).trim()) ? `${String(height).trim()}px` : String(height || '320px'));
@@ -241,18 +261,19 @@
 </script>
 
 {#snippet content(r: GanttRow, i: number)}
-	{@const after = afterText(r, rows)}
 	{@const m = meta(r)}
 	<span class="g-label">
 		<span class={['g-name text-body', r.untitled && 'g-untitled']} title={r.name}>{r.name}</span>
 		{#if m}<span class="g-meta text-callout">{m}</span>{/if}
 	</span>
-	{#if after}<span class="g-after text-callout">{after}</span>{/if}
 	<span class="g-track">
-		{#if narrow}
+		{#if narrow && r.start !== undefined}
 			{#each scale?.lines ?? [] as l (l.x)}
 				<span class={['g-line', !l.major && 'g-line--minor']} style="left: {l.x * 100}%"></span>
 			{/each}
+		{/if}
+		{#if today !== undefined && (!narrow || r.start !== undefined)}
+			<span class={['g-today', gapAt[i] && 'g-today--gap']} style="left: {today * 100}%"></span>
 		{/if}
 		{#if r.start === undefined || r.end === undefined}
 			<span class="g-chip text-callout">No dates</span>
@@ -286,15 +307,17 @@
 	{:else}
 		<div class="g-head" class:g-gutter={overflowing}>
 			<p class="g-summary text-callout">{summary}</p>
-			<div class="g-scale" aria-hidden="true">
+			<div class={['g-scale', today !== undefined && 'g-scale--today']} aria-hidden="true">
 				<span class="g-pad"></span>
 				<div class="g-axis" bind:this={axisEl}>
-					{#each axis.labels as l (l.x)}
+					{#each stubs as l (l.x)}
+						<span class="g-stub" style="left: {l.x * 100}%"></span>
+					{/each}
+					{#each scale?.labels ?? [] as l (l.x)}
 						<span class={['g-tick', l.end && 'g-tick--end']} style="left: {l.x * 100}%">{l.text}</span>
 					{/each}
 					{#if today !== undefined}
-						<span class="g-tick g-tick--today g-today--{axis.align}" style="left: {today * 100}%">Today</span>
-						<span class="g-today-cap" style="left: {today * 100}%"></span>
+						<span class="g-today-label g-today--{align}" style="left: {today * 100}%">Today</span>
 					{/if}
 				</div>
 			</div>
@@ -303,12 +326,9 @@
 			<div class="g-body" role="list" style="--row-h: {rowH}px">
 				<div class="g-grid" aria-hidden="true">
 					{#if !narrow}
-						{#each scale?.lines ?? [] as l (l.x)}
+						{#each trackLines as l (l.x)}
 							<span class={['g-line', !l.major && 'g-line--minor']} style="left: {l.x * 100}%"></span>
 						{/each}
-					{/if}
-					{#if today !== undefined}
-						<span class={['g-today', narrow && 'g-today--band']} style="left: {today * 100}%"></span>
 					{/if}
 					{#if links.line}
 						<svg class="g-links" width={width} height={rows.length * rowH} viewBox="0 0 {width} {rows.length * rowH}">
@@ -417,10 +437,30 @@
 		transform: translateX(-100%);
 	}
 
-	.g-tick--today {
-		padding: 0;
+	/* Today sits on its own lane under the tick labels, right on the hairline. */
+	.g-scale--today {
+		height: 34px;
+	}
+
+	.g-stub {
+		position: absolute;
+		bottom: 0;
+		width: 1px;
+		height: 4px;
+		background: var(--ripple-border);
+	}
+
+	.g-today-label {
+		position: absolute;
+		bottom: 2px;
+		padding: 0 5px;
+		border-radius: 9999px;
+		font-size: 10px;
 		font-weight: 500;
+		line-height: 13px;
+		white-space: nowrap;
 		color: var(--ripple-accent-text);
+		background: color-mix(in oklab, var(--ripple-accent) 14%, var(--ripple-surface));
 	}
 
 	.g-today--center {
@@ -429,14 +469,6 @@
 
 	.g-today--end {
 		transform: translateX(-100%);
-	}
-
-	.g-today-cap {
-		position: absolute;
-		top: 16px;
-		bottom: 0;
-		width: 1px;
-		background: var(--ripple-accent-text);
 	}
 
 	.g-body {
@@ -468,10 +500,13 @@
 		background: var(--ripple-accent-text);
 	}
 
-	.g-today--band {
-		width: 4px;
-		transform: translateX(-50%);
-		background: color-mix(in oklab, var(--ripple-accent) 14%, transparent);
+	/* Broken around an end label (14px tall, centred) that sits across it. */
+	.g-today--gap {
+		background: linear-gradient(
+			var(--ripple-accent-text) 0 calc(50% - 9px),
+			transparent 0 calc(50% + 9px),
+			var(--ripple-accent-text) 0
+		);
 	}
 
 	.g-links {
@@ -531,21 +566,15 @@
 		outline-offset: -2px;
 	}
 
-	/* Name left, meta right; when both do not fit the meta wraps under the
-	   name (space-between puts a lone item at the start), so the name is cut
-	   only when it alone is wider than the row. */
+	/* Narrow: the name on line 1, the muted meta on line 2, every row alike. */
 	.g-label {
-		display: flex;
-		flex-wrap: wrap;
-		justify-content: space-between;
-		align-items: baseline;
-		column-gap: 8px;
-		row-gap: 2px;
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		row-gap: 1px;
 		min-width: 0;
 	}
 
 	.g-name {
-		flex: 0 1 auto;
 		min-width: 0;
 		overflow: hidden;
 		text-overflow: ellipsis;
@@ -557,18 +586,7 @@
 		color: var(--ripple-muted-foreground);
 	}
 
-	.g-after {
-		display: block;
-		min-width: 0;
-		margin-top: -3px;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-		color: var(--ripple-muted-foreground);
-	}
-
 	.g-meta {
-		flex: 0 1 auto;
 		min-width: 0;
 		overflow: hidden;
 		text-overflow: ellipsis;
@@ -646,7 +664,7 @@
 		border-radius: 9999px;
 		font-size: 11px;
 		line-height: 16px;
-		background: var(--ripple-muted);
+		background: linear-gradient(var(--ripple-muted) 0 0), var(--ripple-surface);
 		color: var(--ripple-muted-foreground);
 	}
 
@@ -671,13 +689,17 @@
 			box-sizing: border-box;
 		}
 
-		.g-after,
 		.g-meta {
 			display: none;
 		}
 
 		.g-track {
 			height: 100%;
+		}
+
+		/* Through the row hairline too, so the per-row segments read as one line. */
+		.g-today {
+			bottom: -1px;
 		}
 
 		.g-bar {

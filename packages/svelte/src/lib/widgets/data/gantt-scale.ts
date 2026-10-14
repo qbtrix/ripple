@@ -16,8 +16,7 @@
 //   quarter, year) until labels sit at least minGap px apart, so the range
 //   always fits the width and nothing scrolls sideways. A last label that
 //   would cross the track end is right-aligned on its tick instead.
-// - Today is its own label, centred on its line; only a tick label whose box
-//   it overlaps gives way, never the whole unit.
+// - Today has its own lane under the tick labels, so every tick label stays.
 import { dateKey, finite, plain } from '../data-kit/format.js';
 
 export type ViewMode = 'Quarter Day' | 'Half Day' | 'Day' | 'Week' | 'Month' | 'Year';
@@ -242,6 +241,8 @@ export interface Scale {
 	/** Faint grid lines, 0..1; `major` ones sit under a label unit boundary. */
 	lines: { x: number; major: boolean }[];
 	unit: Unit;
+	/** px between minor lines, so a caller can keep dense ones out of the track. */
+	minorPx: number;
 }
 
 /**
@@ -290,7 +291,7 @@ export function scaleOf(
 		...major.map((x) => ({ x, major: true })),
 		...minor.filter((x) => !seen.has(x.toFixed(6))).map((x) => ({ x, major: false }))
 	];
-	return { labels, lines, unit: pick.unit };
+	return { labels, lines, unit: pick.unit, minorPx: APPROX[base] * pxPerMs };
 }
 
 function labelsFor(r: Range, unit: Unit, k: number, w: number, minGap: number, crossesYear: boolean) {
@@ -323,24 +324,14 @@ function labelsFor(r: Range, unit: Unit, k: number, w: number, minGap: number, c
 }
 
 /**
- * The Today label, centred on its line (`start`/`end` when centring would
- * cross a track edge). Only tick labels whose box it overlaps (2px clear,
- * on the generous labelPx estimate) give way; every other tick stays.
+ * How the Today label sits on its own lane under the ticks: centred on its
+ * line, or `start`/`end` when centring would cross a track edge. It never
+ * shares a baseline with tick labels, so no tick ever gives way to it.
  */
-export function placeToday(
-	labels: readonly Tick[],
-	today: number,
-	w: number
-): { labels: Tick[]; align: 'center' | 'start' | 'end' } {
+export function todayAlign(today: number, w: number): 'center' | 'start' | 'end' {
 	const tw = labelPx('Today');
 	const px = today * w;
-	const align = px - tw / 2 < 0 ? 'start' : px + tw / 2 > w ? 'end' : 'center';
-	const from = align === 'start' ? px : align === 'end' ? px - tw : px - tw / 2;
-	const kept = labels.filter((l) => {
-		const a = l.x * w - (l.end ? labelPx(l.text) : 0);
-		return a + labelPx(l.text) + 2 <= from || a >= from + tw + 2;
-	});
-	return { labels: kept, align };
+	return px - tw / 2 < 0 ? 'start' : px + tw / 2 > w ? 'end' : 'center';
 }
 
 /**
@@ -382,8 +373,10 @@ export function rowLabel(r: GanttRow, rows: readonly GanttRow[]): string {
 	return parts.join(', ');
 }
 
-/** Narrow meta: "After Design" or "After Design +1". */
+/** Narrow meta part: "After Design" or "After Design +1", the name capped at 20 characters. */
 export function afterText(r: GanttRow, rows: readonly GanttRow[]): string {
 	if (!r.deps.length) return '';
-	return `After ${rows[r.deps[0]].name}${r.deps.length > 1 ? ` +${r.deps.length - 1}` : ''}`;
+	const name = rows[r.deps[0]].name;
+	const short = name.length > 20 ? `${name.slice(0, 19).trimEnd()}…` : name;
+	return `After ${short}${r.deps.length > 1 ? ` +${r.deps.length - 1}` : ''}`;
 }
