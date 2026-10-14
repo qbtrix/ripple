@@ -20,7 +20,7 @@
 				secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80 aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
 				ghost: "hover:bg-ripple-muted hover:text-ripple-surface-foreground dark:hover:bg-ripple-muted/50 aria-expanded:bg-ripple-muted aria-expanded:text-ripple-surface-foreground",
 				destructive: "bg-destructive/10 hover:bg-destructive/20 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/20 text-ripple-error-text focus-visible:border-destructive/40 dark:hover:bg-destructive/30",
-				link: "text-ripple-accent underline-offset-4 hover:underline",
+				link: "text-ripple-accent-text underline-offset-4 hover:underline",
 				success: "bg-ripple-success text-ripple-success-foreground hover:bg-ripple-success/90",
 			},
 			size: {

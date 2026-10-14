@@ -21,7 +21,7 @@
 				warning: "bg-ripple-warning/10 [a]:hover:bg-ripple-warning/20 focus-visible:ring-ripple-warning/20 dark:focus-visible:ring-ripple-warning/40 text-ripple-warning-text dark:bg-ripple-warning/20",
 				outline: "border-border text-foreground [a]:hover:bg-muted [a]:hover:text-muted-foreground",
 				ghost: "hover:bg-muted hover:text-muted-foreground dark:hover:bg-muted/50",
-				link: "text-primary underline-offset-4 hover:underline",
+				link: "text-ripple-accent-text underline-offset-4 hover:underline",
 			},
 		},
 		defaultVariants: {

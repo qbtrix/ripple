@@ -8,9 +8,9 @@ export const heatmapEntry: WidgetManifestEntry = {
     cells: { type: 'Array<{ x: string | number; y: string | number; value: number }>', required: true, description: 'Cell data.' },
     xLabels: { type: '(string | number)[]', required: false, description: 'Explicit x-axis labels.' },
     yLabels: { type: '(string | number)[]', required: false, description: 'Explicit y-axis labels.' },
-    height: { type: 'number', required: false, description: 'Height in px. Default 280.' },
+    height: { type: 'number', required: false, description: 'Max height. Default 280.' },
     title: { type: 'string', required: false, description: 'Chart title.' },
-    colorRange: { type: '[string, string]', required: false, description: 'Low-to-high gradient. Default ["#dbeafe", "#1d4ed8"].' },
+    colorRange: { type: '[string, string]', required: false, description: 'Ignored.' },
     showLabels: { type: 'boolean', required: false, description: 'Show cell value labels.' },
   },
   example: {

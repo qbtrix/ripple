@@ -9,6 +9,7 @@ import PricingTable from './vertical/PricingTable.svelte';
 import HabitTracker from './composite/HabitTracker.svelte';
 import WeatherForecast from './composite/WeatherForecast.svelte';
 import Table from './data/Table.svelte';
+import AuditLog from './vertical/AuditLog.svelte';
 import { startDay, targetSince, weekDays } from './composite/habit-tracker.js';
 
 vi.mock('$lib/sound/index.js', () => ({ playCue: vi.fn() }));
@@ -129,5 +130,66 @@ describe('weather-forecast day layout', () => {
 		cleanup();
 		const three = render(WeatherForecast, { props: { place: 'Lisbon', days: [day('Mon'), day('Tue'), day('Wed')] } });
 		expect(three.container.querySelector('[data-slot="days"]')!.getAttribute('data-many')).toBe('true');
+	});
+});
+
+describe('audit-log row anatomy', () => {
+	const ENTRIES = [
+		{ id: '1', actor: 'Alice Johnson', action: 'created', target: 'workspace:acme-prod', type: 'workspace', timestamp: '2026-05-03 14:32 UTC', severity: 'success' },
+		{ id: '2', actor: 'Bob Smith', action: 'updated API key', target: 'key:sk_live_xyz', type: 'auth', timestamp: '2026-05-03 13:15 UTC', severity: 'warning' },
+		{ id: 3, actor: '', action: '**deleted** user', timestamp: 'yesterday 4pm', severity: 'critical', details: { from: 'Member', to: 'Admin', approvedBy: 'Ana' } },
+		{ id: '4', actor: 'System', action: 'ran backup', timestamp: '2026-05-02 09:21 UTC', details: {} }
+	];
+
+	it('states the count, span and zone once, and rows carry HH:MM only', () => {
+		const { container } = render(AuditLog, { props: { entries: ENTRIES as never, groupBy: 'day' } });
+		const text = container.textContent!.replace(/\s+/g, ' ');
+		expect(text).toContain('4 events · May 2 – 3, 2026 · times in UTC');
+		expect(text).toContain('Sun, May 3, 2026');
+		expect(text).toContain('No exact date');
+		expect(text).not.toContain('2026-05-03 14:32 UTC');
+		expect(text).toContain('deleted user');
+		expect(text).not.toContain('**');
+		expect(text).toContain('Unknown');
+	});
+
+	it('puts a break opportunity inside a long target, never a split word', () => {
+		const { container } = render(AuditLog, { props: { entries: ENTRIES as never } });
+		const target = Array.from(container.querySelectorAll('.al-target')).find((n) => n.textContent === 'workspace:acme-prod')!;
+		expect(target.querySelectorAll('wbr').length).toBe(2);
+	});
+
+	it('names each interactive row from its data and selects by string id', async () => {
+		const onSelectId = vi.fn();
+		const { container } = render(AuditLog, { props: { entries: ENTRIES as never, selectedId: '3', onSelectId } });
+		const row = screen.getByRole('button', { name: /^Bob Smith updated API key key:sk_live_xyz, warning, May 3 at 13:15 UTC$/ });
+		await fireEvent.click(row);
+		expect(onSelectId).toHaveBeenCalledWith('2');
+		expect(container.querySelectorAll('.is-selected')).toHaveLength(1);
+	});
+
+	it('shows Details only for real details and opens a label/value panel', async () => {
+		render(AuditLog, { props: { entries: ENTRIES as never } });
+		const buttons = screen.getAllByRole('button', { name: 'Show details' });
+		expect(buttons).toHaveLength(1);
+		await fireEvent.click(buttons[0]);
+		expect(screen.getByRole('button', { name: 'Hide details' }).getAttribute('aria-expanded')).toBe('true');
+		expect(screen.getByText('Approved by')).toBeTruthy();
+	});
+
+	it('filters by severity with a Showing n of m line and Clear', async () => {
+		const { container } = render(AuditLog, { props: { entries: ENTRIES as never, showFilters: 'true' as never } });
+		await fireEvent.click(screen.getByRole('button', { name: /Warning/ }));
+		expect(container.textContent).toContain('Showing 1 of 4');
+		await fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
+		expect(container.textContent).not.toContain('Showing');
+	});
+
+	it('pages long lists at 20 rows', async () => {
+		const many = Array.from({ length: 64 }, (_, i) => ({ id: i, actor: 'A', action: 'did', timestamp: '2026-05-03 10:00 UTC' }));
+		const { container } = render(AuditLog, { props: { entries: many } });
+		expect(container.querySelectorAll('.al-row')).toHaveLength(20);
+		await fireEvent.click(screen.getByRole('button', { name: 'Show 44 more' }));
+		expect(container.querySelectorAll('.al-row')).toHaveLength(64);
 	});
 });
