@@ -5,7 +5,7 @@ import { render, fireEvent, cleanup } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import Treemap from './Treemap.svelte';
-import { sanitize, share, labelTier, nameLines, layout, CAPTION, NEST_GAP, TOP_GAP, GAP } from './treemap.js';
+import { sanitize, share, labelTier, nameLines, captionLines, layout, CAPTION, CAPTION2, NEST_GAP, TOP_GAP, GAP } from './treemap.js';
 
 // Spec 05 of the polish brief: no title, string value, nameless node, zero,
 // negative, empty children, parents with and without their own value.
@@ -56,10 +56,19 @@ test('label tiers: name and value, name only, nothing', () => {
 	expect(labelTier(47, 60)).toBe('none');
 });
 
-test('name lines follow tile height: 1 to 4 above the value line', () => {
+test('name lines follow tile height, capped at 2 above the value line', () => {
 	expect(nameLines(40, 6)).toBe(1);
-	expect(nameLines(76, 6)).toBe(3);
-	expect(nameLines(225, 6)).toBe(4);
+	expect(nameLines(61, 6)).toBe(2);
+	expect(nameLines(225, 6)).toBe(2);
+});
+
+test('caption lines: one line, two at spaces, or none', () => {
+	const m = (t: string) => t.length * 10;
+	expect(captionLines('ab cd', 50, m)).toBe(1);
+	expect(captionLines('ab cd ef', 50, m)).toBe(2);
+	expect(captionLines('ab cd ef gh ij', 50, m)).toBe(0);
+	// A word wider than the box never fits.
+	expect(captionLines('abcdefghijk', 50, m)).toBe(0);
 });
 
 test('layout: top-level siblings sit further apart than tiles inside a group', () => {
@@ -114,10 +123,14 @@ test('layout: a caption that does not fit its group reserves no strip (spec 04 a
 	const plain = layout(sanitize(LONG), 360, 320);
 	expect(group(plain).caption).toBe(true);
 	expect(Math.min(...kids(plain).map((k) => k.y0))).toBe(group(plain).y0 + CAPTION);
-	// ...but the measured line is wider than the tile, so it is dropped before layout.
+	// ...the measured line is wider than the tile, so it wraps to two lines and reserves that...
 	const measured = layout(sanitize(LONG), 360, 320, (t) => t.length * 6);
-	expect(group(measured).caption).toBe(false);
-	expect(Math.min(...kids(measured).map((k) => k.y0))).toBe(group(measured).y0);
+	expect(group(measured).captionH).toBe(CAPTION2);
+	expect(Math.min(...kids(measured).map((k) => k.y0))).toBe(group(measured).y0 + CAPTION2);
+	// ...and when two lines are not enough it is dropped before layout.
+	const wide = layout(sanitize(LONG), 360, 320, (t) => t.length * 20);
+	expect(group(wide).caption).toBe(false);
+	expect(Math.min(...kids(wide).map((k) => k.y0))).toBe(group(wide).y0);
 	// A short caption that fits still draws.
 	expect(layout(sanitize(HOSTILE), 600, 320, (t) => t.length * 6).find((r) => r.name === 'Utilities')!.caption).toBe(true);
 });
@@ -215,8 +228,10 @@ describe('component', () => {
 		await tick();
 		const nav = container.querySelector('nav')!;
 		expect(nav.textContent).not.toContain('All');
-		// The back button names where the reader is.
-		expect(nav.textContent).toContain('Product');
+		// The back button names where it goes; the scope line names where the reader is.
+		expect(nav.querySelector('button')!.textContent).toBe('Back');
+		expect(nav.querySelector('button')!.getAttribute('aria-label')).toBe('Back to All');
+		expect(nav.textContent).toContain('Product · 50');
 		await fireEvent.click(nav.querySelector('button')!);
 		expect(container.querySelector('nav')).toBeNull();
 	});
@@ -236,8 +251,9 @@ describe('component', () => {
 		sh.mockRestore();
 	});
 
-	test('a tall tile keeps a three-line name; a name past the line cap hides its label', async () => {
+	test('a two-line name keeps its label; a name past two lines hides it and lists it under the plot', async () => {
 		// jsdom has no layout: a name's box is its per-tile max-height; give names a line count.
+		const two = 'Cloud infrastructure';
 		const three = 'Cloud infrastructure and managed databases';
 		const six = 'Illustration and editorial artwork commissions for the spring catalogue';
 		const ch = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockImplementation(function (this: HTMLElement) {
@@ -245,28 +261,29 @@ describe('component', () => {
 		});
 		const sh = vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockImplementation(function (this: HTMLElement) {
 			if (!this.classList.contains('tm-name')) return 0;
-			return this.textContent === six ? 90 : this.textContent === three ? 45 : 15;
+			return this.textContent === six ? 90 : this.textContent === three ? 45 : this.textContent === two ? 30 : 15;
 		});
 		const { container } = render(Treemap, {
-			props: { data: [{ name: three, value: 30 }, { name: six, value: 25 }, { name: 'Recruiting', value: 20 }] }
+			props: { data: [{ name: two, value: 30 }, { name: three, value: 28 }, { name: six, value: 25 }, { name: 'Recruiting', value: 20 }] }
 		});
 		await tick();
 		await tick();
 		const label = (name: string) => tile(container, name).querySelector<HTMLElement>('.tm-label')!;
-		const t = tile(container, three);
-		expect(parseFloat(t.style.width) * 6).toBeGreaterThanOrEqual(64);
-		expect(parseFloat(t.style.height)).toBeGreaterThanOrEqual(40);
-		expect(label(three).dataset.fit).toBe('full');
+		expect(label(two).dataset.fit).toBe('full');
+		expect(label(three).dataset.fit).toBe('none');
 		expect(label(six).dataset.fit).toBe('none');
 		expect(label('Recruiting').dataset.fit).toBe('full');
-		// No detached list of unlabeled tiles: the readout carries them.
-		expect(container.querySelector('.tm-foot')).toBeNull();
+		// Hidden top-level leaves still print their share, on one line under the plot.
+		const more = container.querySelector('.tm-more')!;
+		expect(more.textContent).toContain(`${three} 27%`);
+		expect(more.textContent).toContain(six);
+		expect(more.textContent).not.toContain('Recruiting');
 		ch.mockRestore();
 		sh.mockRestore();
 	});
 
-	test('a value line that does not fit wraps at the separator, never share alone', async () => {
-		// Only the one-line "value · share" is too wide; wrapped, it fits.
+	test('a value line that does not fit drops whole, never wraps, never share alone', async () => {
+		// Only the one-line "value · share" is too wide.
 		const sw = vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockImplementation(function (this: HTMLElement) {
 			return this.closest('[data-fit="full"]') && this.classList.contains('tm-meta') ? 80 : 0;
 		});
@@ -275,8 +292,7 @@ describe('component', () => {
 		await tick();
 		await tick();
 		const l = tile(container, 'Operations').querySelector<HTMLElement>('.tm-label')!;
-		expect(l.dataset.fit).toBe('wrap');
-		expect(l.textContent).toContain('30 · 30%');
+		expect(l.dataset.fit).toBe('name');
 		sw.mockRestore();
 		cw.mockRestore();
 	});

@@ -6,26 +6,28 @@
   Frame: an optional header (title left, compact total right in muted
   tabular figures), then the plot, edge to edge, `height` px (min 160). No
   chrome at root. Only groups directly under the current root get a caption
-  (zoom shows deeper ones): a 20px strip in card colour, only when the group is
-  at least 64px tall and wide and its `name · share` line, measured on a canvas
-  at the caption font, fits on one line. A caption that would not draw
-  reserves no strip. Tiles are one hue:
+  (zoom shows deeper ones): a strip in card colour, only when the group is at
+  least 64px tall and wide. Its `name · share`, measured on a canvas at the
+  caption font, takes one line (20px) or wraps to two (34px); if two are not
+  enough there is no caption and no strip. Tiles are one hue:
   --ripple-accent mixed into --ripple-surface on treemap.ts's RAMP, gaps show
   the card. Ink is always the surface ink; the value line is that ink at
   INK_ALPHA.
 
-  Labels sit top-left and are whole or absent. A name wraps to as many lines
-  as the tile height leaves above the value line (treemap.ts `nameLines`, 1 to
-  4); after each layout every label is measured once, and one that overflows
-  steps down: `value · share` on one line, then wrapped at the separator,
-  then name only, then hidden. Never an ellipsis, never share alone. An
-  unlabeled tile still has its readout. `showLabels: false` hides leaf labels
-  only.
+  Labels sit top-left and are whole or absent. A name wraps to at most two
+  lines (treemap.ts `nameLines`); the `value · share` line never wraps. After
+  each layout every label is measured once, and one that overflows steps
+  down: name and value line, then name only, then hidden. Never an ellipsis,
+  never share alone. An unlabeled tile still has its readout, and top-level
+  leaves left unlabeled are also listed on one muted line under the plot
+  (whole items only; ones that do not fit the line drop). `showLabels: false`
+  hides leaf labels and that line.
 
   Zoom: a caption, or a nested tile, zooms into its top-level group, one level
   at a time; a top-level leaf only shows its readout (tap on touch). While
-  zoomed a breadcrumb row shows (a back button naming the current group when
-  `showBreadcrumb` is false) and Escape goes up one level. Zoom resets when
+  zoomed a breadcrumb row shows (when `showBreadcrumb` is false: a Back button
+  that goes up one level, then the current group's name and re-based total)
+  and Escape goes up one level. Zoom resets when
   `data` changes. One shared readout (`value · share`, plus share of parent
   on nested tiles) follows the hovered, focused or tapped tile; it sits below
   or above the tile, else inside it under the label, and stays in the plot.
@@ -49,7 +51,7 @@
 	import { cn } from '$lib/utils.js';
 	import { safeArray } from '$lib/utils/safe-props.js';
 	import { finite, num, plain } from '../data-kit/format.js';
-	import { RAMP, LIFT, INK_ALPHA, NAME_LINE, sanitize, find, layout, share, labelTier, nameLines, captionText, type Measure, type Rect } from './treemap.js';
+	import { RAMP, LIFT, INK_ALPHA, NAME_LINE, MAX_NAME_LINES, sanitize, find, layout, share, labelTier, nameLines, captionText, type Measure, type Rect } from './treemap.js';
 
 	interface Props {
 		id?: string;
@@ -91,6 +93,8 @@
 	let active = $state<string | null>(null);
 	let plotEl = $state<HTMLDivElement>();
 	let fontsReady = $state(false);
+	// Ids of tiles whose label survived the last fit pass; null before the first.
+	let shown = $state<Set<string> | null>(null);
 
 	// A new tree starts at the root.
 	let seen: unknown;
@@ -127,6 +131,9 @@
 		});
 	});
 	const activeRect = $derived(active ? rects.find((r) => r.id === active) : undefined);
+	// Top-level leaves with no label: they still print their share, under the plot.
+	const unlabeled = $derived(showLabels && shown ? rects.filter((r) => r.depth === 1 && !r.group && !shown!.has(r.id)) : []);
+	const backTo = $derived(focusId.includes('.') ? (find(tree, focusId.split('.').slice(0, -1).join('.'))?.name ?? 'All') : 'All');
 
 	onMount(() => {
 		document.fonts?.ready.then(() => (fontsReady = true));
@@ -148,7 +155,13 @@
 		if (!el) return;
 		// After the DOM update and once webfonts are in, so widths are final.
 		Promise.all([tick(), document.fonts?.ready]).then(() => {
-			for (const label of el.querySelectorAll<HTMLElement>('[data-tm-label]')) fit(label);
+			const ok = new Set<string>();
+			for (const label of el.querySelectorAll<HTMLElement>('[data-tm-label]')) {
+				fit(label);
+				const id = label.closest<HTMLElement>('[data-tm-id]')?.dataset.tmId;
+				if (id && label.dataset.fit !== 'none') ok.add(id);
+			}
+			shown = ok;
 		});
 	});
 
@@ -156,11 +169,11 @@
 		return !!e && (e.scrollHeight > e.clientHeight + 1 || e.scrollWidth > e.clientWidth + 1);
 	}
 
-	/** Steps down until the label fits: one-line value, wrapped value, name only, hidden. */
+	/** Steps down until the label fits: name and value line, name only, hidden. */
 	function fit(label: HTMLElement) {
 		const bad = () =>
 			overflows(label) || overflows(label.querySelector('[data-tm-name]')) || overflows(label.querySelector('[data-tm-meta]'));
-		const steps = label.querySelector('[data-tm-meta]') ? ['full', 'wrap', 'name'] : ['full'];
+		const steps = label.querySelector('[data-tm-meta]') ? ['full', 'name'] : ['full'];
 		for (const f of steps) {
 			label.dataset.fit = f;
 			if (!bad()) return;
@@ -259,9 +272,10 @@
 						{/if}
 					{/each}
 				{:else}
-					<button type="button" class="tm-crumb" aria-label="Back from {focusNode.name}" onclick={up}>
-						<ChevronLeft size={12} aria-hidden="true" />{focusNode.name}
+					<button type="button" class="tm-crumb" aria-label="Back to {backTo}" onclick={up}>
+						<ChevronLeft size={12} aria-hidden="true" />Back
 					</button>
+					<span class="tm-scope">{focusNode.name} · {num(total, { compact: true })}</span>
 				{/if}
 			</nav>
 		{/if}
@@ -286,8 +300,8 @@
 							{#if r.caption}
 								<button
 									type="button"
-									class="tm-caption"
-									style="left:{pct(r.x0)};top:{r.y0}px;width:{pct(r.x1 - r.x0)}"
+									class={['tm-caption', r.captionH > 20 && 'is-two']}
+									style="left:{pct(r.x0)};top:{r.y0}px;width:{pct(r.x1 - r.x0)};height:{r.captionH}px"
 									aria-label={aria(r)}
 									onclick={() => onTile(r)}
 									onpointerenter={() => (active = r.id)}
@@ -311,10 +325,10 @@
 							>
 								{#if tier !== 'none'}
 									<span data-tm-label class="tm-label" aria-hidden="true">
-										<span class="tm-name" data-tm-name style="max-height:{Math.min(4, lines) * NAME_LINE}px">{r.name}</span>
+										<span class="tm-name" data-tm-name style="max-height:{Math.min(MAX_NAME_LINES, lines) * NAME_LINE}px">{r.name}</span>
 										{#if tier === 'full'}
 											<span class="tm-meta" data-tm-meta
-												><span>{`${num(r.value, { compact: true })} ·`}</span>{' '}<span>{share(r.value, total)}</span></span
+												>{num(r.value, { compact: true })} · {share(r.value, total)}</span
 											>
 										{/if}
 									</span>
@@ -336,6 +350,13 @@
 			{/if}
 		</div>
 
+		{#if unlabeled.length}
+			<p class="tm-more text-callout">
+				{#each unlabeled as r (r.id)}
+					<span>{r.name} <span class="tm-more-share">{share(r.value, total)}</span></span>
+				{/each}
+			</p>
+		{/if}
 	{/if}
 </div>
 
@@ -399,6 +420,10 @@
 	}
 	.tm-crumb:hover {
 		text-decoration: underline;
+	}
+	.tm-scope {
+		margin-left: 4px;
+		font-variant-numeric: tabular-nums;
 	}
 	.tm-crumb.is-current {
 		color: var(--ripple-surface-foreground);
@@ -472,12 +497,6 @@
 		overflow: hidden;
 		color: color-mix(in oklab, var(--ripple-surface-foreground) var(--tm-meta), transparent);
 	}
-	[data-tm-label]:global([data-fit='wrap']) .tm-meta {
-		white-space: normal;
-	}
-	.tm-meta > span {
-		white-space: nowrap;
-	}
 	[data-tm-label]:global([data-fit='name']) [data-tm-meta] {
 		display: none;
 	}
@@ -486,7 +505,6 @@
 	}
 
 	.tm-caption {
-		height: 20px;
 		font-size: 11px;
 		padding: 0 var(--tm-inset) 0 2px;
 		background: none;
@@ -501,6 +519,30 @@
 		overflow: hidden;
 		white-space: nowrap;
 		line-height: 20px;
+		font-variant-numeric: tabular-nums;
+	}
+	.is-two .tm-caption-text {
+		white-space: normal;
+		overflow-wrap: normal;
+		line-height: 15px;
+		padding-top: 2px;
+	}
+
+	/* One line of whole items; an item that wraps to a second row is clipped away entirely. */
+	.tm-more {
+		display: flex;
+		flex-wrap: wrap;
+		column-gap: 14px;
+		margin: 6px 0 0;
+		line-height: 18px;
+		max-height: 18px;
+		overflow: hidden;
+		color: var(--ripple-muted-foreground);
+	}
+	.tm-more > span {
+		white-space: nowrap;
+	}
+	.tm-more-share {
 		font-variant-numeric: tabular-nums;
 	}
 
