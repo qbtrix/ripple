@@ -1,8 +1,13 @@
-<!-- src/lib/widgets/display/LinkPreview.svelte -->
+<!-- src/lib/widgets/display/LinkPreview.svelte
+     A link card: optional image (left or top), domain row, title, description.
+     Fills its container width. A missing, refused or failed image shows the
+     domain's first letter on a deterministic tint, never a broken image or an
+     empty grey slab. The only image sinks go through safeUrl. -->
 <script lang="ts">
   import PhotoTile from '$lib/widgets/data-kit/PhotoTile.svelte';
   import { safeUrl } from '@ripple-ui/core';
   import { cn } from '$lib/utils.js';
+  import { nameTint } from '$lib/widgets/data-kit/tint.js';
   import LinkIcon from '@lucide/svelte/icons/link';
   import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
 
@@ -51,6 +56,8 @@
     }
   });
 
+  const letter = $derived((derivedDomain.match(/[a-z0-9]/i)?.[0] ?? '').toUpperCase());
+
   const target = $derived(newTab ? '_blank' : undefined);
   const rel = $derived(newTab ? 'noopener noreferrer' : undefined);
 </script>
@@ -61,7 +68,7 @@
   {target}
   {rel}
   class={cn(
-    'group block w-full rounded-lg border border-border bg-card overflow-hidden transition-colors hover:border-primary/40 hover:bg-muted/30',
+    '@container/lp group block w-full rounded-lg border border-border bg-card overflow-hidden transition-colors hover:border-primary/40 hover:bg-muted/30',
     className
   )}
   style={styleString}
@@ -71,11 +78,17 @@
       <div
         class={cn(
           'shrink-0 bg-muted',
-          layout === 'horizontal' ? 'w-32 h-full min-h-[88px]' : 'w-full h-40'
+          layout === 'horizontal' ? 'w-24 @[420px]/lp:w-32 self-stretch min-h-[88px]' : 'w-full h-40'
         )}
       >
-        <!-- PhotoTile: a designed icon tile when the image is refused or fails. -->
-        <PhotoTile src={image} ratio="auto" class="size-full" style="border-radius:0" />
+        <!-- PhotoTile: the domain letter tile when the image is refused or fails. -->
+        <PhotoTile src={image} ratio="auto" class="size-full" style="border-radius:0">
+          {#snippet fallback()}
+            <div class="grid size-full place-items-center" style={nameTint(derivedDomain)} aria-hidden="true">
+              <span class="text-2xl font-semibold leading-none">{letter}</span>
+            </div>
+          {/snippet}
+        </PhotoTile>
       </div>
     {/if}
     <div class="flex-1 min-w-0 p-3">

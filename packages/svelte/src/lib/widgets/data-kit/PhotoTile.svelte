@@ -7,10 +7,13 @@
   Invariant: the only `src` sink is `safeUrl(src, { kind: 'resource' })`
   inline on the <img> (security/url-sinks.test.ts audits that), and the <img>
   renders only when that call returns a URL. Width comes from the caller's
-  class (`w-24`, `w-full`); a hero adds `max-h-[200px]`.
+  class (`w-24`, `w-full`); a hero adds `max-h-[200px]`. A caller with a
+  better fallback than the icon (link-preview's domain letter) passes the
+  `fallback` snippet; it fills the box in place of the icon.
 -->
 <script lang="ts">
 	import type { LucideIcon } from '@lucide/svelte';
+	import type { Snippet } from 'svelte';
 	import { safeUrl } from '@ripple-ui/core';
 	import { FALLBACK_ICON } from './icons.js';
 
@@ -29,9 +32,11 @@
 		fit?: 'contain' | 'cover' | 'fill' | 'none' | 'scale-down';
 		/** Show the alt text under the fallback icon. */
 		caption?: boolean;
+		/** Replaces the icon tile when the image is missing, refused or failed. */
+		fallback?: Snippet;
 	}
 
-	let { src, alt = '', ratio = '1:1', icon, iconSize = 20, class: className, id, style, fit = 'cover', caption = false }: Props = $props();
+	let { src, alt = '', ratio = '1:1', icon, iconSize = 20, class: className, id, style, fit = 'cover', caption = false, fallback }: Props = $props();
 
 	// 'auto' leaves the box to its own width/height (the image atom); the fallback then keeps a floor height.
 	const RATIO: Record<Ratio, string> = { '4:3': 'aspect-[4/3]', '1:1': 'aspect-square', '16:9': 'aspect-video', auto: '' };
@@ -59,6 +64,8 @@
 			onload={() => (loadedUrl = url)}
 			onerror={() => (failedUrl = url)}
 		/>
+	{:else if fallback}
+		{@render fallback()}
 	{:else if alt}
 		<div class="flex size-full flex-col items-center justify-center gap-1.5 p-3 text-ripple-muted-foreground" role="img" aria-label={alt}>
 			<Icon size={iconSize} strokeWidth={1.75} aria-hidden="true" />
