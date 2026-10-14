@@ -92,7 +92,7 @@
         {/if}
       </div>
     </div>
-    {#if actions}
+    {#if typeof actions === 'function'}
       <div class="flex items-center gap-2 shrink-0">
         {@render actions()}
       </div>

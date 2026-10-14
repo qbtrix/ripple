@@ -9,7 +9,8 @@
 <script lang="ts">
   import { safeUrl, safeStyle } from '@ripple-ui/core';
   import { cn } from '$lib/utils.js';
-  import { faviconUrl } from './favicon.js';
+  import { nameTint } from '$lib/widgets/data-kit/tint.js';
+  import { asText } from '$lib/widgets/text-coerce';
 
   interface Props {
     /** Spec node id, forwarded by NodeRenderer for editor selection. */
@@ -20,7 +21,7 @@
     title: string;
     /** Dot/accent color (CSS color value) — used only if favicon fails */
     color?: string;
-    /** Override favicon URL (auto-derived from source name if omitted) */
+    /** Favicon URL; without one the source's first letter shows in a small tile */
     favicon?: string;
     /** Link URL */
     url?: string;
@@ -33,7 +34,8 @@
     favicon, url, class: className, onclick
   }: Props = $props();
 
-  const iconSrc = $derived(favicon ?? faviconUrl(source));
+  // Only a supplied favicon: never derive a third-party favicon-service URL.
+  const iconSrc = $derived(favicon);
   let iconError = $state(false);
 
   const safeLink = $derived(safeUrl(url));
@@ -51,10 +53,10 @@
 
 <div {id} data-ripple-node={id} class={cn('rsrc-card', className)} {...interactive}>
   <div class="rsrc-card-head">
-    {#if !iconError}
+    {#if iconSrc && !iconError}
       <img src={safeUrl(iconSrc, { kind: 'resource' })} alt="" class="rsrc-card-favicon" onerror={() => iconError = true} />
     {:else}
-      <span class="rsrc-card-dot" style={safeStyle(`background:${color}`)}></span>
+      <span class="rsrc-card-dot" aria-hidden="true" style={safeStyle(color ? `background:${color};color:#fff` : nameTint(asText(source)))}>{asText(source).trim().charAt(0).toUpperCase()}</span>
     {/if}
     <span class="rsrc-card-source">{source}</span>
   </div>
@@ -88,9 +90,14 @@
     gap: 6px;
   }
   .rsrc-card-dot {
+    display: inline-grid;
+    place-items: center;
     width: 14px;
     height: 14px;
-    border-radius: 50%;
+    border-radius: 3px;
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 1;
     flex-shrink: 0;
   }
   .rsrc-card-favicon {

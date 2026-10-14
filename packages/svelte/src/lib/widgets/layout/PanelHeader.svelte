@@ -61,7 +61,7 @@
       <p class="truncate text-[12px] leading-tight text-ripple-muted-foreground">{subtitle}</p>
     {/if}
   </div>
-  {#if actions}<div class="flex shrink-0 items-center gap-0.5">{@render actions()}</div>{/if}
+  {#if typeof actions === 'function'}<div class="flex shrink-0 items-center gap-0.5">{@render actions()}</div>{/if}
   {#if onclose}
     <button
       type="button"

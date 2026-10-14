@@ -30,4 +30,13 @@ describe('VirtualList', () => {
     const first = container.querySelector('[role="option"]');
     expect(first?.getAttribute('aria-setsize')).toBe('50');
   });
+
+  it('hugs short lists instead of a fixed 320px slab, and shows descriptions', () => {
+    const { container } = render(VirtualList, {
+      props: { items: [{ label: 'Acorn Labs', description: '3 open deals' }, { label: 'Bluefin' }] }
+    });
+    const box = container.querySelector('[role="listbox"]') as HTMLElement;
+    expect(box.getAttribute('style')).toMatch(/height: 104px;\s*max-height: 320px/);
+    expect(container.textContent).toContain('3 open deals');
+  });
 });

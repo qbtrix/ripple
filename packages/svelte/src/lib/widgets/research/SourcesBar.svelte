@@ -13,7 +13,8 @@
   import { getContext } from 'svelte';
   import type { EventDispatcher } from '@ripple-ui/core';
   import type { StateManager } from '$lib/core/state-manager.svelte.js';
-  import { faviconUrl } from './favicon.js';
+  import { nameTint } from '$lib/widgets/data-kit/tint.js';
+  import { asText } from '$lib/widgets/text-coerce';
 
   interface SourceRef {
     name: string;
@@ -91,12 +92,12 @@
   <div class="rsbar-left">
     <div class="rsbar-dots">
       {#each validSources.slice(0, 4) as src, i}
-        <img
-          src={safeUrl(src.favicon ?? faviconUrl(src.name), { kind: 'resource' })}
-          alt=""
-          class="rsbar-favicon"
-          style={safeStyle(`z-index:${4 - i}; margin-left:${i > 0 ? '-4px' : '0'}`)}
-        />
+        {@const place = `z-index:${4 - i}; margin-left:${i > 0 ? '-4px' : '0'}`}
+        {#if src.favicon}
+          <img src={safeUrl(src.favicon, { kind: 'resource' })} alt="" class="rsbar-favicon" style={safeStyle(place)} />
+        {:else}
+          <span class="rsbar-favicon rsbar-letter" aria-hidden="true" style={safeStyle(`${place};${nameTint(asText(src.name))}`)}>{asText(src.name).trim().charAt(0).toUpperCase()}</span>
+        {/if}
       {/each}
     </div>
     <span class="rsbar-count">{displayCount} {label}</span>
@@ -154,6 +155,13 @@
     flex-shrink: 0;
     position: relative;
     object-fit: cover;
+  }
+  .rsbar-letter {
+    display: inline-grid;
+    place-items: center;
+    font-size: 8px;
+    font-weight: 700;
+    line-height: 1;
   }
   .rsbar-count {
     font-size: 12px;

@@ -2,6 +2,7 @@
      hidden form input per item; a static <form action> POST then submits the
      selected option with JS off (ripple-iui #54). -->
 <script lang="ts">
+  import { FIELD_LABEL } from '$lib/components/ui/control.js';
   import { cn } from '$lib/utils.js';
   import { canonicalOptions } from '$lib/utils/safe-props.js';
   import * as RadioGroup from '$lib/components/ui/radio-group/index.js';
@@ -47,7 +48,7 @@
 
 <div class={cn('flex flex-col gap-2', className)} style={styleString} {id}>
   {#if label}
-    <span class="text-sm font-medium leading-none">{label}</span>
+    <span class={FIELD_LABEL}>{label}</span>
   {/if}
   <RadioGroup.Root
     {value}
@@ -56,8 +57,8 @@
     onValueChange={handleChange}
   >
     {#each normalized as opt (opt.value)}
-      <label class="flex items-center gap-2 cursor-pointer text-sm">
-        <RadioGroup.Item value={opt.value} />
+      <label class="flex items-start gap-2 cursor-pointer text-sm leading-[1.35]">
+        <span class="flex h-[1.35em] shrink-0 items-center"><RadioGroup.Item value={opt.value} /></span>
         <span>{opt.label}</span>
       </label>
     {/each}

@@ -243,7 +243,13 @@ async function run(packed, { base, widths, themes, outdir }) {
 				const file = join(outdir, `${tag}.png`);
 				const surface = page.locator('.surface:has(.ripple-root)');
 				const n = await surface.count();
-				if (n >= 1) await surface.first().screenshot({ path: file, animations: 'disabled' });
+				// The page does not scroll as a document, so a surface whose bottom
+				// sits below the fold is cut off; grow the viewport to hold all of it.
+				if (n >= 1) {
+					const bottom = await surface.first().evaluate((el) => el.getBoundingClientRect().bottom);
+					if (bottom > 900) await page.setViewportSize({ width, height: Math.ceil(bottom) + 24 });
+					await surface.first().screenshot({ path: file, animations: 'disabled' });
+				}
 				if (axeSource && n >= 1) {
 					await page.addScriptTag({ content: axeSource });
 					const v = await page.evaluate(async () => {

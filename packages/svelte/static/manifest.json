@@ -1,7 +1,7 @@
 {
   "schema": "ripple.manifest/v1",
   "version": "0.8.0",
-  "generatedAt": "2026-10-14T03:32:52.525Z",
+  "generatedAt": "2026-10-14T09:34:15.214Z",
   "spec": {
     "uiField": "ui",
     "stateField": "state",
@@ -2543,14 +2543,14 @@
         "type": "color-picker",
         "props": {
           "label": "Theme color",
-          "value": "#3b82f6",
+          "value": "#1877F2",
           "showInput": true,
           "bind": "{state.themeColor}"
         }
       },
       "pocket": {
         "state": {
-          "themeColor": "#3b82f6"
+          "themeColor": "#1877F2"
         },
         "ui": {
           "type": "flex",
@@ -2565,7 +2565,7 @@
                 "label": "Theme color",
                 "showInput": true,
                 "presets": [
-                  "#3b82f6",
+                  "#1877F2",
                   "#8b5cf6",
                   "#22c55e",
                   "#f59e0b",
@@ -6311,7 +6311,7 @@
         "height": {
           "type": "string",
           "required": false,
-          "description": "Container height. Default \"320px\"."
+          "description": "Max height. Default \"320px\"."
         }
       },
       "example": {
@@ -6744,8 +6744,7 @@
         "type": "icon",
         "props": {
           "name": "check-circle",
-          "size": 24,
-          "color": "#10b981"
+          "size": 24
         }
       }
     },
@@ -13605,14 +13604,18 @@
           "type": "\"default\" | \"thin\" | \"thick\"",
           "required": false,
           "description": "Height variant."
+        },
+        "label": {
+          "type": "string",
+          "required": false,
+          "description": "Label row above the bar."
         }
       },
       "example": {
         "type": "progress",
         "props": {
           "value": 65,
-          "max": 100,
-          "variant": "default"
+          "label": "Uploading"
         }
       }
     },
@@ -13669,8 +13672,7 @@
         "props": {
           "value": 72,
           "max": 100,
-          "size": 80,
-          "color": "#6366f1"
+          "size": 80
         }
       }
     },
@@ -17057,7 +17059,7 @@
       "description": "Hierarchical treemap showing composition and relative sizes. Click to zoom into nested groups.",
       "props": {
         "data": {
-          "type": "Array<{ name: string; value?: number; children?: Node[]; color?: string }>",
+          "type": "Array<{ name: string; value?: number; children?: Node[] }>",
           "required": true,
           "description": "Recursive node tree."
         },
@@ -17250,12 +17252,12 @@
         "itemHeight": {
           "type": "number",
           "required": false,
-          "description": "Fixed row height in px. Default 36."
+          "description": "Fixed row height in px."
         },
         "height": {
           "type": "string | number",
           "required": false,
-          "description": "Container height. Default \"320px\"."
+          "description": "Box height; fits rows to 320px."
         },
         "overscan": {
           "type": "number",
@@ -17271,17 +17273,16 @@
       "example": {
         "type": "virtual-list",
         "props": {
-          "itemHeight": 40,
-          "height": "320px",
           "items": [
             {
-              "label": "Acme Corp"
+              "label": "Acorn Labs",
+              "description": "3 open deals"
             },
             {
-              "label": "Tech Inc"
+              "label": "Bluefin Freight"
             },
             {
-              "label": "Growth Ltd"
+              "label": "Cobalt Dental"
             }
           ]
         }
@@ -18092,7 +18093,6 @@
         "type": "glyph-grid",
         "props": {
           "glyph": "n1",
-          "color": "#2E6BFF",
           "cell": 14
         }
       }
@@ -18142,10 +18142,9 @@
       "example": {
         "type": "fill-grid",
         "props": {
-          "value": 100,
+          "value": 62,
           "max": 100,
-          "total": 24,
-          "color": "#2FB970"
+          "total": 24
         }
       }
     },
@@ -18190,8 +18189,7 @@
         "type": "streak-bars",
         "props": {
           "count": 12,
-          "filled": 12,
-          "color": "#E8852B"
+          "filled": 8
         }
       }
     },

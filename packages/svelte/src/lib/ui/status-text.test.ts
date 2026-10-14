@@ -21,7 +21,7 @@
 //      --destructive is left alone), at rest and on hover, and the label must
 //      reach 4.5:1 in every state while hover stays distinct from rest.
 import { test, expect } from 'vitest';
-import { oklch, toRgb, mix, over, contrast, type Lab } from './__fixtures__/contrast.js';
+import { oklch, toRgb, mix, over, contrast, fromHex, type Lab } from './__fixtures__/contrast.js';
 
 const TONES = ['error', 'success', 'warning', 'info'] as const;
 type Tone = (typeof TONES)[number];
@@ -143,6 +143,124 @@ test('solid destructive buttons keep a white label at 4.5:1 at rest and on hover
         if (ratio < 4.5) failures.push(`${file} ${selector} ${theme}: ${ratio.toFixed(2)}`);
       }
     }
+  }
+  expect(failures).toEqual([]);
+});
+
+// Control tokens: ink washes over the card. Boundaries (checkbox and radio
+// rims, slider thumb, selected segment, OTP slots) need 3:1 against the card
+// (WCAG 1.4.11); tracks, rails and skeleton blocks need a quiet 1.4:1. Measured
+// on the ripple site's warm cards and on paw-enterprise's grounds.
+test('control border reaches 3:1 and track reaches 1.4:1 on the card in both themes', async () => {
+  const css = await read('src/lib/theme.css');
+  const pct = (name: string) => {
+    const m = css.match(
+      new RegExp(`--ripple-${name}:\\s*color-mix\\(in oklab,\\s*var\\(--ripple-surface-foreground\\)\\s+([\\d.]+)%,\\s*transparent\\)`)
+    );
+    return m ? Number(m[1]) / 100 : 0;
+  };
+  const failures: string[] = [];
+  for (const name of ['track', 'control-border']) {
+    if (!css.includes(`--color-ripple-${name}: var(--ripple-${name});`)) failures.push(`--color-ripple-${name} utility missing`);
+  }
+  const cards: Record<string, { fg: Lab; ground: Lab }> = {
+    'site light #efeee8': { fg: oklch(0.2, 0.01, 95), ground: oklch(0.9482, 0.0081, 98.9) },
+    'site dark #1d1d1a': { fg: oklch(0.95, 0.005, 260), ground: oklch(0.2296, 0.0057, 106.8) },
+    'pe light': { fg: HOSTS.light.fg, ground: HOSTS.light.ground },
+    'pe dark': { fg: HOSTS['dark, --destructive'].fg, ground: HOSTS['dark, --destructive'].ground },
+  };
+  for (const [token, min] of [['control-border', 3], ['track', 1.4]] as const) {
+    const p = pct(token);
+    for (const [name, c] of Object.entries(cards)) {
+      const ground = toRgb(c.ground);
+      const ratio = contrast(over(toRgb(c.fg), p, ground), ground);
+      if (ratio < min) failures.push(`${token} on ${name}: ${ratio.toFixed(2)} < ${min}`);
+    }
+  }
+  expect(failures).toEqual([]);
+});
+
+test('checkbox and radio rims use the control border, not the host --input', async () => {
+  const files = ['src/lib/components/ui/checkbox/checkbox.svelte', 'src/lib/components/ui/radio-group/radio-group-item.svelte'];
+  for (const f of files) {
+    const src = await read(f);
+    expect(src, f).toContain('border-ripple-control-border');
+    expect(src, f).not.toMatch(/"border-input /);
+  }
+});
+
+// Treemap tiles: the accent mixed into the card on treemap.ts's RAMP (RAMP_DARK
+// on dark cards), plus LIFT on hover. Tile ink is the surface ink; the value line is that ink at
+// INK_ALPHA. Both must reach 4.5:1 on every step at rest and on hover, on the
+// site's cards and on paw-enterprise's grounds. Brand blue #1877f2 in oklab.
+test('treemap label ink reaches 4.5:1 on every ramp step, at rest and on hover', async () => {
+  const { RAMP, RAMP_DARK, LIFT, INK_ALPHA } = await import('../widgets/data/treemap.js');
+  const css = await read('src/routes/site.css');
+  expect(css).toMatch(/--primary:\s*#1877f2/i);
+  const blue: Lab = [0.58913, -0.04266, -0.19833];
+  const hexLab = (hex: string): Lab => {
+    const dec = (v: number) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+    const [r, g, b] = [1, 3, 5].map((i) => dec(parseInt(hex.slice(i, i + 2), 16) / 255));
+    const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+    const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+    const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+    return [
+      0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s,
+      1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s,
+      0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s,
+    ];
+  };
+  const cards: Record<string, { fg: Lab; ground: Lab; ramp: readonly number[] }> = {
+    'site light #efeee8': { fg: oklch(0.2, 0.01, 95), ground: hexLab('#efeee8'), ramp: RAMP },
+    'site dark #1d1d1a': { fg: oklch(0.95, 0.005, 260), ground: hexLab('#1d1d1a'), ramp: RAMP_DARK },
+    'pe light': { fg: HOSTS.light.fg, ground: HOSTS.light.ground, ramp: RAMP },
+    'pe dark': { fg: HOSTS['dark, --destructive'].fg, ground: HOSTS['dark, --destructive'].ground, ramp: RAMP_DARK },
+  };
+  const failures: string[] = [];
+  for (const [name, c] of Object.entries(cards)) {
+    for (const step of c.ramp) {
+      for (const p of [step, step + LIFT]) {
+        const tile = toRgb(mix(blue, c.ground, p / 100));
+        const ink = contrast(toRgb(c.fg), tile);
+        const meta = contrast(over(toRgb(c.fg), INK_ALPHA / 100, tile), tile);
+        if (ink < 4.5) failures.push(`ink at ${p}% on ${name}: ${ink.toFixed(2)}`);
+        if (meta < 4.5) failures.push(`value line at ${p}% on ${name}: ${meta.toFixed(2)}`);
+      }
+    }
+  }
+  expect(failures).toEqual([]);
+});
+
+test('invoice-layout status chips reach 4.5:1 on their tints on the Blueprint site, both themes', async () => {
+  // Tokens from src/routes/site.css (Blueprint) and src/lib/styles.css (--destructive).
+  // Chips tint their tone 13% over --ripple-surface (oklab mix); text is the -text token.
+  const css = await read('src/lib/theme.css');
+  const share = (tone: string) => {
+    const m = css.match(new RegExp(`--ripple-${tone}-text:\\s*color-mix\\(in oklab,\\s*var\\(--ripple-${tone}\\)\\s+([\\d.]+)%`));
+    return m ? Number(m[1]) / 100 : 1;
+  };
+  const chip = await read('src/lib/widgets/composite/InvoiceLayout.svelte');
+  const tint = Number(chip.match(/var\(--ripple-accent\) (\d+)%, var\(--ripple-surface\)/)?.[1] ?? 100) / 100;
+  const accent = fromHex('#1877f2');
+  const success = oklch(0.72, 0.17, 155);
+  const themes = {
+    light: { surface: fromHex('#efeee8'), fg: oklch(0.2, 0.01, 95), mutedFg: oklch(0.43, 0.01, 95), muted: toRgb(fromHex('#e5e4dd')), error: fromHex('#ef4444') },
+    dark: { surface: fromHex('#1d1d1a'), fg: oklch(0.95, 0.005, 260), mutedFg: oklch(0.75, 0.015, 260), muted: over([1, 1, 1], 0.05, toRgb(fromHex('#1d1d1a'))), error: oklch(0.704, 0.191, 22.216) },
+  };
+  const failures: string[] = [];
+  for (const [name, th] of Object.entries(themes)) {
+    const chips: [string, Lab, number][] = [
+      ['sent', accent, share('accent')],
+      ['paid', success, share('success')],
+      ['overdue', th.error, share('error')],
+    ];
+    for (const [label, tone, p] of chips) {
+      const ratio = contrast(toRgb(mix(tone, th.fg, p)), toRgb(mix(tone, th.surface, tint)));
+      if (ratio < 4.5) failures.push(`${label} ${name}: ${ratio.toFixed(2)}`);
+    }
+    // draft, void and unknown statuses: muted ink on --ripple-muted.
+    const neutral = contrast(toRgb(th.mutedFg), th.muted);
+    if (neutral < 4.5) failures.push(`neutral ${name}: ${neutral.toFixed(2)}`);
   }
   expect(failures).toEqual([]);
 });

@@ -176,7 +176,7 @@ test('renders minus icon when direction=neutral', () => {
 
 test('health-summary spec: averages render rounded by magnitude', () => {
   const { container } = render(Ripple, { props: { spec: healthSummary } });
-  const values = [...container.querySelectorAll('[data-size] .font-mono')].map((n) => n.textContent);
+  const values = [...container.querySelectorAll('[data-slot="stat-value"]')].map((n) => n.textContent);
   expect(values).toEqual(['8,971', '7.24', '61.6']);
 });
 

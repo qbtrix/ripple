@@ -17,6 +17,6 @@ export const streakBarsEntry: WidgetManifestEntry = {
   },
   example: {
     type: 'streak-bars',
-    props: { count: 12, filled: 12, color: '#E8852B' },
+    props: { count: 12, filled: 8 },
   },
 };

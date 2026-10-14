@@ -16,6 +16,7 @@
   import type { Snippet } from 'svelte';
   import { ContextMenu as CM } from 'bits-ui';
   import { cn } from '$lib/utils.js';
+  import MoreHorizontalIcon from '@lucide/svelte/icons/ellipsis';
   import * as icons from '@lucide/svelte';
   import NodeRenderer from '$lib/components/NodeRenderer.svelte';
 
@@ -76,22 +77,47 @@
   function isSpec(v: unknown): boolean {
     return v != null && typeof v === 'object' && !Array.isArray(v) && typeof (v as any).type === 'string';
   }
+
+  // The trailing button replays its click as a contextmenu event on the
+  // trigger, so bits-ui opens the menu at the pointer the same way.
+  function openFromButton(e: MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    const el = e.currentTarget as HTMLElement;
+    const r = el.getBoundingClientRect();
+    el.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: r.left, clientY: r.bottom }));
+  }
 </script>
 
+{#snippet row(text: string)}
+  <!-- A normal row, not a dashed drop zone: the hint says how to open it and
+       the trailing button opens it too (touch has no right-click). -->
+  <span class="flex w-full min-w-0 items-center gap-3 rounded-md px-1 py-2 text-sm transition-colors hover:bg-ripple-track/60">
+    <span class="flex min-w-0 flex-1 flex-col">
+      <span class="truncate text-ripple-surface-foreground">{text}</span>
+      <span class="truncate text-xs text-ripple-muted-foreground">Right-click or long-press for actions</span>
+    </span>
+    <button
+      type="button"
+      aria-label="Open actions"
+      class="grid size-8 shrink-0 place-items-center rounded-md text-ripple-muted-foreground hover:bg-ripple-track hover:text-ripple-surface-foreground"
+      onclick={openFromButton}
+    >
+      <MoreHorizontalIcon size={16} aria-hidden="true" />
+    </button>
+  </span>
+{/snippet}
+
 <CM.Root>
-  <CM.Trigger {id} class={cn('inline-block', className)} style={styleString}>
+  <CM.Trigger {id} class={cn(!children && !isSpec(trigger) ? 'block w-full' : 'inline-block', className)} style={styleString}>
     {#if children}
       {@render children()}
     {:else if isString(trigger)}
-      <span class="rounded-md border border-dashed border-border bg-muted/30 px-3 py-6 text-sm text-muted-foreground">
-        {trigger}
-      </span>
+      {@render row(trigger)}
     {:else if isSpec(trigger)}
       <NodeRenderer node={trigger} />
     {:else}
-      <span class="rounded-md border border-dashed border-border bg-muted/30 px-3 py-6 text-sm text-muted-foreground">
-        Right-click here
-      </span>
+      {@render row('Actions')}
     {/if}
   </CM.Trigger>
 

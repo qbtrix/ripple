@@ -1,6 +1,7 @@
 <!-- src/lib/widgets/input/DatePicker.svelte -->
 <script lang="ts">
   import { Popover as P } from 'bits-ui';
+  import { CONTROL_H, FIELD, FIELD_LABEL } from '$lib/components/ui/control.js';
   import { cn } from '$lib/utils.js';
   import CalendarIcon from '@lucide/svelte/icons/calendar';
   import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
@@ -141,9 +142,9 @@
   const today = new Date();
 </script>
 
-<div class={cn('flex flex-col gap-1.5', className)} style={styleString}>
+<div class={cn(FIELD, className)} style={styleString}>
   {#if label}
-    <label for={id} class="text-sm font-medium">{label}</label>
+    <label for={id} class={FIELD_LABEL}>{label}</label>
   {/if}
 
   <P.Root bind:open>
@@ -151,7 +152,7 @@
       {id}
       {disabled}
       class={cn(
-        'flex h-9 w-full items-center gap-2 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs',
+        CONTROL_H, 'flex w-full items-center gap-2 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs',
         'transition-[color,box-shadow] outline-none',
         'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]',
         'disabled:cursor-not-allowed disabled:opacity-50',
