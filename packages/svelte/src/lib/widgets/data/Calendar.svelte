@@ -14,15 +14,17 @@
     week row is as tall as its lanes (cap 3 in month view, then "+N more"),
     single-day events are chips, multi-day events one bar per week segment;
   - narrow: 40px rows with up to 3 colour dots per day, then a hairline and
-    an agenda listing every event in the shown period, grouped by day. The
-    agenda opens with the selected day's group, else today's, flush at its
-    top edge (never a cut row there); only the bottom edge fades.
+    an agenda listing every event in the shown period, grouped by day. A
+    month agenda opens on the selected day's group, else today's; a week
+    agenda opens at Sunday. Only an agenda that overflows gets fade padding:
+    the bottom edge fades, and the top edge too once it is scrolled.
 
   Chips are one line with an ellipsis, in month and week view alike: timed
-  events lead with the time in the chip's own ink, lighter and in tabular
-  figures ("9:30 Design review"); when columns are under about 110px a
-  whole-hour time drops its ":00". Date-only events and spans show the title
-  alone. A span segment that continues from an earlier week has squared left
+  events lead with the time as H:MM in the chip's own ink, lighter and in
+  tabular figures ("9:30 Design review"). When columns are under about 110px
+  the chip shows the title only; the time stays in its title and accessible
+  name, and chips are already in time order. Date-only events and spans show
+  the title alone. A span segment that continues from an earlier week has squared left
   corners and a leading chevron; one that runs on has squared right corners
   and a trailing chevron. Chips and bars sit above the day hairlines.
   Weekday label, numeral and chip text share one left inset (--cal-inset).
@@ -164,6 +166,10 @@
 	// ── Actions ─────────────────────────────────────────────────────────────
 	let rootEl: HTMLDivElement | undefined = $state();
 	let agendaEl: HTMLElement | undefined = $state();
+	/** The agenda scrolls (gets fade padding and a bottom fade). */
+	let overflows = $state(false);
+	/** The agenda is scrolled down (adds a top fade). */
+	let scrolled = $state(false);
 	let focusDay = $state<number | null>(null);
 	const tabDay = $derived.by(() => {
 		for (const d of [focusDay, selected, today]) if (d !== null && inPeriod(d)) return d;
@@ -184,21 +190,20 @@
 		if (!el || el.scrollHeight <= el.clientHeight) return false;
 		const group = day === null ? null : el.querySelector<HTMLElement>(`[data-agenda-day="${day}"]`);
 		if (!group && !fallback) return false;
-		let top = group ? group.offsetTop : 0;
-		// Near the end the pane cannot scroll that far: stop on a row edge so no cut row sits under the hairline.
-		const max = el.scrollHeight - el.clientHeight;
-		if (top > max) {
-			const edges = [...el.querySelectorAll<HTMLElement>('[data-agenda-day], .cal-row')].map((n) => n.offsetTop);
-			top = Math.max(0, ...edges.filter((t) => t <= max));
-		}
-		el.scrollTo({ top, behavior: 'auto' });
+		// ponytail: 24px is the top fade (1.5rem at the default root size); keeps the group head clear of it.
+		el.scrollTo({ top: group ? Math.max(0, group.offsetTop - 24) : 0, behavior: 'auto' });
 		return !!group;
 	}
 
-	// A new period mounts a new agenda: open it on the selected day, else today.
+	// A new period mounts a new agenda: a month opens on the selected day, else today; a week at Sunday.
+	// ponytail: measured once per mount; add a ResizeObserver if cards start resizing across 520px live.
 	$effect(() => {
-		if (!agendaEl) return;
-		const [sel, t] = untrack(() => [selected, today]);
+		const el = agendaEl;
+		if (!el) return;
+		scrolled = false;
+		overflows = el.scrollHeight > el.clientHeight;
+		const [sel, t, m] = untrack(() => [selected, today, mode]);
+		if (m === 'week') return;
 		if (!scrollAgenda(sel, false)) scrollAgenda(t, false);
 	});
 
@@ -316,7 +321,7 @@
 										title={s.ev.time && s.ev.end === s.ev.start ? `${s.ev.time} ${titleOf(s.ev)}` : nameOf(s.ev)}
 										aria-label={nameOf(s.ev)}
 										onclick={() => select(s.ev)}
-									>{#if s.before}<ChevronLeftIcon size={12} class="cal-cont" aria-hidden="true" />{/if}{#if s.ev.time && s.ev.end === s.ev.start}{@const [h, mm] = s.ev.time.split(':')}<span class="cal-time tabular-nums">{h}<span class={mm === '00' ? 'cal-min0' : undefined}>:{mm}</span></span>{' '}{/if}<span class={['cal-chip-title', !s.ev.title && 'cal-untitled']}>{titleOf(s.ev)}</span>{#if s.after}<ChevronRightIcon size={12} class="cal-cont cal-cont--end" aria-hidden="true" />{/if}</button>
+									>{#if s.before}<ChevronLeftIcon size={12} class="cal-cont" aria-hidden="true" />{/if}{#if s.ev.time && s.ev.end === s.ev.start}<span class="cal-time tabular-nums">{s.ev.time}</span>{/if}<span class={['cal-chip-title', !s.ev.title && 'cal-untitled']}>{titleOf(s.ev)}</span>{#if s.after}<ChevronRightIcon size={12} class="cal-cont cal-cont--end" aria-hidden="true" />{/if}</button>
 								{/each}
 								{#if L.more[c]}
 									<button
@@ -333,7 +338,12 @@
 				{/each}
 			</div>
 
-			<div class="cal-agenda" bind:this={agendaEl} data-slot="agenda">
+			<div
+				class={['cal-agenda', overflows && 'cal-agenda--over', overflows && scrolled && 'cal-agenda--up']}
+				bind:this={agendaEl}
+				onscroll={(e) => (scrolled = e.currentTarget.scrollTop > 0)}
+				data-slot="agenda"
+			>
 				{#if selected !== null && inPeriod(selected) && !agendaDays.some((g) => g.day === selected && g.events.length)}
 					<p class="cal-nothing text-callout text-ripple-muted-foreground">Nothing on {F.head(selected)}</p>
 				{/if}
@@ -567,8 +577,9 @@
 		flex-shrink: 0;
 		font-weight: 400;
 	}
+	/* Columns under about 110px: title only (time is in title and aria-label). */
 	@container cal (max-width: 779px) {
-		.cal-min0 {
+		.cal-time {
 			display: none;
 		}
 	}
@@ -596,12 +607,18 @@
 		max-height: 18rem;
 		overflow-y: auto;
 		overscroll-behavior: contain;
-		/* A hairline under the grid; groups scroll flush to it. Only the
-		   bottom fades, and its padding lets the last row clear the fade. */
+		/* The hairline that closes the grid. Fades only when it scrolls. */
+		--fade-top: 0px;
 		padding-top: 0.25rem;
-		padding-bottom: 1.5rem;
 		border-top: 1px solid var(--ripple-border);
-		mask-image: linear-gradient(to bottom, #000 calc(100% - 1.5rem), transparent);
+	}
+	.cal-agenda--over {
+		/* Lets the last row scroll clear of the bottom fade. */
+		padding-bottom: 1.5rem;
+		mask-image: linear-gradient(to bottom, transparent, #000 var(--fade-top), #000 calc(100% - 1.5rem), transparent);
+	}
+	.cal-agenda--up {
+		--fade-top: 1.5rem;
 	}
 	.cal-nothing {
 		padding: 0.25rem 0.5rem 0.5rem;
@@ -728,8 +745,9 @@
 			border-radius: 999px;
 			background: color-mix(in oklab, var(--ev) 70%, var(--ripple-surface-foreground));
 		}
+		/* The agenda hairline closes the last row at the grid's 41px rhythm. */
 		.cal-body {
-			gap: 0.75rem;
+			gap: 0;
 		}
 		.cal-agenda {
 			display: block;
