@@ -1,9 +1,7 @@
 // src/lib/vendor-modules.d.ts
-// Created 2026-07-08: ambient declarations for third-party packages that ship no
-// TypeScript types. Qr.svelte (`qrcode-svg`) and GanttChart.svelte (`frappe-gantt`)
-// both `await import(...)` these at runtime; under `strict`/`noImplicitAny`
-// svelte-check flagged the untyped modules. There is no @types package for either,
-// so we declare them here (`any`) instead — an offline, in-repo fix.
+// Ambient declarations for third-party packages that ship no TypeScript types.
+// Qr.svelte `await import`s `qrcode-svg` at runtime; under `strict`/`noImplicitAny`
+// svelte-check flags the untyped module, and there is no @types package, so it
+// is declared here as `any`.
 
 declare module 'qrcode-svg';
-declare module 'frappe-gantt';

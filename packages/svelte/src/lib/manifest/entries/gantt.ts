@@ -7,7 +7,7 @@ export const ganttEntry: WidgetManifestEntry = {
   props: {
     tasks: { type: 'Array<{ id: string; name: string; start: string; end: string; progress?: number; dependencies?: string }>', required: true, description: 'Task definitions (ISO dates YYYY-MM-DD).' },
     viewMode: { type: '"Quarter Day" | "Half Day" | "Day" | "Week" | "Month" | "Year"', required: false, description: 'Time-unit granularity.' },
-    height: { type: 'string', required: false, description: 'Container height. Default "320px".' },
+    height: { type: 'string', required: false, description: 'Max height. Default "320px".' },
   },
   example: {
     type: 'gantt',

@@ -1,5 +1,5 @@
 // Chart.redraw.test.ts — the echarts-backed data widgets (chart, heatmap,
-// treemap, sankey, funnel) and the frappe-gantt one redraw when their props
+// treemap, sankey, funnel) and the native gantt redraw when their props
 // change after mount: state behind `data` changes, a streamed spec delivers
 // title/data in later chunks, or type/title are swapped on the live component.
 // The chart libs are mocked (jsdom has no canvas), so every assertion reads the
@@ -26,17 +26,6 @@ vi.mock('echarts', () => ({
 	}
 }));
 
-const gantt = vi.hoisted(() => ({ ctor: vi.fn(), refresh: vi.fn(), change_view_mode: vi.fn() }));
-vi.mock('frappe-gantt', () => ({
-	default: class {
-		constructor(...args: unknown[]) {
-			gantt.ctor(...args);
-		}
-		refresh = gantt.refresh;
-		change_view_mode = gantt.change_view_mode;
-	}
-}));
-
 /** ResizeObserver that reports a laid-out box as soon as it observes, so the
  *  widgets' "init once the element has a size" path runs in jsdom. */
 class SizedResizeObserver {
@@ -50,7 +39,7 @@ class SizedResizeObserver {
 
 beforeEach(() => {
 	vi.stubGlobal('ResizeObserver', SizedResizeObserver);
-	for (const m of [...Object.values(ec), ...Object.values(gantt)]) m.mockClear();
+	for (const m of Object.values(ec)) m.mockClear();
 });
 afterEach(() => vi.unstubAllGlobals());
 
@@ -160,13 +149,15 @@ describe.each([
 });
 
 describe('gantt', () => {
-	test('refreshes when its tasks change after mount', async () => {
+	test('redraws its rows when tasks change after mount', async () => {
 		const t1 = [{ id: '1', name: 'Plan', start: '2026-01-01', end: '2026-01-05' }];
-		const t2 = [...t1, { id: '2', name: 'Build', start: '2026-01-06', end: '2026-01-10' }];
-		const { rerender } = render(GanttChart, { props: { tasks: t1 } });
-		await vi.waitFor(() => expect(gantt.ctor).toHaveBeenCalledTimes(1));
+		const t2 = [...t1, { id: '2', name: 'Build', start: '2026-01-06', end: '2026-01-10', dependencies: '1' }];
+		const { container, rerender } = render(GanttChart, { props: { tasks: t1 } });
+		expect(container.querySelectorAll('[role="listitem"]')).toHaveLength(1);
 		await rerender({ tasks: t2 });
-		await vi.waitFor(() => expect(gantt.refresh.mock.lastCall?.[0]).toEqual(t2));
-		expect(gantt.ctor).toHaveBeenCalledTimes(1);
+		const items = container.querySelectorAll('[role="listitem"]');
+		expect(items).toHaveLength(2);
+		expect(items[1].getAttribute('aria-label')).toBe('Build, Jan 6, 2026 to Jan 10, 2026, after Plan');
+		expect(container.textContent).toContain('Jan 1 – Jan 10, 2026 · 2 tasks');
 	});
 });
