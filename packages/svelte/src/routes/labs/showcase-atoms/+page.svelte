@@ -2306,7 +2306,8 @@
               { id: 'recent', label: 'Recently updated', count: 12 },
               { id: 'archived', label: 'Archived', count: 41 }
             ]
-          }
+          },
+          on_create: { action: 'toast', message: 'New view is not set up in this demo', variant: 'info' }
         },
         { type: 'text', props: { text: 'Active view → {state.activeView}', size: 'xs' } }
       ]
