@@ -81,78 +81,114 @@
     })}`;
   }
 
+  // One Subtotal row, ever: an explicit `subtotal` wins, then a summary row
+  // labelled like "Subtotal" (it replaces the auto row and stays out of the
+  // arithmetic), then the sum of the lines. An explicit `total` always wins.
+  const isSubtotal = (s: { label?: unknown }) => /subtotal/i.test(String(s.label ?? ''));
+  const modelSubtotal = $derived(summary.find(isSubtotal));
+  const extras = $derived(summary.filter((s) => !isSubtotal(s)));
   const computedSubtotal = $derived(
-    finite(subtotal) ?? lines.reduce((acc, l) => acc + rowTotal(l), 0)
+    finite(subtotal) ??
+      (modelSubtotal ? summaryValue(modelSubtotal) : undefined) ??
+      lines.reduce((acc, l) => acc + rowTotal(l), 0)
   );
+  const subtotalLabel = $derived(finite(subtotal) === undefined && modelSubtotal ? String(modelSubtotal.label) : 'Subtotal');
   const computedTotal = $derived(
     finite(total) ??
-      computedSubtotal + summary.reduce((acc, s) => acc + (summaryValue(s) ?? 0), 0)
+      computedSubtotal + extras.reduce((acc, s) => acc + (summaryValue(s) ?? 0), 0)
   );
 </script>
 
+<!-- Rows are a grid, not a table, so the layout follows the card's width:
+     under 480px it is two columns (description with "qty × unit" as a muted
+     second line, amount right-aligned); wider, four. Nothing is clipped. -->
 <div
   {id}
-  class={cn('rounded-md border border-border overflow-hidden', className)}
+  class={cn('ril @container rounded-md border border-border', className)}
   style={styleString}
 >
-  <table class="w-full text-sm">
-    <thead class="bg-muted/30">
-      <tr>
-        <th class="text-left px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Description</th>
-        <th class="text-right px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground w-20">Qty</th>
-        <th class="text-right px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground w-24">Unit</th>
-        {#if showRowTotals}
-          <th class="text-right px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground w-28">Total</th>
+  <div class="ril-row ril-head" class:ril-nototal={!showRowTotals}>
+    <span>Description</span>
+    <span class="ril-wide">Qty</span>
+    <span class="ril-wide">Unit</span>
+    {#if showRowTotals}<span>Amount</span>{:else}<span class="ril-narrow">Unit</span>{/if}
+  </div>
+  <!-- Keyed by id AND position: a streamed item can lack its id, or carry a half-written one equal to a finished id, and a duplicate key throws. -->
+  {#each lines as line, i (`${line.id}:${i}`)}
+    {@const hasQty = typeof line.quantity === 'number'}
+    {@const hasUnit = typeof line.unitPrice === 'number'}
+    <div class="ril-row ril-line" class:ril-nototal={!showRowTotals}>
+      <div class="min-w-0">
+        <div class="ril-desc">{line.description}</div>
+        {#if hasQty && hasUnit && showRowTotals}
+          <div class="ril-narrow ril-sub">{line.quantity} × {format(line.unitPrice)}</div>
+        {:else if hasQty}
+          <div class="ril-narrow ril-sub">Qty {line.quantity}</div>
         {/if}
-      </tr>
-    </thead>
-    <tbody>
-      <!-- Keyed by id AND position: a streamed item can lack its id, or carry a half-written one equal to a finished id, and a duplicate key throws. -->
-      {#each lines as line, i (`${line.id}:${i}`)}
-        <tr class="border-t border-border">
-          <td class="px-3 py-2 align-top">
-            <div>{line.description}</div>
-            {#if line.note}
-              <div class="text-xs text-muted-foreground mt-0.5">{line.note}</div>
-            {/if}
-          </td>
-          <td class="px-3 py-2 text-right tabular-nums align-top">
-            {typeof line.quantity === 'number' ? line.quantity : ''}
-          </td>
-          <td class="px-3 py-2 text-right tabular-nums align-top">
-            {typeof line.unitPrice === 'number' ? format(line.unitPrice) : ''}
-          </td>
-          {#if showRowTotals}
-            <td class="px-3 py-2 text-right tabular-nums align-top font-medium">
-              {format(rowTotal(line))}
-            </td>
-          {/if}
-        </tr>
-      {/each}
-    </tbody>
-    <tfoot class="bg-muted/20 border-t-2 border-border">
-      <tr>
-        <td colspan={showRowTotals ? 3 : 2} class="px-3 py-2 text-right text-xs uppercase tracking-wide text-muted-foreground">
-          Subtotal
-        </td>
-        <td class="px-3 py-2 text-right tabular-nums">{format(computedSubtotal)}</td>
-      </tr>
-      {#each summary as s, idx (`${s.label}:${idx}`)}
-        <tr>
-          <td colspan={showRowTotals ? 3 : 2} class="px-3 py-1.5 text-right text-xs uppercase tracking-wide text-muted-foreground">
-            {s.label}
-          </td>
-          <td class="px-3 py-1.5 text-right tabular-nums text-muted-foreground">
-            {format(summaryValue(s))}
-          </td>
-        </tr>
-      {/each}
-      <tr class="border-t border-border">
-        <td colspan={showRowTotals ? 3 : 2} class="px-3 py-2.5 text-right text-sm font-semibold uppercase tracking-wide">
-          Total
-        </td>
-        <td class="px-3 py-2.5 text-right tabular-nums text-base font-semibold">{format(computedTotal)}</td>
-      </tr>
-    </tfoot>
-  </table>
+        {#if line.note}<div class="ril-sub">{line.note}</div>{/if}
+      </div>
+      <span class="ril-wide ril-num">{hasQty ? line.quantity : ''}</span>
+      <span class="ril-wide ril-num">{hasUnit ? format(line.unitPrice) : ''}</span>
+      {#if showRowTotals}
+        <span class="ril-num font-medium">{format(rowTotal(line))}</span>
+      {:else}
+        <span class="ril-narrow ril-num">{hasUnit ? format(line.unitPrice) : ''}</span>
+      {/if}
+    </div>
+  {/each}
+  <div class="ril-foot">
+    <div class="ril-sum"><span>{subtotalLabel}</span><span class="ril-num">{format(computedSubtotal)}</span></div>
+    {#each extras as s, idx (`${s.label}:${idx}`)}
+      <div class="ril-sum ril-muted"><span>{s.label}</span><span class="ril-num">{format(summaryValue(s))}</span></div>
+    {/each}
+    <div class="ril-sum ril-total"><span>Total</span><span class="ril-num">{format(computedTotal)}</span></div>
+  </div>
 </div>
+
+<style>
+  .ril { container-type: inline-size; font-size: 13px; }
+  .ril-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 12px;
+    padding: 8px 12px;
+    align-items: start;
+  }
+  .ril-line { border-top: 1px solid var(--ripple-border); }
+  .ril-head {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ripple-muted-foreground);
+  }
+  .ril-head > :not(:first-child) { text-align: right; }
+  .ril-desc { overflow-wrap: anywhere; }
+  .ril-sub { margin-top: 2px; font-size: 12px; color: var(--ripple-muted-foreground); }
+  .ril-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .ril-wide { display: none; }
+  .ril-foot { border-top: 1px solid var(--ripple-border); padding: 6px 12px 10px; }
+  .ril-sum {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 4px 0;
+  }
+  .ril-sum > :first-child { min-width: 0; color: var(--ripple-muted-foreground); }
+  .ril-muted .ril-num { color: var(--ripple-muted-foreground); }
+  .ril-total {
+    margin-top: 4px;
+    padding-top: 8px;
+    border-top: 1px solid var(--ripple-border);
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .ril-total > :first-child { color: inherit; }
+  @container (min-width: 480px) {
+    .ril-row { grid-template-columns: minmax(0, 1fr) 4rem 6.5rem 7.5rem; }
+    .ril-row.ril-nototal { grid-template-columns: minmax(0, 1fr) 4rem 6.5rem; }
+    .ril-wide { display: block; }
+    .ril-narrow { display: none; }
+    .ril-foot { padding-left: 40%; }
+  }
+</style>
