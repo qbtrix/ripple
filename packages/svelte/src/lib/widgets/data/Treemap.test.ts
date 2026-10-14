@@ -5,7 +5,7 @@ import { render, fireEvent, cleanup } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import Treemap from './Treemap.svelte';
-import { sanitize, share, labelTier, layout, CAPTION, NEST_GAP } from './treemap.js';
+import { sanitize, share, labelTier, nameLines, layout, CAPTION, NEST_GAP, TOP_GAP, GAP } from './treemap.js';
 
 // Spec 05 of the polish brief: no title, string value, nameless node, zero,
 // negative, empty children, parents with and without their own value.
@@ -54,6 +54,29 @@ test('label tiers: name and value, name only, nothing', () => {
 	expect(labelTier(63, 40)).toBe('name');
 	expect(labelTier(48, 24)).toBe('name');
 	expect(labelTier(47, 60)).toBe('none');
+});
+
+test('name lines follow tile height: 1 to 4 above the value line', () => {
+	expect(nameLines(40, 6)).toBe(1);
+	expect(nameLines(76, 6)).toBe(3);
+	expect(nameLines(225, 6)).toBe(4);
+});
+
+test('layout: top-level siblings sit further apart than tiles inside a group', () => {
+	expect(TOP_GAP).toBeGreaterThanOrEqual(3 * GAP);
+	const rects = layout(sanitize([{ name: 'g', children: [{ name: 'a', value: 5 }, { name: 'b', value: 5 }] }, { name: 'c', value: 10 }]), 600, 320);
+	const g = rects.find((r) => r.name === 'g')!;
+	const c = rects.find((r) => r.name === 'c')!;
+	expect(Math.max(c.x0 - g.x1, g.x0 - c.x1, c.y0 - g.y1, g.y0 - c.y1)).toBeCloseTo(TOP_GAP);
+});
+
+test('layout: a group filling a zoomed view gets no caption', () => {
+	const one = sanitize([{ name: 'atlas', children: [{ name: 'a', value: 5 }, { name: 'b', value: 3 }] }]);
+	expect(layout(one, 600, 320).find((r) => r.name === 'atlas')!.caption).toBe(true);
+	expect(layout(one, 600, 320, undefined, 6, true).find((r) => r.name === 'atlas')!.caption).toBe(false);
+	// A sibling too small to see does not stop the group filling the view (spec 06).
+	const two = sanitize([{ name: 'atlas', children: [{ name: 'a', value: 220000 }, { name: 'b', value: 800 }] }, { name: 'notes', value: 14 }]);
+	expect(layout(two, 600, 320, undefined, 6, true).find((r) => r.name === 'atlas')!.caption).toBe(false);
 });
 
 test('layout: no root band, captions only on tall groups', () => {
@@ -166,7 +189,7 @@ describe('component', () => {
 
 		await fireEvent.click(tile(container, 'Operations'));
 		expect(container.querySelector('nav')).toBeNull();
-		expect(container.querySelector('[role="tooltip"]')!.textContent).toContain('30% of total');
+		expect(container.querySelector('[role="tooltip"]')!.textContent).toContain('30 · 30% of total');
 
 		await fireEvent.click(tile(container, 'Product'));
 		await tick();
@@ -192,6 +215,8 @@ describe('component', () => {
 		await tick();
 		const nav = container.querySelector('nav')!;
 		expect(nav.textContent).not.toContain('All');
+		// The back button names where the reader is.
+		expect(nav.textContent).toContain('Product');
 		await fireEvent.click(nav.querySelector('button')!);
 		expect(container.querySelector('nav')).toBeNull();
 	});
@@ -211,32 +236,37 @@ describe('component', () => {
 		sh.mockRestore();
 	});
 
-	test('a name over two lines hides its whole label; a two-line name stays', async () => {
-		// jsdom has no layout: give names a two-line box (30px) and the long name four lines.
-		const long = 'Illustration and editorial artwork commissions';
+	test('a tall tile keeps a three-line name; a name past the line cap hides its label', async () => {
+		// jsdom has no layout: a name's box is its per-tile max-height; give names a line count.
+		const three = 'Cloud infrastructure and managed databases';
+		const six = 'Illustration and editorial artwork commissions for the spring catalogue';
 		const ch = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockImplementation(function (this: HTMLElement) {
-			return this.classList.contains('tm-name') ? 30 : this.classList.contains('tm-label') ? 200 : 0;
+			return this.classList.contains('tm-name') ? parseFloat(this.style.maxHeight) : this.classList.contains('tm-label') ? 200 : 0;
 		});
 		const sh = vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockImplementation(function (this: HTMLElement) {
 			if (!this.classList.contains('tm-name')) return 0;
-			return this.textContent === long ? 60 : 30;
+			return this.textContent === six ? 90 : this.textContent === three ? 45 : 15;
 		});
 		const { container } = render(Treemap, {
-			props: { data: [{ name: long, value: 60 }, { name: 'Cloud infrastructure', value: 40 }] }
+			props: { data: [{ name: three, value: 30 }, { name: six, value: 25 }, { name: 'Recruiting', value: 20 }] }
 		});
 		await tick();
 		await tick();
 		const label = (name: string) => tile(container, name).querySelector<HTMLElement>('.tm-label')!;
-		expect(label(long).dataset.fit).toBe('none');
-		expect(label('Cloud infrastructure').dataset.fit).toBe('full');
-		// The one unlabeled top-level tile is named under the plot.
-		expect(container.querySelector('.tm-foot')!.textContent).toContain(long);
+		const t = tile(container, three);
+		expect(parseFloat(t.style.width) * 6).toBeGreaterThanOrEqual(64);
+		expect(parseFloat(t.style.height)).toBeGreaterThanOrEqual(40);
+		expect(label(three).dataset.fit).toBe('full');
+		expect(label(six).dataset.fit).toBe('none');
+		expect(label('Recruiting').dataset.fit).toBe('full');
+		// No detached list of unlabeled tiles: the readout carries them.
+		expect(container.querySelector('.tm-foot')).toBeNull();
 		ch.mockRestore();
 		sh.mockRestore();
 	});
 
-	test('a value line that does not fit steps down to the share, then drops', async () => {
-		// Only the full "value · share" line is too wide; the share alone fits.
+	test('a value line that does not fit wraps at the separator, never share alone', async () => {
+		// Only the one-line "value · share" is too wide; wrapped, it fits.
 		const sw = vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockImplementation(function (this: HTMLElement) {
 			return this.closest('[data-fit="full"]') && this.classList.contains('tm-meta') ? 80 : 0;
 		});
@@ -245,8 +275,8 @@ describe('component', () => {
 		await tick();
 		await tick();
 		const l = tile(container, 'Operations').querySelector<HTMLElement>('.tm-label')!;
-		expect(l.dataset.fit).toBe('share');
-		expect(container.querySelector('.tm-foot')).toBeNull();
+		expect(l.dataset.fit).toBe('wrap');
+		expect(l.textContent).toContain('30 · 30%');
 		sw.mockRestore();
 		cw.mockRestore();
 	});

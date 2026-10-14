@@ -10,8 +10,11 @@
 //
 // Captions: only a group directly under the current root gets one (zoom
 // shows deeper ones), and only when its box is big enough and, given a
-// `measure`, its whole `name · share` line fits the width. A caption that would
-// not draw reserves no space. Nested groups get a wider gap so nesting reads.
+// `measure`, its whole `name · share` line fits the width. While zoomed, a
+// group that fills the view (rounds to 100%) gets none (the crumb already names it). A caption
+// that would not draw reserves no space. Top-level siblings sit TOP_GAP apart,
+// three times the in-group gap, so a group's edge reads; nested groups that
+// hold groups get NEST_GAP.
 //
 // Colour: top-level tiles (children of the current root) are ranked by value
 // onto RAMP, the percent of --ripple-accent mixed into --ripple-surface;
@@ -28,7 +31,7 @@ export const INK_ALPHA = 80;
 
 /** Gap between tiles, px; top-level siblings get a wider one so groups read. */
 export const GAP = 2;
-export const TOP_GAP = 4;
+export const TOP_GAP = 6;
 /** Gap between the children of a nested group that itself holds groups. */
 export const NEST_GAP = 4;
 /** Caption strip on a group tall enough to pay for it. */
@@ -105,6 +108,15 @@ export function labelTier(w: number, h: number): 'full' | 'name' | 'none' {
 	return 'none';
 }
 
+/** Name line height and cap, px; the value line below takes one more line. */
+export const NAME_LINE = 15;
+export const MAX_NAME_LINES = 4;
+
+/** How many name lines a tile of height `h` fits above its value line (1 to 4). */
+export function nameLines(h: number, inset: number): number {
+	return Math.max(1, Math.min(MAX_NAME_LINES, Math.floor((h - 2 * inset - NAME_LINE) / NAME_LINE)));
+}
+
 /** Text width in px at the caption font; layout uses it to keep only captions that fit. */
 export type Measure = (text: string) => number;
 
@@ -116,12 +128,14 @@ export const captionText = (name: string, value: number, total: number) => `${na
  * `inset` is the caption's right padding; with `measure` a caption that does
  * not fit on one line is dropped before layout, so it reserves no strip.
  */
-export function layout(nodes: TreeNode[], w: number, h: number, measure?: Measure, inset = 6): Rect[] {
+export function layout(nodes: TreeNode[], w: number, h: number, measure?: Measure, inset = 6, zoomed = false): Rect[] {
 	if (!nodes.length || !(w > 0) || !(h > 0)) return [];
 	const total = nodes.reduce((s, n) => s + n.value, 0);
 	// 2px left pad, the inset on the right, 2px slack for rounding.
 	const hasCaption = (d: { depth: number; x0: number; x1: number; y0: number; y1: number; data: TreeNode }) =>
 		d.depth === 1 &&
+		// Rounds to 100%: it fills the view and the crumb names it.
+		!(zoomed && d.data.value >= total * 0.995) &&
 		d.y1 - d.y0 >= CAPTION_MIN_HEIGHT &&
 		d.x1 - d.x0 >= CAPTION_MIN_WIDTH &&
 		(!measure || measure(captionText(d.data.name, d.data.value, total)) + inset + 4 <= d.x1 - d.x0);

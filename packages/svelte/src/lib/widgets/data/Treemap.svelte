@@ -14,20 +14,21 @@
   the card. Ink is always the surface ink; the value line is that ink at
   INK_ALPHA.
 
-  Labels sit top-left and are whole or absent. A name wraps to at most two
-  lines; after each layout every label is measured once, and one that
-  overflows steps down: `value · share`, then share alone, then name only,
-  then hidden (a name over two lines hides the whole label). Never an
-  ellipsis. When 1 to 3 top-level leaves end up unlabeled, one muted line
-  under the plot names them with their share. `showLabels: false` hides leaf
-  labels only.
+  Labels sit top-left and are whole or absent. A name wraps to as many lines
+  as the tile height leaves above the value line (treemap.ts `nameLines`, 1 to
+  4); after each layout every label is measured once, and one that overflows
+  steps down: `value · share` on one line, then wrapped at the separator,
+  then name only, then hidden. Never an ellipsis, never share alone. An
+  unlabeled tile still has its readout. `showLabels: false` hides leaf labels
+  only.
 
   Zoom: a caption, or a nested tile, zooms into its top-level group, one level
   at a time; a top-level leaf only shows its readout (tap on touch). While
-  zoomed a breadcrumb row shows (a back button instead when `showBreadcrumb`
-  is false) and Escape goes up one level. Zoom resets when `data` changes.
-  One shared readout follows the hovered, focused or tapped tile and stays in
-  the plot.
+  zoomed a breadcrumb row shows (a back button naming the current group when
+  `showBreadcrumb` is false) and Escape goes up one level. Zoom resets when
+  `data` changes. One shared readout (`value · share`, plus share of parent
+  on nested tiles) follows the hovered, focused or tapped tile; it sits below
+  or above the tile, else inside it under the label, and stays in the plot.
   `colors` and node `color` are accepted and ignored.
 -->
 <script module lang="ts">
@@ -48,7 +49,7 @@
 	import { cn } from '$lib/utils.js';
 	import { safeArray } from '$lib/utils/safe-props.js';
 	import { finite, num, plain } from '../data-kit/format.js';
-	import { RAMP, LIFT, INK_ALPHA, sanitize, find, layout, share, labelTier, captionText, type Measure, type Rect } from './treemap.js';
+	import { RAMP, LIFT, INK_ALPHA, NAME_LINE, sanitize, find, layout, share, labelTier, nameLines, captionText, type Measure, type Rect } from './treemap.js';
 
 	interface Props {
 		id?: string;
@@ -90,7 +91,6 @@
 	let active = $state<string | null>(null);
 	let plotEl = $state<HTMLDivElement>();
 	let fontsReady = $state(false);
-	let unlabeled = $state<string[]>([]);
 
 	// A new tree starts at the root.
 	let seen: unknown;
@@ -116,10 +116,8 @@
 		return (t) => ctx.measureText(t).width;
 	});
 	// The inset mirrors the --tm-inset container query below.
-	const rects = $derived(layout(nodes, W, plotH, measure, W >= 560 ? 8 : 6));
-	const unnamed = $derived(
-		showLabels && unlabeled.length >= 1 && unlabeled.length <= 3 ? rects.filter((r) => unlabeled.includes(r.id)) : []
-	);
+	const inset = $derived(W >= 560 ? 8 : 6);
+	const rects = $derived(layout(nodes, W, plotH, measure, inset, !!focusNode));
 	const crumbs = $derived.by(() => {
 		if (!focusNode) return [];
 		const parts = focusId.split('.');
@@ -151,9 +149,6 @@
 		// After the DOM update and once webfonts are in, so widths are final.
 		Promise.all([tick(), document.fonts?.ready]).then(() => {
 			for (const label of el.querySelectorAll<HTMLElement>('[data-tm-label]')) fit(label);
-			unlabeled = [...el.querySelectorAll<HTMLElement>('[data-tm-top]')]
-				.filter((b) => !hasLabel(b))
-				.map((b) => b.dataset.tmTop!);
 		});
 	});
 
@@ -161,21 +156,16 @@
 		return !!e && (e.scrollHeight > e.clientHeight + 1 || e.scrollWidth > e.clientWidth + 1);
 	}
 
-	/** Steps down until the label fits: full, share alone, name only, hidden. */
+	/** Steps down until the label fits: one-line value, wrapped value, name only, hidden. */
 	function fit(label: HTMLElement) {
 		const bad = () =>
 			overflows(label) || overflows(label.querySelector('[data-tm-name]')) || overflows(label.querySelector('[data-tm-meta]'));
-		const steps = label.querySelector('[data-tm-meta]') ? ['full', 'share', 'name'] : ['full'];
+		const steps = label.querySelector('[data-tm-meta]') ? ['full', 'wrap', 'name'] : ['full'];
 		for (const f of steps) {
 			label.dataset.fit = f;
 			if (!bad()) return;
 		}
 		label.dataset.fit = 'none';
-	}
-
-	function hasLabel(tile: HTMLElement): boolean {
-		const f = tile.querySelector<HTMLElement>('[data-tm-label]')?.dataset.fit;
-		return !!f && f !== 'none';
 	}
 
 	async function zoom(to: string) {
@@ -219,11 +209,14 @@
 		);
 	}
 
+	// Below the tile, else above it, else inside it under its own label.
 	function readoutStyle(r: Rect): string {
 		const x = r.x0 > W / 2 ? `right:${Math.max(0, W - r.x1)}px` : `left:${Math.max(0, r.x0)}px`;
-		const y =
-			plotH - r.y1 >= 72 ? `top:${r.y1 + 4}px` : r.y0 >= 72 ? `bottom:${plotH - r.y0 + 4}px` : `top:${r.y0 + 4}px`;
-		return `${x};${y}`;
+		if (plotH - r.y1 >= 72) return `${x};top:${r.y1 + 4}px`;
+		if (r.y0 >= 72) return `${x};bottom:${plotH - r.y0 + 4}px`;
+		const label = plotEl?.querySelector<HTMLElement>(`[data-tm-id="${r.id}"] [data-tm-label]:not([data-fit='none'])`);
+		const under = r.y0 + (label ? label.offsetTop + label.offsetHeight : 0) + 4;
+		return `${x};top:${Math.max(0, Math.min(under, plotH - 72))}px`;
 	}
 
 	function zoomIn(_node: Element) {
@@ -266,8 +259,8 @@
 						{/if}
 					{/each}
 				{:else}
-					<button type="button" class="tm-crumb" onclick={up}>
-						<ChevronLeft size={12} aria-hidden="true" />Back
+					<button type="button" class="tm-crumb" aria-label="Back from {focusNode.name}" onclick={up}>
+						<ChevronLeft size={12} aria-hidden="true" />{focusNode.name}
 					</button>
 				{/if}
 			</nav>
@@ -305,11 +298,12 @@
 							{/if}
 						{:else}
 							{@const tier = showLabels ? labelTier(w, h) : 'none'}
+							{@const lines = tier === 'full' ? nameLines(h, inset) : Math.max(1, Math.floor((h - 2 * inset) / NAME_LINE))}
 							<button
 								type="button"
 								class={['tm-tile', active === r.id && 'is-active']}
 								style={tileStyle(r)}
-								data-tm-top={r.depth === 1 ? r.id : undefined}
+								data-tm-id={r.id}
 								aria-label={aria(r)}
 								onclick={() => onTile(r)}
 								onpointerenter={() => (active = r.id)}
@@ -317,10 +311,10 @@
 							>
 								{#if tier !== 'none'}
 									<span data-tm-label class="tm-label" aria-hidden="true">
-										<span class="tm-name" data-tm-name>{r.name}</span>
+										<span class="tm-name" data-tm-name style="max-height:{Math.min(4, lines) * NAME_LINE}px">{r.name}</span>
 										{#if tier === 'full'}
 											<span class="tm-meta" data-tm-meta
-												><span data-tm-val>{`${num(r.value, { compact: true })} · `}</span>{share(r.value, total)}</span
+												><span>{`${num(r.value, { compact: true })} ·`}</span>{' '}<span>{share(r.value, total)}</span></span
 											>
 										{/if}
 									</span>
@@ -334,23 +328,14 @@
 			{#if tooltip && activeRect}
 				<div class="tm-readout text-callout" role="tooltip" style={readoutStyle(activeRect)}>
 					<div class="tm-readout-name">{activeRect.name}</div>
-					<div class="tm-readout-row"><span>{num(activeRect.value)}</span><span>{ofTotal(activeRect)}</span></div>
+					<div class="tm-readout-row">{num(activeRect.value)} · {ofTotal(activeRect)}</div>
 					{#if activeRect.parentName && activeRect.parentValue}
-						<div class="tm-readout-row">
-							<span>{share(activeRect.value, activeRect.parentValue)} of {activeRect.parentName}</span>
-						</div>
+						<div class="tm-readout-row">{share(activeRect.value, activeRect.parentValue)} of {activeRect.parentName}</div>
 					{/if}
 				</div>
 			{/if}
 		</div>
 
-		{#if unnamed.length}
-			<p class="tm-foot text-callout">
-				{#each unnamed as r (r.id)}
-					<span>{r.name} <span class="tm-foot-share">{share(r.value, total)}</span></span>
-				{/each}
-			</p>
-		{/if}
 	{/if}
 </div>
 
@@ -474,8 +459,8 @@
 		font-size: 12px;
 		line-height: 15px;
 		font-weight: var(--weight-medium, 500);
-		/* Two lines; a longer name overflows and fit() hides the label. */
-		max-height: 30px;
+		/* max-height is set per tile (nameLines); a longer name overflows and fit() hides the label. */
+		flex: none;
 		overflow: hidden;
 		overflow-wrap: normal;
 	}
@@ -487,7 +472,12 @@
 		overflow: hidden;
 		color: color-mix(in oklab, var(--ripple-surface-foreground) var(--tm-meta), transparent);
 	}
-	[data-tm-label]:global([data-fit='share']) [data-tm-val],
+	[data-tm-label]:global([data-fit='wrap']) .tm-meta {
+		white-space: normal;
+	}
+	.tm-meta > span {
+		white-space: nowrap;
+	}
 	[data-tm-label]:global([data-fit='name']) [data-tm-meta] {
 		display: none;
 	}
@@ -514,17 +504,6 @@
 		font-variant-numeric: tabular-nums;
 	}
 
-	.tm-foot {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 2px 14px;
-		margin: 6px 0 0;
-		color: var(--ripple-muted-foreground);
-	}
-	.tm-foot-share {
-		font-variant-numeric: tabular-nums;
-	}
-
 	.tm-readout {
 		position: absolute;
 		z-index: 2;
@@ -542,9 +521,6 @@
 		overflow-wrap: anywhere;
 	}
 	.tm-readout-row {
-		display: flex;
-		gap: 10px;
-		justify-content: space-between;
 		opacity: 0.85;
 	}
 
