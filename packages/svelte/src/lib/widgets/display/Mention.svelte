@@ -1,4 +1,10 @@
-<!-- src/lib/widgets/display/Mention.svelte -->
+<!-- src/lib/widgets/display/Mention.svelte
+     An @handle pill: the accent at 10% behind --ripple-accent-text (never the
+     fill token as text), so it reads as a faint wash in both themes. A linked
+     mention deepens to 15% and underlines on hover; the hover card is optional.
+     `name` is coerced and stripped of leading @, so "@dana" never shows "@@";
+     an empty name renders nothing. Only a safeUrl-approved href becomes a
+     link; anything else (javascript:, junk) renders the plain pill. -->
 <script lang="ts">
   import { safeUrl } from '@ripple-ui/core';
   import * as HC from '$lib/components/ui/hover-card/index.js';
@@ -53,18 +59,23 @@
       .toUpperCase();
   }
 
-  const handle = $derived(`@${name}`);
+  const bare = $derived(asText(name).trim().replace(/^@+/, ''));
+  const handle = $derived(`@${bare}`);
+  const link = $derived(safeUrl(href));
+  // [overflow-wrap:anywhere] lets a very long handle break inside the card.
+  const pill =
+    'inline-flex max-w-full items-center gap-0.5 rounded-md bg-primary/10 text-ripple-accent-text font-medium px-1.5 py-0 text-[0.95em] [overflow-wrap:anywhere]';
+  const linked = 'hover:bg-primary/15 hover:underline underline-offset-2 transition-colors';
 </script>
 
-{#if plain || (!displayName && !bio && !role && !avatar)}
-  {#if href}
+{#if !bare}
+  <!-- No name: nothing to mention. -->
+{:else if plain || (!displayName && !bio && !role && !avatar)}
+  {#if link}
     <a
       {id}
       href={safeUrl(href)}
-      class={cn(
-        'inline-flex items-center gap-0.5 rounded-md bg-primary/10 text-primary font-medium px-1.5 py-0 text-[0.95em] hover:bg-primary/15 transition-colors',
-        className
-      )}
+      class={cn(pill, linked, className)}
       style={styleString}
     >
       {handle}
@@ -72,10 +83,7 @@
   {:else}
     <span
       {id}
-      class={cn(
-        'inline-flex items-center gap-0.5 rounded-md bg-primary/10 text-primary font-medium px-1.5 py-0 text-[0.95em]',
-        className
-      )}
+      class={cn(pill, className)}
       style={styleString}
     >
       {handle}
@@ -85,15 +93,12 @@
   <HC.Root>
     <HC.Trigger>
       {#snippet child({ props: triggerProps })}
-        {#if href}
+        {#if link}
           <a
             {...triggerProps}
             {id}
             href={safeUrl(href)}
-            class={cn(
-              'inline-flex items-center gap-0.5 rounded-md bg-primary/10 text-primary font-medium px-1.5 py-0 text-[0.95em] hover:bg-primary/15 transition-colors',
-              className
-            )}
+            class={cn(pill, linked, className)}
             style={styleString}
           >
             {handle}
@@ -102,10 +107,7 @@
           <span
             {...triggerProps}
             {id}
-            class={cn(
-              'inline-flex items-center gap-0.5 rounded-md bg-primary/10 text-primary font-medium px-1.5 py-0 text-[0.95em] hover:bg-primary/15 transition-colors cursor-default',
-              className
-            )}
+            class={cn(pill, 'hover:bg-primary/15 transition-colors cursor-default', className)}
             style={styleString}
           >
             {handle}
@@ -116,14 +118,14 @@
     <HC.Content class="w-64 p-3">
       <div class="flex items-start gap-3">
         {#if avatar}
-          <img src={safeUrl(avatar, { kind: 'resource' })} alt={displayName ?? name} class="h-10 w-10 rounded-full object-cover shrink-0" />
+          <img src={safeUrl(avatar, { kind: 'resource' })} alt={displayName ?? bare} class="h-10 w-10 rounded-full object-cover shrink-0" />
         {:else}
-          <span class="grid place-items-center h-10 w-10 rounded-full bg-primary/15 text-primary text-xs font-bold shrink-0">
-            {initials(displayName ?? name)}
+          <span class="grid place-items-center h-10 w-10 rounded-full bg-primary/15 text-ripple-accent-text text-xs font-bold shrink-0">
+            {initials(displayName ?? bare)}
           </span>
         {/if}
         <div class="min-w-0 flex-1">
-          <div class="text-sm font-semibold truncate">{displayName ?? name}</div>
+          <div class="text-sm font-semibold truncate">{displayName ?? bare}</div>
           <div class="text-xs text-muted-foreground truncate">{handle}{role ? ` · ${role}` : ''}</div>
           {#if bio}
             <p class="mt-1.5 text-xs">{bio}</p>

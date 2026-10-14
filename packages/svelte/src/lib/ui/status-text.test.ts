@@ -20,6 +20,9 @@
 //      Each darkens its fill toward black in its own scoped CSS (the host's
 //      --destructive is left alone), at rest and on hover, and the label must
 //      reach 4.5:1 in every state while hover stays distinct from rest.
+//   5. --ripple-accent-text reaches 4.5:1 on every ground the accent atoms
+//      (badge, chip, link button, mention) sit on, at rest and on hover, and
+//      those atoms never paint the accent fill token as text.
 import { test, expect } from 'vitest';
 import { oklch, toRgb, mix, over, contrast, fromHex, type Lab } from './__fixtures__/contrast.js';
 
@@ -263,4 +266,94 @@ test('invoice-layout status chips reach 4.5:1 on their tints on the Blueprint si
     if (neutral < 4.5) failures.push(`neutral ${name}: ${neutral.toFixed(2)}`);
   }
   expect(failures).toEqual([]);
+});
+
+// Accent as text: badges, primary chips, link buttons, mentions and the lit
+// ghost label paint --ripple-accent-text on every ground a chat card offers:
+// the card, the muted panel, the callout's own tint (accent 7% over the card),
+// and the callout tint inside a muted card, each plain and under the atoms'
+// /10 rest and /15 hover washes. The mention hover card's initials sit on the
+// popover. Measured on the Blueprint site (its #1d1d1a card and its #262621
+// dark ground) and on paw-enterprise, both themes.
+test('accent text reaches 4.5:1 on every ground the accent atoms sit on, at rest and on hover', async () => {
+  const css = await read('src/lib/theme.css');
+  const decl = css.match(
+    /--ripple-accent-text:\s*color-mix\(in oklab,\s*var\(--ripple-accent\)\s+([\d.]+)%,\s*var\(--ripple-surface-foreground\)\)/
+  );
+  expect(decl, '--ripple-accent-text is not a blend toward the surface ink').not.toBeNull();
+  expect(css).toContain('--color-ripple-accent-text: var(--ripple-accent-text);');
+  const p = Number(decl![1]) / 100;
+  // `white`/`black` stand in for hosts whose popover or muted is translucent.
+  const white = toRgb(oklch(1, 0, 0));
+  const black = toRgb(oklch(0, 0, 0));
+  const site = { light: fromHex('#efeee8'), dark: fromHex('#1d1d1a') };
+  type Theme = { accent: Lab; fg: Lab; card: ReturnType<typeof toRgb>; muted: ReturnType<typeof toRgb>; popover: ReturnType<typeof toRgb> };
+  const themes: Record<string, Theme> = {
+    'site light': { accent: fromHex('#1877f2'), fg: oklch(0.2, 0.01, 95), card: toRgb(site.light), muted: toRgb(fromHex('#e5e4dd')), popover: white },
+    'site dark': {
+      accent: fromHex('#1877f2'), fg: oklch(0.95, 0.005, 260), card: toRgb(site.dark),
+      muted: over(white, 0.05, toRgb(site.dark)), popover: over(toRgb(fromHex('#262621')), 0.95, toRgb(site.dark)),
+    },
+    // The site's dark ground (--background #262621): a plain card paints nothing
+    // there in dark, so the atoms land on the ground itself.
+    'site dark ground': {
+      accent: fromHex('#1877f2'), fg: oklch(0.95, 0.005, 260), card: toRgb(fromHex('#262621')),
+      muted: over(white, 0.05, toRgb(fromHex('#262621'))), popover: over(toRgb(fromHex('#262621')), 0.95, toRgb(fromHex('#262621'))),
+    },
+    // paw-enterprise src/styles/global.css: --card is translucent white over --background.
+    'pe light': {
+      accent: oklch(0.62, 0.21, 256), fg: oklch(0.15, 0.015, 260), card: over(white, 0.5, toRgb(HOSTS.light.ground)),
+      muted: over(black, 0.04, over(white, 0.5, toRgb(HOSTS.light.ground))), popover: over(white, 0.97, toRgb(HOSTS.light.ground)),
+    },
+    'pe dark': {
+      accent: oklch(0.66, 0.2, 256), fg: oklch(0.95, 0.005, 260), card: over(white, 0.06, toRgb(HOSTS['dark, --destructive'].ground)),
+      muted: over(white, 0.05, over(white, 0.06, toRgb(HOSTS['dark, --destructive'].ground))),
+      popover: over(black, 0.55, toRgb(HOSTS['dark, --destructive'].ground)),
+    },
+  };
+  const failures: string[] = [];
+  for (const [name, t] of Object.entries(themes)) {
+    const text = toRgb(mix(t.accent, t.fg, p));
+    const a = toRgb(t.accent);
+    // The callout tint is `color-mix(in oklab, accent 7%, transparent)` over the
+    // ground: an sRGB composite of the accent at 7%.
+    const grounds: Record<string, ReturnType<typeof toRgb>> = {
+      card: t.card,
+      muted: t.muted,
+      callout: over(a, 0.07, t.card),
+      'callout over muted': over(a, 0.07, t.muted),
+    };
+    for (const [g, bg] of Object.entries(grounds)) {
+      for (const [state, alpha] of [['plain', 0], ['/10', 0.1], ['/15', 0.15]] as const) {
+        const ratio = contrast(text, over(a, alpha, bg));
+        if (ratio < 4.5) failures.push(`${name} ${g} ${state}: ${ratio.toFixed(2)}`);
+      }
+    }
+    // Mention hover-card initials: /15 tint on the popover.
+    const initials = contrast(text, over(a, 0.15, t.popover));
+    if (initials < 4.5) failures.push(`${name} initials on popover: ${initials.toFixed(2)}`);
+  }
+  expect(failures).toEqual([]);
+});
+
+test('the accent atoms paint text with --ripple-accent-text, never the fill token', async () => {
+  const files = [
+    'src/lib/widgets/display/Badge.svelte',
+    'src/lib/widgets/display/Chip.svelte',
+    'src/lib/widgets/input/Button.svelte',
+    'src/lib/widgets/display/Mention.svelte',
+    'src/lib/components/ui/badge/badge.svelte',
+    'src/lib/components/ui/button/button.svelte',
+  ];
+  const raw = /\btext-(?:ripple-accent|primary)(?![\w-])|color:\s*var\(--(?:primary|ripple-accent)\)/g;
+  const offenders: string[] = [];
+  for (const f of files) {
+    const code = (await read(f))
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '');
+    for (const m of code.matchAll(raw)) offenders.push(`${f} ${m[0]}`);
+  }
+  expect(offenders).toEqual([]);
+  expect(await read('src/lib/theme.css')).not.toContain('--primary-ink');
 });

@@ -67,8 +67,10 @@
   --ripple-success-text: color-mix(in oklab, var(--ripple-success) 55%, var(--ripple-surface-foreground));
   --ripple-warning-text: color-mix(in oklab, var(--ripple-warning) 50%, var(--ripple-surface-foreground));
   --ripple-info-text: color-mix(in oklab, var(--ripple-info) 55%, var(--ripple-surface-foreground));
-  /* Accent as text (links, inline actions): --ripple-accent stays the fill. */
-  --ripple-accent-text: color-mix(in oklab, var(--ripple-accent) 75%, var(--ripple-surface-foreground));
+  /* Accent as text (badges, chips, links, mentions): --ripple-accent stays the
+     fill. 58% clears a /15 tint on the callout tint over the muted panel on the
+     darkest ground (#262621) with margin. */
+  --ripple-accent-text: color-mix(in oklab, var(--ripple-accent) 58%, var(--ripple-surface-foreground));
   /* Control tokens: ink washes over the card, so they read on any host surface. */
   --ripple-track: color-mix(in oklab, var(--ripple-surface-foreground) 18%, transparent);
   --ripple-control-border: color-mix(in oklab, var(--ripple-surface-foreground) 50%, transparent);

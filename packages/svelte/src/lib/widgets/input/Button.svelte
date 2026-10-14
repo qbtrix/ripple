@@ -33,9 +33,10 @@
 
   GHOST (special): transparent by default with a subtle hover bg so it reads as
   a control, not naked text. When pressed/selected it "lights up" — label and
-  icons take the accent colour with no fill. Driven by data-active below.
+  icons take the accent text colour with no fill. Driven by data-active below.
 
-  Colors stay token-driven (bg-primary / bg-destructive / --primary etc.).
+  Colors stay token-driven: fills are bg-primary / bg-destructive, accent TEXT
+  (link, lit ghost) is --ripple-accent-text, never the fill token.
 
   Updated 2026-09-17 (fix/port-gaps, destructive label): the destructive
   variant darkens its fill toward black in the scoped CSS below (78% rest, 70%
@@ -170,7 +171,7 @@
         // accent when active (.ripple-ghost + data-active handle the accent text).
         ghost:
           'ripple-ghost bg-transparent text-foreground hover:bg-muted',
-        link: 'bg-transparent text-primary underline-offset-4 hover:underline px-0 h-auto',
+        link: 'bg-transparent text-ripple-accent-text underline-offset-4 hover:underline px-0 h-auto',
       },
       // The source's pill rhythm: roomier sides than a rounded rectangle needs
       // (round caps eat visual space), and a gap that steps with the size.
@@ -182,8 +183,9 @@
       },
     },
     // link reads as text: no inline padding (size's px would otherwise win), so
-    // it keeps the left edge the atoms around it hold.
-    compoundVariants: [{ variant: 'link', class: 'h-auto px-0' }],
+    // it keeps the left edge the atoms around it hold, and a long label wraps
+    // inside the card instead of overflowing it.
+    compoundVariants: [{ variant: 'link', class: 'h-auto px-0 whitespace-normal text-left leading-snug' }],
     defaultVariants: { variant: 'default', size: 'md' },
   });
 
@@ -324,7 +326,7 @@
      (:active), the label + icons take the primary accent color. */
   .ripple-ghost[data-active='true'],
   .ripple-ghost:active:not(:disabled) {
-    color: var(--primary);
+    color: var(--ripple-accent-text);
     background-color: transparent;
   }
   /* Icons inherit currentColor, so the leading/trailing slots light up too. */
