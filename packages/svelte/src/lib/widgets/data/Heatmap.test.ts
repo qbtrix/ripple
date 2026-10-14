@@ -1,6 +1,7 @@
 // Heatmap.test.ts: the rendered heatmap in jsdom. Rows read top to bottom in
-// the order given, arrow keys rove one tab stop and drive the readout, the
-// hidden table carries every value, and a grid with no values is an empty state.
+// the order given, y labels share their row's track, arrow keys rove one tab
+// stop and drive the readout, negatives use a true minus, the hidden table
+// carries every value, and a grid with no values is an empty state.
 import { render, fireEvent } from '@testing-library/svelte';
 import { describe, expect, test } from 'vitest';
 import Heatmap from './Heatmap.svelte';
@@ -29,6 +30,9 @@ describe('heatmap', () => {
 		expect(readout()).toBe('Week 1 · Mon: 12');
 		await fireEvent.keyDown(grid, { key: 'ArrowRight' });
 		expect(readout()).toBe('Week 1 · Tue: 18');
+		// The visible line is aria-hidden (it may ellipsize); a hidden live line speaks it whole.
+		expect(container.querySelector('.hm-readout')!.getAttribute('aria-hidden')).toBe('true');
+		expect(container.querySelector('[aria-live="polite"]')!.textContent).toBe('Week 1 · Tue: 18');
 		await fireEvent.keyDown(grid, { key: 'ArrowDown' });
 		expect(readout()).toBe('Week 2 · Tue: 25');
 		await fireEvent.keyDown(grid, { key: 'Home' });
@@ -63,6 +67,23 @@ describe('heatmap', () => {
 		expect(container.textContent).toContain('No data to show');
 		expect(container.textContent).toContain('1 cell skipped (no row or column)');
 		expect(container.querySelector('.hm-legend')).toBeNull();
+	});
+
+	test('each y label sits in its own row track, cells in their own column', () => {
+		const { container } = render(Heatmap, { props: { cells } });
+		const rows = [...container.querySelectorAll<HTMLElement>('.hm-y')].map((e) => e.style.gridRow);
+		expect(rows).toEqual(['2', '3']);
+		const cellRows = [...container.querySelectorAll<HTMLElement>('.hm-cell')].map((e) => e.style.gridRow);
+		expect(cellRows).toEqual(['2', '2', '3', '3']);
+		// Pinned columns: a row without a shown label must not auto-place a cell into the label column.
+		expect([...container.querySelectorAll<HTMLElement>('.hm-cell')].map((e) => e.style.gridColumn)).toEqual(['2', '3', '2', '3']);
+	});
+
+	test('negatives read with a true minus on the card; the hidden table keeps the plain figure', () => {
+		const { container } = render(Heatmap, { props: { cells: [{ x: 'a', y: 'r', value: -0.94 }, { x: 'b', y: 'r', value: 1 }] } });
+		expect(container.querySelector('.hm-readout')!.textContent).toContain('\u22120.94');
+		expect(container.querySelector('.hm-legend')!.textContent).toContain('\u22121');
+		expect(container.querySelector('tbody td')!.textContent).toBe('-0.94');
 	});
 
 	test('forwards id and data-ripple-node on the root', () => {

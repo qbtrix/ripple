@@ -1,9 +1,9 @@
 // heatmap-scale.test.ts: the heatmap's pure rules against messy model data:
 // axis order and appends, last-wins duplicates, no-data values, the skipped
-// count, colour classes (sequential, zero swatch, diverging), label thinning,
-// in-cell value fitting, number formats and height parsing.
+// count, colour classes (sequential, zero swatch, diverging), label thinning
+// and placement, row fitting, in-cell value fitting, number formats and height parsing.
 import { describe, expect, test } from 'vitest';
-import { sanitize, scale, extremes, fmt, full, maxHeight, cellHeight, thin, rowStep, valuesFit, gapFor, HEAT, DIV_STEPS } from './heatmap-scale.js';
+import { sanitize, scale, extremes, fmt, full, minus, maxHeight, cellHeight, fitHeight, thin, rowStep, valuesFit, gapFor, HEAT, DIV_STEPS, LINE } from './heatmap-scale.js';
 
 // Spec 05 of the polish brief.
 const HOSTILE = [
@@ -101,14 +101,14 @@ describe('scale', () => {
 		expect(s.tone(-0.94)).toEqual({ arm: 'warm', step: DIV_STEPS[2] });
 		expect(s.swatches.map((w) => w.arm)).toEqual(['warm', 'warm', 'warm', 'zero', 'accent', 'accent', 'accent']);
 		expect(s.swatches[3].mark).toBe('0');
-		expect([s.low, s.high]).toEqual(['-1', '1']);
+		expect([s.low, s.high]).toEqual(['\u22121', '1']);
 	});
 	test('all-negative data darkens away from zero', () => {
 		const s = seq([-50, -10, 0]);
 		expect(s.mode).toBe('seq');
 		expect(s.tone(0).arm).toBe('zero');
 		expect(s.tone(-50).step).toBe(4);
-		expect([s.low, s.high]).toEqual(['0', '-50']);
+		expect([s.low, s.high]).toEqual(['0', '\u221250']);
 	});
 	test('no finite value is no scale', () => {
 		expect(scale(sanitize([{ x: 'a', y: 'b', value: null }]))).toBeUndefined();
@@ -116,11 +116,13 @@ describe('scale', () => {
 });
 
 describe('format', () => {
-	test('cells: 2 decimals under 10, 1 above, compact past 9,999', () => {
-		expect([fmt(0.846647), fmt(-0.94), fmt(12.345), fmt(25), fmt(12800), fmt(4800)]).toEqual(['0.85', '-0.94', '12.3', '25', '12.8K', '4,800']);
+	test('cells: 2 decimals under 10, 1 above, compact past 9,999, true minus', () => {
+		expect([fmt(0.846647), fmt(-0.94), fmt(12.345), fmt(25), fmt(12800), fmt(4800)]).toEqual(['0.85', '\u22120.94', '12.3', '25', '12.8K', '4,800']);
 	});
-	test('readout keeps full precision', () => {
+	test('full precision keeps a hyphen for the hidden table; the readout swaps in the minus', () => {
 		expect(full(0.846647)).toBe('0.846647');
+		expect(full(-0.149858)).toBe('-0.149858');
+		expect(minus(full(-0.149858))).toBe('\u22120.149858');
 	});
 });
 
@@ -132,24 +134,53 @@ describe('sizing', () => {
 		expect([cellHeight(5), cellHeight(2), cellHeight(20), cellHeight(140), cellHeight(20, true)]).toEqual([5, 4, 20, 44, 28]);
 		expect([gapFor(5), gapFor(20)]).toEqual([1, 2]);
 	});
-	test('x labels thin to every Nth so the pitch reaches 28px, spans clipped at the end', () => {
-		const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
-		expect(thin(hours, 30).every((l) => l.span === 1)).toBe(true);
-		const t = thin(hours, 11);
-		expect(t.map((l) => l.i)).toEqual([0, 3, 6, 9, 12, 15, 18, 21]);
-		expect(thin(['a', 'b', 'c', 'd', 'e'], 11).at(-1)).toEqual({ i: 3, span: 2 });
-		// A wide measured label asks for more room, up to 64px.
-		expect(thin(['September 2026', 'October 2026'], 40, (s) => s.length * 6)[0].span).toBe(2);
+	const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+	test('x labels thin to every Nth so the pitch reaches 28px', () => {
+		expect(thin(hours, 30).map((l) => l.i)).toEqual(hours.map((_, i) => i));
+		expect(thin(hours, 11).map((l) => l.i)).toEqual([0, 3, 6, 9, 12, 15, 18, 21]);
 		expect(thin(hours, 0)).toHaveLength(24);
 	});
-	test('a clipped last x label that cannot fit is dropped', () => {
-		const weeks = Array.from({ length: 53 }, (_, i) => `W${i + 1}`);
-		const t = thin(weeks, 5, (s) => s.length * 6);
-		expect(t.at(-1)).toEqual({ i: 45, span: 5 });
-		expect(thin(weeks, 12, (s) => s.length * 6).at(-1)).toEqual({ i: 51, span: 2 });
+	// Spec 02 (6 months) and spec 06 (10 metrics) in a 360px card: about 30 and 17px columns.
+	const months = ['September 2026', 'October 2026', 'November 2026', 'December 2026', 'January 2027', 'February 2027'];
+	const metrics = ['Price', 'Discount', 'Ad spend', 'Site visits', 'Cart adds', 'Orders', 'Returns', 'Rating', 'Delivery days', 'Repeat rate'];
+	test.each([
+		['02', months, 30],
+		['06', metrics, 17],
+		['02 wide', months, 75]
+	])('spec %s: every k*N label shows, the last group included, each whole and inside the grid', (_, labels, colW) => {
+		const t = thin(labels, colW, m, 96);
+		const n = t[1].i;
+		expect(t.map((l) => l.i)).toEqual([...labels.keys()].filter((i) => i % n === 0));
+		const pitch = colW + gapFor(colW);
+		const end = labels.length * pitch - gapFor(colW);
+		for (const l of t) {
+			expect(l.w).toBeGreaterThanOrEqual(m(labels[l.i]));
+			const x = l.i * pitch + l.dx;
+			expect(x).toBeGreaterThanOrEqual(-96);
+			expect(x + l.w).toBeLessThanOrEqual(end + 0.01);
+		}
+		// Neighbours never overlap.
+		t.slice(1).forEach((l, k) => expect(l.i * pitch + l.dx).toBeGreaterThan(t[k].i * pitch + t[k].dx + t[k].w));
 	});
-	test('y labels thin once rows are shorter than a label line', () => {
-		expect([rowStep(20, 2), rowStep(12, 2), rowStep(5, 1)]).toEqual([1, 1, 3]);
+	const mid = (l: { i: number; w: number; dx: number }) => l.i * 32 + l.dx + l.w / 2;
+	test('a label is centred on its own column unless the grid edge holds it in', () => {
+		const t = thin(months, 30, m, 96);
+		expect(mid(t[0])).toBeCloseTo(15);
+		expect(mid(t[1])).toBeCloseTo(t[1].i * 32 + 15);
+	});
+	test('a label wider than WIDE ellipsizes instead of thinning to one label', () => {
+		const t = thin(['A very long column label that goes on', 'Another very long column label here'], 40, m);
+		expect(t.map((l) => l.i)).toEqual([0, 1]);
+	});
+	test('rows shrink toward a floor before the body scrolls', () => {
+		expect(fitHeight(44, false, 7, 2, 263)).toBe(35);
+		expect(fitHeight(44, true, 10, 2, 263)).toBe(28);
+		expect(fitHeight(44, false, 2, 2, 263)).toBe(44);
+		expect(fitHeight(5, false, 7, 1, 263)).toBe(5);
+	});
+	test('y labels thin once rows are shorter than a label line, N rows holding one line', () => {
+		expect([rowStep(20, 2), rowStep(12, 2), rowStep(5, 1), rowStep(4.5, 1)]).toEqual([1, 1, 3, 3]);
+		for (const h of [3, 4.5, 6, 8, 10]) expect(rowStep(h, 1) * (h + 1)).toBeGreaterThanOrEqual(LINE);
 	});
 	test('in-cell values are all or nothing', () => {
 		const g = sanitize([{ x: 'a', y: 'r', value: 5 }, { x: 'b', y: 'r', value: 120 }]);

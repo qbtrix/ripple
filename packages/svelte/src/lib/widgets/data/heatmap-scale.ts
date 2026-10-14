@@ -17,17 +17,27 @@
 // and the five cover (0, max]. Data crossing zero gets seven classes symmetric
 // around 0 (edges at E/7, 3E/7, 5E/7 of E = max |v|), the negative arm warm.
 // HEAT/HEAT_DARK are the percent of the hue mixed into --ripple-surface;
-// status-text.test.ts measures them against both inks and the card, so change
-// them only with that test.
+// status-text.test.ts measures them against both inks, the card and the page
+// ground, and step 1 against the zero swatch, so change them only with that test.
+//
+// Labels: x labels thin to every Nth column, N grown until the shown labels fit
+// whole (or a 120px box), and each sits centred on its own column, clamped to
+// the grid and to its left neighbour. Display figures use a true minus sign.
 import { finite, num, plain } from '../data-kit/format.js';
 import { safeArray } from '../../utils/safe-props.js';
 
-export const HEAT = [26, 42, 60, 78, 94] as const;
-export const HEAT_DARK = [28, 42, 56, 70, 82] as const;
+export const HEAT = [32, 48, 64, 79, 94] as const;
+export const HEAT_DARK = [32, 47, 62, 76, 90] as const;
 /** HEAT indexes used by the three diverging classes on each arm. */
 export const DIV_STEPS = [1, 2, 4] as const;
 /** Minimum x label pitch in px. */
 export const PITCH = 28;
+/** Widest x label box before a label ellipsizes instead of thinning further. */
+export const WIDE = 120;
+/** Least space between two x labels in px. */
+const LABEL_GAP = 6;
+/** Footnote line height in px (theme.css --lh-footnote). */
+export const LINE = 13;
 export const DEFAULT_HEIGHT = 280;
 
 export type Measure = (text: string) => number;
@@ -101,13 +111,16 @@ export function extremes(g: Grid): { lo: Spot; hi: Spot } | undefined {
 	return { lo, hi };
 }
 
-/** In-cell and legend figures: 2 decimals under 10, 1 above, compact past 9,999. */
+/** A display figure with a true minus sign (U+2212) in place of the hyphen. */
+export const minus = (s: string) => s.replace('-', '\u2212');
+
+/** In-cell and legend figures: 2 decimals under 10, 1 above, compact past 9,999, true minus. */
 export function fmt(v: number): string {
-	if (Number.isInteger(v)) return Math.abs(v) > 9999 ? num(v, { compact: true }) : num(v, { digits: 0 });
-	return num(v, { digits: Math.abs(v) < 10 ? 2 : 1 });
+	if (Number.isInteger(v)) return minus(Math.abs(v) > 9999 ? num(v, { compact: true }) : num(v, { digits: 0 }));
+	return minus(num(v, { digits: Math.abs(v) < 10 ? 2 : 1 }));
 }
 
-/** Readout figure: full precision. */
+/** Full precision with a hyphen, for the hidden table; the readout wraps it in `minus`. */
 export function full(v: number): string {
 	return num(v, { digits: 6 });
 }
@@ -167,27 +180,61 @@ export function cellHeight(colW: number, withValues = false): number {
 /** 2px gaps, 1px once columns are under 10px wide. */
 export const gapFor = (colW: number) => (colW > 0 && colW < 10 ? 1 : 2);
 
+export type XLabel = { i: number; w: number; dx: number };
+
 /**
- * Which x labels show: every Nth, N the smallest that gives a pitch of at least
- * PITCH px (and room for the widest label, up to 64px). Each shown label spans
- * its N columns, clipped at the last one.
+ * Which x labels show and where. Every Nth from the first, N the smallest that
+ * gives a PITCH px pitch, then grown (while two labels remain) until every shown
+ * label fits its N columns whole or the box reaches WIDE px. Each label box is
+ * `w` px wide, centred on its column (`dx` from that column's left edge), held
+ * inside the grid (`lead` px of y label column to the left) and 6px clear of
+ * the label before it. N also grows while that squeezes a label; past the
+ * limits a squeezed box ellipsizes. Unmeasured (colW 0): every label, laid out
+ * by CSS.
  */
-export function thin(labels: string[], colW: number, measure?: Measure): { i: number; span: number }[] {
+export function thin(labels: string[], colW: number, measure?: Measure, lead = 0): XLabel[] {
+	const nc = labels.length;
+	if (colW <= 0) return labels.map((_, i) => ({ i, w: 0, dx: 0 }));
 	const gap = gapFor(colW);
-	const widest = measure ? Math.max(0, ...labels.map((l) => measure(l))) + 6 : 0;
-	const want = Math.min(64, Math.max(PITCH, widest));
-	const n = colW > 0 ? Math.max(1, Math.ceil((want + gap) / (colW + gap))) : 1;
-	const out: { i: number; span: number }[] = [];
-	for (let i = 0; i < labels.length; i += n) out.push({ i, span: Math.min(n, labels.length - i) });
-	// A clipped last span that cannot hold its label is dropped, not ellipsized.
-	const last = out.at(-1);
-	if (measure && last && out.length > 1 && measure(labels[last.i]) > last.span * (colW + gap) - gap) out.pop();
-	return out;
+	const pitch = colW + gap;
+	const room = (n: number) => n * pitch - gap;
+	const end = nc * pitch - gap;
+	// Lays out every Nth label; `squeezed` when one lost width to the grid edge or a neighbour.
+	const layout = (n: number) => {
+		const out: XLabel[] = [];
+		let floor = -lead;
+		let squeezed = false;
+		for (let i = 0; i < nc; i += n) {
+			const want = Math.min(room(n), measure ? measure(labels[i]) + 4 : room(n));
+			const x = Math.max(floor, Math.min(i * pitch + colW / 2 - want / 2, end - want));
+			const w = Math.min(want, end - x);
+			if (w < want) squeezed = true;
+			out.push({ i, w, dx: x - i * pitch });
+			floor = x + w + LABEL_GAP;
+		}
+		return { out, squeezed };
+	};
+	let n = Math.max(1, Math.ceil((PITCH + gap) / pitch));
+	if (measure) {
+		const need = (m: number) => Math.max(0, ...labels.filter((_, i) => i % m === 0).map(measure)) + 6;
+		while (n < Math.ceil(nc / 2) && (room(n) < Math.min(WIDE, need(n)) || layout(n).squeezed)) n++;
+	}
+	return layout(n).out;
 }
 
-/** Y labels show every Nth row once the row pitch is under a 13px label line; each spans its N rows. */
+/**
+ * Rows shrink toward a floor (28px with values, else 12px or the cell width)
+ * so the grid fits `room` px under the label row before the body scrolls.
+ */
+export function fitHeight(h: number, withValues: boolean, rows: number, gap: number, room: number): number {
+	if (rows <= 0 || room <= 0) return h;
+	const floor = withValues ? 28 : Math.min(h, 12);
+	return Math.max(floor, Math.min(h, Math.floor((room + gap) / rows - gap)));
+}
+
+/** Y labels show every Nth row once the row pitch is under a label line, so N rows hold one line. */
 export function rowStep(cellH: number, gap: number): number {
-	return cellH + gap >= 13 ? 1 : Math.ceil((13 + gap) / (cellH + gap));
+	return cellH + gap >= LINE ? 1 : Math.ceil(LINE / (cellH + gap));
 }
 
 /**
