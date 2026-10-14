@@ -3,7 +3,7 @@
 // count, colour classes (sequential, zero swatch, diverging), label thinning
 // and placement, row fitting, in-cell value fitting, number formats and height parsing.
 import { describe, expect, test } from 'vitest';
-import { sanitize, scale, extremes, fmt, full, minus, maxHeight, cellHeight, fitHeight, thin, rowStep, valuesFit, valueRowsFit, fixed2, gapFor, HEAT, DIV_STEPS, LINE } from './heatmap-scale.js';
+import { sanitize, scale, extremes, fmt, full, minus, maxHeight, cellHeight, fitHeight, thin, rowStep, valuesFit, valueRowsFit, fixed2, gapFor, HEAT, DIV_STEPS, LINE, VALUE_H } from './heatmap-scale.js';
 
 // Spec 05 of the polish brief.
 const HOSTILE = [
@@ -101,7 +101,8 @@ describe('scale', () => {
 		expect(s.tone(-0.94)).toEqual({ arm: 'warm', step: DIV_STEPS[2] });
 		expect(s.swatches.map((w) => w.arm)).toEqual(['warm', 'warm', 'warm', 'zero', 'accent', 'accent', 'accent']);
 		expect(s.swatches[3].mark).toBe('0');
-		expect([s.low, s.high]).toEqual(['\u22121.00', '1.00']);
+		// Legend ends never pad an integer, even when cells print 1.00.
+		expect([s.low, s.high]).toEqual(['\u22121', '1']);
 	});
 	test('all-negative data darkens away from zero', () => {
 		const s = seq([-50, -10, 0]);
@@ -181,15 +182,17 @@ describe('sizing', () => {
 	});
 	test('rows shrink toward a floor before the body scrolls', () => {
 		expect(fitHeight(44, false, 7, 2, 263)).toBe(35);
-		expect(fitHeight(44, true, 10, 2, 263)).toBe(28);
+		expect(fitHeight(44, true, 10, 2, 263)).toBe(24);
+		expect(fitHeight(44, true, 20, 2, 263)).toBe(VALUE_H);
 		expect(fitHeight(44, false, 2, 2, 263)).toBe(44);
 		expect(fitHeight(5, false, 7, 1, 263)).toBe(5);
 	});
-	test('in-cell values drop when their 28px rows would overflow, so rows shrink instead of scrolling', () => {
-		// R06: 10 rows, 2px gap, about 254px under the label row.
-		expect(valueRowsFit(10, 2, 254)).toBe(false);
-		expect(fitHeight(44, false, 10, 2, 254)).toBeGreaterThanOrEqual(12);
-		expect(valueRowsFit(7, 2, 254)).toBe(true);
+	test('in-cell values hold rows at VALUE_H and drop only past it, so rows shrink instead of scrolling', () => {
+		// Spec 06: 10 rows, 2px gap, about 254px under the label row: values stay, rows about 23px.
+		expect(valueRowsFit(10, 2, 254)).toBe(true);
+		expect(fitHeight(44, true, 10, 2, 254)).toBeGreaterThanOrEqual(VALUE_H);
+		expect(valueRowsFit(13, 2, 254)).toBe(false);
+		expect(fitHeight(44, false, 13, 2, 254)).toBeGreaterThanOrEqual(12);
 		expect(valueRowsFit(10, 2, 0)).toBe(true);
 	});
 	test('y labels thin once rows are shorter than a label line, N rows holding one line', () => {

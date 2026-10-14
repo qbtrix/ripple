@@ -24,15 +24,16 @@
 //
 // Labels: x labels thin to every Nth column, N grown until the shown labels fit
 // whole (or a 120px box), and each sits centred on its own column, clamped to
-// the grid and to its left neighbour. Display figures use a true minus sign
-// and, when any value is a fraction under 10, a fixed 2 decimals (`fixed2`).
+// the grid and to its left neighbour. Display figures use a true minus sign;
+// in cells, when any value is a fraction under 10, figures under 10 get a fixed
+// 2 decimals (`fixed2`). Legend ends and the readout never pad: 1, not 1.00.
 import { finite, num, plain } from '../data-kit/format.js';
 import { safeArray } from '../../utils/safe-props.js';
 
 export const HEAT = [32, 48, 64, 79, 94] as const;
 export const HEAT_DARK = [28, 46, 62, 78, 94] as const;
 /** HEAT indexes used by the three diverging classes on each arm. */
-export const DIV_STEPS = [1, 2, 4] as const;
+export const DIV_STEPS = [0, 2, 4] as const;
 /** Minimum x label pitch in px. */
 export const PITCH = 28;
 /** Widest x label box before a label ellipsizes instead of thinning further. */
@@ -41,6 +42,8 @@ export const WIDE = 120;
 const LABEL_GAP = 6;
 /** Footnote line height in px (theme.css --lh-footnote). */
 export const LINE = 13;
+/** Least row height that holds an in-cell value: one footnote line, 4px above and below. */
+export const VALUE_H = LINE + 8;
 export const DEFAULT_HEIGHT = 280;
 
 export type Measure = (text: string) => number;
@@ -123,8 +126,9 @@ export function fixed2(g: Grid): boolean {
 }
 
 /**
- * In-cell and legend figures: 2 decimals under 10 (fixed with `fixed`, so a
- * column of 0.30 and 0.38 lines up), 1 above, compact past 9,999, true minus.
+ * Display figures: 2 decimals under 10 (in cells fixed with `fixed`, so a
+ * column of 0.30 and 1.00 lines up), 1 above, compact past 9,999, true minus.
+ * Legend ends and the readout pass no `fixed`, so an integer reads 1.
  */
 export function fmt(v: number, fixed = false): string {
 	if (fixed && Math.abs(v) < 10) return minus(v.toFixed(2));
@@ -142,7 +146,7 @@ export function scale(g: Grid): Scale | undefined {
 	if (!vals.length) return undefined;
 	const min = Math.min(...vals);
 	const max = Math.max(...vals);
-	const f = (v: number) => fmt(v, fixed2(g));
+	const f = (v: number) => fmt(v);
 	if (min < 0 && max > 0) {
 		const E = Math.max(-min, max);
 		const tone = (v: number): Tone => {
@@ -184,7 +188,7 @@ export function maxHeight(v: unknown): number {
 	return n === undefined || n <= 0 ? DEFAULT_HEIGHT : Math.min(640, Math.max(120, n));
 }
 
-/** Cell height for a column width: square under 12px (4px floor), else [12, 44]; 28px floor with values. */
+/** Preferred cell height: square under 12px (4px floor), else [12, 44]; 28px with values (fitHeight may shrink it to VALUE_H). */
 export function cellHeight(colW: number, withValues = false): number {
 	const h = colW < 12 ? Math.max(4, colW) : Math.min(44, colW);
 	return withValues ? Math.max(28, h) : h;
@@ -236,18 +240,18 @@ export function thin(labels: string[], colW: number, measure?: Measure, lead = 0
 }
 
 /**
- * Rows shrink toward a floor (28px with values, else 12px or the cell width)
+ * Rows shrink toward a floor (VALUE_H with values, else 12px or the cell width)
  * so the grid fits `room` px under the label row before the body scrolls.
  */
 export function fitHeight(h: number, withValues: boolean, rows: number, gap: number, room: number): number {
 	if (rows <= 0 || room <= 0) return h;
-	const floor = withValues ? 28 : Math.min(h, 12);
+	const floor = withValues ? VALUE_H : Math.min(h, 12);
 	return Math.max(floor, Math.min(h, Math.floor((room + gap) / rows - gap)));
 }
 
-/** Whether `rows` fit `room` px at the 28px in-cell value floor; if not, values drop so rows can shrink. */
+/** Whether `rows` fit `room` px at the VALUE_H in-cell value floor; if not, values drop so rows can shrink. */
 export function valueRowsFit(rows: number, gap: number, room: number): boolean {
-	return room <= 0 || rows * (28 + gap) <= room + gap;
+	return room <= 0 || rows * (VALUE_H + gap) <= room + gap;
 }
 
 /** Y labels show every Nth row once the row pitch is under a label line, so N rows hold one line. */

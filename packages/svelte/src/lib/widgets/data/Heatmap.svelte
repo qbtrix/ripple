@@ -9,8 +9,9 @@
   under 480px, 30% up to 140px above; ellipsis, full text in `title`), the
   cells, a one-line legend (low figure, stepped swatches, high figure, "No
   data" when a position is empty), a readout (one line; diverging data under
-  480px gets two fixed lines, lowest then highest, at rest and on hover; labels
-  over 6 characters ellipsize longest first, figures never; aria-hidden, a
+  480px gets two fixed lines, lowest then highest, at rest and on hover; the
+  longer label ellipsizes down to 6ch while the shorter keeps its full width up
+  to half the line; figures never; aria-hidden, a
   visually hidden live line speaks it whole) and, when entries had no row or
   column, a footnote.
   X labels thin to every Nth column and sit centred on their own column. Y
@@ -20,9 +21,10 @@
 
   Size: the column width is measured (grid width minus the label column), cell
   height follows it (heatmap-scale `cellHeight`), then shrinks toward a floor
-  so the rows fit `height` (`fitHeight`). In-cell values hold rows at 28px, so
-  when that floor would overflow `height` the values drop and rows shrink
-  instead (`valueRowsFit`). Past the 12px floor the body scrolls under the
+  so the rows fit `height` (`fitHeight`). In-cell values prefer 28px rows and
+  hold them at VALUE_H (one footnote line, 4px above and below); when even that
+  would overflow `height` the values drop and rows shrink instead
+  (`valueRowsFit`). Past the 12px floor the body scrolls under the
   sticky label row, its height snapped to whole rows, with a "Rows a to b of n"
   line while rows are hidden. Never scrolls sideways.
 
@@ -203,17 +205,19 @@
 	});
 </script>
 
-<!-- Labels over 6 characters ellipsize, the longer one first (shrink weight grows with length). -->
-{#snippet lbl(t: string)}
-	<span class="hm-lbl hm-muted" class:hm-long={t.length > 6} style:flex-shrink={t.length > 6 ? t.length : 0}>{t}</span>
+<!-- The longer label (over 6 characters) shrinks to 6ch; the shorter keeps its full width up to half the line. -->
+{#snippet lbl(t: string, longer: boolean)}
+	<span class="hm-lbl hm-muted" class:hm-long={longer && t.length > 6} class:hm-short={!longer}>{t}</span>
 {/snippet}
 
 {#snippet where(p: Pos)}
-	{@render lbl(grid.ys[p.r])}<span class="hm-key hm-muted">{' · '}</span>{@render lbl(grid.xs[p.c])}
+	{@const y = grid.ys[p.r]}
+	{@const x = grid.xs[p.c]}
+	{@render lbl(y, y.length >= x.length)}<span class="hm-key hm-muted">{' · '}</span>{@render lbl(x, x.length > y.length)}
 {/snippet}
 
 {#snippet seg(key: string, p: Pos, v: number)}
-	<span class="hm-seg"><span class="hm-muted hm-key">{key}{' '}</span>{@render where(p)}<span class="hm-v"><span class="hm-muted">,</span> {fmt(v, fx)}</span></span>
+	<span class="hm-seg"><span class="hm-muted hm-key">{key}{' '}</span>{@render where(p)}<span class="hm-v"><span class="hm-muted">,</span> {fmt(v)}</span></span>
 {/snippet}
 
 {#snippet swatch(t: Tone)}
@@ -307,7 +311,7 @@
 				{/each}
 			</span>
 			{#if sc.high}<span class="hm-fig">{sc.high}</span>{/if}
-			{#if hasEmpty}<span class="hm-nodata"><span class="hm-sw hm-e"></span>No data</span>{/if}
+			{#if hasEmpty}<span class="hm-nodata"><span class="hm-sw hm-e hm-ekey"></span>No data</span>{/if}
 		</div>
 
 		<div class="sr-only" aria-live="polite">{spoken}</div>
@@ -489,6 +493,10 @@
 	.hm-e {
 		box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--ripple-surface-foreground) 30%, transparent);
 	}
+	/* The legend's No data key: a fainter outline, so it reads as one more swatch and not a checkbox. */
+	.hm-ekey {
+		box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--ripple-surface-foreground) 20%, transparent);
+	}
 
 	.hm-legend {
 		display: flex;
@@ -526,7 +534,6 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 4px;
-		margin-left: 6px;
 	}
 
 	/* One line at rest and on hover: labels ellipsize, keys, figures and dots never shrink. */
@@ -547,12 +554,17 @@
 		min-width: 0;
 	}
 	.hm-lbl {
+		flex-shrink: 0;
 		min-width: 0;
 		overflow: hidden;
 		text-overflow: ellipsis;
 	}
 	.hm-lbl.hm-long {
+		flex-shrink: 1;
 		min-width: 6ch;
+	}
+	.hm-lbl.hm-short {
+		max-width: 50%;
 	}
 	/* Narrow diverging readout: lowest and highest each get a line, reserved at rest and on hover. */
 	@container (max-width: 479px) {
