@@ -377,7 +377,7 @@ describe('menu-order — menu layout', () => {
 	});
 
 	it('clamps names to two lines with the full name in title, behind a bare muted kind glyph', () => {
-		const { container } = render(MenuOrder, { props: { items: [fries, { ...shake, kind: 'pizza' }] } });
+		const { container } = render(MenuOrder, { props: { items: [fries, { ...shake, kind: 'pizza' as never }] } });
 		const name = screen.getByText('Shoestring Fries');
 		expect(name.className).toContain('line-clamp-2');
 		expect(name.getAttribute('title')).toBe('Shoestring Fries');
