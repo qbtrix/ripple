@@ -8,7 +8,8 @@
   n of m"), day or week groups newest first, and rows in the model's order.
   Each row reads as a sentence (actor, action, target) with the time and type
   on a muted meta line; a severity badge sits on the rail as icon shape plus
-  status ink, never colour alone. Past 20 rows a "Show N more" button reveals
+  status ink, never colour alone, and the rail runs unbroken through each
+  group, parting only around each badge. Past 20 rows a "Show N more" button reveals
   the rest.
 
   Layout keys off the widget's own width (container query): under 480px the
@@ -190,6 +191,33 @@
 		}
 	}
 
+	// A target that wraps switches to an inline wash that follows each line
+	// (data-wrapped), so a long path never reads as a grey slab.
+	function wrapWatch(node: HTMLElement) {
+		const check = () => {
+			delete node.dataset.wrapped;
+			if (node.offsetHeight > parseFloat(getComputedStyle(node).lineHeight) * 1.5) node.dataset.wrapped = '';
+		};
+		const ro = new ResizeObserver(check);
+		ro.observe(node.parentElement ?? node);
+		return () => ro.disconnect();
+	}
+
+	// The details panel fades its bottom edge while more text sits below (data-more).
+	function moreWatch(node: HTMLElement) {
+		const check = () => {
+			if (node.scrollTop + node.clientHeight < node.scrollHeight - 1) node.dataset.more = '';
+			else delete node.dataset.more;
+		};
+		const ro = new ResizeObserver(check);
+		ro.observe(node);
+		node.addEventListener('scroll', check, { passive: true });
+		return () => {
+			ro.disconnect();
+			node.removeEventListener('scroll', check);
+		};
+	}
+
 	const anyDetails = $derived(detailsOn && rows.some((r) => r.details));
 	const reveal = () => ({ duration: prefersReducedMotion.current ? 0 : 150, easing: cubicOut });
 	const typeLabel = $derived(typeSel === ALL ? 'All types' : humanizeKey(types.find((t) => t.toLowerCase() === typeSel) ?? ''));
@@ -201,7 +229,9 @@
 	{#if rows.length === 0}
 		<p class="al-empty text-body text-ripple-muted-foreground">No events yet</p>
 	{:else}
-		<p class="al-summary text-callout text-ripple-muted-foreground">{summary}</p>
+		<p class="al-summary text-callout text-ripple-muted-foreground">
+			{#each summary.split(' · ') as part, i (i)}{#if i > 0}{' · '}{/if}<span class="al-nowrap">{part}</span>{/each}
+		</p>
 
 		{#if anyFacet}
 			<div class="al-filters" role="group" aria-label="Filter events">
@@ -298,7 +328,7 @@
 									onkeydown={onSelectId ? (e) => selectKey(row, e) : undefined}
 								>
 									<p class="al-sentence text-body">
-										{#if ActorIcon}<ActorIcon size={14} strokeWidth={2} aria-hidden="true" class="mr-1 inline align-[-2px] text-ripple-muted-foreground" />{/if}{#if row.actor}<span class="text-body-emph">{row.actor}</span>{:else}<span class="al-unknown text-ripple-muted-foreground">Unknown</span>{/if}{#if row.action}{' '}{row.action}{/if}{#if row.target}{' '}<span class="al-target">{#each breakable(row.target) as part, i}{#if i > 0}<wbr />{/if}{part}{/each}</span>{/if}{#if row.severity}<span class="sr-only">, {SEVERITY_WORD[row.severity]}</span>{/if}
+										{#if ActorIcon}<ActorIcon size={14} strokeWidth={2} aria-hidden="true" class="mr-1 inline align-[-2px] text-ripple-muted-foreground" />{/if}{#if row.actor}<span class="text-body-emph">{row.actor}</span>{:else}<span class="al-unknown text-ripple-muted-foreground">Unknown</span>{/if}{#if row.action}{' '}{row.action}{/if}{#if row.target}{' '}<span class="al-target" {@attach wrapWatch}>{#each breakable(row.target) as part, i}{#if i > 0}<wbr />{/if}{part}{/each}</span>{/if}{#if row.severity}<span class="sr-only">, {SEVERITY_WORD[row.severity]}</span>{/if}
 									</p>
 									{#if time || row.type}
 										<p class={['al-meta text-callout text-ripple-muted-foreground', !row.type && 'is-time-only']}>
@@ -326,7 +356,7 @@
 								{/if}
 								{#if isOpen && row.details}
 									{@const d = row.details}
-									<div class="al-details text-callout" id={panelId} transition:slide={reveal()}>
+									<div class="al-details text-callout" id={panelId} transition:slide={reveal()} {@attach moreWatch}>
 										{#if d.kind === 'text'}
 											<p class="al-details-text text-body">{d.text}</p>
 										{:else if d.kind === 'json'}
@@ -420,13 +450,14 @@
 	.al-link {
 		padding: 2px 4px;
 		border-radius: 4px;
-		color: var(--ripple-accent-text);
+		color: var(--ripple-surface-foreground);
 		font-weight: 500;
 		cursor: pointer;
 	}
 
 	.al-link:hover {
 		text-decoration: underline;
+		text-underline-offset: 2px;
 	}
 
 	.al-toggle:focus-visible,
@@ -477,16 +508,33 @@
 		border-radius: calc(var(--ripple-radius) - 2px);
 	}
 
-	/* The rail: a 1px line through every badge centre, from each badge to the
-	   next with a 2px gap, so it reads on any host surface without a disc. */
-	.al-row:not(:last-child)::before {
+	/* The rail: one line per group through every badge centre (--mid). Each row
+	   draws the stretch above its badge (::before) and below it (::after), edge
+	   to edge, so the line only parts for the badge's 20px box and reads as one
+	   hairline on any host surface (no disc colour to match). It starts at the
+	   first badge and stops at the last, breaking only at group headings. */
+	.al-row::before,
+	.al-row::after {
 		content: '';
 		position: absolute;
 		left: calc(var(--pad) + 11.5px);
-		top: calc(var(--mid) + 12px);
-		bottom: calc(12px - var(--mid));
 		width: 1px;
 		background: var(--ripple-border);
+	}
+
+	.al-row::before {
+		top: 0;
+		height: calc(var(--mid) - 10px);
+	}
+
+	.al-row::after {
+		top: calc(var(--mid) + 10px);
+		bottom: 0;
+	}
+
+	.al-row:first-child::before,
+	.al-row:last-child::after {
+		content: none;
 	}
 
 	.al-row.is-selected {
@@ -553,6 +601,17 @@
 		vertical-align: bottom;
 	}
 
+	.al-target[data-wrapped] {
+		display: inline;
+		padding: 1px 4px;
+		box-decoration-break: clone;
+		-webkit-box-decoration-break: clone;
+	}
+
+	.al-nowrap {
+		white-space: nowrap;
+	}
+
 	.al-sep {
 		margin-inline: 4px;
 	}
@@ -598,6 +657,10 @@
 		border-radius: 4px;
 		background: color-mix(in oklab, var(--ripple-track) 30%, transparent);
 		overflow-wrap: anywhere;
+	}
+
+	.al-details[data-more] {
+		mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent);
 	}
 
 	.al-details-text {
