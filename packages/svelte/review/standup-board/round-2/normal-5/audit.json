@@ -1,0 +1,99 @@
+{
+  "spec": "/Users/prakash-1/Documents/paw-workspace/paw-worktrees/ripple-feat-standup-board/packages/svelte/review/standup-board/specs/normal-5.json",
+  "base": "http://localhost:4820",
+  "url": "http://localhost:4820/playground?s=…(1212 chars)",
+  "specStatus": "Valid, 1 node, 1.3 KB",
+  "clean": false,
+  "counts": {
+    "notRendered": 0,
+    "themeNotApplied": 0,
+    "errorBoxes": 0,
+    "consoleErrors": 0,
+    "overflow": 0,
+    "clippedText": 12,
+    "emptyContainers": 0,
+    "badText": 0,
+    "axeViolations": null
+  },
+  "consoleErrors": [],
+  "axe": null,
+  "axeHint": "axe-core is not installed: npm i -D axe-core (or set RIPPLE_AXE=/path/to/axe.min.js)",
+  "shots": [
+    {
+      "file": "/Users/prakash-1/Documents/paw-workspace/paw-worktrees/ripple-feat-standup-board/packages/svelte/review/standup-board/round-2/normal-5/380-light.png",
+      "width": 380,
+      "theme": "light",
+      "rendered": true,
+      "themeApplied": true,
+      "surfaces": 1,
+      "surfaceWidth": 322,
+      "surfaceHeight": 706,
+      "errorBoxes": [],
+      "overflow": [],
+      "clippedText": [
+        "widget=standup-board span.col-start-3.row-start-1 \"Add pagination to the export API\" (90px cut sideways)",
+        "widget=standup-board span.col-start-3.row-start-1 \"Hook settings up to the profile API\" (100px cut sideways)"
+      ],
+      "emptyContainers": [],
+      "badText": []
+    },
+    {
+      "file": "/Users/prakash-1/Documents/paw-workspace/paw-worktrees/ripple-feat-standup-board/packages/svelte/review/standup-board/round-2/normal-5/1024-light.png",
+      "width": 1024,
+      "theme": "light",
+      "rendered": true,
+      "themeApplied": true,
+      "surfaces": 1,
+      "surfaceWidth": 623,
+      "surfaceHeight": 571,
+      "errorBoxes": [],
+      "overflow": [],
+      "clippedText": [
+        "widget=standup-board span.col-start-3.row-start-1 \"Add pagination to the export API\" (26px cut sideways)",
+        "widget=standup-board span.col-start-4.row-start-1 \"Shipped the invoice export endpoint\" (47px cut sideways)",
+        "widget=standup-board span.col-start-3.row-start-1 \"Hook settings up to the profile API\" (36px cut sideways)",
+        "widget=standup-board span.col-start-4.row-start-1 \"Built the settings page layout\" (7px cut sideways)"
+      ],
+      "emptyContainers": [],
+      "badText": []
+    },
+    {
+      "file": "/Users/prakash-1/Documents/paw-workspace/paw-worktrees/ripple-feat-standup-board/packages/svelte/review/standup-board/round-2/normal-5/380-dark.png",
+      "width": 380,
+      "theme": "dark",
+      "rendered": true,
+      "themeApplied": true,
+      "surfaces": 1,
+      "surfaceWidth": 322,
+      "surfaceHeight": 706,
+      "errorBoxes": [],
+      "overflow": [],
+      "clippedText": [
+        "widget=standup-board span.col-start-3.row-start-1 \"Add pagination to the export API\" (90px cut sideways)",
+        "widget=standup-board span.col-start-3.row-start-1 \"Hook settings up to the profile API\" (100px cut sideways)"
+      ],
+      "emptyContainers": [],
+      "badText": []
+    },
+    {
+      "file": "/Users/prakash-1/Documents/paw-workspace/paw-worktrees/ripple-feat-standup-board/packages/svelte/review/standup-board/round-2/normal-5/1024-dark.png",
+      "width": 1024,
+      "theme": "dark",
+      "rendered": true,
+      "themeApplied": true,
+      "surfaces": 1,
+      "surfaceWidth": 623,
+      "surfaceHeight": 571,
+      "errorBoxes": [],
+      "overflow": [],
+      "clippedText": [
+        "widget=standup-board span.col-start-3.row-start-1 \"Add pagination to the export API\" (26px cut sideways)",
+        "widget=standup-board span.col-start-4.row-start-1 \"Shipped the invoice export endpoint\" (47px cut sideways)",
+        "widget=standup-board span.col-start-3.row-start-1 \"Hook settings up to the profile API\" (36px cut sideways)",
+        "widget=standup-board span.col-start-4.row-start-1 \"Built the settings page layout\" (7px cut sideways)"
+      ],
+      "emptyContainers": [],
+      "badText": []
+    }
+  ]
+}

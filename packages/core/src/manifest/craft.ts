@@ -64,6 +64,11 @@ export const waivers: readonly Waiver[] = [
 		widget: 'data-grid',
 		check: 'overflow',
 		reason: 'a wide table scrolls sideways inside its own frame on a phone instead of squeezing its columns'
+	},
+	{
+		widget: 'standup-board',
+		check: 'clippedText',
+		reason: 'with 5 or more people, on-track and done rows clamp Today to 1 line on a phone and Today and Yesterday to 2 lines on a wide card; names and roles never clamp, and a tap expands the row to the full text'
 	}
 ];
 
@@ -92,6 +97,7 @@ export const DATA_PROPS: Readonly<Record<string, readonly string[]>> = {
 	'range-bar': ['min', 'max', 'current'],
 	recipe: ['minutes', 'serves', 'kcal', 'protein_g', 'ingredients'],
 	sparkline: ['values'],
+	'standup-board': ['people'],
 	stat: ['value', 'delta', 'deltaPercent'],
 	table: ['rows'],
 	timeline: ['events'],
@@ -471,6 +477,12 @@ export const intents: readonly Intent[] = [
 		ask: ['agenda', 'meeting', 'run of show'],
 		props: ['title', 'start', 'items'],
 		hints: ['start "HH:MM", minutes per item; bind a state key.']
+	},
+	{
+		widget: 'standup-board',
+		ask: ['standup', 'stand-up', 'blockers', 'blocker', 'blocked', 'team status', 'check-in', 'who is stuck'],
+		props: ['team', 'date', 'people', 'summary'],
+		hints: ['A team standup or check-in is one standup-board, never a kanban or a card per person: people[{name, role, yesterday, today, blocker, status}]. Write a blocker only when someone is stuck; leave it out otherwise. The widget counts open blockers itself.']
 	},
 	{
 		widget: 'place-results',

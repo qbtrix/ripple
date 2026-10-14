@@ -1,0 +1,49 @@
+{
+  "version": "1.0",
+  "state": {
+    "standup": {
+      "resolved": []
+    }
+  },
+  "ui": {
+    "type": "standup-board",
+    "bind": "{state.standup}",
+    "props": {
+      "team": "Customer onboarding and identity verification working group",
+      "date": "Tuesday standup, week 42",
+      "people": [
+        {
+          "name": "Maximiliana Alexandrovna Konstantinopoulou-Whitfield",
+          "role": "Principal infrastructure and reliability engineer",
+          "yesterday": "Spent most of the day pairing with the database team on the replication lag we saw during the Friday load test, then wrote up what we found, including the three queries that hold locks for more than two seconds and the index we think would fix two of them.",
+          "today": "Roll the new index out to the staging replica, rerun the load test with the same traffic profile, and compare lag against the baseline before asking for a production window.",
+          "blocker": "Cannot get a production change window until the platform council signs off, and the council does not meet again until next Thursday, which pushes the replication fix past the quarter-end freeze unless someone with approval rights can grant an exception sooner than that. Until then every large import keeps the replicas minutes behind, and support is already seeing tickets about stale balances on the dashboard. A temporary workaround would be to throttle the imports, but that needs a config change in the scheduler that only the platform team can make."
+        },
+        {
+          "name": "Bartholomew Oyelaran-Fitzgerald",
+          "role": "Frontend",
+          "yesterday": "Reworked the identity verification upload flow so a failed document upload keeps the other fields, added inline retry with a clear error message, and fixed the focus order for keyboard users on the final review step.",
+          "today": "Pair with design on the empty and error states for the verification dashboard, then write tests for the retry path so the regression we shipped last month cannot come back."
+        },
+        {
+          "name": "Ana Lima",
+          "role": "QA",
+          "yesterday": "Ran the verification regression suite on three browsers.",
+          "today": "Explore the new upload retry flow with slow network throttling on and file a report with anything that feels wrong."
+        },
+        {
+          "name": "Wen Zhao",
+          "role": "Support",
+          "yesterday": "Answered verification questions from the weekend backlog, 41 tickets in total.",
+          "today": "Write a help article for the new retry flow and share it with the support team for review."
+        },
+        {
+          "name": "Oskar Nilsson",
+          "role": "Backend",
+          "yesterday": "Moved the document scanner service onto the new queue.",
+          "today": "Watch queue depth and error rate after the move and tune the worker count."
+        }
+      ]
+    }
+  }
+}

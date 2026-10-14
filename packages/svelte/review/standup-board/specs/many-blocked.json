@@ -1,0 +1,71 @@
+{
+  "version": "1.0",
+  "state": {
+    "standup": {
+      "resolved": []
+    }
+  },
+  "ui": {
+    "type": "standup-board",
+    "bind": "{state.standup}",
+    "props": {
+      "team": "Platform team",
+      "date": "2026-10-14",
+      "people": [
+        {
+          "name": "Lina Okafor",
+          "role": "DevOps",
+          "yesterday": "Worked on ticket 120",
+          "today": "Continue ticket 120",
+          "blocker": "Waiting on staging database credentials."
+        },
+        {
+          "name": "Tomás Reyes",
+          "role": "Payments",
+          "yesterday": "Worked on ticket 121",
+          "today": "Continue ticket 121",
+          "blocker": "The sandbox returns 502 on every refund."
+        },
+        {
+          "name": "Aarav Mehta",
+          "role": "Backend",
+          "yesterday": "Worked on ticket 122",
+          "today": "Continue ticket 122",
+          "blocker": "Design for the export screen is not final."
+        },
+        {
+          "name": "Mei Tanaka",
+          "role": "Frontend",
+          "yesterday": "Worked on ticket 123",
+          "today": "Continue ticket 123",
+          "blocker": "Profile API contract changed overnight."
+        },
+        {
+          "name": "Priya Nair",
+          "role": "QA",
+          "yesterday": "Worked on ticket 124",
+          "today": "Continue ticket 124",
+          "blocker": "Test devices are out of storage."
+        },
+        {
+          "name": "Jonas Berg",
+          "role": "Mobile",
+          "yesterday": "Worked on ticket 125",
+          "today": "Continue ticket 125"
+        },
+        {
+          "name": "Sofia Rossi",
+          "role": "Data",
+          "yesterday": "Worked on ticket 126",
+          "today": "Continue ticket 126"
+        },
+        {
+          "name": "Kwame Asante",
+          "role": "Support",
+          "yesterday": "Worked on ticket 127",
+          "today": "Continue ticket 127"
+        }
+      ]
+    }
+  }
+}

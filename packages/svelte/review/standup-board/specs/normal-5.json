@@ -1,0 +1,50 @@
+{
+  "version": "1.0",
+  "state": {
+    "standup": {
+      "resolved": []
+    }
+  },
+  "ui": {
+    "type": "standup-board",
+    "bind": "{state.standup}",
+    "props": {
+      "team": "Payments team",
+      "date": "2026-10-14",
+      "people": [
+        {
+          "name": "Lina Okafor",
+          "role": "DevOps",
+          "yesterday": "Set up the staging deploy pipeline",
+          "today": "Run the first staging migration",
+          "blocker": "Waiting on staging database credentials from the infra team."
+        },
+        {
+          "name": "Tomás Reyes",
+          "role": "Payments",
+          "yesterday": "Wired refunds into the ledger service",
+          "today": "Test partial refunds end to end",
+          "blocker": "The sandbox returns 502 on every refund call."
+        },
+        {
+          "name": "Aarav Mehta",
+          "role": "Backend",
+          "yesterday": "Shipped the invoice export endpoint",
+          "today": "Add pagination to the export API"
+        },
+        {
+          "name": "Mei Tanaka",
+          "role": "Frontend",
+          "yesterday": "Built the settings page layout",
+          "today": "Hook settings up to the profile API"
+        },
+        {
+          "name": "Rui Santos",
+          "role": "Design",
+          "today": "Back Monday",
+          "status": "away"
+        }
+      ]
+    }
+  }
+}

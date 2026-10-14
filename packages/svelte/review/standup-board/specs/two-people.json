@@ -1,0 +1,31 @@
+{
+  "version": "1.0",
+  "state": {
+    "standup": {
+      "resolved": []
+    }
+  },
+  "ui": {
+    "type": "standup-board",
+    "bind": "{state.standup}",
+    "props": {
+      "team": "Design pair",
+      "date": "2026-10-14",
+      "people": [
+        {
+          "name": "Mei Tanaka",
+          "role": "Product design",
+          "yesterday": "Finished the onboarding flow mockups",
+          "today": "Usability test with three customers",
+          "blocker": "Still waiting on the recruiting agency to confirm the third participant."
+        },
+        {
+          "name": "Rui Santos",
+          "role": "Brand",
+          "yesterday": "Drafted the new icon set",
+          "today": "Refine icons after feedback"
+        }
+      ]
+    }
+  }
+}
