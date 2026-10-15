@@ -212,7 +212,7 @@
 				</header>
 			{/snippet}
 			{#snippet more()}
-				<a class="more" href="#how">How it works <ChevronDown size={14} strokeWidth={2} aria-hidden="true" /></a>
+				<a class="more" href="#how" aria-label="How it works"><span class="more-label">How it works</span> <ChevronDown size={14} strokeWidth={2} aria-hidden="true" /></a>
 			{/snippet}
 			{#snippet foot()}
 				<p class="strip">
@@ -399,10 +399,10 @@
 	/* The hero, at the top of the chat column. Short top padding: the context
 	   row is the chrome, and the recorded card should start in the first screen. */
 	.hero {
-		padding: clamp(24px, 5vw, 56px) 0 8px;
+		padding: clamp(20px, 3vw, 36px) 0 4px;
 	}
 	h1 {
-		font-size: clamp(1.75rem, 1rem + 3vw, 3.4rem);
+		font-size: clamp(1.75rem, 1rem + 3vw, 2.9rem);
 		line-height: 1.04;
 		overflow-wrap: break-word;
 	}
@@ -411,7 +411,7 @@
 		margin-top: 0.12em;
 	}
 	.lede {
-		margin: clamp(12px, 2vw, 22px) 0 18px;
+		margin: clamp(10px, 1.6vw, 18px) 0 8px;
 		max-width: 62ch;
 		color: var(--site-soft);
 		text-wrap: pretty;
@@ -823,6 +823,13 @@
 		.lede {
 			font-size: 16px;
 			line-height: 1.5;
+		}
+		/* The composer needs the width: the link keeps its chevron and name. */
+		.more {
+			padding: 0 14px;
+		}
+		.more-label {
+			display: none;
 		}
 	}
 	@media (prefers-reduced-motion: reduce) {
