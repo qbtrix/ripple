@@ -1,7 +1,7 @@
 // site/setup-prompt.ts — The prompt a visitor hands to their coding agent
 // (Claude Code, Cursor, Codex) to add Ripple to a project. One source: the
-// landing's band copies it, and the Install docs page shows the same text in
-// a fence (setup-prompt.test.ts holds the two together). Written for an agent:
+// landing's band copies it, and the Install docs page shows it in a fence
+// through its {{SETUP_PROMPT}} token (markdown.ts expandTokens). Written for an agent:
 // docs as markdown URLs, ordered steps that each end in something checkable,
 // a stop when the stack is wrong, questions instead of guesses, and a
 // definition of done. Every URL here must answer 200 on the live site.
@@ -20,7 +20,7 @@ Read these first (agent-friendly markdown):
 
 Steps:
 1. Check the stack. The renderer needs Svelte 5 and Tailwind CSS v4. If this app is not Svelte 5, stop and tell me instead of adding Svelte (${doc('concepts/headless')} covers rendering elsewhere).
-2. Install @ripple-ui/svelte with the package manager this repo already uses.
+2. Install @ripple-ui/svelte and @ripple-ui/core from the GitHub release tarballs as "Add the package" on the Install page shows (they are not on the npm registry yet), with the package manager this repo already uses.
 3. Styles: follow "Set up Tailwind" on the Install page. Choose styles.css or theme.css by whether the app already defines shadcn tokens, and write the @source path relative to the CSS file.
 4. Smoke test: render {"version":"1.0","ui":{"type":"text","props":{"text":"Ripple is installed."}}} on a page. If it shows unstyled, fix the @source path before going on.
 5. Streaming: add a server endpoint that streams the model's text and a page that passes the response body to streamSpec and renders <Ripple streaming={store}>, as on the Stream a spec page. Reuse the model SDK this repo already has; if there is none, ask me which provider to use. Keep API keys in server-side env vars.

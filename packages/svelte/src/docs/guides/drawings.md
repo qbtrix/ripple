@@ -23,8 +23,8 @@ The model writes a small `<svg viewBox>` with shapes, gradients and `animate` or
 
 A live isometric drawing built from a parts list. The model never writes coordinates for pixels, only for parts in a small 3D space, and the kit draws them in the same soft isometric style every time.
 
-- **parts**: up to 150 of `slab`, `box`, `cylinder`, `disc`, `gear`, `tube`, `sphere`, `cone`, `rod`, `arrow` and `plate`. `at` is the centre, `z` is up. `on` makes a part move with a parent.
-- **motions**: `spin`, `slide`, `swing`, `pulse` or `flow` on a part. `speed` is turns per second, as a number or an expression over params like `"cadence / 60"`.
+- **parts**: up to 150 of `slab`, `box`, `cylinder`, `disc`, `gear`, `tube`, `sphere`, `cone`, `rod`, `arrow`, `plate` and `chain`. `at` is the centre, `z` is up. `on` makes a part move with a parent. A `chain` names two gear ids in `around`, wraps both and moves with the one that spins.
+- **motions**: `spin`, `slide`, `swing`, `pulse`, `flow` or `link` on a part. A `link` is a rod whose ends ride the parts `from` and `to`, like a crank pin and a piston. `speed` is turns per second, as a number or an expression over params like `"cadence / 60"`.
 - **params**: up to 6 sliders. Each `key` can be used in speeds and readouts.
 - **readouts**: up to 4 live numbers, each an expression over params.
 - **labels**: up to 10 numbered pins on a part or a point, listed with their notes under the drawing.
@@ -67,7 +67,9 @@ The drawing kit lives in `@ripple-ui/core/iso`, so a host can use it without Sve
 
 A figure is an iso drawing we built by hand and ship by id. The model picks it, sets starting slider values in `params`, and pins labels on its named anchors. It cannot get the drawing wrong because it does not draw it.
 
-The catalog has one figure so far, `heart`: a beating heart as two pumps, with sliders for heart rate (`bpm`, 40 to 180) and stroke volume (`stroke`, 50 to 110 ml). Its anchors are `right-atrium`, `right-ventricle`, `left-atrium`, `left-ventricle`, `tricuspid`, `mitral`, `pulmonary-valve`, `aortic-valve`, `aorta`, `vena-cava`, `pulmonary-artery`, `pulmonary-veins`, `lungs` and `body`.
+The catalog has seven figures: `heart`, `bike-gears`, `rocket-engine`, `ion-thruster`, `tokamak`, `fission-reactor` and `particle-collider`. Each has its own sliders and named anchors.
+
+The worked example is `heart`: a beating heart as two pumps, with sliders for heart rate (`bpm`, 40 to 180) and stroke volume (`stroke`, 50 to 110 ml). Its anchors are `right-atrium`, `right-ventricle`, `left-atrium`, `left-ventricle`, `tricuspid`, `mitral`, `pulmonary-valve`, `aortic-valve`, `aorta`, `vena-cava`, `pulmonary-artery`, `pulmonary-veins`, `lungs` and `body`. The sliders and anchors of the other six are listed on the [figure widget page](/docs/widgets/figure).
 
 ```ripple
 {
@@ -88,14 +90,6 @@ The catalog has one figure so far, `heart`: a beating heart as two pumps, with s
   }
 }
 ```
-
-### Checking a figure: audit, review sheet and score
-
-Three tools check a curated figure before it ships. Bike gears is the first figure wired to them; a figure joins by exporting `review` from its `figure.ts` (audit frames, waivers, its SVG per theme and the junctions to inspect).
-
-- **Audit** (`auditSvg` from `@ripple-ui/core/iso`, pure). It reads the kit's own SVG and runs two checks. `supports`: every solid rests on another solid or the ground through a chain of contacts, or is marked `data-floating`. A solid the figure did not measure fails. `loose-ends`: every open line end lands within 1 viewBox px of another stroke or a dot, or is hidden under a fill painted after it. Each check returns `{ check, count, items }`, and 0 is a pass. A figure gives the audit its solids by writing `data-shape` (from `shapeAttr`) on each solid group, only when it renders for an audit. Faults that are fine on purpose go in the figure's waiver list with a reason. The figure's audit test fails on any unwaived fault, and on any waiver whose fault is gone.
-- **Review sheet** (`bun run review:figure bike-gears` in `packages/svelte`). It renders the figure in light and dark, the whole figure at 2x and each named junction at 4x, and writes one contact sheet to `review/<id>/contact-sheet.png`. Read it in a fixed order: line ends, tone steps, overlaps, empty corners. The committed sheet is the baseline.
-- **Score** (`bun run score:figure bike-gears`). It prints audit faults and waivers per check, solid, path and dot counts, render and audit time, and a cost line (pass `--tokens` and `--minutes` when you know them). The score is 100, minus 10 per unwaived fault, minus 2 per waiver. It exits 1 on any unwaived fault.
 
 ## model-viewer
 

@@ -11,6 +11,7 @@ import { cleanup, render } from '@testing-library/svelte';
 import SpecExample from '../SpecExample.svelte';
 import { manifestEntries, type WidgetManifestEntry } from '../../manifest/index.js';
 import {
+	codeSpans,
 	EMPTY_EXAMPLES,
 	exampleSpec,
 	firstSentence,
@@ -151,5 +152,19 @@ describe('firstSentence', () => {
 		['Version 1.5 ships. Next.', 'Version 1.5 ships.']
 	])('%s', (text, want) => {
 		expect(firstSentence(text)).toBe(want);
+	});
+});
+
+describe('codeSpans', () => {
+	it('splits backtick spans out as code and keeps the rest as text', () => {
+		expect(codeSpans('Uses `code-block` and `chevron-right` icons.')).toEqual([
+			{ text: 'Uses ', code: false },
+			{ text: 'code-block', code: true },
+			{ text: ' and ', code: false },
+			{ text: 'chevron-right', code: true },
+			{ text: ' icons.', code: false }
+		]);
+		expect(codeSpans('No code here')).toEqual([{ text: 'No code here', code: false }]);
+		expect(codeSpans('A lone ` stays text')).toEqual([{ text: 'A lone ` stays text', code: false }]);
 	});
 });

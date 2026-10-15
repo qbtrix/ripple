@@ -23,7 +23,7 @@
     OS" (the pill's accessible name carries "by PocketPaw"), and the footer
     links "Paw OS by PocketPaw". It points the model-viewer library at the
     site's own /models/ so 3D cards load same-origin, and defaults maps to OSM
-    tiles, the one tile host the CSP allows.
+    tiles (the CSP also admits CARTO's, for specs that pick a carto preset).
 -->
 <script lang="ts">
 	import { onMount } from 'svelte';
@@ -53,7 +53,8 @@
 	let { children } = $props();
 
 	const GITHUB_URL = 'https://github.com/qbtrix/ripple-iui';
-	const NPM_URL = 'https://www.npmjs.com/package/@ripple-ui/svelte';
+	// The packages are not on npm yet; the footer points at the release tarballs.
+	const RELEASES_URL = 'https://github.com/qbtrix/ripple-iui/releases';
 	const PAWOS_TRY = `${pawosBase(import.meta.env.PUBLIC_PAWOS_URL ?? '')}/?ref=ripple`;
 	// `short` is the active pill's label on phones; null means icon only there.
 	const nav = [
@@ -158,7 +159,7 @@
 
 	<footer class="foot">
 		<p>
-			<span>MIT</span><a href={NPM_URL}>npm</a><a href={GITHUB_URL}>GitHub</a><a href="/playground">Playground</a><a href={PAWOS_TRY}
+			<span>MIT</span><a href={RELEASES_URL}>Releases</a><a href={GITHUB_URL}>GitHub</a><a href="/playground">Playground</a><a href={PAWOS_TRY}
 				>Paw OS by PocketPaw</a
 			>
 		</p>

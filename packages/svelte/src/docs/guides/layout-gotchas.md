@@ -1,7 +1,7 @@
 ---
 title: Layout gotchas
 description: Two traps in master-detail (list and detail) layouts, and the recipe that avoids both.
-order: 10
+order: 12
 ---
 
 Two traps bite when you build a master-detail layout, a list beside a detail panel. Both hit a real deployment.

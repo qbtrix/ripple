@@ -1,7 +1,7 @@
 ---
 title: Any model
 description: Stream a Ripple spec from any OpenAI-compatible chat completions endpoint with plain fetch, no SDK.
-order: 8
+order: 4
 ---
 
 Many providers and local servers speak the OpenAI chat completions protocol: a `POST` to `/v1/chat/completions` that, with `stream: true`, answers with server-sent events. This endpoint works with any of them using `fetch` alone. Point it at a different base URL and model to switch providers.

@@ -1,7 +1,7 @@
 ---
 title: Intents and multi-step flows
 description: Let Ripple choose a designed layout from what the UI is for, and ship a whole multi-step flow in one spec.
-order: 3
+order: 7
 ---
 
 A UniversalSpec doesn't describe widgets. It says what the UI is for, gives Ripple the data, and Ripple renders a designed layout. It is the quicker format for a model to write when the job fits one of the common shapes: pick from a list, fill in a form, review and confirm.

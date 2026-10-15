@@ -1,8 +1,9 @@
-// site/docs/showcase.ts — Richer, site-only preview specs for widgets whose
+// site/docs/showcase.ts: richer, site-only preview specs for widgets whose
 // manifest `example` is too small to show them off, or cannot render on the
-// public site: placeholder URLs the CSP blocks (example.com images, the CARTO
-// tiles, a YouTube frame, a remote GLB), logos that are not in static/, real
-// company, ticker and publisher names, or a shape the widget ignores (split's
+// public site: placeholder URLs the CSP in svelte.config.js blocks
+// (example.com images, the CARTO tiles, a third-party frame, a remote GLB),
+// logos that are not in static/, real company, ticker and publisher names,
+// links to pages the site lacks, or a shape the widget ignores (split's
 // children, toast's empty bus). pageSpecs (widgets.ts) previews one of these
 // in place of the manifest example when the type has an entry, so both
 // /docs/widgets/<type> and /ds pick it up.
@@ -200,6 +201,19 @@ export const SHOWCASE: Record<string, Record<string, unknown>> = {
 		props: { src: `${LAKE}?w=400&q=70`, alt: 'A mountain lake at dawn', width: 200, height: 150, fit: 'cover', rounded: 'md' }
 	}),
 	avatar: spec({ type: 'avatar', props: { src: 'https://i.pravatar.cc/64?img=47', alt: 'Maya Okafor', fallback: 'MO' } }),
+	'avatar-group': spec({
+		type: 'avatar-group',
+		props: {
+			max: 3,
+			size: 'md',
+			users: [
+				{ src: 'https://i.pravatar.cc/96?img=32', alt: 'Alice' },
+				{ src: 'https://i.pravatar.cc/96?img=12', alt: 'Bob' },
+				{ fallback: 'CD', alt: 'Charlie' },
+				{ fallback: 'EF', alt: 'Eve' }
+			]
+		}
+	}),
 	parallax: spec({
 		type: 'parallax',
 		props: { distance: 30 },

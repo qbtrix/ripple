@@ -3,9 +3,9 @@
 // NOT_ROOT) and passes the bound spec audit (schema, catalog, actions, props
 // and the rest; not futureDate, since gantt and calendar plan ahead), and the
 // widget page previews the showcase spec in place of the manifest example.
-// Every asset URL is same-origin or on a host the site CSP allows. Rendering
-// is covered by widgets.test.ts, which renders every page's
-// pageSpecs(...).example.
+// Every asset URL is same-origin or on a host the site CSP allows, and every
+// local media file exists under static/. Rendering is covered by
+// widgets.test.ts, which renders every page's pageSpecs(...).example.
 import { describe, expect, it } from 'vitest';
 import { manifestEntries } from '../../manifest/index.js';
 import { getWidgetTypes } from '../../widgets/index.js';
@@ -24,6 +24,7 @@ const NOT_ROOT: Record<string, string> = { toast: 'needs a button that fires the
 const UNDOCUMENTED: Record<string, string[]> = { split: ['start', 'end'] };
 const ALLOWED_HOSTS = ['images.unsplash.com', 'i.pravatar.cc', 'example.com'];
 
+const staticFiles = new Set(Object.keys(import.meta.glob('/static/**/*.{jpg,mp4,mp3,m4a,svg,glb}', { query: '?url' })));
 const entry = (type: string) => manifestEntries.find((e) => e.type === type);
 const cases = Object.entries(SHOWCASE).map(([type, spec]) => ({ type, spec }));
 
@@ -51,6 +52,18 @@ describe('widget showcase specs', () => {
 	it.each(cases)('$type loads assets only from the site or a CSP-allowed host', ({ spec }) => {
 		const urls = JSON.stringify(spec).match(/https?:\/\/[^"'\s)]+/g) ?? [];
 		for (const url of urls) expect(ALLOWED_HOSTS, url).toContain(new URL(url).hostname);
+	});
+
+	it('loads media only from static/ or hosts the site CSP allows', () => {
+		const allowed = ['https://i.pravatar.cc/', 'https://images.unsplash.com/'];
+		const urls = JSON.stringify(SHOWCASE).match(/"(?:src|poster|href)":"[^"]*"/g) ?? [];
+		expect(urls.length).toBeGreaterThan(5);
+		for (const pair of urls) {
+			const url = pair.slice(pair.indexOf(':') + 2, -1);
+			if (url.startsWith('/')) {
+				if (/\.[a-z0-9]+$/.test(url)) expect(staticFiles.has(`/static${url}`), url).toBe(true);
+			} else expect(allowed.some((h) => url.startsWith(h)), url).toBe(true);
+		}
 	});
 
 	it('the page previews the showcase spec, not the manifest example', () => {
