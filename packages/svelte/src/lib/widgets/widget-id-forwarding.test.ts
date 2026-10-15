@@ -56,6 +56,7 @@ const TARGETS: Target[] = [
   { type: 'analyst-bar', id: 'n-analyst-bar', props: { buy: 3, hold: 1, sell: 1 } },
   { type: 'range-bar', id: 'n-range-bar', props: { min: 0, max: 100, current: 50 } },
   { type: 'audit-log', id: 'n-audit-log', props: { entries: [{ id: 1, actor: 'Ana', action: 'signed in' }] } },
+  { type: 'sankey', id: 'n-sankey', props: { nodes: [{ name: 'Landing' }, { name: 'Signup' }], links: [{ source: 'Landing', target: 'Signup', value: 120 }] } },
 ];
 
 /** Render a single widget as the spec root and return its render container. */

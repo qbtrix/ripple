@@ -430,3 +430,33 @@ test('heatmap steps read on the card and carry their in-cell ink, both themes', 
   }
   expect(failures).toEqual([]);
 });
+
+// Sankey: nodes are the solid accent and need 3:1 against the card (WCAG
+// 1.4.11); rest bands are the accent at BAND% (dark: BAND.dark) over the card
+// and need a quiet 1.4:1; a focused band at LIT% needs 3:1. Measured on the
+// Blueprint site's cards and page grounds and on paw-enterprise, both themes.
+test('sankey nodes and focused bands reach 3:1, rest bands 1.4:1, both themes', async () => {
+  const { BAND, LIT } = await import('../widgets/data/sankey-layout.js');
+  const src = await read('src/lib/widgets/data/Sankey.svelte');
+  expect(src).toContain('fill: color-mix(in oklab, var(--ripple-accent) var(--sk-band), transparent)');
+  expect(src).toContain('fill: color-mix(in oklab, var(--ripple-accent) var(--sk-band-dark), transparent)');
+  expect(src).toContain('fill: color-mix(in oklab, var(--ripple-accent) var(--sk-lit), transparent)');
+  const grounds: [string, Lab, Lab, number][] = [
+    ['site light card', fromHex('#1877f2'), fromHex('#efeee8'), BAND.light],
+    ['site light page', fromHex('#1877f2'), fromHex('#f7f6f2'), BAND.light],
+    ['pe light', oklch(0.62, 0.21, 256), HOSTS.light.ground, BAND.light],
+    ['site dark card', fromHex('#1877f2'), fromHex('#1d1d1a'), BAND.dark],
+    ['site dark page', fromHex('#1877f2'), fromHex('#262621'), BAND.dark],
+    ['pe dark', oklch(0.66, 0.2, 256), HOSTS['dark, --destructive'].ground, BAND.dark],
+  ];
+  const failures: string[] = [];
+  for (const [name, accent, groundLab, rest] of grounds) {
+    const a = toRgb(accent);
+    const ground = toRgb(groundLab);
+    for (const [what, p, min] of [['node', 100, 3], ['rest band', rest, 1.4], ['focused band', LIT, 3]] as const) {
+      const ratio = contrast(over(a, p / 100, ground), ground);
+      if (ratio < min) failures.push(`${what} on ${name}: ${ratio.toFixed(2)} < ${min}`);
+    }
+  }
+  expect(failures).toEqual([]);
+});

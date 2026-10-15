@@ -23,7 +23,9 @@
 // pair each (control offset = curveness x rank gap), floored at 1px; nodes at
 // 2px. Labels are placed greedily, most important first (start nodes, the
 // largest end, anything over 15% of the total), each in clear space or on a
-// chip: two lines, else one line, else hidden (its node stays focusable).
+// chip: name over `figure · percent`, else over the figure alone, else one
+// line (wide: nudged near its node, a protected one restacks its column;
+// narrow: a second tier under the row), else hidden (its node stays focusable).
 import { sankey, sankeyLeft } from 'd3-sankey';
 import { finite, num, plain } from '../data-kit/format.js';
 
@@ -259,10 +261,13 @@ export type Label = Rect & {
 	lines: 0 | 1 | 2;
 	align: 'start' | 'end';
 	text: string;
+	/** The figure as drawn: `85 · 71%`, or the value alone where the percent has no room. */
+	fig: string;
 };
 export type Layout = { vertical: boolean; W: number; H: number; nodes: LNode[]; links: LLink[]; stubs: LStub[]; labels: Label[] };
 export type Measure = (text: string, bold?: boolean) => number;
-const guess: Measure = (t, bold) => t.length * (bold ? 6.9 : 6.5);
+/** Text width at the callout size before (or without) a real measure: SSR and jsdom. */
+export const guess: Measure = (t, bold) => t.length * (bold ? 6.9 : 6.5);
 
 /** Node label lines: name over figure (start nodes: the figure alone). */
 export function nodeFigure(st: Stats, i: number): string {
@@ -347,79 +352,110 @@ export function layout(
 		return [{ i, d: `M${P(d.x1, top)}L${P(e, mid - t)}L${P(e, mid + t)}L${P(d.x1, bot)}Z`, box: box(d.x1, e, top, bot) }];
 	});
 
-	// Labels, most important first.
+	// Labels, most important first. Obstacles: wide, the stubs; narrow, the bars
+	// (a stub runs down under its bar, where labels sit on chips anyway).
 	const protect = (i: number) => st.inn[i] === 0 || i === st.largestEnd || st.value[i] > 0.15 * st.total;
-	const placed: Rect[] = stubs.map((s) => s.box);
-	const free = (r: Rect) =>
-		r.y >= 0 && r.y + r.h <= H && r.x >= 0 && r.x + r.w <= W + 0.5 && placed.every((p) => r.x + r.w <= p.x - 2 || p.x + p.w <= r.x - 2 || r.y + r.h <= p.y - 2 || p.y + p.h <= r.y - 2);
+	const placed: Rect[] = vertical ? nodes.map(({ x, y, w, h }) => ({ x, y, w, h })) : stubs.map((s) => s.box);
+	const clear = (r: Rect, among: Rect[]) =>
+		among.every((p) => r.x + r.w <= p.x - 2 || p.x + p.w <= r.x - 2 || r.y + r.h <= p.y - 2 || p.y + p.h <= r.y - 2);
+	const free = (r: Rect) => r.y >= 0 && r.y + r.h <= H && r.x >= 0 && r.x + r.w <= W + 0.5 && clear(r, placed);
 	const rankEdge = (d: number, side: 'x0' | 'x1') => res.nodes.find((q) => q.depth === d)?.[side];
 	const labels: Label[] = [];
-	const order = [...g.nodes.keys()].sort((a, b) => Number(protect(b)) - Number(protect(a)) || st.value[b] - st.value[a] || a - b);
+	const rectOf = new Map<Label, Rect>();
+	const order = [...g.nodes.keys()].toSorted((a, b) => Number(protect(b)) - Number(protect(a)) || st.value[b] - st.value[a] || a - b);
 	const nudges = (reach: number) => {
 		const out = [0];
 		for (let k = 4; k <= reach; k += 4) out.push(-k, k);
 		return out;
 	};
+	type Entry = { label: Label; mid: number; edge: number; toRight: boolean; avail: number; w1: number };
+	const cols = new Map<string, Entry[]>();
+	// A protected wide label with no room near its node: restack its column top to
+	// bottom in node order (one line for the newcomer), if that clears everything else.
+	const restack = (col: Entry[], add: Entry) => {
+		const members = [...col.filter((e) => e.label.lines), add].toSorted((a, b) => a.mid - b.mid);
+		const own = new Set(members.map((e) => rectOf.get(e.label)));
+		const others = placed.filter((p) => !own.has(p));
+		const hs = members.map((e) => (e === add ? H1 : e.label.h));
+		const ys = members.map((e, k) => e.mid - hs[k] / 2);
+		for (let k = 0; k < ys.length; k++) ys[k] = Math.max(ys[k], k ? ys[k - 1] + hs[k - 1] + 4 : 0);
+		for (let k = ys.length - 1; k >= 0; k--) ys[k] = Math.min(ys[k], k < ys.length - 1 ? ys[k + 1] - 4 - hs[k] : H - hs[k]);
+		const rects = members.map((e, k) => {
+			const w = e === add ? Math.min(e.w1, e.avail) : e.label.w;
+			return { x: e.toRight ? e.edge : e.edge - w, y: ys[k], w, h: hs[k] };
+		});
+		if (ys[0] < 0 || !rects.every((r) => clear(r, others))) return;
+		placed.splice(0, placed.length, ...others, ...rects);
+		members.forEach((e, k) => {
+			Object.assign(e.label, rects[k], e === add ? { lines: 1, align: e.toRight ? 'start' : 'end' } : {});
+			rectOf.set(e.label, rects[k]);
+		});
+	};
 	for (const i of order) {
 		const d = res.nodes[i];
 		const name = g.nodes[i].name;
 		const fig = nodeFigure(st, i);
-		const w2 = Math.max(m(name, true), m(fig)) + 2 * PAD_X;
-		const w1 = m(name, true) + 4 + m(fmt(st.value[i])) + 2 * PAD_X;
-		const label: Label = { key: `n${i}`, kind: 'node', i, x: 0, y: 0, w: 0, h: 0, lines: 0, align: 'start', text: name };
+		const val = fmt(st.value[i]);
+		// Two lines with the full figure, two with the value alone, one line (name and value).
+		const forms = [
+			{ lines: 2, fig, w: Math.max(m(name, true), m(fig)) + 2 * PAD_X, min: m(fig) + 2 * PAD_X, h: H2 },
+			{ lines: 2, fig: val, w: Math.max(m(name, true), m(val)) + 2 * PAD_X, min: m(val) + 2 * PAD_X, h: H2 },
+			{ lines: 1, fig: val, w: m(name, true) + 4 + m(val) + 2 * PAD_X, min: m(val) + 2 * PAD_X + 24, h: H1 }
+		] as const;
+		const w1 = forms[2].w;
+		const label: Label = { key: `n${i}`, kind: 'node', i, x: 0, y: 0, w: 0, h: 0, lines: 0, align: 'start', text: name, fig: val };
 		labels.push(label);
-		const take = (r: Rect, lines: 1 | 2, align: 'start' | 'end') => {
-			Object.assign(label, r, { lines, align });
+		const take = (r: Rect, form: (typeof forms)[number], align: 'start' | 'end') => {
+			Object.assign(label, r, { lines: form.lines, fig: form.fig, align });
 			placed.push(r);
+			rectOf.set(label, r);
 		};
 		if (vertical) {
+			// Under the bar up to the next bar in the row; else one line on a second tier when the pitch has room.
 			const nb = nodes[i];
-			const right = Math.min(
-				W,
-				...nodes.filter((q) => depth[q.i] === depth[i] && q.x > nb.x).map((q) => q.x - 6),
-				...stubs.filter((s) => s.i === i && s.box.x - nb.x - 6 >= MIN_LABEL).map((s) => s.box.x - 6)
-			);
-			const r = { x: nb.x, y: nb.y + nb.h + 4, w: Math.min(w2, right - nb.x), h: H2 };
-			if (r.w >= MIN_LABEL && free(r)) take(r, 2, 'start');
-			else if (protect(i)) take({ ...r, w: Math.max(r.w, Math.min(w2, W - nb.x, MIN_LABEL)) }, 2, 'start');
+			const right = Math.min(W, ...nodes.filter((q) => depth[q.i] === depth[i] && q.x > nb.x).map((q) => q.x - 6));
+			const room = right - nb.x;
+			for (const f of forms.slice(0, 2)) {
+				const r = { x: nb.x, y: nb.y + nb.h + 4, w: Math.min(f.w, room), h: H2 };
+				if (r.w >= Math.max(MIN_LABEL, f.min) && free(r)) {
+					take(r, f, 'start');
+					break;
+				}
+			}
+			const w = Math.min(w1, W);
+			const low = { x: Math.max(0, Math.min(nb.x, W - w)), y: nb.y + nb.h + 6 + H2, w, h: H1 };
+			if (!label.lines && free(low)) take(low, forms[2], 'start');
 			continue;
 		}
 		const toRight = (d.x0 + d.x1) / 2 < W / 2;
 		const avail = toRight ? (rankEdge(d.depth + 1, 'x0') ?? W) - d.x1 - 12 : d.x0 - (rankEdge(d.depth - 1, 'x1') ?? 0) - 12;
 		if (avail < MIN_LABEL) continue;
 		const mid = (d.y0 + d.y1) / 2;
-		// Near the node first; a protected label may then travel the plot rather than hide.
+		const entry: Entry = { label, mid, edge: toRight ? d.x1 + 6 : d.x0 - 6, toRight, avail, w1 };
+		const key = `${d.depth}${toRight}`;
+		const col = cols.get(key) ?? [];
+		cols.set(key, [...col, entry]);
 		const reach = (d.y1 - d.y0) / 2 + 10;
-		let done = false;
-		for (const [lines, wNeed, h, far] of [
-			[2, w2, H2, reach],
-			[1, w1, H1, reach],
-			...(protect(i) ? ([[2, w2, H2, H], [1, w1, H1, H]] as const) : [])
-		] as const) {
-			const w = Math.min(wNeed, avail);
-			const x = toRight ? d.x1 + 6 : d.x0 - 6 - w;
-			const c0 = Math.min(H - h / 2, Math.max(h / 2, mid));
-			for (const dy of nudges(far)) {
-				const r = { x, y: c0 + dy - h / 2, w, h };
+		place: for (const f of forms) {
+			const w = Math.min(f.w, avail);
+			if (w < f.min) continue;
+			const c0 = Math.min(H - f.h / 2, Math.max(f.h / 2, mid));
+			for (const dy of nudges(reach)) {
+				const r = { x: toRight ? entry.edge : entry.edge - w, y: c0 + dy - f.h / 2, w, h: f.h };
 				if (free(r)) {
-					take(r, lines, toRight ? 'start' : 'end');
-					done = true;
-					break;
+					take(r, f, toRight ? 'start' : 'end');
+					break place;
 				}
 			}
-			if (done) break;
 		}
-		if (!done && protect(i)) {
-			const w = Math.min(w1, avail);
-			take({ x: toRight ? d.x1 + 6 : d.x0 - 6 - w, y: Math.min(H - H1, Math.max(0, mid - H1 / 2)), w, h: H1 }, 1, toRight ? 'start' : 'end');
-		}
+		if (!label.lines && protect(i)) restack(col, entry);
 	}
 
 	// Remainder figures, after every node label.
 	for (const s of stubs) {
 		const f = fmt(st.rem[s.i]);
 		const texts = vertical ? [`${f} stop`, f] : [`${f} stop here`, `${f} stop`, f];
-		const label: Label = { key: `s${s.i}`, kind: 'stub', i: s.i, x: 0, y: 0, w: 0, h: H1, lines: 0, align: 'start', text: '' };
+		const label: Label = { key: `s${s.i}`, kind: 'stub', i: s.i, x: 0, y: 0, w: 0, h: H1, lines: 0, align: 'start', text: '', fig: f };
 		labels.push(label);
 		const b = s.box;
 		const room = vertical ? W : (rankEdge(res.nodes[s.i].depth + 1, 'x0') ?? W) - 6;

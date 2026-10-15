@@ -17,53 +17,8 @@ import {
 	type Graph
 } from './sankey-layout.js';
 
-const n = (...names: string[]) => names.map((name) => ({ name }));
-export const SPEC01 = {
-	nodes: n('Landing', 'Signup', 'Active', 'Churn'),
-	links: [
-		{ source: 'Landing', target: 'Signup', value: 120 },
-		{ source: 'Signup', target: 'Active', value: 85 },
-		{ source: 'Active', target: 'Churn', value: 15 }
-	]
-};
-export const SPEC02 = {
-	nodes: n('Email', 'Chat', 'Phone', 'Web form', 'Community', 'Self-serve', 'Triage', 'Billing', 'Technical', 'Account', 'Feedback', 'Resolved', 'Escalated', 'Open'),
-	links: [
-		['Email', 'Triage', 420], ['Chat', 'Triage', 610], ['Chat', 'Self-serve', 140], ['Phone', 'Triage', 180],
-		['Web form', 'Triage', 260], ['Community', 'Triage', 45], ['Triage', 'Billing', 380], ['Triage', 'Technical', 640],
-		['Triage', 'Account', 290], ['Triage', 'Feedback', 160], ['Billing', 'Resolved', 350], ['Billing', 'Escalated', 30],
-		['Technical', 'Resolved', 510], ['Technical', 'Escalated', 95], ['Technical', 'Open', 35], ['Account', 'Resolved', 270],
-		['Account', 'Open', 20], ['Feedback', 'Resolved', 60]
-	].map(([source, target, value]) => ({ source, target, value }))
-};
-export const SPEC04 = {
-	nodes: ['Visit', { name: 'Search' }, { name: 'Cart' }, { name: 'Cart' }, { name: '' }, { name: 'Checkout' }, { name: 'Paid' }, { name: 'Orphan' }, { label: 'Promo' }],
-	links: [
-		{ source: 0, target: 1, value: 900 },
-		{ source: 'Visit', target: 'Search', value: 100 },
-		{ source: 'Visit', target: 'Cart', value: '1,200' },
-		{ source: 'Search', target: 'Cart', value: '640' },
-		{ source: 'Search', target: 'Wishlist', value: 120 },
-		{ source: 'Cart', target: 'Cart', value: 50 },
-		{ source: ' Cart ', target: 'Checkout', value: 1500 },
-		{ source: 'Checkout', target: 'Cart', value: 200 },
-		{ source: 'Checkout', target: 'Paid', value: 1100 },
-		{ source: 'Paid', target: 'Receipt', value: 1300 },
-		{ source: 'Paid', target: 'Refunded', value: -30 },
-		{ source: 'Paid', target: 'Review', value: 0 },
-		{ source: 'Paid', target: 'Survey' },
-		{ source: 'Checkout', value: 40 },
-		{ source: 'Paid', target: 'Receipt', value: 'lots' }
-	]
-};
-export const SPEC06 = {
-	nodes: n('Edge', 'Auth', 'API', 'Queue', 'Worker', 'Store', 'Index', 'Done', 'Blocked', 'Denied', 'Error', 'Dropped', 'Retry', 'Stale'),
-	links: [
-		['Edge', 'Auth', 99990], ['Edge', 'Blocked', 10], ['Auth', 'API', 99000], ['Auth', 'Denied', 990], ['API', 'Queue', 98000],
-		['API', 'Error', 3], ['Queue', 'Worker', 97990], ['Queue', 'Dropped', 1], ['Worker', 'Store', 97000], ['Worker', 'Retry', 990],
-		['Store', 'Index', 96000], ['Index', 'Done', 95500], ['Index', 'Stale', 2]
-	].map(([source, target, value]) => ({ source, target, value }))
-};
+import { n, SPEC01, SPEC02, SPEC04, SPEC06 } from './__fixtures__/sankey-specs.js';
+
 const SPEC07 = { nodes: [], links: [{ source: 'Trial', target: 'Paid', value: 37 }] };
 
 const prep = (s: { nodes: unknown; links: unknown }) => {
@@ -207,10 +162,11 @@ describe('props', () => {
 	});
 });
 
+const overlaps = (a: { x: number; y: number; w: number; h: number }, b: typeof a) =>
+	a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+const shown = (l: ReturnType<typeof layout>) => l.labels.filter((x) => x.lines > 0);
+
 describe('layout', () => {
-	const overlaps = (a: { x: number; y: number; w: number; h: number }, b: typeof a) =>
-		a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
-	const shown = (l: ReturnType<typeof layout>) => l.labels.filter((x) => x.lines > 0);
 	const noOverlap = (l: ReturnType<typeof layout>) => {
 		const s = shown(l);
 		for (let a = 0; a < s.length; a++) for (let b = a + 1; b < s.length; b++) expect(overlaps(s[a], s[b]), `${s[a].key} ${s[b].key}`).toBe(false);
@@ -229,9 +185,9 @@ describe('layout', () => {
 		const { g, st } = prep(SPEC01);
 		const l = layout(g, st, { width: 328, maxH: 320, vertical: true, curve: 0.5 });
 		const ys = l.nodes.map((x) => x.y);
-		expect(ys).toEqual([...ys].sort((a, b) => a - b));
+		expect(ys).toEqual(ys.toSorted((a, b) => a - b));
 		expect(ys[1] - ys[0]).toBe(72);
-		for (const x of shown(l).filter((x) => x.kind === 'node')) expect(x.y).toBeGreaterThan(l.nodes[x.i].y);
+		for (const lb of shown(l).filter((x) => x.kind === 'node')) expect(lb.y).toBeGreaterThan(l.nodes[lb.i].y);
 		expect(l.labels.find((x) => x.kind === 'stub' && x.i === 1)?.text).toBe('35 stop');
 		noOverlap(l);
 	});
@@ -243,11 +199,13 @@ describe('layout', () => {
 		for (const i of st.starts) expect(l.labels.find((x) => x.key === `n${i}`)!.lines).toBeGreaterThan(0);
 		expect(l.labels.some((x) => x.kind === 'node' && x.lines < 2)).toBe(true);
 	});
-	test('spec 02 narrow keeps every start label, no overlap', () => {
+	test('spec 02 narrow keeps every start label, no overlap, bars clear', () => {
 		const { g, st } = prep(SPEC02);
 		const l = layout(g, st, { width: 328, maxH: 320, vertical: true, curve: 0.5 });
 		noOverlap(l);
-		for (const i of st.starts) expect(l.labels.find((x) => x.key === `n${i}`)!.lines).toBe(2);
+		// Each start is labelled: under its bar, or on the second tier when its bar is too narrow.
+		for (const i of st.starts) expect(l.labels.find((x) => x.key === `n${i}`)!.lines).toBeGreaterThan(0);
+		expect(l.labels.find((x) => x.text === 'Community')!.lines).toBe(1);
 	});
 	test('spec 06: 160px wide; narrow pitch floors at 56px; 1px bands and 2px nodes', () => {
 		const { g, st } = prep(SPEC06);
@@ -257,7 +215,7 @@ describe('layout', () => {
 		const dropped = wide.nodes[names(g).indexOf('Dropped')];
 		expect(dropped.h).toBe(2);
 		const narrow = layout(g, st, { width: 328, maxH: 200, vertical: true, curve: 1 });
-		const rows = [...new Set(narrow.nodes.map((x) => x.y))].sort((a, b) => a - b);
+		const rows = [...new Set(narrow.nodes.map((x) => x.y))].toSorted((a, b) => a - b);
 		expect(rows).toHaveLength(8);
 		expect(rows[1] - rows[0]).toBe(56);
 		expect(narrow.H).toBeGreaterThan(200);
