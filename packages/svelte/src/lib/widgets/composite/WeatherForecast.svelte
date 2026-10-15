@@ -1,20 +1,27 @@
 <!--
   widgets/composite/WeatherForecast.svelte: `weather-forecast`: a weather app
-  card the model fills with numbers. A big "now" header (animated icon,
-  temperature, feels-like, humidity, wind), an hourly scroller when `hourly`
-  is given, and a day strip where each day carries its icon, rain chance and
-  a low..high range bar on the week's shared scale. A °C/°F toggle converts
-  every number; pressing a day shows its details below the strip.
+  card the model fills with numbers. A "now" hero (animated icon, temperature,
+  condition, today's high and low, feels-like / humidity / wind), an hourly
+  band when `hourly` is given, and the days, each with its icon, rain chance
+  and a low..high range bar on one shared scale. A °C/°F toggle converts every
+  number; pressing a day shows its details below the days.
 
   Invariants:
   - Display only: no bind, no storage. Unit and the picked day are local
     state that a re-sent spec keeps.
+  - One frame, the host card's: no border or surface of its own.
   - Icons come from WeatherIcon's trusted constants by kind; an unknown
-    condition draws cloudy. Model text is only ever rendered as text.
-  - Below 560px the days stack as rows with horizontal bars that fit a
-    phone-width card; at 560px and up, with 3 days or more, they sit side by
-    side with vertical bars (one or two days stay rows, never a lone column).
-    Same markup, container queries only.
+    condition draws cloudy. Model text is only ever rendered as text. The
+    place and hour times wrap; a freeform day label ellipsizes with the full
+    text in a `title`.
+  - Nothing scrolls sideways: the hourly band fits the card width by folding
+    hours into buckets (bucketHours), never by scrolling.
+  - Bar position and colour come from the source unit, so toggling °C/°F
+    moves nothing. Colour means temperature: each bar end is its own
+    temperature's spot on one cool-to-warm ramp (info to warning tokens).
+  - Days are rows below 560px, for 1-2 days and for 8-14 days; 3-7 days at
+    560px and up stand side by side with vertical bars. Same markup,
+    container queries only. Row 1 always reads "Today".
 -->
 <script lang="ts">
 	import { safeStyle } from '@ripple-ui/core';
@@ -25,7 +32,7 @@
 	import Sunset from '@lucide/svelte/icons/sunset';
 	import { plain } from '../data-kit/index.js';
 	import WeatherIcon from './WeatherIcon.svelte';
-	import { at, convert, outlook, readDays, readHours, readNow, span, toUnit, type Unit } from './weather-forecast.js';
+	import { at, bucketHours, convert, outlook, ramp, readDays, readHours, readNow, span, toUnit, type Unit } from './weather-forecast.js';
 
 	interface Props {
 		id?: string;
@@ -59,27 +66,42 @@
 	const nowR = $derived(readNow(now));
 	const dayRows = $derived(readDays(days));
 	const hours = $derived(readHours(hourly));
-	const range = $derived(span(dayRows));
+	const range = $derived(span(dayRows, nowR?.temp));
 	const today = $derived(dayRows[0]);
 	const line = $derived(outlook(dayRows));
+	const anyDayRain = $derived(dayRows.some((d) => (d.rain ?? 0) >= 10));
+
+	// The hourly band shows as many columns as fit (48px each, at most 12);
+	// unmeasured (SSR, first paint, jsdom) it assumes a phone-width card.
+	let bandW = $state(0);
+	const fit = $derived(bandW ? Math.min(12, Math.max(1, Math.floor(bandW / 48))) : 6);
+	const cols = $derived(bucketHours(hours, fit));
+	const anyHourRain = $derived(cols.some((h) => (h.rain ?? 0) >= 10));
 
 	let sel = $state(-1);
 	const selDay = $derived(dayRows[sel]);
 
+	const toC = (v: number) => (src === 'F' ? ((v - 32) * 5) / 9 : v);
 	function bar(d: (typeof dayRows)[number]) {
-		if (!range || d.low === undefined || d.high === undefined) return '';
-		return `--lo:${at(d.low, range)}%;--hi:${at(d.high, range)}%`;
+		const lo = d.low ?? d.high;
+		const hi = d.high ?? d.low;
+		if (!range || lo === undefined || hi === undefined) return { css: '', dot: false };
+		return {
+			css: `--lo:${at(lo, range)}%;--hi:${at(hi, range)}%;--p0:${ramp(toC(lo))}%;--p1:${ramp(toC(hi))}%`,
+			dot: lo === hi
+		};
 	}
 	const nowDot = $derived(range && nowR?.temp !== undefined ? `--at:${at(nowR.temp, range)}%` : '');
+	const hasConditions = $derived(!!nowR && (nowR.feelsLike !== undefined || nowR.humidity !== undefined || !!nowR.wind));
 
 	const focusRing = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ripple-ring';
 </script>
 
 <div {id} class={['@container text-ripple-surface-foreground', className]} style={safeStyle(rootStyle)} data-widget="weather-forecast">
-	<section class="wf flex flex-col gap-4 rounded-ripple border border-ripple-border bg-ripple-surface p-4" aria-label={where ? `Weather for ${where}` : 'Weather forecast'}>
+	<section class="wf flex flex-col" aria-label={where ? `Weather for ${where}` : 'Weather forecast'}>
 		<header class="flex items-start gap-3">
 			<div class="min-w-0 flex-1">
-				{#if where}<h2 class="truncate text-title-3 font-semibold" data-slot="place">{where}</h2>{/if}
+				{#if where}<h2 class="text-title-3 font-semibold text-pretty break-words" data-slot="place">{where}</h2>{/if}
 				{#if noteText}<p class="text-caption-1 text-ripple-muted-foreground" data-slot="note">{noteText}</p>{/if}
 			</div>
 			<div class="flex shrink-0 rounded-full bg-ripple-muted p-0.5" role="group" aria-label="Temperature unit">
@@ -95,34 +117,34 @@
 		</header>
 
 		{#if nowR}
-			<div class="flex items-center gap-4" data-slot="now">
-				<WeatherIcon kind={nowR.kind} size={84} animate />
+			<div class="wf-hero" data-slot="now">
+				<WeatherIcon kind={nowR.kind} size={76} animate />
 				<div class="min-w-0">
-					<p class="wf-temp font-semibold tabular-nums" data-slot="now-temp">{t(nowR.temp)}</p>
+					{#if nowR.temp !== undefined}<p class="wf-temp font-semibold tabular-nums" data-slot="now-temp">{t(nowR.temp)}</p>{/if}
 					<p class="text-body-emph">{nowR.label}</p>
 					{#if today && (today.high !== undefined || today.low !== undefined)}
 						<p class="text-footnote text-ripple-muted-foreground tabular-nums">H {t(today.high)} · L {t(today.low)}</p>
 					{/if}
 				</div>
+				{#if hasConditions}
+					<ul class="wf-cond text-footnote text-ripple-muted-foreground" aria-label="Conditions now">
+						{#if nowR.feelsLike !== undefined}<li class="flex min-w-0 items-center gap-1"><Thermometer size={14} aria-hidden="true" />Feels like <span class="text-ripple-surface-foreground tabular-nums">{t(nowR.feelsLike)}</span></li>{/if}
+						{#if nowR.humidity !== undefined}<li class="flex min-w-0 items-center gap-1"><Droplets size={14} aria-hidden="true" />Humidity <span class="text-ripple-surface-foreground tabular-nums">{nowR.humidity}%</span></li>{/if}
+						{#if nowR.wind}<li class="flex min-w-0 items-center gap-1"><Wind size={14} class="shrink-0" aria-hidden="true" />Wind <span class="text-ripple-surface-foreground">{nowR.wind}</span></li>{/if}
+					</ul>
+				{/if}
 			</div>
-			{#if nowR.feelsLike !== undefined || nowR.humidity !== undefined || nowR.wind}
-				<ul class="flex flex-wrap gap-x-4 gap-y-1 text-footnote text-ripple-muted-foreground" aria-label="Conditions now">
-					{#if nowR.feelsLike !== undefined}<li class="flex items-center gap-1"><Thermometer size={14} aria-hidden="true" />Feels like <span class="text-ripple-surface-foreground tabular-nums">{t(nowR.feelsLike)}</span></li>{/if}
-					{#if nowR.humidity !== undefined}<li class="flex items-center gap-1"><Droplets size={14} aria-hidden="true" />Humidity <span class="text-ripple-surface-foreground tabular-nums">{nowR.humidity}%</span></li>{/if}
-					{#if nowR.wind}<li class="flex items-center gap-1"><Wind size={14} aria-hidden="true" />Wind <span class="text-ripple-surface-foreground">{nowR.wind}</span></li>{/if}
-				</ul>
-			{/if}
 		{/if}
 
 		{#if hours.length}
-			<div class="-mx-4 overflow-x-auto px-4 pb-1" data-slot="hourly">
-				<ul class="flex w-max gap-1" aria-label="Hourly forecast">
-					{#each hours as h, i (i)}
-						<li class="flex w-14 flex-col items-center gap-1 rounded-ripple py-2 text-center" aria-label="{h.time || `Hour ${i + 1}`}, {t(h.temp)}{h.rain ? `, ${h.rain}% rain` : ''}">
-							<span class="text-caption-1 text-ripple-muted-foreground">{h.time}</span>
-							<WeatherIcon kind={h.kind} size={28} />
+			<div bind:clientWidth={bandW} data-slot="hourly">
+				<ul class="grid" style={safeStyle(`grid-template-columns:repeat(${cols.length},minmax(0,1fr))`)} aria-label="Hourly forecast">
+					{#each cols as h, i (i)}
+						<li class="flex min-w-0 flex-col items-center gap-1 py-1 text-center">
+							<span class="w-full text-caption-1 text-balance break-words text-ripple-muted-foreground">{h.time || '–'}</span>
+							<WeatherIcon kind={h.kind} size={26} />
 							<span class="text-callout font-medium tabular-nums">{t(h.temp)}</span>
-							<span class="wf-rain h-3.5 text-caption-2 tabular-nums">{h.rain && h.rain >= 10 ? `${h.rain}%` : ''}</span>
+							{#if anyHourRain}<span class="wf-rain h-3.5 text-caption-2 tabular-nums">{h.rain !== undefined && h.rain >= 10 ? `${h.rain}%` : ''}</span>{/if}
 						</li>
 					{/each}
 				</ul>
@@ -131,21 +153,31 @@
 
 		{#if dayRows.length}
 			<div class="flex flex-col gap-2">
-				<div class="wf-days" data-many={dayRows.length >= 3 ? 'true' : 'false'} role="group" aria-label="{dayRows.length}-day forecast" data-slot="days">
+				<div
+					class="wf-days"
+					data-many={dayRows.length >= 3 && dayRows.length <= 7 ? 'true' : 'false'}
+					data-rain={anyDayRain ? 'true' : 'false'}
+					role="group"
+					aria-label="{dayRows.length}-day forecast"
+					data-slot="days"
+				>
 					{#each dayRows as d, i (i)}
+						{@const b = bar(d)}
 						<button
 							type="button"
 							class={['wf-day rounded-ripple text-left transition-colors hover:bg-ripple-muted', focusRing, sel === i && 'bg-ripple-muted']}
 							aria-pressed={sel === i}
-							aria-label="{d.day}: {d.label}, high {t(d.high)}, low {t(d.low)}{d.rain !== undefined ? `, ${d.rain}% chance of rain` : ''}"
+							aria-label="{i === 0 ? `Today, ${d.day}` : d.day}: {d.label}, high {t(d.high)}, low {t(d.low)}{d.rain !== undefined ? `, ${d.rain}% chance of rain` : ''}"
 							onclick={() => (sel = sel === i ? -1 : i)}
 						>
-							<span class="wf-name text-callout font-medium">{i === 0 && nowR ? 'Today' : d.day}</span>
-							<span class="wf-icon"><WeatherIcon kind={d.kind} size={30} /></span>
-							<span class="wf-rain wf-pct text-caption-1 font-medium tabular-nums">{d.rain && d.rain >= 10 ? `${d.rain}%` : ''}</span>
+							<span class="wf-name truncate text-callout font-medium" title={d.day}>{i === 0 ? 'Today' : d.day}</span>
+							<span class="wf-icon">
+								<WeatherIcon kind={d.kind} size={28} />
+								{#if anyDayRain}<span class="wf-rain wf-pct text-caption-2 font-medium tabular-nums">{d.rain !== undefined && d.rain >= 10 ? `${d.rain}%` : ''}</span>{/if}
+							</span>
 							<span class="wf-lo text-callout text-ripple-muted-foreground tabular-nums">{t(d.low)}</span>
-							<span class="wf-track" style={safeStyle(bar(d))} aria-hidden="true">
-								<span class="wf-fill"></span>
+							<span class="wf-track" style={safeStyle(b.css)} data-dot={b.dot ? 'true' : 'false'} aria-hidden="true">
+								{#if b.css}<span class="wf-fill"></span>{/if}
 								{#if i === 0 && nowDot}<span class="wf-now" style={safeStyle(nowDot)}></span>{/if}
 							</span>
 							<span class="wf-hi text-callout font-semibold tabular-nums">{t(d.high)}</span>
@@ -154,12 +186,12 @@
 				</div>
 				{#if selDay}
 					<div class="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-ripple bg-ripple-muted px-3 py-2 text-footnote" data-slot="day-detail" aria-live="polite">
-						<span class="font-semibold">{selDay.day}</span>
+						<span class="max-w-full truncate font-semibold" title={selDay.day}>{selDay.day}</span>
 						<span>{selDay.label}</span>
 						<span class="tabular-nums">{t(selDay.low)} to {t(selDay.high)}</span>
 						{#if selDay.rain !== undefined}<span class="flex items-center gap-1 tabular-nums"><Droplets size={13} aria-hidden="true" />{selDay.rain}% rain</span>{/if}
-						{#if selDay.sunrise}<span class="flex items-center gap-1 tabular-nums"><Sunrise size={13} aria-hidden="true" />{selDay.sunrise}</span>{/if}
-						{#if selDay.sunset}<span class="flex items-center gap-1 tabular-nums"><Sunset size={13} aria-hidden="true" />{selDay.sunset}</span>{/if}
+						{#if selDay.sunrise}<span class="flex min-w-0 items-center gap-1 tabular-nums"><Sunrise size={13} class="shrink-0" aria-hidden="true" /><span class="max-w-[12ch] truncate" title={selDay.sunrise}>{selDay.sunrise}</span></span>{/if}
+						{#if selDay.sunset}<span class="flex min-w-0 items-center gap-1 tabular-nums"><Sunset size={13} class="shrink-0" aria-hidden="true" /><span class="max-w-[12ch] truncate" title={selDay.sunset}>{selDay.sunset}</span></span>{/if}
 					</div>
 				{/if}
 				{#if line}<p class="text-footnote text-ripple-muted-foreground" data-slot="outlook">{line}</p>{/if}
@@ -169,60 +201,120 @@
 </div>
 
 <style>
+	.wf {
+		gap: 0.875rem;
+	}
 	.wf-temp {
 		font-size: 3.5rem;
 		line-height: 1;
 		letter-spacing: -0.03em;
 	}
 	.wf-rain {
-		color: #3b82f6;
+		color: var(--ripple-info-text);
 	}
-	:global(.dark) .wf-rain,
-	:global([data-theme='dark']) .wf-rain {
-		color: #7cb4ff;
+	/* Hero: icon and number, the conditions wrap underneath. */
+	.wf-hero {
+		display: grid;
+		grid-template-columns: auto 1fr;
+		align-items: center;
+		column-gap: 1rem;
+		row-gap: 0.625rem;
 	}
-	/* Narrow: one row per day. Day, icon, rain, low, bar, high. */
+	.wf-cond {
+		grid-column: 1 / -1;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.25rem 1rem;
+	}
+
+	/* Rows: day | icon (rain under it) | low | bar | high. Fixed number columns. */
 	.wf-days {
 		display: flex;
 		flex-direction: column;
 	}
 	.wf-day {
 		display: grid;
-		grid-template-columns: minmax(2.75rem, 3.5rem) 2rem 2.25rem 2.25rem minmax(1.5rem, 1fr) 2.25rem;
+		grid-template-columns: minmax(2.75rem, 3.5rem) 2rem 2.75rem minmax(0, 1fr) 2.75rem;
 		align-items: center;
-		gap: 0.375rem;
-		padding: 0.375rem;
+		position: relative;
+		gap: 0.5rem;
+		min-height: 2.75rem;
+		padding: 0.1875rem 0.375rem;
 	}
-	.wf-lo,
-	.wf-hi {
+	.wf-day + .wf-day::before {
+		content: '';
+		position: absolute;
+		inset-inline: 0.375rem;
+		top: 0;
+		border-top: 1px solid var(--ripple-border);
+	}
+	.wf-icon {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		line-height: 1;
+	}
+	.wf-pct {
+		line-height: 1;
+		min-height: 0.6875rem;
+	}
+	.wf-lo {
 		text-align: right;
+	}
+	.wf-hi {
+		text-align: left;
 	}
 	.wf-track {
 		position: relative;
 		height: 0.375rem;
 		border-radius: 999px;
-		background: var(--color-ripple-muted, rgb(127 127 127 / 0.15));
+		background: var(--ripple-track);
 	}
 	.wf-fill {
+		--c0: color-mix(in oklch, var(--ripple-warning) var(--p0), var(--ripple-info));
+		--c1: color-mix(in oklch, var(--ripple-warning) var(--p1), var(--ripple-info));
 		position: absolute;
 		inset-block: 0;
 		left: var(--lo, 0%);
 		right: calc(100% - var(--hi, 0%));
 		border-radius: inherit;
-		background: linear-gradient(90deg, #5ac8fa, #a3e635, #fbbf24, #fb923c);
+		background: linear-gradient(90deg, var(--c0), var(--c1));
+	}
+	/* Low equals high, or one side only: a dot at that temperature. */
+	[data-dot='true'] .wf-fill {
+		right: auto;
+		width: 0.375rem;
+		transform: translateX(-50%);
 	}
 	.wf-now {
 		position: absolute;
 		top: 50%;
 		left: var(--at);
-		width: 0.625rem;
-		height: 0.625rem;
+		width: 0.5rem;
+		height: 0.5rem;
 		border-radius: 999px;
-		background: var(--color-ripple-surface, #fff);
-		border: 2px solid currentColor;
+		background: var(--ripple-surface-foreground);
+		box-shadow: 0 0 0 2px var(--ripple-surface);
 		transform: translate(-50%, -50%);
 	}
-	/* Wide, 3 days or more: days side by side, bars stand up between high (top) and low. */
+
+	@container (max-width: 399px) {
+		.wf {
+			gap: 0.75rem;
+		}
+	}
+	/* Wider hero: the conditions take a right column beside the number. */
+	@container (min-width: 480px) {
+		.wf-hero {
+			grid-template-columns: auto 1fr auto;
+		}
+		.wf-cond {
+			grid-column: auto;
+			flex-direction: column;
+			align-items: flex-start;
+		}
+	}
+	/* 3 to 7 days at 560px and up: side by side, bars stand up between high (top) and low. */
 	@container (min-width: 560px) {
 		.wf-days[data-many='true'] {
 			flex-direction: row;
@@ -231,21 +323,21 @@
 		[data-many='true'] .wf-day {
 			flex: 1 1 0;
 			min-width: 0;
-			grid-template-columns: 1fr;
-			grid-template-rows: auto auto 1rem auto 4.5rem auto;
+			grid-template-columns: minmax(0, 1fr);
+			grid-template-rows: auto auto auto 4.5rem auto;
 			justify-items: center;
-			gap: 0.25rem;
+			gap: 0.375rem;
 			padding: 0.5rem 0.25rem;
 			text-align: center;
 		}
+		[data-many='true'] .wf-day::before {
+			content: none;
+		}
 		[data-many='true'] .wf-name {
-			order: 0;
+			max-width: 100%;
 		}
 		[data-many='true'] .wf-icon {
-			order: 1;
-		}
-		[data-many='true'] .wf-pct {
-			order: 2;
+			gap: 0.25rem;
 		}
 		[data-many='true'] .wf-hi {
 			order: 3;
@@ -261,13 +353,17 @@
 			text-align: center;
 		}
 		[data-many='true'] .wf-fill {
-			inset-block: auto;
-			inset-inline: 0;
 			left: 0;
 			right: 0;
 			bottom: var(--lo, 0%);
 			top: calc(100% - var(--hi, 0%));
-			background: linear-gradient(0deg, #5ac8fa, #a3e635, #fbbf24, #fb923c);
+			background: linear-gradient(0deg, var(--c0), var(--c1));
+		}
+		[data-many='true'] [data-dot='true'] .wf-fill {
+			top: auto;
+			width: auto;
+			height: 0.375rem;
+			transform: translateY(50%);
 		}
 		[data-many='true'] .wf-now {
 			top: auto;

@@ -1,15 +1,20 @@
 // widgets/composite/weather-forecast.ts: the data side of the weather-forecast
 // widget. Turns model props (possibly half-streamed) into a clean forecast:
 // a condition word becomes one of ten icon kinds (unknown reads as cloudy),
-// temperatures convert between C and F, and the week's low..high span gives
-// each day's range bar its start and end as percentages.
+// temperatures convert between C and F, percentages accept "78%", full
+// weekday names shorten to three letters, the week's span (stretched to hold
+// the current temperature) places each range bar, `ramp` maps a temperature
+// to its spot on the cool-to-warm bar colour, and `bucketHours` thins a long
+// hourly list to the columns that fit, keeping the worst sky and the wettest
+// chance of each bucket.
 //
 // Invariants:
 // - Every reader survives `{}`, missing fields and junk; lists are capped
-//   (14 days, 48 hours) so a runaway model cannot grow the DOM.
+//   (14 days, 48 hours) and text is capped generously, never cut short
+//   mid-word: the component wraps it or ellipsizes it with a `title`.
 // - Icons are picked by kind from trusted constants in WeatherIcon.svelte;
 //   nothing here passes model text into markup.
-import { finite, plain } from '../data-kit/format.js';
+import { finite, percent, plain } from '../data-kit/format.js';
 import { list, rec } from './recipe.js';
 
 export const MAX_DAYS = 14;
@@ -59,16 +64,19 @@ export function convert(t: number, from: Unit, to: Unit): number {
 }
 
 const pct = (v: unknown) => {
-	const n = finite(v);
-	return n === undefined ? undefined : Math.min(Math.max(Math.round(n), 0), 100);
+	const n = percent(v);
+	return n === undefined ? undefined : Math.round(n);
 };
 
-/** "2026-10-13" → "Tue"; anything else as written, trimmed. */
+const WEEKDAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+/** "2026-10-13" → "Tue", "wednesday" → "Wed"; anything else as written, trimmed and capped. */
 export function dayLabel(v: unknown): string {
 	const s = plain(v).trim();
 	const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
-	if (!m) return s.slice(0, 24);
-	return new Date(+m[1], +m[2] - 1, +m[3]).toLocaleDateString('en-GB', { weekday: 'short' });
+	if (m) return new Date(+m[1], +m[2] - 1, +m[3]).toLocaleDateString('en-GB', { weekday: 'short' });
+	if (WEEKDAYS.includes(s.toLowerCase())) return s[0].toUpperCase() + s.slice(1, 3).toLowerCase();
+	return s.slice(0, 40);
 }
 
 export interface Now {
@@ -112,21 +120,21 @@ export function readNow(v: unknown): Now | undefined {
 export function readDays(v: unknown): Day[] {
 	return list(v)
 		.slice(0, MAX_DAYS)
-		.map((x) => {
+		.map((x, i) => {
 			const r = rec(x);
 			const kind = toKind(r.condition);
 			let high = finite(r.high);
 			let low = finite(r.low);
 			if (high !== undefined && low !== undefined && low > high) [high, low] = [low, high];
 			return {
-				day: dayLabel(r.day),
+				day: dayLabel(r.day) || `Day ${i + 1}`,
 				kind,
 				label: label(r.condition, kind),
 				high,
 				low,
 				rain: pct(r.rainChance),
-				sunrise: plain(r.sunrise).trim().slice(0, 8),
-				sunset: plain(r.sunset).trim().slice(0, 8)
+				sunrise: plain(r.sunrise).trim().slice(0, 24),
+				sunset: plain(r.sunset).trim().slice(0, 24)
 			};
 		});
 }
@@ -136,13 +144,13 @@ export function readHours(v: unknown): Hour[] {
 		.slice(0, MAX_HOURS)
 		.map((x) => {
 			const r = rec(x);
-			return { time: plain(r.time).trim().slice(0, 8), temp: finite(r.temp), kind: toKind(r.condition), rain: pct(r.rainChance) };
+			return { time: plain(r.time).trim().slice(0, 24), temp: finite(r.temp), kind: toKind(r.condition), rain: pct(r.rainChance) };
 		});
 }
 
-/** The week's lowest low and highest high, for the range bars. */
-export function span(days: Day[]): [number, number] | undefined {
-	const ts = days.flatMap((d) => [d.low, d.high]).filter((t): t is number => t !== undefined);
+/** The week's lowest low and highest high (and the current temperature), for the range bars. */
+export function span(days: Day[], now?: number): [number, number] | undefined {
+	const ts = [now, ...days.flatMap((d) => [d.low, d.high])].filter((t): t is number => t !== undefined);
 	if (!ts.length) return undefined;
 	return [Math.min(...ts), Math.max(...ts)];
 }
@@ -150,6 +158,41 @@ export function span(days: Day[]): [number, number] | undefined {
 /** Where `t` sits in the span, 0 to 100. */
 export function at(t: number, [lo, hi]: [number, number]): number {
 	return hi === lo ? 50 : Math.min(Math.max(((t - lo) / (hi - lo)) * 100, 0), 100);
+}
+
+// The bar colour ramp: COLD_C and below is the cool end (the info hue), WARM_C
+// and above the warm end (the warning hue), so the same temperature is the
+// same colour on every row, in both units.
+export const COLD_C = -5;
+export const WARM_C = 26;
+
+/** Where a temperature in °C sits on the colour ramp, 0 (cool) to 100 (warm). */
+export function ramp(tempC: number): number {
+	return Math.round(Math.min(Math.max((tempC - COLD_C) / (WARM_C - COLD_C), 0), 1) * 100);
+}
+
+const SEVERITY: Kind[] = ['thunder', 'heavy-rain', 'snow', 'rain', 'fog', 'wind', 'cloudy', 'partly-cloudy', 'sunny', 'night-clear'];
+
+/**
+ * At most `fit` columns: every k-th hour with the skipped hours folded in.
+ * A bucket keeps its first hour's time and temperature, the most severe sky
+ * and the highest rain chance, so a lone storm hour is never thinned away.
+ */
+export function bucketHours(hours: Hour[], fit: number): Hour[] {
+	const k = Math.ceil(hours.length / Math.max(1, Math.floor(fit)));
+	if (k <= 1) return hours;
+	const out: Hour[] = [];
+	for (let i = 0; i < hours.length; i += k) {
+		const b = hours.slice(i, i + k);
+		const rains = b.map((h) => h.rain).filter((r): r is number => r !== undefined);
+		out.push({
+			time: b[0].time,
+			temp: b[0].temp,
+			kind: b.reduce((w, h) => (SEVERITY.indexOf(h.kind) < SEVERITY.indexOf(w) ? h.kind : w), b[0].kind),
+			rain: rains.length ? Math.max(...rains) : undefined
+		});
+	}
+	return out;
 }
 
 /** One line on the days ahead: which days are wet, or that it stays dry. */
