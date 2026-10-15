@@ -1,7 +1,7 @@
 ---
 title: Theming
 description: Restyle Ripple with your own design tokens, a per-spec theme block, or a brand pack, and how they stack.
-order: 2
+order: 8
 ---
 
 Ripple's widgets are styled with Tailwind v4 and the shadcn token names (`--background`, `--primary`, `--card` and the rest). Change those and every widget follows. There are three places to do it, from broadest to narrowest.

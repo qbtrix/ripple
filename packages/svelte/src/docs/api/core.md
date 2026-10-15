@@ -16,6 +16,8 @@ order: 1
 | `@ripple-ui/core/schema` | The Zod schemas and their types |
 | `@ripple-ui/core/manifest` | The action grammar, spec envelope and slim manifest builder |
 | `@ripple-ui/core/motion` | `compileMotion`, `stateToStyle` |
+| `@ripple-ui/core/iso` | The isometric drawing kit the `iso-scene` and `figure` widgets draw with, its scene builder and the figure audit (`auditSvg`). Pure, no DOM |
+| `@ripple-ui/core/build` | `buildSpec`, the loop a Node host runs to have a model write a spec in rounds, each checked by the audit, the host's renderer and an optional critic, plus `parseSpecText` and `craft`. Kept off the root entry so chat bundles never carry it |
 
 ## Headless runtime
 

@@ -135,6 +135,7 @@ Every option is optional:
 | `throttleMs` | `50` | Minimum time between parses. Text that arrives inside the window is parsed when it closes. |
 | `maxBufferBytes` | `2000000` | Cancels the stream with an `overflow` error past this size. |
 | `signal` | none | An `AbortSignal`. Aborting it does the same as `cancel()`. |
+| `warnAtBytes` | `100000` | Dev builds only: one `console.warn` when the buffer first passes this size, a hint to move large data into `sources` or `api`. `0` or `Infinity` turns it off. |
 | `onUpdate` | none | Called with each new spec, for logging or work outside a component. |
 
 ## Errors
@@ -144,6 +145,8 @@ Every option is optional:
 - `malformed`: the source threw. `error.lastValid` holds the last good spec.
 - `incomplete`: the stream ended before anything parsed.
 - `overflow`: the buffer passed `maxBufferBytes`.
+
+The `StreamParseErrorKind` type also lists `aborted`, but `streamSpec` does not set it: `cancel()` or an aborted `signal` ends the stream with `done` true and `error` still `null`.
 
 If the stream fails after part of the UI has rendered, Ripple keeps showing that part.
 

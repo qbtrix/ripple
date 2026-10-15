@@ -1,7 +1,7 @@
 ---
 title: SvelteKit end to end
 description: A complete SvelteKit app that asks a model for a UI, streams it into Ripple, handles its events, and shows errors.
-order: 4
+order: 5
 ---
 
 This guide puts the pieces together: a server endpoint that streams a model's spec, a page that renders it while it streams, an `onEvent` handler for what the spec asks your app to do, and error states. It builds on [Stream a spec](/docs/getting-started/stream-a-spec), which explains the streaming store itself.
