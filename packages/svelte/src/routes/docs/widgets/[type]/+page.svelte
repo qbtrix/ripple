@@ -7,6 +7,9 @@
     pocket), or a plain SpecExample when no prop can be modelled or the widget's
     node is not in that spec. The header's Copy spec button only shows in the
     plain case; the configurator carries its own, which copies the edited spec.
+    The header also has Copy for your model, View as Markdown and Open in, as
+    on the other docs pages, and shows the description's `code` spans as code.
+    A site-only note (PAGE_NOTES) explains an example that hides something.
     Then one row of live previews per variant-like prop, the other pocket specs,
     and the Props / Events / Node fields tables, each only when it has rows. All
     copy comes from the manifest entry. Tables scroll inside their own box so a
@@ -17,6 +20,9 @@
 	import PropsConfigurator from '$lib/site/docs/PropsConfigurator.svelte';
 	import VariantRow from '$lib/site/docs/VariantRow.svelte';
 	import { configurableProps } from '$lib/site/docs/props.js';
+	import { forYourModel, SITE_URL } from '$lib/site/docs/model.js';
+	import { codeSpans } from '$lib/site/docs/widgets.js';
+	import OpenIn from '../../OpenIn.svelte';
 
 	let { data } = $props();
 
@@ -24,12 +30,12 @@
 	const WIDE = new Set(['composite', 'data', 'layout', 'marketing', 'research', 'vertical']);
 	const configurable = $derived(data.target !== null && configurableProps(data.props).length > 0);
 
-	let copied = $state(false);
+	let copied = $state('');
 
-	async function copySpec() {
-		await navigator.clipboard.writeText(JSON.stringify(data.example, null, 2));
-		copied = true;
-		setTimeout(() => (copied = false), 1500);
+	async function copy(text: string, what: string) {
+		await navigator.clipboard.writeText(text);
+		copied = what;
+		setTimeout(() => (copied = ''), 1500);
 	}
 </script>
 
@@ -67,21 +73,34 @@
 			<a href="/docs/widgets">Widgets</a> / <a href="/docs/widgets#{data.category.id}">{data.category.title}</a>
 		</p>
 		<h1>{data.type}</h1>
-		<p class="lede">{data.description}</p>
+		<p class="lede">
+			{#each codeSpans(data.description) as p, i (i)}{#if p.code}<code>{p.text}</code>{:else}{p.text}{/if}{/each}
+		</p>
 		{#if data.staticSafe}
 			<p class="badge">Renders without JS</p>
 		{/if}
 		<div class="actions" data-pagefind-ignore>
 			{#if !configurable}
-				<button type="button" onclick={copySpec}>{copied ? 'Copied' : 'Copy spec'}</button>
+				<button type="button" onclick={() => copy(JSON.stringify(data.example, null, 2), 'spec')}
+					>{copied === 'spec' ? 'Copied' : 'Copy spec'}</button
+				>
 			{/if}
+			<button type="button" onclick={() => copy(forYourModel(data.markdown), 'model')}
+				>{copied === 'model' ? 'Copied' : 'Copy for your model'}</button
+			>
 			<a href="/docs/widgets/{data.type}.md">View as Markdown</a>
+			<OpenIn markdownUrl="{SITE_URL}/docs/widgets/{data.type}.md" title="{data.type} widget" />
 			<a href={data.source} rel="noopener">Source on GitHub</a>
 		</div>
-		<span class="sr-only" aria-live="polite">{copied ? 'Spec copied' : ''}</span>
+		<span class="sr-only" aria-live="polite">{copied ? 'Copied to clipboard' : ''}</span>
 	</header>
 
 	<h2 id="example">Example</h2>
+	{#if data.note}
+		<p class="note">
+			{#each codeSpans(data.note) as p, i (i)}{#if p.code}<code>{p.text}</code>{:else}{p.text}{/if}{/each}
+		</p>
+	{/if}
 	{#if configurable}
 		<PropsConfigurator spec={data.example} rows={data.props} path={data.target ?? []} wide={WIDE.has(data.category.id)} />
 	{:else}
@@ -169,7 +188,8 @@
 		border-bottom: 1px solid var(--site-line);
 	}
 	.actions button,
-	.actions a {
+	.actions a,
+	.actions :global(.open-in > button) {
 		padding: 6px 11px;
 		border: 1px solid var(--site-line);
 		border-radius: var(--radius-control);
@@ -183,7 +203,8 @@
 			background 0.15s;
 	}
 	.actions button:hover,
-	.actions a:hover {
+	.actions a:hover,
+	.actions :global(.open-in > button:hover) {
 		color: var(--site-ink);
 		background: var(--site-hover);
 	}
@@ -202,6 +223,7 @@
 	.table-wrap {
 		overflow-x: auto;
 		margin: 16px 0;
+		background: var(--scroll-hint);
 	}
 	table {
 		width: 100%;
@@ -272,7 +294,7 @@
 		align-items: flex-end !important;
 	}
 	.note {
-		margin: 0;
+		margin: 0 0 12px;
 		max-width: 70ch;
 		color: var(--site-soft);
 	}

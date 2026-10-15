@@ -179,6 +179,16 @@
 	--code-bg: var(--site-inset);
 	--code-line: var(--site-line);
 	--code-ink: var(--site-ink);
+
+	/* Scroll hint for a sideways-scrolling box on the page ground (docs tables,
+	   diagrams): a soft shade at an edge with more content past it. The
+	   ground-coloured covers scroll with the content and hide the shade at the
+	   end it has reached. */
+	--scroll-hint:
+		linear-gradient(to right, var(--site-ground) 40%, transparent) left / 32px 100% no-repeat local,
+		linear-gradient(to left, var(--site-ground) 40%, transparent) right / 32px 100% no-repeat local,
+		radial-gradient(farthest-side at 0 50%, color-mix(in oklch, var(--site-ink-base) 16%, transparent), transparent) left / 12px 100% no-repeat scroll,
+		radial-gradient(farthest-side at 100% 50%, color-mix(in oklch, var(--site-ink-base) 16%, transparent), transparent) right / 12px 100% no-repeat scroll;
 }
 
 @media (prefers-reduced-motion: reduce) {
