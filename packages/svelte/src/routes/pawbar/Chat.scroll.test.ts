@@ -2,7 +2,9 @@
 // send and a streamed reply move only the chat's own container (scrollTo on
 // .scroller); nothing calls scrollIntoView or window.scrollTo, either of which
 // would walk up and move the page. jsdom has no layout, so this pins the calls,
-// not the pixels (the Playwright check in the PR measures those).
+// not the pixels (the Playwright check in the PR measures those). Before the
+// first turn, growth in the `top` snippet (an alert, a note) never pins the
+// chat to its bottom, so whatever it says stays in view.
 
 import { fireEvent, render } from '@testing-library/svelte';
 import { afterEach, expect, test, vi } from 'vitest';
@@ -32,4 +34,31 @@ test('a chip send scrolls the chat container, never the page', async () => {
 	expect(scrolled.every((el) => el.classList.contains('scroller'))).toBe(true);
 	expect(intoView).not.toHaveBeenCalled();
 	expect(pageScroll).not.toHaveBeenCalled();
+});
+
+test('growth before the first turn leaves the chat at its top', async () => {
+	const scrolled: Element[] = [];
+	Element.prototype.scrollTo = function (this: Element) {
+		scrolled.push(this);
+	};
+	const observers: (() => void)[] = [];
+	vi.stubGlobal(
+		'ResizeObserver',
+		class {
+			constructor(cb: () => void) {
+				observers.push(cb);
+			}
+			observe() {}
+			disconnect() {}
+		}
+	);
+	try {
+		// jsdom lays nothing out, so every scroller reads as at its bottom: the follow would fire.
+		render(Chat, { session: new ChatSession(async function* () {}) });
+		await vi.waitFor(() => expect(observers.length).toBe(1));
+		observers[0]();
+		expect(scrolled).toEqual([]);
+	} finally {
+		vi.unstubAllGlobals();
+	}
 });

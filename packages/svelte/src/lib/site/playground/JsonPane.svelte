@@ -18,7 +18,8 @@
     shows under the editor and the last good render stays. Editing ends on
     Done, or when the pane moves to a version that is not the visitor's own
     (OWN), such as a new answer.
-    The header says size, line count and status; Copy takes the whole spec,
+    The header says size, line count (dropped under 480px) and status, and a
+    Copy or Share result shows in the size's place; Copy takes the whole spec,
     Share copies a ?s= link (shareLink in lib/site/specFromUrl, which reads it
     back) once the spec is final. `onhide` adds a Hide button (the column
     collapses); `sheet` drops the outer border for the phone bottom sheet.
@@ -140,12 +141,17 @@
 
 <section class="pane" data-sheet={sheet || undefined} aria-label="JSON spec">
 	<header class="head">
-		<h2 class="title" data-streaming={streaming || undefined}>JSON spec{#if status}<span class="sr-only">, {status}</span>{/if}</h2>
-		{#if version}
-			<span class="meta" title="{formatBytes(byteLength(text))} · {lineCount} lines, {status}">{formatBytes(byteLength(text))} · {lineCount} lines</span>
-		{/if}
+		<span class="label">
+			<h2 class="title" data-streaming={streaming || undefined}>JSON spec{#if status}<span class="sr-only">, {status}</span>{/if}</h2>
+			{#if flash}
+				<span class="flash" data-ok={flash.ok} role="status">{flash.what}</span>
+			{:else if version}
+				<span class="meta" title="{formatBytes(byteLength(text))} · {lineCount} lines, {status}"
+					>{formatBytes(byteLength(text))}<span class="lines"> · {lineCount} lines</span></span
+				>
+			{/if}
+		</span>
 		<span class="tools">
-			{#if flash}<span class="flash" data-ok={flash.ok} role="status">{flash.what}</span>{/if}
 			{#if !editing && version?.spec && !streaming}
 				<span class="seg" role="group" aria-label="JSON view">
 					<button type="button" aria-pressed={mode === 'code'} onclick={() => (view = 'code')}>Code</button>
@@ -205,12 +211,18 @@
 		height: 100%;
 		background: var(--code-bg);
 	}
+	/* A narrow pane (400px at 1280 with the chat open, the phone sheet) stacks the size
+	   under the title and drops the line count; anything narrower wraps the tools. */
+	.pane {
+		container-type: inline-size;
+	}
 	.head {
 		display: flex;
+		flex-wrap: wrap;
 		align-items: center;
-		gap: 10px;
+		gap: 0 10px;
 		min-height: 44px;
-		padding: 0 6px 0 14px;
+		padding: 2px 6px 2px 14px;
 		border-bottom: 1px solid var(--site-line);
 		font-size: 12.5px;
 		color: var(--site-soft);
@@ -222,11 +234,27 @@
 		font-weight: 600;
 		color: var(--site-ink);
 	}
+	.label {
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+		line-height: 1.3;
+	}
 	.meta {
 		font-family: var(--font-mono);
 		font-variant-numeric: tabular-nums;
-		overflow: hidden;
-		text-overflow: ellipsis;
+	}
+	@container (min-width: 600px) {
+		.label {
+			flex-direction: row;
+			align-items: baseline;
+			gap: 10px;
+		}
+	}
+	@container (max-width: 479px) {
+		.lines {
+			display: none;
+		}
 	}
 	.sr-only {
 		position: absolute;
@@ -256,7 +284,6 @@
 		margin-left: auto;
 	}
 	.flash {
-		margin-right: 6px;
 		color: var(--site-ink);
 	}
 	.flash[data-ok='false'] {
@@ -264,7 +291,7 @@
 	}
 	.tool {
 		min-height: 32px;
-		padding: 0 10px;
+		padding: 0 8px;
 		border: 0;
 		border-radius: var(--radius-control);
 		background: transparent;

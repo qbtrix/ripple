@@ -40,9 +40,9 @@
     hero) is the chat's own scroll container; nothing calls scrollIntoView. It
     follows new content only while the visitor is at the bottom; the visitor's
     own message always jumps there; scrolled up, growth shows a "New" pill; a
-    resize keeps a reader at the bottom. At mount it stays at its top. The
-    dock holds the panel, the composer with `more` to its right, and a foot
-    row (`foot`, then the hint, the textarea's description when narrow).
+    resize keeps a reader at the bottom. At mount, and until the first turn,
+    it stays at its top. The dock holds the panel, the composer with `more` to
+    its right, and a foot row (`foot`, then the hint, the textarea's description when narrow).
     The log is role="log", aria-busy while streaming; one polite region says
     "Building" and "Done" per turn. DOM ids are positional, never Card.id
     (prerender and hydration can differ). Reduced motion: CSS, the label stays
@@ -202,12 +202,13 @@
 		if (stuck) unseen = false;
 	}
 
-	// Growth (a turn arriving, a card streaming and drawing) follows only while stuck.
+	// Growth (a turn arriving, a card streaming and drawing) follows only while stuck,
+	// and only once there are turns: the `top` snippet growing (a note, an alert) keeps the top in view.
 	$effect(() => {
 		if (!scroller || !inner || typeof ResizeObserver === 'undefined') return;
 		stuck = nearBottom(scroller);
 		const ro = new ResizeObserver(() => {
-			if (stuck) toBottom();
+			if (stuck && session.turns.length) toBottom();
 			else if (session.busy) unseen = true;
 		});
 		ro.observe(inner);
