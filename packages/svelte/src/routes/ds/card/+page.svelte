@@ -1,33 +1,40 @@
+<!--
+  routes/ds/card/+page.svelte: the Card widget on /ds, rendered as a Svelte
+  component: the four variants, both densities, an interactive card, and the
+  header and footer snippet slots on their own and together.
+-->
 <script lang="ts">
   import Card from '$lib/widgets/layout/Card.svelte';
   import Stat from '$lib/widgets/display/Stat.svelte';
+  import Showcase from '../Showcase.svelte';
+
+  const nav = [
+    { href: '#variants', label: 'Variants' },
+    { href: '#density', label: 'Density' },
+    { href: '#interactive', label: 'Interactive' },
+    { href: '#header-slot', label: 'Header slot' },
+    { href: '#footer-slot', label: 'Footer slot' },
+    { href: '#full', label: 'Full composition' }
+  ];
+  let clicks = $state(0);
 </script>
 
-<div class="showcase">
-  <header class="showcase-header">
-    <h1>Card</h1>
+<Showcase slug="card" {nav}>
+  {#snippet intro()}
     <p>
-      All variants, densities, and snippet slots for the rebuilt
-      <code>Card</code> widget. Verify against treatment A (hairline) spec.
+      The <code>card</code> widget groups related content under an optional title and description. Pick a
+      <code>variant</code> and a <code>density</code>, make it <code>interactive</code> to turn the whole card into a
+      button, and put a stat or actions in its <code>header</code> and <code>footer</code> slots.
     </p>
-    <nav class="showcase-nav">
-      <a href="#variants">Variants</a>
-      <a href="#density">Density</a>
-      <a href="#interactive">Interactive</a>
-      <a href="#header-slot">Header slot</a>
-      <a href="#footer-slot">Footer slot</a>
-      <a href="#full">Full composition</a>
-    </nav>
-  </header>
+  {/snippet}
 
-  <!-- Variants ──────────────────────────────────────────────── -->
   <section id="variants" class="showcase-section">
     <h2 class="showcase-section-title">Variants</h2>
-    <div class="grid-2x2">
+    <div class="grid-2">
       <div class="showcase-item">
         <h3 class="showcase-item-title">default</h3>
         <div class="showcase-item-demo">
-          <Card title="Default" description="border border-border on bg-card">
+          <Card title="Default" description="Border on the card surface">
             <p class="body-text">Standard card, no extra fill.</p>
           </Card>
         </div>
@@ -36,7 +43,7 @@
       <div class="showcase-item">
         <h3 class="showcase-item-title">muted</h3>
         <div class="showcase-item-demo">
-          <Card variant="muted" title="Muted" description="border border-border on bg-muted">
+          <Card variant="muted" title="Muted" description="Border on a muted fill">
             <p class="body-text">Subdued background, low emphasis.</p>
           </Card>
         </div>
@@ -45,7 +52,7 @@
       <div class="showcase-item">
         <h3 class="showcase-item-title">outlined</h3>
         <div class="showcase-item-demo">
-          <Card variant="outlined" title="Outlined" description="border foreground/15 — hairline">
+          <Card variant="outlined" title="Outlined" description="A hairline border">
             <p class="body-text">Hairline border, lightest treatment.</p>
           </Card>
         </div>
@@ -54,7 +61,7 @@
       <div class="showcase-item">
         <h3 class="showcase-item-title">selected</h3>
         <div class="showcase-item-demo">
-          <Card variant="selected" title="Selected" description="ring-1 ring-inset ring-primary">
+          <Card variant="selected" title="Selected" description="A brand ring marks it as picked">
             <p class="body-text">Primary ring overlay signals selection.</p>
           </Card>
         </div>
@@ -62,15 +69,14 @@
     </div>
   </section>
 
-  <!-- Density ───────────────────────────────────────────────── -->
   <section id="density" class="showcase-section">
     <h2 class="showcase-section-title">Density</h2>
-    <div class="side-by-side">
+    <div class="grid-2">
       <div class="showcase-item">
-        <h3 class="showcase-item-title">compact (default)</h3>
+        <h3 class="showcase-item-title">compact (the default)</h3>
         <div class="showcase-item-demo">
-          <Card title="Compact card" description="gap-2 p-4">
-            <p class="body-text">Tighter padding, default density.</p>
+          <Card title="Compact card" description="Tighter padding">
+            <p class="body-text">Suits lists and dense dashboards.</p>
           </Card>
         </div>
       </div>
@@ -78,7 +84,7 @@
       <div class="showcase-item">
         <h3 class="showcase-item-title">comfortable</h3>
         <div class="showcase-item-demo">
-          <Card density="comfortable" title="Comfortable card" description="gap-3 p-5">
+          <Card density="comfortable" title="Comfortable card" description="More padding">
             <p class="body-text">More breathing room for content-heavy layouts.</p>
           </Card>
         </div>
@@ -86,48 +92,45 @@
     </div>
   </section>
 
-  <!-- Interactive ────────────────────────────────────────────── -->
   <section id="interactive" class="showcase-section">
     <h2 class="showcase-section-title">Interactive</h2>
     <div class="showcase-item">
-      <h3 class="showcase-item-title">interactive + onclick (renders as &lt;button&gt;)</h3>
+      <h3 class="showcase-item-title">interactive with onclick (renders as a &lt;button&gt;)</h3>
       <div class="showcase-item-demo">
         <Card
           title="Interactive"
           description="Clickable + keyboard focusable"
           interactive
-          onclick={() => console.log('card clicked')}
+          onclick={() => clicks++}
         >
-          Click me, or tab in and press Enter / Space.
+          Click it, or tab to it and press Enter or Space. Pressed {clicks} {clicks === 1 ? 'time' : 'times'}.
         </Card>
       </div>
     </div>
   </section>
 
-  <!-- Header slot ────────────────────────────────────────────── -->
   <section id="header-slot" class="showcase-section">
     <h2 class="showcase-section-title">With header slot</h2>
     <div class="showcase-item">
-      <h3 class="showcase-item-title">title + description + right-side stat in header snippet</h3>
+      <h3 class="showcase-item-title">A stat on the right of the header</h3>
       <div class="showcase-item-demo">
         <Card title="Monthly revenue" description="Last 30 days">
           {#snippet header()}
             <Stat value={12450.32} format="currency" deltaPercent={3.4} direction="up-good" size="sm" align="right" />
           {/snippet}
-          <div class="h-16 rounded bg-muted/50" aria-hidden="true"></div>
+          <p class="body-text">Revenue grew in three of the last four weeks, led by annual plans.</p>
         </Card>
       </div>
     </div>
   </section>
 
-  <!-- Footer slot ────────────────────────────────────────────── -->
   <section id="footer-slot" class="showcase-section">
     <h2 class="showcase-section-title">With footer slot</h2>
     <div class="showcase-item">
-      <h3 class="showcase-item-title">footer snippet with meta text</h3>
+      <h3 class="showcase-item-title">A note in the footer</h3>
       <div class="showcase-item-demo">
         <Card title="Active users" description="Rolling 7-day window">
-          <div class="h-16 rounded bg-muted/50" aria-hidden="true"></div>
+          <p class="body-text">1,284 people used the app this week, 9% more than last week.</p>
           {#snippet footer()}
             <span class="text-xs text-muted-foreground">Updated 2m ago · Source: analytics</span>
           {/snippet}
@@ -136,17 +139,16 @@
     </div>
   </section>
 
-  <!-- Full composition ───────────────────────────────────────── -->
   <section id="full" class="showcase-section">
     <h2 class="showcase-section-title">Full composition</h2>
     <div class="showcase-item">
-      <h3 class="showcase-item-title">title + description + header snippet + body + footer snippet</h3>
+      <h3 class="showcase-item-title">Header stat, body and footer together</h3>
       <div class="showcase-item-demo">
         <Card title="Monthly revenue" description="Last 30 days">
           {#snippet header()}
             <Stat value={12450.32} format="currency" deltaPercent={-2.1} direction="up-good" size="sm" align="right" />
           {/snippet}
-          <div class="h-16 rounded bg-muted/50" aria-hidden="true"></div>
+          <p class="body-text">Revenue grew in three of the last four weeks, led by annual plans.</p>
           {#snippet footer()}
             <span class="text-xs text-muted-foreground">Updated 2m ago</span>
           {/snippet}
@@ -154,90 +156,9 @@
       </div>
     </div>
   </section>
-</div>
+</Showcase>
 
 <style>
-  .showcase {
-    max-width: 960px;
-    margin: 0 auto;
-    padding: 2rem 1.5rem 4rem;
-    color: var(--foreground);
-  }
-  .showcase-header {
-    margin-bottom: 2.5rem;
-  }
-  .showcase-header h1 {
-    font-size: 1.75rem;
-    font-weight: 700;
-    margin: 0 0 0.25rem;
-  }
-  .showcase-header p {
-    font-size: 0.875rem;
-    color: var(--muted-foreground);
-    margin: 0 0 1rem;
-  }
-  .showcase-header code {
-    background: color-mix(in srgb, var(--muted) 50%, transparent);
-    padding: 1px 5px;
-    border-radius: 4px;
-    font-size: 0.8rem;
-  }
-  .showcase-nav {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-  .showcase-nav a {
-    padding: 4px 12px;
-    border-radius: 6px;
-    font-size: 0.8rem;
-    font-weight: 500;
-    background: color-mix(in srgb, var(--muted) 40%, transparent);
-    color: var(--foreground);
-    text-decoration: none;
-    transition: background 0.15s;
-  }
-  .showcase-nav a:hover {
-    background: var(--muted);
-  }
-  .showcase-section {
-    margin-bottom: 2.5rem;
-  }
-  .showcase-section-title {
-    font-size: 1.15rem;
-    font-weight: 600;
-    margin: 0 0 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--border);
-  }
-  .grid-2x2 {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-  }
-  .side-by-side {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-  }
-  .showcase-item {
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    overflow: hidden;
-  }
-  .showcase-item-title {
-    font-size: 0.8rem;
-    font-weight: 600;
-    padding: 8px 14px;
-    margin: 0;
-    background: color-mix(in srgb, var(--muted) 25%, transparent);
-    border-bottom: 1px solid var(--border);
-    color: var(--muted-foreground);
-  }
-  .showcase-item-demo {
-    padding: 1.25rem;
-    background: var(--background);
-  }
   .body-text {
     font-size: 0.8125rem;
     color: var(--muted-foreground);

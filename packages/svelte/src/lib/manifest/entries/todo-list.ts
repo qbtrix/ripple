@@ -13,6 +13,7 @@ export const todoListEntry: WidgetManifestEntry = {
     value: { type: '{id,text,done}[]', required: false, description: 'Items when not bound.' },
     title: { type: 'string', required: false, description: 'Heading text. Default "Todo List".' },
     placeholder: { type: 'string', required: false, description: 'Add-input placeholder.' },
+    sound: { type: 'boolean', required: false, description: 'A soft pop when an item is checked off. Default true; false mutes this widget.' },
   },
   events: {
     on_change: { type: 'EventAction', required: false, description: 'Fired with the new item array when items change.' },

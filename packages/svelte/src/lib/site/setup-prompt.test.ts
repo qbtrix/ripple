@@ -7,13 +7,19 @@ import { expect, test } from 'vitest';
 import { SETUP_PROMPT } from './setup-prompt.js';
 import { SITE_URL } from './docs/model.js';
 import { pages } from './docs/content.js';
+import { toPlainMarkdown } from './docs/markdown.js';
 import * as svelte from '../index.js';
 
 const install = () => pages.find((p) => p.slug === 'getting-started/install')!;
 
 test('the Install page shows the prompt verbatim', () => {
-	const md = install().raw.replaceAll('\r\n', '\n');
+	const md = toPlainMarkdown(install().raw, install().file).replaceAll('\r\n', '\n');
 	expect(md).toContain('```text\n' + SETUP_PROMPT + '\n```');
+});
+
+test('the Install page source holds no host or prompt copy of its own', () => {
+	expect(install().raw).not.toContain(SITE_URL);
+	expect(install().raw).toContain('{{SETUP_PROMPT}}');
 });
 
 test('every docs link in the prompt is a page the site builds', () => {

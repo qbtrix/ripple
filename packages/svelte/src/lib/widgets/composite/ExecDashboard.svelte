@@ -19,7 +19,8 @@
   stays separate so a bind writer and a spec handler never replace each other.
   A visitor's chip picks (range, granularity, activity filter) hold across a
   re-sent spec and give way only to a different value from the spec. Layout
-  reads the widget's own width through container queries. The refresh icon's
+  reads the widget's own width through container queries (KPI tiles two a
+  row below 480px). The refresh icon's
   spin stops under prefers-reduced-motion.
 -->
 <script lang="ts">
@@ -1187,7 +1188,12 @@
     width: 72px;
     flex-shrink: 0;
   }
+  /* A phone-width card: two tiles a row (auto-fit at 150px gives one), an odd
+     last tile spans both, and the sparkline drops under the value. */
   @container (max-width: 480px) {
+    .rdash-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .rdash-kpi:last-child:nth-child(odd) { grid-column: 1 / -1; }
+    .rdash-kpi-row { flex-wrap: wrap; gap: 6px; }
     .rdash-kpi-spark { width: 60px; }
   }
   .rdash-kpi-meta {

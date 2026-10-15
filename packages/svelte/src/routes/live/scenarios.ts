@@ -2,8 +2,9 @@
 // the landing's suggestion chips. Each fixture is a real model stream recorded
 // offline by scripts/record-scenario.ts. Other tasks import these types and this
 // list, so the shapes below are a contract: add fields, never rename or remove.
-// `chatPrompts` are chips with no recording: the landing shows them only when the
-// live chat is on (and a store, for `needsStore`). `group` is the /live
+// `chatPrompts` are chips with no recording: live, they go to the chat (the
+// `needsStore` ones only with a store); in replay mode they open Paw OS with
+// their prompt, like typed text. `group` is the /live
 // gallery's group; on the landing, `suggestionGroups` decides which group a chip sits in, its order, its lucide icon and
 // (optionally) a shorter chip title; it names chips by id, because the play cards
 // (pawbar/play-cards.ts) import from here and this file runs in node for the
@@ -17,9 +18,10 @@ import savingsCalculator from './fixtures/savings-calculator.json';
 import tokyoTrip from './fixtures/tokyo-trip.json';
 import salesDashboard from './fixtures/sales-dashboard.json';
 import flashcards from './fixtures/flashcards.json';
+import heartPump from './fixtures/heart-pump.json';
 import hiitWorkout from './fixtures/hiit-workout.json';
 import mealPlan from './fixtures/meal-plan.json';
-import explainer from './fixtures/explainer.json';
+import bikeGears from './fixtures/bike-gears.json';
 import plane3d from './fixtures/plane-3d.json';
 import refundApproval from './fixtures/refund-approval.json';
 import incidentRollback from './fixtures/incident-rollback.json';
@@ -74,8 +76,9 @@ export const scenarios: Scenario[] = [
 	{ id: 'flashcards', title: 'Spanish flashcards', category: 'Learning', fixture: flashcards, group: 'Learn' },
 	{ id: 'hiit-workout', title: '20-minute HIIT', category: 'Fitness', fixture: hiitWorkout, group: 'Track' },
 	{ id: 'meal-plan', title: 'High-protein week', category: 'Food', fixture: mealPlan, group: 'Track' },
-	{ id: 'explainer', title: 'How bike gears work', category: 'Learning', fixture: explainer, prompt: 'How do bike gears work? Draw me an animated picture of the chain drive and explain it in a few lines.', group: 'Learn' },
-	{ id: 'plane-3d', title: 'See a plane in 3D', category: 'Learning', fixture: plane3d, prompt: 'Show me a plane in 3D and label its parts', group: 'Learn' }
+	{ id: 'plane-3d', title: 'See a plane in 3D', category: 'Learning', fixture: plane3d, prompt: 'Show me a plane in 3D and label its parts', group: 'Learn' },
+	{ id: 'heart-pump', title: 'How a heart pumps', category: 'Learning', fixture: heartPump, prompt: 'How does the heart pump blood?', group: 'Learn' },
+	{ id: 'bike-gears', title: 'How bike gears work', category: 'Learning', fixture: bikeGears, prompt: 'How do bike gears work?', group: 'Learn' }
 ];
 
 export const chatPrompts: ChatPrompt[] = [
@@ -170,8 +173,8 @@ export const suggestionGroups: { label: string; chips: GroupChip[] }[] = [
 			['take-quiz', 'graduation-cap'],
 			['explain-concept', 'lightbulb'],
 			['study-plan', 'book-open'],
-			['explainer', 'bike'],
-			['heart', 'heart-pulse'],
+			['bike-gears', 'bike'],
+			['heart-pump', 'heart-pulse', 'How a heart pumps'],
 			['plane-3d', 'box'],
 			['heart-3d', 'box'],
 			['skeleton-3d', 'box']

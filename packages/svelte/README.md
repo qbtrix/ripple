@@ -312,4 +312,6 @@ Full documentation at [ripple.pocketpaw.xyz/docs](https://ripple.pocketpaw.xyz/d
 
 ## License
 
-MIT
+MIT. The isometric drawings (`figure`, `iso-scene`) are inspired by and built
+on a kit ported from [Anatomy](https://skills.wheresryan.sh/anatomy) by Ryan,
+MIT; the full license ships as `THIRD_PARTY_NOTICES.md` in `@ripple-ui/core`.

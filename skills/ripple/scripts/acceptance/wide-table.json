@@ -1,0 +1,94 @@
+{
+  "version": "1.0",
+  "state": {},
+  "ui": {
+    "type": "card",
+    "props": {
+      "title": "Revenue by region"
+    },
+    "children": [
+      {
+        "type": "data-grid",
+        "props": {
+          "columns": [
+            {
+              "key": "region",
+              "label": "Region"
+            },
+            {
+              "key": "q1",
+              "label": "Q1 revenue",
+              "align": "right"
+            },
+            {
+              "key": "q2",
+              "label": "Q2 revenue",
+              "align": "right"
+            },
+            {
+              "key": "q3",
+              "label": "Q3 revenue",
+              "align": "right"
+            },
+            {
+              "key": "q4",
+              "label": "Q4 revenue",
+              "align": "right"
+            },
+            {
+              "key": "growth",
+              "label": "Growth year on year",
+              "align": "right"
+            },
+            {
+              "key": "owner",
+              "label": "Account owner"
+            }
+          ],
+          "rows": [
+            {
+              "id": 1,
+              "region": "North",
+              "q1": "$412,800",
+              "q2": "$438,100",
+              "q3": "$451,900",
+              "q4": "$502,300",
+              "growth": "+12.4%",
+              "owner": "Maya Lindqvist"
+            },
+            {
+              "id": 2,
+              "region": "South",
+              "q1": "$298,400",
+              "q2": "$305,700",
+              "q3": "$311,200",
+              "q4": "$344,800",
+              "growth": "+8.1%",
+              "owner": "Tomas Okafor"
+            },
+            {
+              "id": 3,
+              "region": "East",
+              "q1": "$187,300",
+              "q2": "$192,600",
+              "q3": "$205,400",
+              "q4": "$219,900",
+              "growth": "+15.0%",
+              "owner": "Priya Raman"
+            },
+            {
+              "id": 4,
+              "region": "West",
+              "q1": "$356,100",
+              "q2": "$349,800",
+              "q3": "$362,500",
+              "q4": "$388,700",
+              "growth": "+6.3%",
+              "owner": "Jonah Whitfield"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

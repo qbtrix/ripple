@@ -4,7 +4,6 @@
   import { cn } from '$lib/utils.js';
   import { safeArray } from '$lib/utils/safe-props.js';
   import { asText } from '$lib/widgets/text-coerce';
-  import { faviconUrl } from './favicon.js';
 
   interface Props {
     /** Spec node id, forwarded by NodeRenderer for editor selection. */
@@ -17,9 +16,9 @@
     exchange?: string;
     /** One-line company description */
     description?: string;
-    /** Logo image URL (auto-derived from domain if omitted) */
+    /** Logo image URL; without one the name's first letter shows */
     logo?: string;
-    /** Domain for auto logo (e.g. "reliance.com") */
+    /** Company domain (no logo is derived from it) */
     domain?: string;
     /** Sector / industry tags */
     tags?: string[];
@@ -43,7 +42,8 @@
   const tags = $derived(safeArray<string>(rawTags, { widget: 'company-header', key: 'tags' }));
 
   const logoSrc = $derived(
-    logo ?? (domain ? `https://logo.clearbit.com/${domain}` : undefined)
+    // Only a supplied logo: a derived logo-service URL leaks the domain and is CSP-blocked.
+    logo
   );
   let logoError = $state(false);
 

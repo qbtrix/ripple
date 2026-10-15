@@ -1,16 +1,27 @@
+<!--
+  routes/ds/spec/+page.svelte: cards, stats and charts composed from JSON specs
+  on /ds: a KPI row, area, line and bar charts in cards with a stat routed into
+  the card header by `slot: 'header'`, a sparkline and a donut. The series are
+  deterministic (no Math.random), so the prerendered page and the hydrated one
+  draw the same lines.
+-->
 <script lang="ts">
   import Ripple from '$lib/Ripple.svelte';
+  import Showcase from '../Showcase.svelte';
+
+  // Repeatable wiggle in [0, 1) so the demo series look organic but never change.
+  const wiggle = (i: number) => ((i * 37) % 11) / 11;
 
   // 30-day revenue series (trending up)
   const revenueSeries = Array.from({ length: 30 }, (_, i) => ({
     label: `Day ${i + 1}`,
-    value: 8000 + Math.round(Math.sin(i / 5) * 800 + i * 140 + Math.random() * 400),
+    value: 8000 + Math.round(Math.sin(i / 5) * 800 + i * 140 + wiggle(i) * 400),
   }));
 
-  // hourly p95 latency (ms) (trending up — bad for down-good)
+  // hourly p95 latency (ms), trending up: bad for down-good
   const latencySeries = Array.from({ length: 24 }, (_, i) => ({
     label: `${i}:00`,
-    value: 140 + Math.round(Math.cos(i / 4) * 30 + i * 1.8 + Math.random() * 14),
+    value: 140 + Math.round(Math.cos(i / 4) * 30 + i * 1.8 + wiggle(i) * 14),
   }));
 
   // weekly signups (bar)
@@ -92,7 +103,7 @@
         },
         {
           type: 'chart',
-          props: { type: 'bar', data: signupsSeries, height: 140, tooltip: true }
+          props: { type: 'bar', data: signupsSeries, height: 140, tooltip: true, colors: ['var(--primary)'] }
         }
       ]
     }
@@ -142,54 +153,46 @@
   };
 </script>
 
-<div class="mx-auto max-w-5xl space-y-10 p-8">
-  <header class="space-y-2">
-    <h1 class="text-2xl font-semibold">JSON-spec composition</h1>
-    <p class="text-muted-foreground">
-      Card + Stat + Chart rendered from declarative JSON specs — the shape agents emit into pockets.
-      Uses <code class="text-xs bg-muted px-1 py-0.5 rounded">slot: 'header'</code> to route
-      children into Card's named snippet slots.
+<Showcase slug="spec">
+  {#snippet intro()}
+    <p>
+      Cards, stats and charts rendered from declarative JSON specs, the shape an agent emits. A child with
+      <code>slot: 'header'</code> or <code>slot: 'footer'</code> lands in the card's header or footer instead of its
+      body.
     </p>
-  </header>
+  {/snippet}
 
-  <section class="space-y-3">
-    <h2 class="text-sm font-medium uppercase text-muted-foreground tracking-wide">KPI row</h2>
+  <section class="showcase-section">
+    <h2 class="showcase-section-title">KPI row</h2>
     <Ripple spec={kpiRowSpec} />
   </section>
 
-  <section class="space-y-3">
-    <h2 class="text-sm font-medium uppercase text-muted-foreground tracking-wide">
-      Chart-in-card — area (revenue, up-good)
-    </h2>
+  <section class="showcase-section">
+    <h2 class="showcase-section-title">Area chart in a card</h2>
+    <p class="section-caption">Revenue, where up is good.</p>
     <Ripple spec={revenueCardSpec} />
   </section>
 
-  <section class="space-y-3">
-    <h2 class="text-sm font-medium uppercase text-muted-foreground tracking-wide">
-      Chart-in-card — line (latency, down-good)
-    </h2>
+  <section class="showcase-section">
+    <h2 class="showcase-section-title">Line chart in a card</h2>
+    <p class="section-caption">Latency, where down is good.</p>
     <Ripple spec={latencyCardSpec} />
   </section>
 
-  <section class="space-y-3">
-    <h2 class="text-sm font-medium uppercase text-muted-foreground tracking-wide">
-      Chart-in-card — bar (weekly signups)
-    </h2>
+  <section class="showcase-section">
+    <h2 class="showcase-section-title">Bar chart in a card</h2>
+    <p class="section-caption">Weekly signups in one series colour.</p>
     <Ripple spec={signupsCardSpec} />
   </section>
 
-  <section class="grid grid-cols-2 gap-4">
-    <div class="space-y-3">
-      <h2 class="text-sm font-medium uppercase text-muted-foreground tracking-wide">
-        Sparkline in card
-      </h2>
+  <section class="showcase-section grid-2">
+    <div>
+      <h2 class="showcase-section-title">Sparkline in a card</h2>
       <Ripple spec={sparkCardSpec} />
     </div>
-    <div class="space-y-3">
-      <h2 class="text-sm font-medium uppercase text-muted-foreground tracking-wide">
-        Donut in card
-      </h2>
+    <div>
+      <h2 class="showcase-section-title">Donut in a card</h2>
       <Ripple spec={errorShareCardSpec} />
     </div>
   </section>
-</div>
+</Showcase>

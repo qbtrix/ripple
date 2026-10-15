@@ -3,32 +3,40 @@
   exercise the node-level `motion` field: staggered fade-up cards
   (motion.inView with per-card transition.delay in seconds), a spring hover CTA
   (motion.hover/tap), the `reveal` and `parallax` sugar widgets (parallax runs
-  on motion.scroll), and a button whose `animate` action ({ action, target,
-  motion }) pulses a card by id through the shared withMotion engine, with no
-  host code. The host echoes each event below. One <Ripple {spec} /> a panel.
+  on motion.scroll and is padded for its drift), and a button whose `animate`
+  action ({ action, target, motion }) pulses a card by id through the shared
+  withMotion engine, with no host code. The page lists the last few events it
+  received under that demo. One <Ripple {spec} /> a panel.
 -->
 <script lang="ts">
   import { Ripple } from '$lib/index.js';
   import type { RippleEvent } from '@ripple-ui/core';
+  import Showcase from '../Showcase.svelte';
 
-  let lastEvent = $state('—');
+  // The events the specs hand to the host (the `animate` action), newest first.
+  let events = $state<string[]>([]);
   function handleEvent(event: RippleEvent) {
-    // Surface host-delegated events (e.g. the `animate` action) so the demo is
-    // visibly interactive even for actions Ripple hands back to the host.
-    lastEvent = `${event.type}${event.name ? ` · ${event.name}` : ''}`;
-    console.log('RippleEvent:', event);
+    events = [`${event.type}${event.name ? ` · ${event.name}` : ''}`, ...events].slice(0, 3);
   }
+
+  const nav = [
+    { href: '#stagger', label: 'Staggered scroll' },
+    { href: '#hover', label: 'Spring hover' },
+    { href: '#reveal', label: 'reveal' },
+    { href: '#parallax', label: 'parallax' },
+    { href: '#animate', label: 'animate action' }
+  ];
 
   // ── 1. Staggered fade-up on scroll ──────────────────────────────
   // Each card carries an inView motion (fade + rise) plus a per-card delay so
   // the row cascades in. The cascade is the increasing transition.delay (in
-  // SECONDS) across the four cards — NOT the parent-orchestrated `stagger`
+  // SECONDS) across the four cards, not the parent-orchestrated `stagger`
   // field. inView arms the full from-state, so each card fades AND rises.
   const STEPS = [
     { n: '01', title: 'Describe', body: 'Tell the agent what you want in plain language.' },
     { n: '02', title: 'Generate', body: 'Ripple compiles a spec into live Svelte UI.' },
-    { n: '03', title: 'Refine', body: 'Keep editing by chat — the spec re-renders in place.' },
-    { n: '04', title: 'Ship', body: 'Publish to the edge. Your brand, your domain.' },
+    { n: '03', title: 'Refine', body: 'Keep editing by chat; the spec re-renders in place.' },
+    { n: '04', title: 'Ship', body: 'Put it on a page. Your brand, your domain.' },
   ];
 
   const staggerSpec = {
@@ -37,7 +45,7 @@
       type: 'flex',
       props: { direction: 'column', gap: '12px' },
       children: [
-        { type: 'text', props: { text: 'Scroll so this row enters the viewport — the cards fade + rise in sequence.', size: 'sm' }, class: 'text-muted-foreground' },
+        { type: 'text', props: { text: 'Scroll so this row enters the viewport: the cards fade and rise in sequence.', size: 'sm' }, class: 'text-muted-foreground' },
         {
           type: 'grid',
           props: { columns: 4, gap: '12px' },
@@ -84,14 +92,14 @@
             transition: { preset: 'snappy' },
           },
         },
-        { type: 'text', props: { text: 'Hover and press — the spring overshoots on the way up, presses in on tap.', size: 'sm' }, class: 'text-muted-foreground' },
+        { type: 'text', props: { text: 'Hover and press: the spring overshoots on the way up and presses in on tap.', size: 'sm' }, class: 'text-muted-foreground' },
       ],
     },
   };
 
   // ── 3. `reveal` sugar widget ────────────────────────────────────
   // The author writes { type: 'reveal' } — it desugars to an inView motion.
-  // Four directions so the captain can see up / down / left / right travel.
+  // Four entrances: up, left, right and a plain fade.
   const revealSpec = {
     version: '1.0' as const,
     ui: {
@@ -105,22 +113,22 @@
             {
               type: 'reveal',
               props: { direction: 'up' },
-              children: [{ type: 'card', props: { title: 'reveal · up' }, children: [{ type: 'text', props: { text: 'Rises 24px into view.', size: 'sm' } }] }],
+              children: [{ type: 'card', props: { title: 'reveal, up' }, children: [{ type: 'text', props: { text: 'Rises 24px into view.', size: 'sm' } }] }],
             },
             {
               type: 'reveal',
               props: { direction: 'left' },
-              children: [{ type: 'card', props: { title: 'reveal · left' }, children: [{ type: 'text', props: { text: 'Slides in from the left.', size: 'sm' } }] }],
+              children: [{ type: 'card', props: { title: 'reveal, left' }, children: [{ type: 'text', props: { text: 'Slides in from the left.', size: 'sm' } }] }],
             },
             {
               type: 'reveal',
               props: { direction: 'right' },
-              children: [{ type: 'card', props: { title: 'reveal · right' }, children: [{ type: 'text', props: { text: 'Slides in from the right.', size: 'sm' } }] }],
+              children: [{ type: 'card', props: { title: 'reveal, right' }, children: [{ type: 'text', props: { text: 'Slides in from the right.', size: 'sm' } }] }],
             },
             {
               type: 'reveal',
               props: { direction: 'fade' },
-              children: [{ type: 'card', props: { title: 'reveal · fade' }, children: [{ type: 'text', props: { text: 'Pure opacity fade, no travel.', size: 'sm' } }] }],
+              children: [{ type: 'card', props: { title: 'reveal, fade' }, children: [{ type: 'text', props: { text: 'Pure opacity fade, no travel.', size: 'sm' } }] }],
             },
           ],
         },
@@ -139,6 +147,8 @@
         {
           type: 'parallax',
           props: { distance: 50 },
+          // Room for the 50px drift either way, so the card never clips.
+          class: 'py-14',
           children: [
             {
               type: 'card',
@@ -184,66 +194,59 @@
         {
           type: 'card',
           id: 'animate-target',
-          props: { title: 'Pulse me', description: 'Click the button — I scale + pop, then settle back.' },
+          props: { title: 'Pulse me', description: 'Click the button: this card pops up, then settles back.' },
           class: 'inline-block',
         },
-        { type: 'text', props: { text: 'The `animate` action targets the badge by id and pulses it through the runtime — no host code. The host also echoes the event below.', size: 'sm' }, class: 'text-muted-foreground' },
+        { type: 'text', props: { text: 'The animate action finds this card by its id and pulses it, with no host code. The page also receives the event and lists it below.', size: 'sm' }, class: 'text-muted-foreground' },
       ],
     },
   };
 </script>
 
-<div class="showcase">
-  <header class="showcase-header">
-    <h1>Motion: the animation primitive</h1>
+<Showcase slug="motion" {nav}>
+  {#snippet intro()}
     <p>
-      Everything below is a declarative JSON spec rendered through
-      <code>&lt;Ripple&gt;</code>. The <code>motion</code> field is a sibling to
-      <code>props</code>/<code>class</code>/<code>style</code> on any node — no
-      per-widget wiring. Scroll, hover, and click to see it move.
+      Every node in a spec can carry a <code>motion</code> field next to <code>props</code>, <code>class</code> and
+      <code>style</code>: entrances when it scrolls into view, springs on hover and tap, and drift on scroll, with no
+      per-widget wiring. Each demo below is a JSON spec rendered through <code>&lt;Ripple&gt;</code>. Scroll, hover and
+      click to see it move.
     </p>
-    <nav class="showcase-nav">
-      <a href="#stagger">Staggered scroll</a>
-      <a href="#hover">Magnetic hover</a>
-      <a href="#reveal">reveal</a>
-      <a href="#parallax">parallax</a>
-      <a href="#animate">animate action</a>
-    </nav>
-    <p class="last-event">Last host event: <strong>{lastEvent}</strong></p>
-  </header>
+  {/snippet}
 
   <section id="stagger" class="showcase-section">
-    <h2 class="showcase-section-title">Staggered fade-up on scroll — <code>motion.inView</code></h2>
+    <h2 class="showcase-section-title">Staggered fade-up on scroll: <code>motion.inView</code></h2>
     <div class="showcase-item">
       <div class="showcase-item-demo">
-        <Ripple spec={staggerSpec} onEvent={handleEvent} />
+        <Ripple spec={staggerSpec} />
       </div>
     </div>
   </section>
 
   <section id="hover" class="showcase-section">
-    <h2 class="showcase-section-title">Magnetic / spring hover — <code>motion.hover</code> + <code>tap</code> (bouncy)</h2>
+    <h2 class="showcase-section-title">Spring hover: <code>motion.hover</code> and <code>tap</code></h2>
     <div class="showcase-item">
       <div class="showcase-item-demo">
-        <Ripple spec={magneticCtaSpec} onEvent={handleEvent} />
+        <Ripple spec={magneticCtaSpec} />
       </div>
     </div>
   </section>
 
   <section id="reveal" class="showcase-section">
-    <h2 class="showcase-section-title">The <code>reveal</code> sugar widget</h2>
+    <h2 class="showcase-section-title">The <code>reveal</code> widget</h2>
+    <p class="section-caption">Shorthand for a scroll entrance: wrap any node and pick a direction.</p>
     <div class="showcase-item">
       <div class="showcase-item-demo">
-        <Ripple spec={revealSpec} onEvent={handleEvent} />
+        <Ripple spec={revealSpec} />
       </div>
     </div>
   </section>
 
   <section id="parallax" class="showcase-section">
-    <h2 class="showcase-section-title">The <code>parallax</code> sugar widget</h2>
+    <h2 class="showcase-section-title">The <code>parallax</code> widget</h2>
+    <p class="section-caption">Shorthand for a scroll-linked drift: the card drifts up to 50px either way as the page scrolls.</p>
     <div class="showcase-item">
       <div class="showcase-item-demo">
-        <Ripple spec={parallaxSpec} onEvent={handleEvent} />
+        <Ripple spec={parallaxSpec} />
       </div>
     </div>
   </section>
@@ -255,88 +258,8 @@
         <Ripple spec={animateActionSpec} onEvent={handleEvent} />
       </div>
     </div>
+    <p class="event-log" aria-live="polite">
+      Events the page received: {events.length ? events.join(', ') : 'none yet. Press the button.'}
+    </p>
   </section>
-
-  <!-- Tall spacer so the scroll-driven demos (inView + parallax) have room to
-       animate as the page scrolls. -->
-  <div class="scroll-spacer" aria-hidden="true"></div>
-</div>
-
-<style>
-  .showcase {
-    max-width: 960px;
-    margin: 0 auto;
-    padding: 2rem 1.5rem 4rem;
-    color: var(--foreground);
-  }
-  .showcase-header {
-    margin-bottom: 2.5rem;
-  }
-  .showcase-header h1 {
-    font-size: 1.75rem;
-    font-weight: 700;
-    margin: 0 0 0.25rem;
-  }
-  .showcase-header p {
-    font-size: 0.875rem;
-    color: var(--muted-foreground);
-    margin: 0 0 1rem;
-  }
-  .showcase-header code {
-    background: color-mix(in srgb, var(--muted) 50%, transparent);
-    padding: 1px 5px;
-    border-radius: 4px;
-    font-size: 0.8rem;
-  }
-  .last-event {
-    font-size: 0.8rem;
-  }
-  .showcase-nav {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 1rem;
-  }
-  .showcase-nav a {
-    padding: 4px 12px;
-    border-radius: 6px;
-    font-size: 0.8rem;
-    font-weight: 500;
-    background: color-mix(in srgb, var(--muted) 40%, transparent);
-    color: var(--foreground);
-    text-decoration: none;
-    transition: background 0.15s;
-  }
-  .showcase-nav a:hover {
-    background: var(--muted);
-  }
-  .showcase-section {
-    margin-bottom: 2.5rem;
-  }
-  .showcase-section-title {
-    font-size: 1.15rem;
-    font-weight: 600;
-    margin: 0 0 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--border);
-  }
-  .showcase-section-title code {
-    background: color-mix(in srgb, var(--muted) 50%, transparent);
-    padding: 1px 5px;
-    border-radius: 4px;
-    font-size: 0.85rem;
-    font-weight: 500;
-  }
-  .showcase-item {
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    overflow: hidden;
-  }
-  .showcase-item-demo {
-    padding: 1.5rem;
-    background: var(--background);
-  }
-  .scroll-spacer {
-    height: 60vh;
-  }
-</style>
+</Showcase>

@@ -12,6 +12,11 @@ import { expectStreamParity } from '$lib/streaming/__fixtures__/stream-parity.js
 import { getWidget, hasWidget } from '../index.js';
 import { _resetBindContractWarnings, getBindContract, warnUnregisteredBindContract } from '@ripple-ui/core';
 import MemoryMatch, { autoColumns, face, type MatchPair } from './MemoryMatch.svelte';
+import { playCue } from '$lib/sound/index.js';
+
+vi.mock('$lib/sound/index.js', () => ({ playCue: vi.fn() }));
+const cues = () => vi.mocked(playCue).mock.calls.map((c) => c[0]);
+
 
 afterEach(() => {
 	cleanup();
@@ -365,5 +370,22 @@ describe('memory-match: junk props', () => {
 	it('shows the empty line with fewer than two pairs', () => {
 		render(MemoryMatch, { props: { pairs: [{ id: 'a', a: 'one', b: 'uno' }] } });
 		expect(screen.getByText('No pairs yet. Ask for a matching game.')).toBeTruthy();
+	});
+});
+
+describe('memory-match: sound', () => {
+	it('a pair found checks; the last pair wins', async () => {
+		vi.mocked(playCue).mockClear();
+		const pairs = animals().slice(0, 2);
+		const { container } = render(MemoryMatch, { props: { pairs } });
+		const at = layout(container, pairs);
+		const [d0, d1] = at.get('dog')!;
+		const [c0, c1] = at.get('cat')!;
+		await fireEvent.click(card(container, d0));
+		await fireEvent.click(card(container, d1));
+		expect(cues()).toEqual(['check']);
+		await fireEvent.click(card(container, c0));
+		await fireEvent.click(card(container, c1));
+		expect(cues()).toEqual(['check', 'win']);
 	});
 });

@@ -5,8 +5,11 @@
 // menu-order's OPTION_ICONS and OptionList's CHOICE_ICONS: an option may carry
 // an `icon`, honoured only when it is a key of that map; otherwise a keyword
 // scan of the option's name infers the key (optionIconKey, choiceIconKey).
-// habit-tracker's HABIT_ICONS is the same closed-key idea without the scan: a
-// habit's `icon` is honoured only when it is a key of the map.
+// habit-tracker's HABIT_ICONS and workflow's WORKFLOW_ICONS are the same
+// closed-key idea without the scan: an `icon` is honoured only when it is a key
+// of the map (workflow falls back to WORKFLOW_TYPE_ICONS by node type).
+// bulk-action-bar's BULK_ICONS is closed too, but an unknown name shows no icon.
+// audit-log's ACTOR_ICONS is closed the same way: an unknown actorIcon is absent.
 //
 // One map per enum in the doc, each its own export so a widget's bundle carries
 // only the icons it imports. A widget with an enum not listed here
@@ -14,6 +17,11 @@
 // Sizes: 16px in rows, 20px in tiles, stroke 1.75 (ICON).
 import type { LucideIcon } from '@lucide/svelte';
 import CircleDot from '@lucide/svelte/icons/circle-dot';
+// audit-log actors
+import Bot from '@lucide/svelte/icons/bot';
+import Server from '@lucide/svelte/icons/server';
+import Key from '@lucide/svelte/icons/key';
+import Shield from '@lucide/svelte/icons/shield';
 // stops
 import Landmark from '@lucide/svelte/icons/landmark';
 import Utensils from '@lucide/svelte/icons/utensils';
@@ -25,7 +33,7 @@ import Mountain from '@lucide/svelte/icons/mountain';
 import Moon from '@lucide/svelte/icons/moon';
 import Plane from '@lucide/svelte/icons/plane';
 // legs
-import TrainFront from '@lucide/svelte/icons/train-front';
+import TrainTrack from '@lucide/svelte/icons/train-track';
 import Bus from '@lucide/svelte/icons/bus';
 import Car from '@lucide/svelte/icons/car';
 import Ship from '@lucide/svelte/icons/ship';
@@ -44,7 +52,6 @@ import Snowflake from '@lucide/svelte/icons/snowflake';
 import Hamburger from '@lucide/svelte/icons/hamburger';
 import Salad from '@lucide/svelte/icons/salad';
 import CupSoda from '@lucide/svelte/icons/cup-soda';
-import IceCreamCone from '@lucide/svelte/icons/ice-cream-cone';
 // menu options
 import Maximize2 from '@lucide/svelte/icons/maximize-2';
 import Minimize2 from '@lucide/svelte/icons/minimize-2';
@@ -91,6 +98,7 @@ import MemoryStick from '@lucide/svelte/icons/memory-stick';
 import HardDrive from '@lucide/svelte/icons/hard-drive';
 import Camera from '@lucide/svelte/icons/camera';
 import Gauge from '@lucide/svelte/icons/gauge';
+import Cog from '@lucide/svelte/icons/cog';
 import Tag from '@lucide/svelte/icons/tag';
 import Usb from '@lucide/svelte/icons/usb';
 import Wifi from '@lucide/svelte/icons/wifi';
@@ -131,15 +139,49 @@ import Music from '@lucide/svelte/icons/music';
 import CandyOff from '@lucide/svelte/icons/candy-off';
 import Bike from '@lucide/svelte/icons/bike';
 import Pill from '@lucide/svelte/icons/pill';
+// bulk actions
+import UserCheck from '@lucide/svelte/icons/user-check';
+import UserPlus from '@lucide/svelte/icons/user-plus';
+import UserX from '@lucide/svelte/icons/user-x';
+import Mail from '@lucide/svelte/icons/mail';
+import Send from '@lucide/svelte/icons/send';
+import Trash2 from '@lucide/svelte/icons/trash-2';
+import Archive from '@lucide/svelte/icons/archive';
+import ArchiveRestore from '@lucide/svelte/icons/archive-restore';
+import Tags from '@lucide/svelte/icons/tags';
+import Download from '@lucide/svelte/icons/download';
+import Upload from '@lucide/svelte/icons/upload';
+import Copy from '@lucide/svelte/icons/copy';
+import FolderInput from '@lucide/svelte/icons/folder-input';
+import Pencil from '@lucide/svelte/icons/pencil';
+import Share2 from '@lucide/svelte/icons/share-2';
+import Flag from '@lucide/svelte/icons/flag';
+import EyeOff from '@lucide/svelte/icons/eye-off';
+import Lock from '@lucide/svelte/icons/lock';
+import LockOpen from '@lucide/svelte/icons/lock-open';
+import Check from '@lucide/svelte/icons/check';
+
+// workflow nodes (UserCheck, Flag, Check, Mail, Send, Download come from the bulk block)
+import Play from '@lucide/svelte/icons/play';
+import GitBranch from '@lucide/svelte/icons/git-branch';
+import Plug from '@lucide/svelte/icons/plug';
+import CreditCard from '@lucide/svelte/icons/credit-card';
+import Bell from '@lucide/svelte/icons/bell';
+import Clock from '@lucide/svelte/icons/clock';
+import Database from '@lucide/svelte/icons/database';
+import Search from '@lucide/svelte/icons/search';
+import ShoppingCart from '@lucide/svelte/icons/shopping-cart';
+import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+import GitMerge from '@lucide/svelte/icons/git-merge';
 
 export const FALLBACK_ICON: LucideIcon = CircleDot;
 
 /** Lucide props for the two placements. */
 export const ICON = { row: { size: 16, strokeWidth: 1.75 }, tile: { size: 20, strokeWidth: 1.75 } } as const;
 
-/** `map[kind]`, or CircleDot for an unknown, missing or non-string kind. */
-export function kindIcon(map: Readonly<Record<string, LucideIcon>>, kind: unknown): LucideIcon {
-	return (typeof kind === 'string' && Object.hasOwn(map, kind) ? map[kind] : undefined) ?? FALLBACK_ICON;
+/** `map[kind]`, or `fallback` (CircleDot) for an unknown, missing or non-string kind. */
+export function kindIcon(map: Readonly<Record<string, LucideIcon>>, kind: unknown, fallback: LucideIcon = FALLBACK_ICON): LucideIcon {
+	return (typeof kind === 'string' && Object.hasOwn(map, kind) ? map[kind] : undefined) ?? fallback;
 }
 
 /** itinerary StopKind (§3.5) */
@@ -158,7 +200,7 @@ export const STOP_ICONS = {
 /** itinerary legs (§3.5) */
 export const LEG_ICONS = {
 	flight: Plane,
-	train: TrainFront,
+	train: TrainTrack,
 	bus: Bus,
 	car: Car,
 	ferry: Ship,
@@ -188,7 +230,7 @@ export const MENU_ICONS = {
 	main: Hamburger,
 	side: Salad,
 	drink: CupSoda,
-	dessert: IceCreamCone,
+	dessert: CakeSlice,
 	product: ShoppingBag
 } satisfies Record<string, LucideIcon>;
 
@@ -404,6 +446,8 @@ export const FEATURE_ICONS = {
 	storage: HardDrive,
 	camera: Camera,
 	speed: Gauge,
+	motor: Cog,
+	power: Zap,
 	price: Tag,
 	ports: Usb,
 	wifi: Wifi,
@@ -435,6 +479,35 @@ export const HABIT_ICONS = {
 	vitamins: Pill
 } satisfies Record<string, LucideIcon>;
 
+/**
+ * bulk-action-bar action `icon`, keyed by Lucide name: common bulk verbs only.
+ * Unlike kindIcon there is no fallback: an unknown name renders no icon.
+ */
+export const BULK_ICONS = {
+	'user-check': UserCheck,
+	'user-plus': UserPlus,
+	'user-x': UserX,
+	mail: Mail,
+	send: Send,
+	'trash-2': Trash2,
+	archive: Archive,
+	'archive-restore': ArchiveRestore,
+	tag: Tag,
+	tags: Tags,
+	download: Download,
+	upload: Upload,
+	copy: Copy,
+	'folder-input': FolderInput,
+	pencil: Pencil,
+	'share-2': Share2,
+	flag: Flag,
+	star: Star,
+	'eye-off': EyeOff,
+	lock: Lock,
+	unlock: LockOpen,
+	check: Check
+} satisfies Record<string, LucideIcon>;
+
 export type StopKind = keyof typeof STOP_ICONS;
 export type LegKind = keyof typeof LEG_ICONS;
 export type MealKind = keyof typeof MEAL_ICONS;
@@ -445,3 +518,52 @@ export type ExerciseKind = keyof typeof EXERCISE_ICONS;
 export type RecordKind = keyof typeof RECORD_ICONS;
 export type FeatureKind = keyof typeof FEATURE_ICONS;
 export type HabitIconKey = keyof typeof HABIT_ICONS;
+
+/** workflow: one icon per node type; the type always has one, so no fallback. */
+export const WORKFLOW_TYPE_ICONS = {
+	trigger: Zap,
+	action: Play,
+	condition: GitBranch,
+	approval: UserCheck,
+	connector: Plug,
+	output: Flag
+} as const satisfies Record<string, LucideIcon>;
+
+/** workflow: the icon names a node may carry. Anything else (emoji, unknown) shows the type icon. */
+export const WORKFLOW_ICONS = {
+	play: Play,
+	check: Check,
+	'credit-card': CreditCard,
+	mail: Mail,
+	bell: Bell,
+	clock: Clock,
+	database: Database,
+	user: User,
+	'file-text': FileText,
+	search: Search,
+	send: Send,
+	package: Package,
+	'shopping-cart': ShoppingCart,
+	download: Download,
+	'refresh-cw': RefreshCw,
+	'git-merge': GitMerge
+} as const satisfies Record<string, LucideIcon>;
+
+const isWorkflowIconKey = (k: unknown): k is keyof typeof WORKFLOW_ICONS => typeof k === 'string' && Object.hasOwn(WORKFLOW_ICONS, k);
+
+/** A node's icon: its own when it is a WORKFLOW_ICONS key, else its type's. Never a printed string. */
+export function workflowIcon(type: keyof typeof WORKFLOW_TYPE_ICONS, icon?: unknown): LucideIcon {
+	return isWorkflowIconKey(icon) ? WORKFLOW_ICONS[icon] : WORKFLOW_TYPE_ICONS[type];
+}
+
+/** audit-log `actorIcon`: honoured only as a key of this map. */
+export const ACTOR_ICONS = {
+	user: User,
+	users: Users,
+	bot: Bot,
+	cog: Cog,
+	server: Server,
+	key: Key,
+	shield: Shield,
+	mail: Mail
+} satisfies Record<string, LucideIcon>;

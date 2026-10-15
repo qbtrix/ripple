@@ -1,4 +1,7 @@
-<!-- src/lib/widgets/data/Sparkline.svelte -->
+<!-- Sparkline.svelte: a tiny trend line through Chart's sparkline type. The
+     line is --ripple-accent unless the spec passes a colour (or bull/bear
+     colours), the area under it fades to nothing, and it fills the width its
+     row leaves it. -->
 <script lang="ts">
   import { cn } from '$lib/utils.js';
   import { safeArray } from '$lib/utils/safe-props.js';
@@ -46,14 +49,14 @@
   );
 </script>
 
-<div {id} class={cn('inline-block w-full', className)} style={styleString}>
+<div {id} class={cn('inline-block w-full min-w-0', className)} style={styleString}>
   <Chart
     type="sparkline"
     {data}
     {height}
     tooltip={!noTooltip}
-    bullColor={bullColor ?? color ?? '#22c55e'}
-    bearColor={bearColor ?? color ?? '#ef4444'}
+    bullColor={bullColor ?? color ?? 'var(--ripple-accent)'}
+    bearColor={bearColor ?? color ?? 'var(--ripple-accent)'}
     colors={color ? [color] : []}
   />
 </div>

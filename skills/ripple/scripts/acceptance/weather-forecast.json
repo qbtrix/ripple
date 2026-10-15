@@ -1,0 +1,96 @@
+{
+  "version": "1.0",
+  "state": {},
+  "ui": {
+    "type": "weather-forecast",
+    "props": {
+      "place": "Lisbon",
+      "note": "Sample forecast",
+      "now": {
+        "temp": 17,
+        "condition": "partly-cloudy",
+        "feelsLike": 16,
+        "humidity": 72,
+        "wind": "12 km/h N"
+      },
+      "hourly": [
+        {
+          "time": "Now",
+          "temp": 17,
+          "condition": "partly-cloudy"
+        },
+        {
+          "time": "10:00",
+          "temp": 18,
+          "condition": "partly-cloudy"
+        },
+        {
+          "time": "11:00",
+          "temp": 20,
+          "condition": "sunny"
+        },
+        {
+          "time": "12:00",
+          "temp": 21,
+          "condition": "sunny"
+        },
+        {
+          "time": "13:00",
+          "temp": 22,
+          "condition": "sunny"
+        },
+        {
+          "time": "14:00",
+          "temp": 23,
+          "condition": "sunny"
+        },
+        {
+          "time": "15:00",
+          "temp": 23,
+          "condition": "sunny"
+        },
+        {
+          "time": "16:00",
+          "temp": 22,
+          "condition": "partly-cloudy"
+        },
+        {
+          "time": "17:00",
+          "temp": 21,
+          "condition": "partly-cloudy"
+        },
+        {
+          "time": "18:00",
+          "temp": 20,
+          "condition": "cloudy"
+        },
+        {
+          "time": "19:00",
+          "temp": 19,
+          "condition": "cloudy"
+        },
+        {
+          "time": "20:00",
+          "temp": 18,
+          "condition": "night-clear"
+        },
+        {
+          "time": "21:00",
+          "temp": 17,
+          "condition": "night-clear"
+        }
+      ],
+      "days": [
+        {
+          "day": "Tue",
+          "condition": "partly-cloudy",
+          "high": 23,
+          "low": 15,
+          "rainChance": 5,
+          "sunrise": "07:39",
+          "sunset": "18:53"
+        }
+      ]
+    }
+  }
+}

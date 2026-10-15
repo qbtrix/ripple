@@ -92,6 +92,7 @@
 		return result;
 	}
 
+	/** In order: per series when points carry `series`, else per point. */
 	function getColor(i: number): string {
 		return colors[i] || defaultColors[i % defaultColors.length];
 	}
@@ -112,6 +113,13 @@
 			line: applyAlpha(fg, 0.06),
 			split: applyAlpha(fg, 0.04),
 		};
+	}
+
+	/** A `var(--token)` colour resolved on the chart element (canvas needs a real colour). */
+	function cssColor(c: string): string {
+		const m = /^var\((--[\w-]+)\)$/.exec(c.trim());
+		if (!m || !chartEl) return c;
+		return getComputedStyle(chartEl).getPropertyValue(m[1]).trim() || c;
 	}
 
 	function applyAlpha(color: string, alpha: number): string {
@@ -146,7 +154,8 @@
 		const tc = themeColors();
 		const labels = data.map(d => d.label);
 		const values = data.map(d => d.value ?? 0);
-		const itemColors = data.map((_, i) => getColor(i));
+		// One series: a single given colour paints every point (no rainbow bars).
+		const itemColors = data.map((_, i) => (colors.length === 1 && colors[0] ? colors[0] : getColor(i)));
 
 		// Detect multi-series: any point carries a `series` map → one ECharts series per key.
 		const seriesKeys: string[] = (() => {
@@ -319,13 +328,14 @@
 			};
 		} else if (type === 'sparkline') {
 			const trend = values.length >= 2 ? values[values.length - 1] - values[0] : 0;
-			const lineColor = trend >= 0 ? bullColor : bearColor;
+			const lineColor = applyAlpha(cssColor(trend >= 0 ? bullColor : bearColor), 1);
 			option = {
 				animation: true,
 				animationDuration: 400,
 				backgroundColor: 'transparent',
 				grid: { left: 0, right: 0, top: 2, bottom: 2 },
-				xAxis: { type: 'category', data: labels, show: false },
+				// boundaryGap off: the line runs edge to edge, no half-band inset.
+				xAxis: { type: 'category', data: labels, show: false, boundaryGap: false },
 				yAxis: { type: 'value', show: false, scale: true },
 				tooltip: tooltip ? {
 					trigger: 'axis',
@@ -341,8 +351,8 @@
 					lineStyle: { color: lineColor, width: 1.5 },
 					areaStyle: {
 						color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [
-							{ offset: 0, color: lineColor + '30' },
-							{ offset: 1, color: lineColor + '05' },
+							{ offset: 0, color: applyAlpha(lineColor, 0.18) },
+							{ offset: 1, color: applyAlpha(lineColor, 0) },
 						]}
 					},
 				}],

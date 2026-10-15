@@ -2,11 +2,15 @@
   widgets/data-kit/StageRail.svelte — the stage indicator for multistep data
   widgets (menu-order, booking; design doc 2026-10-09 §3.3, §3.4). It wears
   intent/ChainProgress.svelte's stepper look (muted pills, a numbered circle,
-  1px connectors, the current stage filled with the accent) and adds what a
+  1px connectors) and adds what a
   widget's own stages need: every stage named up front, done stages marked
-  with a check, and done stages clickable through `onselect` to go back.
+  with a check, and done stages clickable through `onselect` to go back. The
+  current stage keeps the muted pill with full-strength ink and an accent
+  numbered circle, so the rail reads as progress, never as a row of filter
+  pills (the accent fill stays free for a widget's own active control).
   `disabled` keeps it inert until card.final. Below 360px of container width
-  only the current stage keeps its label.
+  done stages drop their label (the check and aria-label carry it) and the
+  chips tighten, so the steps ahead stay named on a phone.
 -->
 <script lang="ts">
 	import Check from '@lucide/svelte/icons/check';
@@ -117,8 +121,8 @@
 	}
 
 	[data-state='current'] .stage-rail__chip {
-		background: var(--ripple-accent);
-		color: var(--ripple-accent-foreground);
+		color: var(--ripple-surface-foreground);
+		font-weight: 600;
 	}
 
 	.stage-rail__num {
@@ -135,7 +139,8 @@
 	}
 
 	[data-state='current'] .stage-rail__num {
-		background: color-mix(in oklch, var(--ripple-accent-foreground) 20%, transparent);
+		background: var(--ripple-accent);
+		color: var(--ripple-accent-foreground);
 	}
 
 	.stage-rail__label {
@@ -146,8 +151,16 @@
 	}
 
 	@container (max-width: 359px) {
-		.stage-rail__item:not([data-state='current']) .stage-rail__label {
+		.stage-rail__item[data-state='done'] .stage-rail__label {
 			display: none;
+		}
+
+		.stage-rail__chip {
+			padding-inline: 0.4rem;
+		}
+
+		.stage-rail__item + .stage-rail__item::before {
+			width: 0.25rem;
 		}
 	}
 </style>

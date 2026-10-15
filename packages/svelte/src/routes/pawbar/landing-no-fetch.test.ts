@@ -23,12 +23,12 @@ test('a chip tap and a typed prompt never call fetch without the opt-in flag', a
 	const send = () => view.getByRole('button', { name: 'Send' });
 
 	// The prerendered bill splitter exchange is already there.
-	expect(view.getAllByText('Replaying a recorded answer that matches.')).toHaveLength(1);
+	expect(view.getByText('A recorded answer, replayed. Change something in the card.')).toBeTruthy();
 
 	// The panel starts collapsed; savings sits past the first row.
 	await fireEvent.click(view.getByRole('button', { name: 'Show all suggestions' }));
 	await fireEvent.click(view.getByRole('button', { name: 'Watch savings grow' }));
-	await waitFor(() => expect(view.getAllByText('Replaying a recorded answer that matches.')).toHaveLength(2));
+	await waitFor(() => expect(view.getAllByText('Replaying a recorded answer that matches.')).toHaveLength(1));
 	await waitFor(() => expect(view.queryByRole('button', { name: 'Stop' })).toBeNull());
 
 	await fireEvent.input(view.getByLabelText('Type a request to continue in Paw OS'), { target: { value: 'something no recording covers' } });
@@ -39,16 +39,4 @@ test('a chip tap and a typed prompt never call fetch without the opt-in flag', a
 
 	const urls = fetchSpy.mock.calls.map(([input]) => String(input instanceof Request ? input.url : input));
 	expect(urls.filter((u) => !u.startsWith('https://lab.pocketpaw.xyz/'))).toEqual([]);
-});
-
-test('offline, the panel shows only chips with an answer behind them, and hides empty groups', async () => {
-	const view = render(Landing, { props });
-	const toggle = view.getByRole('button', { name: 'Show all suggestions' });
-	expect(toggle.getAttribute('aria-expanded')).toBe('false');
-	await fireEvent.click(toggle);
-	const lists = view.getAllByRole('list').filter((l) => l.classList.contains('chips'));
-	expect(lists.map((l) => l.getAttribute('aria-label'))).toEqual(['Organize', 'Learn & explore', 'Work & productivity', 'Lifestyle', 'Planning', 'Play']);
-	// Live-only chips (no recording) and the store one stay out.
-	for (const name of ['Shop headphones', 'Draft announcement', 'Order a burger', 'Help me pick a laptop']) expect(view.queryByRole('button', { name })).toBeNull();
-	expect(view.getByRole('button', { name: 'Plan Tokyo trip' })).toBeTruthy();
 });

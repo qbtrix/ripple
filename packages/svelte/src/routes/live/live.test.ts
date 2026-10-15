@@ -17,6 +17,7 @@ import { streamSpec, type StreamSpecStore } from '$lib/streaming/index.js';
 import { validateCatalog } from '$lib/widgets/validate-catalog-bound.js';
 import { replay } from './replay.js';
 import { businessScenarios, scenarios, type ScenarioFixture } from './scenarios.js';
+import { appScenarios, figureRuns } from './app-runs.js';
 import OrderReceipt from './OrderReceipt.svelte';
 
 // Streamed mounts recompute on later ticks; under a full parallel suite that can
@@ -60,7 +61,7 @@ describe('replay()', () => {
 	});
 });
 
-describe.each([...scenarios, ...businessScenarios].map((s) => [s.id, s] as const))('scenario %s', (_id, scenario) => {
+describe.each([...scenarios, ...figureRuns, ...businessScenarios].map((s) => [s.id, s] as const))('scenario %s', (_id, scenario) => {
 	const { fixture } = scenario;
 	const finalSpec = JSON.parse(join(fixture));
 	const hasInput = specHas(finalSpec, (n) => ['input', 'number-input'].includes(n.type ?? ''));
@@ -138,14 +139,18 @@ async function mountStreamed(fixture: ScenarioFixture) {
 	const onStateChange = vi.fn();
 	const onEvent = vi.fn();
 	const { container } = render(Ripple, { props: { streaming: store, onStateChange, onEvent } });
-	await waitFor(() => expect(store.done).toBe(true), { timeout: 5000 });
+	// Every recorded chunk (up to 416, meal-plan) re-renders the tree, and the
+	// model's own chunking is what this file tests, so it is not coalesced. That
+	// can pass 5 s under a full parallel suite; the cap only needs to sit inside
+	// the 20 s test budget.
+	await waitFor(() => expect(store.done).toBe(true), { timeout: 15_000 });
 	await tick();
 	return { store, container, onStateChange, onEvent };
 }
 
 // Data widgets carry their own controls (sliders, steppers, ticks, filters);
 // bound to state, they are as interactive as a bound input.
-const DATA_WIDGETS = ['growth-projection', 'itinerary', 'meal-plan', 'recipe', 'interval-workout', 'flashcard-deck', 'quiz', 'memory-match', 'focus-timer', 'board-game', 'exec-dashboard', 'menu-order', 'booking', 'bill-split'];
+const DATA_WIDGETS = ['growth-projection', 'itinerary', 'meal-plan', 'recipe', 'interval-workout', 'flashcard-deck', 'quiz', 'memory-match', 'focus-timer', 'board-game', 'exec-dashboard', 'menu-order', 'booking', 'bill-split', 'figure'];
 
 type SpecNode = { type?: string; bind?: string; on_click?: unknown; props?: Record<string, unknown>; children?: unknown[] };
 
@@ -308,8 +313,8 @@ describe('tokyo-trip (itinerary)', () => {
 		expect(slot(container, 'spend')).toContain('99,780');
 		expect(container.querySelector('[data-slot="spend"]')!.getAttribute('data-status')).toBe('good');
 
-		await fireEvent.click(ui.getByRole('checkbox', { name: 'Airport train into the city' }));
-		await waitFor(() => expect(ui.getByRole('checkbox', { name: 'Airport train into the city' }).getAttribute('aria-checked')).toBe('true'));
+		await fireEvent.click(ui.getByRole('checkbox', { name: /^Airport train into the city/ }));
+		await waitFor(() => expect(ui.getByRole('checkbox', { name: /^Airport train into the city/ }).getAttribute('aria-checked')).toBe('true'));
 		const ticked = lastWrite(onStateChange, 'days') as { stops: { title: string; done?: boolean }[] }[];
 		expect(ticked[0].stops.find((s) => s.title === 'Airport train into the city')?.done).toBe(true);
 
@@ -351,11 +356,16 @@ describe('flashcards (flashcard-deck)', () => {
 		const { container, onStateChange } = await mountStreamed(scenario('flashcards'));
 		const ui = within(container);
 		expect(slot(container, 'front')).toBe('Hello');
-		await fireEvent.click(ui.getByRole('button', { name: 'Got it' }));
+		// Reveal, then grade: the marks only exist once the answer is showing.
+		const grade = async (name: string) => {
+			await fireEvent.click(ui.getByRole('button', { name: 'Show answer' }));
+			await fireEvent.click(ui.getByRole('button', { name }));
+		};
+		await grade('Got it');
 		await waitFor(() => expect(lastWrite(onStateChange, 'score')).toBe(1));
 		expect(slot(container, 'front')).toBe('Good morning');
-		await fireEvent.click(ui.getByRole('button', { name: 'Missed it' }));
-		for (let i = 0; i < 8; i++) await fireEvent.click(ui.getByRole('button', { name: 'Got it' }));
+		await grade('Missed it');
+		for (let i = 0; i < 8; i++) await grade('Got it');
 		await waitFor(() => expect(slot(container, 'total')).toBe('9 / 10'));
 		expect(lastWrite(onStateChange, 'score')).toBe(9);
 		expect(container.querySelector('[data-slot="missed"]')?.textContent).toContain('Good morning');
@@ -384,13 +394,14 @@ describe('meal-plan (meal-plan)', () => {
 	const amount = (c: HTMLElement, key: string) => c.querySelector(`[data-item="${key}"] [data-slot="amount"]`)?.textContent?.trim();
 
 	// Salmon (400 g, serves 2) is on Mon and Sat; for 2 people that is 800 g,
-	// for 3 people 1,200 g. Turkey chili (500 g, serves 4) on Tue and Fri: 500 g.
+	// for 3 people 1.2 kg. Turkey chili (500 g, serves 4) on Tue and Fri: 500 g.
 	test('after streaming, More people rescales the shopping list and writes people', async () => {
 		const { container, onStateChange } = await mountStreamed(scenario('meal-plan'));
+		await fireEvent.click(within(container).getByRole('radio', { name: /Shopping list/ }));
 		expect(amount(container, 'salmon fillet|g')).toBe('800 g');
 		await fireEvent.click(within(container).getByRole('button', { name: 'More people' }));
 		await waitFor(() => expect(lastWrite(onStateChange, 'people')).toBe(3));
-		await waitFor(() => expect(amount(container, 'salmon fillet|g')).toBe('1,200 g'));
+		await waitFor(() => expect(amount(container, 'salmon fillet|g')).toBe('1.2 kg'));
 		expect(amount(container, 'ground turkey|g')).toBe('750 g');
 	});
 
@@ -399,6 +410,7 @@ describe('meal-plan (meal-plan)', () => {
 	test('after streaming, swapping a day\'s dinner re-totals the shopping list', async () => {
 		const { container } = await mountStreamed(scenario('meal-plan'));
 		await fireEvent.change(within(container).getByRole('combobox', { name: 'Swap Mon Dinner' }), { target: { value: 'chili' } });
+		await fireEvent.click(within(container).getByRole('radio', { name: /Shopping list/ }));
 		await waitFor(() => expect(amount(container, 'salmon fillet|g')).toBe('400 g'));
 		expect(amount(container, 'ground turkey|g')).toBe('750 g');
 	});
@@ -408,7 +420,7 @@ describe('explainer gearing', () => {
 	// 50/17 on a 2100 mm wheel: ratio 2.941, 6.176 m per pedal turn (stat tiles show 2 decimals below 10).
 	// 34/32: ratio 1.0625, 2.231 m.
 	test('after streaming, parts show their notes and the presets change the gearing', async () => {
-		const { container } = await mountStreamed(scenario('explainer'));
+		const { container } = await mountStreamed(appScenarios.find((s) => s.id === 'explainer')!.fixture);
 		expect(text(container)).toMatch(/Gear ratio\s*2\.94(?!\d)/);
 		expect(text(container)).toMatch(/Metres per pedal turn\s*6\.18(?!\d)/);
 		await fireEvent.click(button(container, '1 Pedals + crank'));

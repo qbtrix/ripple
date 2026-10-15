@@ -3,17 +3,17 @@ import type { WidgetManifestEntry } from '../index.js';
 export const pipelineDashboardEntry: WidgetManifestEntry = {
   type: 'pipeline-dashboard',
   category: 'composite',
-  description: 'Sales / pipeline / funnel archetype: quota progress hero + leaderboard side rail + funnel chart + stage conversion + deals table + live activity ticker.',
+  description: 'Sales or hiring pipeline: quota progress, funnel, leaderboard, deals table and recent activity.',
   props: {
     title: { type: 'string', required: false, description: 'Page title.' },
     subtitle: { type: 'string', required: false, description: 'Subheading.' },
     period: { type: 'string', required: false, description: 'Period label (e.g. "Q2 2026").' },
-    quota: { type: '{ label?: string; current: number; target: number; currency?: string; period?: string }', required: false, description: 'Big quota progress hero (current vs target).' },
+    quota: { type: '{ label?: string; current: number; target: number; currency?: string; period?: string }', required: false, description: 'Progress to a target. Currency optional.' },
     funnel: { type: '{ title?: string; stages: Array<{ label: string; value: number; color?: string }> }', required: false, description: 'Funnel chart data.' },
-    conversion: { type: 'Array<{ from: string; to: string; rate: number }>', required: false, description: 'Stage-to-stage conversion percentages (0 to 100).' },
-    leaderboard: { type: '{ title?: string; items: Array<{ name: string; avatar?: string; value: string | number; delta?: string; sublabel?: string; position?: number }> }', required: false, description: 'Leaderboard sidebar (medals on top 3).' },
+    conversion: { type: 'Array<{ from: string; to: string; rate: number }>', required: false, description: 'Step rates 0-100; used without a funnel.' },
+    leaderboard: { type: '{ title?: string; items: Array<{ name: string; avatar?: string; value: string | number; delta?: string; sublabel?: string; position?: number }> }', required: false, description: 'Ranked people; top 3 marked.' },
     deals: { type: '{ title?: string; columns: Array<{ key: string; label: string; align?: "left" | "right" | "center" }>; rows: Record<string, unknown>[] }', required: false, description: 'Deals / opportunities table.' },
-    ticker: { type: 'Array<{ time: string; label: string; actor?: string; icon?: string }>', required: false, description: 'Live activity ticker.' },
+    ticker: { type: 'Array<{ time: string; label: string; actor?: string; icon?: string }>', required: false, description: 'Recent activity.' },
   },
   example: {
     type: 'pipeline-dashboard',
@@ -21,7 +21,7 @@ export const pipelineDashboardEntry: WidgetManifestEntry = {
       title: 'Sales pipeline',
       subtitle: 'Team performance and active deals',
       period: 'Q2 2026',
-      quota: { label: 'Team quota', current: 1820000, target: 2500000, currency: '$', period: 'Q2 — 28 days remaining' },
+      quota: { label: 'Team quota', current: 1820000, target: 2500000, currency: '$', period: 'Q2, 28 days remaining' },
       funnel: {
         title: 'Pipeline funnel',
         stages: [
@@ -41,7 +41,7 @@ export const pipelineDashboardEntry: WidgetManifestEntry = {
         { from: 'Negotiation', to: 'Closed won',   rate: 41.3 }
       ],
       leaderboard: {
-        title: 'Top reps — Q2',
+        title: 'Top reps, Q2',
         items: [
           { position: 1, name: 'Alex Liu',     value: '$420k', delta: '+$80k', sublabel: '12 deals' },
           { position: 2, name: 'Sam Patel',    value: '$380k', delta: '+$45k', sublabel: '9 deals' },

@@ -1,0 +1,84 @@
+{
+  "version": "1.0",
+  "state": {
+    "selectedPerson": "l4"
+  },
+  "ui": {
+    "type": "org-chart",
+    "props": {
+      "root": {
+        "id": "l1",
+        "name": "Samuel Osei",
+        "title": "Managing Director",
+        "children": [
+          {
+            "id": "l2",
+            "name": "Tara Whitfield",
+            "title": "VP Engineering",
+            "children": [
+              {
+                "id": "l3",
+                "name": "Umar Siddiqui",
+                "title": "Director, Platform",
+                "children": [
+                  {
+                    "id": "l4",
+                    "name": "Vera Kowalski",
+                    "title": "Engineering Manager",
+                    "children": [
+                      {
+                        "id": "l5",
+                        "name": "Wesley Park",
+                        "title": "Tech Lead",
+                        "children": [
+                          {
+                            "id": "l6",
+                            "name": "Xenia Morales",
+                            "title": "Senior Engineer",
+                            "children": [
+                              {
+                                "id": "l7",
+                                "name": "Yusuf Demir",
+                                "title": "Engineer"
+                              }
+                            ]
+                          },
+                          {
+                            "id": "l6b",
+                            "name": "Zara Bennett",
+                            "title": "Engineer"
+                          }
+                        ]
+                      },
+                      {
+                        "id": "l5b",
+                        "name": "Arjun Mehta",
+                        "title": "Tech Lead"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "l4b",
+                    "name": "Bianca Costa",
+                    "title": "Engineering Manager"
+                  }
+                ]
+              },
+              {
+                "id": "l3b",
+                "name": "Caleb Wright",
+                "title": "Director, Mobile"
+              }
+            ]
+          },
+          {
+            "id": "l2b",
+            "name": "Daria Ivanova",
+            "title": "VP Operations"
+          }
+        ]
+      }
+    },
+    "bind": "selectedPerson"
+  }
+}

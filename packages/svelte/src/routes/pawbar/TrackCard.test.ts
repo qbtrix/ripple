@@ -22,7 +22,7 @@ const leaflet = vi.hoisted(() => {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const stub = (): any => new Proxy({}, { get: (_t, k) => (k === 'then' ? undefined : () => stub()) });
 	const L = {
-		map: () => (create(), { fitBounds, setView, on() {}, remove() {}, panTo() {} }),
+		map: () => (create(), { fitBounds, setView, on() {}, remove() {}, panTo() {}, getSize: () => ({ x: 0, y: 0 }), latLngToContainerPoint: () => ({ x: 0, y: 0 }) }),
 		tileLayer: stub,
 		layerGroup: stub,
 		divIcon: (o: unknown) => o,

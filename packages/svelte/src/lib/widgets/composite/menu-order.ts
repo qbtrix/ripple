@@ -155,6 +155,12 @@ export function toItems(v: unknown): Item[] {
 		});
 }
 
+/** An id as words, the name a nameless item reads by: `garlic-knots` is "Garlic knots". */
+export function idWords(id: unknown): string {
+	const w = str(id).replace(/[-_\s]+/g, ' ').trim();
+	return w ? w[0].toUpperCase() + w.slice(1) : '';
+}
+
 /** The model's pick (`{id, reason}`) first, else the store's first `featured` item. */
 export function featuredOf(items: Item[], featured: unknown): { item: Item; reason: string } | undefined {
 	const id = isObj(featured) ? str(featured.id) : '';

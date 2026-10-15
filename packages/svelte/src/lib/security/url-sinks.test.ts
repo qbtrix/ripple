@@ -101,7 +101,7 @@ const CASES: Array<[string, Component<any>, Record<string, unknown>, string?]> =
 	['breadcrumb', Breadcrumb, { items: [{ label: 'A', href: P }, { label: 'B', href: P }, { label: 'C' }] }, 'a'],
 	['source-chip', SourceChip, { label: 'S', href: P, image: P }, 'a'],
 	['mention', Mention, { name: 'n', href: P, avatar: P }],
-	['image', Image, { src: P, alt: 'x' }, 'img'],
+	['image', Image, { src: P, alt: 'x' }, '[data-state="fallback"]'],
 	['video-player', VideoPlayer, { src: P, poster: 'data:text/html,<script>alert(1)</script>' }, 'video'],
 	['audio-player', AudioPlayer, { src: P, cover: P }, 'audio'],
 	['form', Form, { action: P }, 'form'],

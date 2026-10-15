@@ -1,28 +1,21 @@
-// Build-time-generated manifest of every Ripple widget the LLM should know
-// about. Aggregated into dist/manifest.json by scripts/build-manifest.ts.
+// The LLM-facing manifest of every Ripple widget, aggregated into
+// dist/manifest.json (and static/manifest.json for the dev server) by
+// scripts/build-manifest.ts.
 //
-// Per-widget entries live in ./entries/<kebab-type>.ts. Adding a new widget
-// requires both a new entry file AND adding the import + array entry below.
+// Per-widget entries live in ./entries/<kebab-type>.ts. Adding a widget needs
+// both a new entry file AND the import + array entry below.
 //
-// Updated 2026-05-30 (RFC 12 motion primitive): registered reveal + parallax
-// entries and attached the top-level `motion` doc block (motion-doc.ts) to the
-// built manifest so the node-level `motion` field is documented for the LLM.
-// Updated 2026-05-30 (RFC 12 Phase 4): registered the premium pack entries
-// (marquee + the 6 remaining ports) for the MIT-ported animation widgets.
-// Updated 2026-06-09 (marketing-pack enrich): added a `marketing` category and
-// a `staticSafe` (Tier-0) flag to WidgetManifestEntry; moved the marketing pack
-// (navbar/footer/cta/testimonial/feature-grid/logo-cloud/newsletter) under it;
-// registered the new faq + marketing-hero entries.
-// Updated 2026-06-28 (SP-1c-b): the version now comes from src/lib/version.ts (a
-// plain constant) instead of importing package.json. This module is a CLIENT
-// dependency (the visual editor consumes the manifest), and importing the
-// project-root package.json into the client path 500s `vite dev` via
-// server.fs.allow. version.test.ts guards the constant against release drift.
-// Updated 2026-06-24 (AI-native tier): added the `ai` category and registered
-// stream-text + tool-call + reasoning-trace — read-only widgets a generative-UI
-// engine uses to show an agent's work (streaming text, tool calls, reasoning).
-// Updated 2026-06-24: registered approval-gate — the human-in-the-loop
-// approve/deny/diff-review organism (the Instinct "human mans the gate" layer).
+// The action grammar and spec envelope come from @ripple-ui/core/manifest
+// (they describe the engine) and are re-exported unchanged. So does the craft
+// data: buildManifest() stamps `data: true` on every prop core's DATA_PROPS
+// lists and carries core's reviewed `waivers`, its `intents` map and its
+// `craft` rules and lenses, so the build loop, pocketpaw and the skill read
+// one copy. The version comes from src/lib/version.ts, a
+// plain constant: this module is a client dependency (the visual editor), and
+// importing package.json here 500s `vite dev`.
+// Each entry may carry `staticSafe` (renders with JavaScript off) and a
+// runnable `pocket`; the top-level `motion` block documents the node-level
+// `motion` field.
 
 import { RIPPLE_VERSION } from '../version.js';
 
@@ -30,7 +23,19 @@ import { manifestActions } from './actions.js';
 // ActionSpec, SpecEnvelope and specEnvelope moved to @ripple-ui/core/manifest on
 // 2026-09-27 (they describe the engine, not any widget). Re-exported so every
 // existing import from this module keeps working.
-import { specEnvelope, type ActionSpec, type SpecEnvelope } from '@ripple-ui/core/manifest';
+import {
+  specEnvelope,
+  DATA_PROPS,
+  waivers,
+  craft,
+  intents,
+  type ActionSpec,
+  type SpecEnvelope,
+  type Waiver,
+  type CraftRule,
+  type Lens,
+  type Intent
+} from '@ripple-ui/core/manifest';
 export { specEnvelope, type ActionSpec, type SpecEnvelope };
 import { accordionEntry } from './entries/accordion.js';
 import { alertEntry } from './entries/alert.js';
@@ -130,12 +135,15 @@ import { growthProjectionEntry } from './entries/growth-projection.js';
 import { billSplitEntry } from './entries/bill-split.js';
 import { intervalWorkoutEntry } from './entries/interval-workout.js';
 import { habitTrackerEntry } from './entries/habit-tracker.js';
+import { standupBoardEntry } from './entries/standup-board.js';
 import { notesEntry } from './entries/notes.js';
 import { placeResultsEntry } from './entries/place-results.js';
 import { productGridEntry } from './entries/product-grid.js';
 import { mediaGridEntry } from './entries/media-grid.js';
 import { focusTimerEntry } from './entries/focus-timer.js';
 import { musicPlayerEntry } from './entries/music-player.js';
+import { isoSceneEntry } from './entries/iso-scene.js';
+import { figureEntry } from './entries/figure.js';
 import { flashcardDeckEntry } from './entries/flashcard-deck.js';
 import { wordGuessEntry } from './entries/word-guess.js';
 import { quizEntry } from './entries/quiz.js';
@@ -251,6 +259,8 @@ export interface WidgetPropSpec {
   type: string;
   required: boolean;
   description: string;
+  /** The prop carries the user's data (values, rows, amounts, dates); set from core's DATA_PROPS. */
+  data?: boolean;
 }
 
 /**
@@ -348,6 +358,12 @@ export interface WidgetManifest {
   /** LLM-facing documentation for the node-level `motion` field (RFC 12). */
   motion: MotionDoc;
   widgets: WidgetManifestEntry[];
+  /** Reviewed fault exceptions by widget and check id (core's craft data). */
+  waivers: readonly Waiver[];
+  /** What a visitor asks for, mapped to the widget that answers it (core's craft data). */
+  intents: readonly Intent[];
+  /** Craft rules (cited by id in prompts and critic issues) and the critic's lenses. */
+  craft: { rules: readonly CraftRule[]; lenses: readonly Lens[] };
 }
 
 
@@ -470,12 +486,15 @@ export const manifestEntries: WidgetManifestEntry[] = [
   menuOrderEntry,
   intervalWorkoutEntry,
   habitTrackerEntry,
+  standupBoardEntry,
   notesEntry,
   placeResultsEntry,
   productGridEntry,
   mediaGridEntry,
   focusTimerEntry,
   musicPlayerEntry,
+  isoSceneEntry,
+  figureEntry,
   flashcardDeckEntry,
   wordGuessEntry,
   quizEntry,
@@ -581,6 +600,16 @@ export function buildManifest(): WidgetManifest {
     spec: specEnvelope,
     actions: manifestActions,
     motion: motionDoc,
-    widgets: manifestEntries,
+    widgets: manifestEntries.map((entry) => {
+      const data = DATA_PROPS[entry.type];
+      if (!data) return entry;
+      const props = Object.fromEntries(
+        Object.entries(entry.props).map(([name, spec]) => [name, data.includes(name) ? { ...spec, data: true } : spec])
+      );
+      return { ...entry, props };
+    }),
+    waivers,
+    intents,
+    craft,
   };
 }

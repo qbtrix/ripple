@@ -2,18 +2,23 @@
   @file routes/live/+page.svelte
   @description /live, the site's one gallery ("Gallery" in the nav), laid out
     like Paw OS Discover: a compact hero (lib/discover's DiscoverHeader) with
-    filter chips (All, Do, Learn, Play, Track, Flows, Drawings; the choice kept
-    in `?group=`), then one titled section of tiles (GalleryGrid) per group.
+    lede, a one-line legend for the three tile tags (Recorded, Hand-written,
+    Widget demo) and filter chips (All plus gallery.ts GROUPS; the choice kept
+    in `?group=`, the chip row fades at its edge on a phone), then one titled
+    section of tiles (GalleryGrid) per group.
     Items come from gallery.ts, one card per widget type: the runs, then the
     widget demos no run covers. A plain click opens the item in place with a "Back to
-    gallery" button: a run replays in Player (it streams into <Ripple> and
+    gallery" button, focus moving to the item's heading (not the button, so a
+    mouse click shows no ring): a run replays in Player (it streams into <Ripple> and
     ends as a working card), a demo's component from ./demos renders live
     (lazy-loaded, so the grid's bundle stays small). The card's href
     `?s=<key>` is the deep link, read after mount since the page is
     prerendered, and browser Back returns to the grid (shallow pushState). No
     model is called at runtime. A return from the store's checkout (`?order=`
     or `?cancelled=1`, checkout.readReturn) shows OrderReceipt above and opens
-    the order run. Old /showcase URLs redirect here (routes/showcase).
+    the order run. Old /showcase URLs redirect here (routes/showcase). A
+    quiet credit to Anatomy sits under any section with an iso drawing and
+    under an opened one.
 
   Look: the site's tokens and fonts under the shared top bar and footer from
     +layout.svelte. The local --line, --panel and --ink-soft are read by
@@ -24,7 +29,7 @@
 	import { pushState, replaceState } from '$app/navigation';
 	import DiscoverHeader from '$lib/discover/DiscoverHeader.svelte';
 	import GalleryGrid from './GalleryGrid.svelte';
-	import { galleryItems, GROUPS, itemByKey, liveRuns, resolveKey } from './gallery.js';
+	import { galleryItems, GROUPS, isoKeys, itemByKey, liveRuns, resolveKey } from './gallery.js';
 	import { readReturn } from './checkout.js';
 	import OrderReceipt from './OrderReceipt.svelte';
 	import Player from './Player.svelte';
@@ -34,11 +39,11 @@
 
 	const BLURBS: Record<string, string> = {
 		Do: 'Plans, bookings and orders that get something done.',
-		Learn: 'Numbers to play with and cards to practise.',
+		Learn: 'Explainers, a 3D model, calculators and cards to practise.',
 		Play: 'Small games, built from the same spec.',
 		Track: 'Dashboards, timers and trackers that keep state.',
 		Flows: 'Step by step forms chained in the spec.',
-		Drawings: 'Animated drawings with notes on the parts.'
+		Drawings: 'Animated drawings of how things work, with notes on the parts.'
 	};
 	const groups = ['All', ...GROUPS];
 	const count = (g: string) => (g === 'All' ? galleryItems.length : galleryItems.filter((i) => i.group === g).length);
@@ -49,7 +54,7 @@
 
 	let openKey = $state<string | null>(null);
 	let receipt = $state<{ order: string | null; mock: boolean; cancelled: boolean } | null>(null);
-	let back = $state<HTMLButtonElement>();
+	let heading = $state<HTMLHeadingElement>();
 	const open = $derived(itemByKey(openKey));
 	const run = $derived(open?.kind === 'run' ? liveRuns.find((s) => s.id === open.key) : undefined);
 	const demo = $derived(open?.kind === 'demo' ? demoModules[`./demos/${open.id}.svelte`]?.() : undefined);
@@ -69,7 +74,7 @@
 		if (key) {
 			window.scrollTo({ top: 0 });
 			await tick();
-			back?.focus({ preventScroll: true });
+			heading?.focus({ preventScroll: true });
 		}
 	}
 
@@ -128,9 +133,13 @@
 	<title>Gallery · Ripple</title>
 	<meta
 		name="description"
-		content="What a model can build with Ripple: recorded model output replayed as it streams, and live widgets, from trip plans and bookings to games, trackers, step-by-step flows and annotated drawings."
+		content="What Ripple can render: recorded model runs replayed as they stream, hand-written card specs and live widget demos, from trip plans and bookings to games, trackers, step-by-step flows and annotated drawings."
 	/>
 </svelte:head>
+
+{#snippet credit()}
+	<p class="credit">Isometric drawings inspired by <a href="https://skills.wheresryan.sh/anatomy" rel="noopener">Anatomy</a> by Ryan.</p>
+{/snippet}
 
 <main class="live">
 	{#if receipt}
@@ -139,13 +148,13 @@
 
 	{#if open}
 		<div class="run-head">
-			<button type="button" class="back" bind:this={back} onclick={closeItem}>
+			<button type="button" class="back" onclick={closeItem}>
 				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"
 					><path d="M15 18l-6-6 6-6" /></svg
 				>
 				Back to gallery
 			</button>
-			<h1>{open.title}</h1>
+			<h1 tabindex="-1" bind:this={heading}>{open.title}</h1>
 			<span class="tag">{open.tag}</span>
 		</div>
 		{#if run}
@@ -155,9 +164,15 @@
 				<div class="demo"><mod.default /></div>
 			{/await}
 		{/if}
+		{#if isoKeys.has(open.key)}{@render credit()}{/if}
 	{:else}
-		<DiscoverHeader as="h1" title="What a model can" accent="build with Ripple" class="hero">
-			<p class="lede">Recorded runs and live widgets. Each one opens here.</p>
+		<DiscoverHeader as="h1" title="What Ripple" accent="can render" class="hero">
+			<p class="lede">Recorded model runs, hand-written card specs and live widget demos. Each one opens here.</p>
+			<dl class="legend">
+				<div><dt>Recorded</dt><dd>a model's real output, replayed as it streamed</dd></div>
+				<div><dt>Hand-written</dt><dd>a card spec we wrote, streamed the same way</dd></div>
+				<div><dt>Widget demo</dt><dd>a widget rendered live on the page, not replayed</dd></div>
+			</dl>
 			<div class="filters" role="group" aria-label="Filter by group">
 				{#each groups as g (g)}
 					<button type="button" class="chip" aria-pressed={group === g} onclick={() => choose(g)}>
@@ -169,6 +184,7 @@
 		<div class="sections">
 			{#each sections as { g, items } (g)}
 				<GalleryGrid {items} label="{g} gallery" title={g} blurb={BLURBS[g]} onopen={openItem} />
+				{#if items.some((i) => isoKeys.has(i.key))}{@render credit()}{/if}
 			{/each}
 		</div>
 	{/if}
@@ -210,6 +226,20 @@
 		display: flex;
 		flex-direction: column;
 		gap: 48px;
+	}
+	/* Credit under the Drawings tiles and an opened drawing: quiet, one line. */
+	.credit {
+		margin: -32px 0 0;
+		font-size: 12px;
+		color: var(--site-soft);
+	}
+	.run-head ~ .credit {
+		margin-top: 16px;
+	}
+	.credit a {
+		color: inherit;
+		text-decoration: underline;
+		text-underline-offset: 2px;
 	}
 	h1 {
 		margin: 0;
@@ -283,6 +313,29 @@
 	}
 	.run-head h1 {
 		font-size: clamp(1.5rem, 3vw, 2rem);
+		outline: none;
+	}
+	.legend {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px 20px;
+		margin: 0;
+		font-size: 13px;
+		line-height: 1.45;
+		color: var(--site-soft);
+	}
+	.legend dt {
+		display: inline;
+		font-family: var(--font-mono);
+		font-size: 12px;
+		color: var(--site-ink);
+	}
+	.legend dt::after {
+		content: ': ';
+	}
+	.legend dd {
+		display: inline;
+		margin: 0;
 	}
 	.tag {
 		padding: 2px 8px;
@@ -323,12 +376,14 @@
 			flex-direction: column;
 			align-items: flex-start;
 		}
+		/* One sideways row; the fade at the right edge says there is more. */
 		.filters {
 			flex-wrap: nowrap;
 			overflow-x: auto;
 			scrollbar-width: none;
-			padding: 4px;
+			padding: 4px 32px 4px 4px;
 			margin: -4px;
+			mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent);
 		}
 		.filters::-webkit-scrollbar {
 			display: none;

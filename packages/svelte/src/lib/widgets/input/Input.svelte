@@ -12,6 +12,7 @@
   import type { Snippet } from 'svelte';
   import { getContext } from 'svelte';
   import { tv } from 'tailwind-variants';
+  import { FIELD, FIELD_LABEL } from '$lib/components/ui/control.js';
   import { cn } from '$lib/utils.js';
   import type { WidgetRegistry } from '@ripple-ui/core';
 
@@ -130,7 +131,7 @@
 </script>
 
 <div
-  class={cn('flex flex-col gap-1.5', className)}
+  class={cn(FIELD, className)}
   style={styleString}
   data-size={size}
   data-state={state}
@@ -138,7 +139,7 @@
   {#if label}
     <label
       for={resolvedId}
-      class="text-[13px] font-medium leading-none text-foreground"
+      class={FIELD_LABEL}
     >
       {label}
       {#if required}<span class="text-ripple-error-text" aria-hidden="true">*</span>{/if}

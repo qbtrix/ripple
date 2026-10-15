@@ -1,3 +1,10 @@
+<!--
+  Card.svelte: the bordered surface container with optional title,
+  description, header snippet, body and footer. Always a div (see the note on
+  the element). A root card carries the surface fill; a default card nested
+  inside a spec drops its fill and keeps only the 1px border and radius, so it
+  reads as a tile on the surface its parent already paints.
+-->
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { tv } from 'tailwind-variants';
@@ -66,7 +73,7 @@
   );
 
   const isInteractive = $derived(interactive && typeof onclick === 'function');
-  const showHeader = $derived(Boolean(title || description || header));
+  const showHeader = $derived(Boolean(title || description || typeof header === 'function'));
 
   function onKeydown(e: KeyboardEvent) {
     if (!isInteractive) return;
@@ -85,7 +92,7 @@
 <svelte:element
   this={'div'}
   {id}
-  class={cn(card({ variant, density, interactive: isInteractive }), className)}
+  class={cn('rcard', card({ variant, density, interactive: isInteractive }), className)}
   style={styleString}
   data-variant={variant}
   data-density={density}
@@ -109,7 +116,7 @@
           {/if}
         </div>
       {/if}
-      {#if header}
+      {#if typeof header === 'function'}
         <div class="shrink-0">{@render header()}</div>
       {/if}
     </div>
@@ -121,9 +128,16 @@
     </div>
   {/if}
 
-  {#if footer}
+  {#if typeof footer === 'function'}
     <div data-slot="card-footer" class="mt-auto pt-2 border-t border-ripple-border/60">
       {@render footer()}
     </div>
   {/if}
 </svelte:element>
+
+<style>
+  /* Nested in a spec (its parent is not .ripple-root itself): tile treatment. */
+  :global(.ripple-root *) > .rcard[data-variant='default'] {
+    background: transparent;
+  }
+</style>

@@ -12,7 +12,12 @@ import { manifestEntries } from '$lib/manifest/index.js';
 import { getWidget, hasWidget } from '../index.js';
 import { _resetBindContractWarnings, getBindContract, warnUnregisteredBindContract } from '@ripple-ui/core';
 import Quiz from './Quiz.svelte';
-import { bandOf, bestStreakOf, cleanQuestions, scoreOf, streakOf, toPlay, type QuizItem, type QuizValue } from './quiz.js';
+import { bandOf, bestStreakOf, choiceColumns, cleanQuestions, scoreOf, streakOf, toPlay, type QuizItem, type QuizValue } from './quiz.js';
+import { playCue } from '$lib/sound/index.js';
+
+vi.mock('$lib/sound/index.js', () => ({ playCue: vi.fn() }));
+const cues = () => vi.mocked(playCue).mock.calls.map((c) => c[0]);
+
 
 afterEach(() => {
 	cleanup();
@@ -407,5 +412,99 @@ describe('quiz: streaming', () => {
 		});
 		cleanup();
 		await expectStreamParity({ ui: { type: 'quiz', props: { title: 'Untimed', questions: space() } } });
+	});
+});
+
+describe('quiz: sound', () => {
+	it('plays correct or wrong per answer and a chime on the results', async () => {
+		vi.mocked(playCue).mockClear();
+		render(Quiz, { props: { questions: space() } });
+		await pick('Jupiter');
+		expect(cues()).toEqual(['correct']);
+		await next();
+		await pick('Sirius');
+		await next();
+		await pick('Saturn');
+		expect(cues()).toEqual(['correct', 'wrong', 'correct']);
+		await next();
+		expect(cues()).toEqual(['correct', 'wrong', 'correct', 'complete']);
+	});
+});
+
+describe('quiz: polish', () => {
+	it('pairs choices in two columns only for 2 or 4 short ones', () => {
+		expect(choiceColumns(['Earth', 'Jupiter', 'Mars', 'Venus'])).toBe(2);
+		expect(choiceColumns(['A', 'B', 'C', 'D', 'E'])).toBe(1);
+		expect(choiceColumns(['Yes', 'No', 'Maybe', 'A choice long enough to wrap across the tile'])).toBe(1);
+		expect(choiceColumns(['True', 'False'])).toBe(2);
+		expect(choiceColumns(['A', 'B', 'C'])).toBe(1);
+	});
+
+	it('pins the cleaning rules the brief relies on', () => {
+		const warn = vi.fn();
+		const qs = cleanQuestions(
+			[
+				null,
+				'a bare string',
+				{ prompt: 'String answer', choices: ['A', 'B', 'C'], answer: '2' },
+				{ prompt: 'Seven choices', choices: ['1', '2', '3', '4', '5', '6', '7'], answer: 6 }
+			],
+			warn
+		);
+		expect(qs.map((x) => [x.prompt, x.answer])).toEqual([['String answer', 2]]);
+		// Choices past 5 are cut before the range check, so answer 6 warns and skips.
+		expect(warn).toHaveBeenCalledTimes(1);
+		expect(warn.mock.calls[0][0]).toContain('Seven choices');
+	});
+
+	it('shows no score or streak before the first answer', async () => {
+		const { container } = render(Quiz, { props: { questions: space() } });
+		expect(container.querySelector('[data-slot="tally"]')).toBeNull();
+		expect(container.querySelector('[data-slot="streak"]')).toBeNull();
+		await pick('Jupiter');
+		expect(slot(container, 'tally')).toBe('Score 1');
+		expect(slot(container, 'streak')).toBe('Streak 1');
+	});
+
+	it('mutes the losing choices in ink, never with opacity', async () => {
+		const { container } = render(Quiz, { props: { questions: space() } });
+		await pick('Mars');
+		const labels = [...container.querySelectorAll('[data-slot="choices"] label')];
+		expect(labels.some((l) => /\bopacity-/.test(l.className))).toBe(false);
+		expect(choice('Earth').closest('label')!.className).toContain('text-ripple-muted-foreground');
+	});
+
+	it('swaps a refused or failed photo for one note line', async () => {
+		const { container } = render(Quiz, {
+			props: { questions: [{ prompt: 'Which planet?', choices: ['Mars', 'Venus'], answer: 0, image: 'https://example.com/mars.jpg' }, { prompt: 'Refused', choices: ['A', 'B'], answer: 0, image: 'ftp://example.com/x.jpg' }] }
+		});
+		const img = container.querySelector('img')!;
+		expect(img).not.toBeNull();
+		expect(container.querySelector('[data-slot="photo-note"]')).toBeNull();
+		await fireEvent.error(img);
+		expect(container.querySelector('img')).toBeNull();
+		expect(slot(container, 'photo-note')).toBe('The picture for this question did not load.');
+		await pick('Mars');
+		await next();
+		expect(container.querySelector('img')).toBeNull();
+		expect(slot(container, 'photo-note')).toBe('The picture for this question did not load.');
+	});
+
+	it('keeps the trophy and best streak for runs that earned them', () => {
+		const warnRun = render(Quiz, { props: { questions: space(), value: { index: 3, answers: [1, 0, 1], score: 1, done: true } } });
+		expect(slot(warnRun.container, 'band')).toBe('Warming up');
+		expect(warnRun.container.querySelector('[data-slot="band"] svg')).toBeNull();
+		expect(warnRun.container.querySelector('[data-slot="best"]')).toBeNull();
+		cleanup();
+		const perfect = render(Quiz, { props: { questions: space(), value: { index: 3, answers: [1, 1, 0], score: 3, done: true } } });
+		expect(perfect.container.querySelector('[data-slot="band"] svg')).not.toBeNull();
+		expect(slot(perfect.container, 'best')).toBe('Best streak 3');
+	});
+
+	it('opens a timed quiz on a start screen with no progress bar', () => {
+		const { container } = render(Quiz, { props: { questions: space(), seconds_per_question: 20 } });
+		expect(slot(container, 'start')).toContain('3 questions, 20 seconds each.');
+		expect(slot(container, 'start')).toContain('Running out counts as a miss.');
+		expect(container.querySelector('[data-slot="rail"]')).toBeNull();
 	});
 });

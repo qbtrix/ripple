@@ -12,6 +12,10 @@ describe('money', () => {
 		expect(money('8', 'USD', { locale: 'en-US', sign: true })).toBe('+$8.00');
 		expect(money(-700, 'USD', { locale: 'en-US', sign: true })).toBe('-$700.00');
 		expect(money(0, 'USD', { locale: 'en-US', sign: true })).toBe('$0.00');
+		// `whole` drops only a whole amount's cents.
+		expect(money(1890, 'USD', { locale: 'en-US', whole: true })).toBe('$1,890');
+		expect(money(750, 'USD', { locale: 'en-US', sign: true, whole: true })).toBe('+$750');
+		expect(money(19.5, 'USD', { locale: 'en-US', whole: true })).toBe('$19.50');
 	});
 
 	it('defaults to USD and never throws on a junk code or locale', () => {
@@ -47,6 +51,9 @@ describe('plain', () => {
 		expect(plain('__Note__: fasting')).toBe('Note: fasting');
 		expect(plain('- one\n- two')).toBe('one\ntwo');
 		expect(plain('**a** and **b**')).toBe('a and b');
+		expect(plain('Bouchon lunch _with_ the family')).toBe('Bouchon lunch with the family');
+		expect(plain('a *quiet* walk')).toBe('a quiet walk');
+		expect(plain('snake_case_name and 2*3*4')).toBe('snake_case_name and 2*3*4');
 	});
 
 	it('leaves single markers and in-word dashes alone', () => {

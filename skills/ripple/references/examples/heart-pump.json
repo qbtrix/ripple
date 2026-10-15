@@ -1,0 +1,39 @@
+{
+  "version": "1.0",
+  "state": {
+    "figure": null
+  },
+  "ui": {
+    "type": "figure",
+    "bind": "{state.figure}",
+    "props": {
+      "figure": "heart",
+      "params": {
+        "bpm": 72
+      },
+      "labels": [
+        {
+          "anchor": "right-ventricle",
+          "note": "Pumps oxygen-poor blood to the lungs."
+        },
+        {
+          "anchor": "left-ventricle",
+          "note": "Pumps oxygen-rich blood out to the whole body."
+        },
+        {
+          "anchor": "mitral",
+          "note": "Opens while the left ventricle fills, shuts before it squeezes."
+        },
+        {
+          "anchor": "aortic-valve",
+          "note": "Opens only while the left ventricle pushes blood out."
+        },
+        {
+          "anchor": "lungs",
+          "note": "Blood picks up oxygen here and comes back red."
+        }
+      ],
+      "caption": "Two pumps in one. The right side sends blood to the lungs, the left side sends it round the body. Move the heart rate and watch the output and the pressure change."
+    }
+  }
+}

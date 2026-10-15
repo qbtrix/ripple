@@ -1,7 +1,7 @@
 {
   "schema": "ripple.manifest/v1",
   "version": "0.8.0",
-  "generatedAt": "2026-10-12T09:23:50.620Z",
+  "generatedAt": "2026-10-15T14:57:48.631Z",
   "spec": {
     "uiField": "ui",
     "stateField": "state",
@@ -1092,7 +1092,7 @@
         "groupBy": {
           "type": "\"none\" | \"day\" | \"week\"",
           "required": false,
-          "description": "Group entries by their timestamp granularity. Default \"none\". Requires parsable `timestamp` strings."
+          "description": "Group by timestamp day or week. Default \"none\"."
         },
         "showFilters": {
           "type": "boolean",
@@ -1667,7 +1667,8 @@
         "events": {
           "type": "Array<{ id: string | number; title: string; start: string; end?: string; color?: string }>",
           "required": false,
-          "description": "Events with ISO dates."
+          "description": "Events with ISO dates.",
+          "data": true
         },
         "view": {
           "type": "\"month\" | \"week\"",
@@ -1858,7 +1859,8 @@
         "data": {
           "type": "Array<{ label: string; value?: number; series?: Record<string, number> }>",
           "required": true,
-          "description": "Data points (shape varies by chart type)."
+          "description": "Data points (shape varies by chart type).",
+          "data": true
         },
         "type": {
           "type": "\"bar\" | \"line\" | \"area\" | \"pie\" | \"donut\" | \"candlestick\" | \"sparkline\" | \"heatmap\" | \"gauge\" | \"radar\"",
@@ -1878,7 +1880,7 @@
         "colors": {
           "type": "string[]",
           "required": false,
-          "description": "Custom color palette."
+          "description": "Palette in order: one per series when points carry `series`, else one per point (bar, pie). A single colour paints every point of one series."
         },
         "tooltip": {
           "type": "boolean",
@@ -2541,14 +2543,14 @@
         "type": "color-picker",
         "props": {
           "label": "Theme color",
-          "value": "#3b82f6",
+          "value": "#1877F2",
           "showInput": true,
           "bind": "{state.themeColor}"
         }
       },
       "pocket": {
         "state": {
-          "themeColor": "#3b82f6"
+          "themeColor": "#1877F2"
         },
         "ui": {
           "type": "flex",
@@ -2563,7 +2565,7 @@
                 "label": "Theme color",
                 "showInput": true,
                 "presets": [
-                  "#3b82f6",
+                  "#1877F2",
                   "#8b5cf6",
                   "#22c55e",
                   "#f59e0b",
@@ -3553,7 +3555,7 @@
         "currency": {
           "type": "string",
           "required": false,
-          "description": "ISO 4217 code for numeric prices. Default \"USD\". Never put a symbol in the data."
+          "description": "ISO 4217 code for numeric prices. Default \"USD\". Never put a symbol in the data. Whole prices print without cents ($1,890)."
         },
         "items": {
           "type": "Array<{ id: string; name: string; subtitle?: string; price?: number; image?: string; product_id?: string; rating?: number; actions?: EventAction | EventAction[]; learn_more?: EventAction | EventAction[]; [featureKey: string]: unknown }>",
@@ -3561,7 +3563,7 @@
           "description": "2 to 6 items. `price` is a number; feature values are keyed by feature `key`. With `product_id` the server fills name, price and image. Per item, `actions` fires on Choose and `learn_more` on Learn more."
         },
         "features": {
-          "type": "Array<{ key: string; label: string; section?: string; kind?: \"text\" | \"number\" | \"boolean\" | \"rating\" | \"icon\" | \"price\" | \"color\"; better?: \"higher\" | \"lower\"; unit?: string; icon?: \"battery\" | \"weight\" | \"display\" | \"cpu\" | \"memory\" | \"storage\" | \"camera\" | \"speed\" | \"price\" | \"ports\" | \"wifi\" | \"keyboard\" | \"audio\" | \"security\" | \"warranty\" | \"size\" | \"rating\" | \"support\"; highlight?: boolean }>",
+          "type": "Array<{ key: string; label: string; section?: string; kind?: \"text\" | \"number\" | \"boolean\" | \"rating\" | \"icon\" | \"price\" | \"color\"; better?: \"higher\" | \"lower\"; unit?: string; icon?: \"battery\" | \"weight\" | \"display\" | \"cpu\" | \"memory\" | \"storage\" | \"camera\" | \"speed\" | \"motor\" | \"power\" | \"price\" | \"ports\" | \"wifi\" | \"keyboard\" | \"audio\" | \"security\" | \"warranty\" | \"size\" | \"rating\" | \"support\"; highlight?: boolean }>",
           "required": false,
           "description": "Rows, grouped into section chips by `section`. `better` marks the best numeric cell. An `icon`-kind value is one of the `icon` words (or a list of them). `highlight` puts the row on the item card. Inferred from item keys when omitted."
         },
@@ -3588,7 +3590,7 @@
         "defaultView": {
           "type": "\"card\" | \"table\"",
           "required": false,
-          "description": "Detailed view below 720px until the visitor picks one. Default \"card\"; wider always shows the table."
+          "description": "View under the item cards below 720px until the visitor picks one. Default \"table\" (the cards above already list each item); \"card\" shows per-item cards. Wider always shows the table."
         },
         "showDiffToggle": {
           "type": "boolean",
@@ -3750,7 +3752,8 @@
         "rows": {
           "type": "Array<{ feature: string; [key: string]: unknown }>",
           "required": true,
-          "description": "Table rows. `feature` is the row label; remaining keys map to column keys."
+          "description": "Table rows. `feature` is the row label; remaining keys map to column keys.",
+          "data": true
         }
       },
       "example": {
@@ -4185,7 +4188,8 @@
         "rows": {
           "type": "Array<Record<string, unknown>>",
           "required": true,
-          "description": "Row objects."
+          "description": "Row objects.",
+          "data": true
         },
         "value": {
           "type": "string | number | null",
@@ -5149,7 +5153,7 @@
         "primaryChart": {
           "type": "{ title?: string; type?: \"bar\" | \"line\" | \"area\" | \"pie\" | \"donut\" | \"radar\" | \"heatmap\"; data: DataPoint[] | Record<string, DataPoint[]>; height?: number; colors?: string[] }",
           "required": false,
-          "description": "Hero chart (left, 2/3 width when activity rail is present). `data` may be a flat array, or a record keyed by range/granularity/\"<range>|<granularity>\"; the component picks the most specific match for the active state."
+          "description": "Hero chart. `data` is an array or a record keyed by range, granularity or \"<range>|<granularity>\". `colors` is per point on one series, per series on many; one colour paints all."
         },
         "activity": {
           "type": "Array<{ id?: string; time: string; label: string; actor?: string; icon?: string; severity?: \"info\" | \"success\" | \"warning\" | \"destructive\"; category?: string; unread?: boolean; actions?: EventAction | EventAction[] }>",
@@ -6239,12 +6243,13 @@
         "data": {
           "type": "Array<{ label: string; value: number }>",
           "required": true,
-          "description": "Funnel stages."
+          "description": "Funnel stages.",
+          "data": true
         },
         "height": {
           "type": "number",
           "required": false,
-          "description": "Height in px. Default 240."
+          "description": "Max height px; else fits."
         },
         "title": {
           "type": "string",
@@ -6254,7 +6259,7 @@
         "colors": {
           "type": "string[]",
           "required": false,
-          "description": "Custom palette per stage."
+          "description": "Ignored."
         },
         "sort": {
           "type": "\"descending\" | \"ascending\" | \"none\"",
@@ -6295,7 +6300,8 @@
         "tasks": {
           "type": "Array<{ id: string; name: string; start: string; end: string; progress?: number; dependencies?: string }>",
           "required": true,
-          "description": "Task definitions (ISO dates YYYY-MM-DD)."
+          "description": "Task definitions (ISO dates YYYY-MM-DD).",
+          "data": true
         },
         "viewMode": {
           "type": "\"Quarter Day\" | \"Half Day\" | \"Day\" | \"Week\" | \"Month\" | \"Year\"",
@@ -6305,7 +6311,7 @@
         "height": {
           "type": "string",
           "required": false,
-          "description": "Container height. Default \"320px\"."
+          "description": "Max height. Default \"320px\"."
         }
       },
       "example": {
@@ -6347,12 +6353,14 @@
         "value": {
           "type": "number",
           "required": true,
-          "description": "Current value."
+          "description": "Current value.",
+          "data": true
         },
         "max": {
           "type": "number",
           "required": false,
-          "description": "Maximum value. Default 100."
+          "description": "Maximum value. Default 100.",
+          "data": true
         },
         "label": {
           "type": "string",
@@ -6367,12 +6375,22 @@
         "height": {
           "type": "number",
           "required": false,
-          "description": "Height in px. Default 200."
+          "description": "Max height in px."
         },
         "title": {
           "type": "string",
           "required": false,
           "description": "Title above gauge."
+        },
+        "currency": {
+          "type": "string",
+          "required": false,
+          "description": "ISO 4217 code for money gauges (\"USD\"). Formats value, target, over and to go; never put a symbol in the numbers. Shows the value, not a percent."
+        },
+        "unit": {
+          "type": "string",
+          "required": false,
+          "description": "Plain suffix for every amount when there is no currency (\"GB\", \"steps\"). Shows the value, not a percent. Shares always print up to one decimal (72.8%)."
         }
       },
       "example": {
@@ -6522,7 +6540,8 @@
         "cells": {
           "type": "Array<{ x: string | number; y: string | number; value: number }>",
           "required": true,
-          "description": "Cell data."
+          "description": "Cell data.",
+          "data": true
         },
         "xLabels": {
           "type": "(string | number)[]",
@@ -6537,7 +6556,7 @@
         "height": {
           "type": "number",
           "required": false,
-          "description": "Height in px. Default 280."
+          "description": "Max height. Default 280."
         },
         "title": {
           "type": "string",
@@ -6547,7 +6566,7 @@
         "colorRange": {
           "type": "[string, string]",
           "required": false,
-          "description": "Low-to-high gradient. Default [\"#dbeafe\", \"#1d4ed8\"]."
+          "description": "Ignored."
         },
         "showLabels": {
           "type": "boolean",
@@ -6735,8 +6754,7 @@
         "type": "icon",
         "props": {
           "name": "check-circle",
-          "size": 24,
-          "color": "#10b981"
+          "size": 24
         }
       }
     },
@@ -7182,7 +7200,8 @@
         "lines": {
           "type": "Array<{ id?: string | number; description: string; quantity?: number; unitPrice?: number; total?: number; note?: string }>",
           "required": true,
-          "description": "Line items."
+          "description": "Line items.",
+          "data": true
         },
         "currency": {
           "type": "string",
@@ -7197,12 +7216,14 @@
         "subtotal": {
           "type": "number",
           "required": false,
-          "description": "Override auto-computed subtotal."
+          "description": "Override auto-computed subtotal.",
+          "data": true
         },
         "total": {
           "type": "number",
           "required": false,
-          "description": "Override auto-computed grand total."
+          "description": "Override auto-computed grand total.",
+          "data": true
         },
         "showRowTotals": {
           "type": "boolean",
@@ -7282,7 +7303,8 @@
         "budget": {
           "type": "number",
           "required": false,
-          "description": "Trip budget. Planned spend (stop and leg costs) is shown against it: warning past 90%, alert when over."
+          "description": "Trip budget. Planned spend (stop and leg costs) is shown against it: warning past 90%, alert when over.",
+          "data": true
         },
         "route": {
           "type": "string[]",
@@ -7292,7 +7314,8 @@
         "days": {
           "type": "Array<{ id?: string; label: string; when?: string; theme?: string; stay?: string; stops: Array<{ id?: string; time?: string; title: string; kind: \"sight\" | \"food\" | \"stay\" | \"transit\" | \"activity\" | \"shop\" | \"nature\" | \"nightlife\" | \"flight\"; place?: string; cost?: number; minutes?: number; must?: boolean; done?: boolean; image?: string }> }>",
           "required": true,
-          "description": "The days. `when` is a display label (\"Fri 16 Oct\"); `time` shows as written (\"08:30\"). `must` tags a must-see. Two-way bind with `bind: \"{state.days}\"` so ticking a stop or adding one persists."
+          "description": "The days. `when` is a display label (\"Fri 16 Oct\"); `time` shows as written (\"08:30\"). `must` tags a must-see. Two-way bind with `bind: \"{state.days}\"` so ticking a stop or adding one persists.",
+          "data": true
         },
         "open": {
           "type": "number",
@@ -7439,22 +7462,26 @@
         "initial": {
           "type": "number",
           "required": false,
-          "description": "Starting balance. Default 0. For a lump sum with no deposits, set this and deposit: 0."
+          "description": "Starting balance. Default 0. For a lump sum with no deposits, set this and deposit: 0.",
+          "data": true
         },
         "deposit": {
           "type": "number",
           "required": true,
-          "description": "Added at the end of every month. Write 0 for none. Two-way bind with `bind: \"{state.deposit}\"`."
+          "description": "Added at the end of every month. Write 0 for none. Two-way bind with `bind: \"{state.deposit}\"`.",
+          "data": true
         },
         "rate": {
           "type": "number",
           "required": true,
-          "description": "Interest in percent a year: 5 means 5%, never 0.05. Capped at 100."
+          "description": "Interest in percent a year: 5 means 5%, never 0.05. Capped at 100.",
+          "data": true
         },
         "years": {
           "type": "number",
           "required": true,
-          "description": "How long. Fractions round to whole months. Capped at 100."
+          "description": "How long. Fractions round to whole months. Capped at 100.",
+          "data": true
         },
         "compounding": {
           "type": "\"monthly\" | \"yearly\"",
@@ -7464,12 +7491,14 @@
         "goal": {
           "type": "number",
           "required": false,
-          "description": "Target balance: draws a goal line and says the year it is reached."
+          "description": "Target balance: draws a goal line and says the year it is reached.",
+          "data": true
         },
         "inflation": {
           "type": "number",
           "required": false,
-          "description": "Percent a year; adds the final balance in today's money."
+          "description": "Percent a year; adds the final balance in today's money.",
+          "data": true
         }
       },
       "events": {
@@ -7502,7 +7531,7 @@
       "type": "bill-split",
       "category": "composite",
       "staticSafe": true,
-      "description": "Split a bill with tip: subtotal, tip_percent, people with optional extras (drinks). Widget does the cents-exact maths, cards, totals; visitor edits everything. Bind value.",
+      "description": "Split a bill with tip: subtotal, tip_percent, people with optional extras (drinks). Widget does the cents-exact maths, rows, totals; visitor edits everything. Bind value.",
       "props": {
         "title": {
           "type": "string",
@@ -7517,17 +7546,20 @@
         "subtotal": {
           "type": "number",
           "required": true,
-          "description": "The bill before tip and before tax, e.g. 186.4."
+          "description": "The bill before tip and before tax, e.g. 186.4.",
+          "data": true
         },
         "tax": {
           "type": "number",
           "required": false,
-          "description": "Tax ON TOP of subtotal, shared in proportion to what each person had. Omit when the subtotal already includes tax."
+          "description": "Tax ON TOP of subtotal, shared in proportion to what each person had. Omit when the subtotal already includes tax.",
+          "data": true
         },
         "tip_percent": {
           "type": "number",
           "required": false,
-          "description": "Percent of subtotal: 18 means 18%. Default 18."
+          "description": "Percent of subtotal: 18 means 18%. Default 18.",
+          "data": true
         },
         "tip_options": {
           "type": "number[]",
@@ -7537,7 +7569,8 @@
         "people": {
           "type": "Array<{ id: string; name: string; extras?: number }>",
           "required": true,
-          "description": "2 to 12 people. `extras` is what that person had on top of the shared part (drinks), as an amount. The rest of the subtotal is split evenly."
+          "description": "2 to 12 people. `extras` is what that person had on top of the shared part (drinks), as an amount. The rest of the subtotal is split evenly.",
+          "data": true
         },
         "extras_label": {
           "type": "string",
@@ -7767,7 +7800,8 @@
         "rows": {
           "type": "Array<{ key: string; value: string }>",
           "required": true,
-          "description": "Key/value pairs."
+          "description": "Key/value pairs.",
+          "data": true
         },
         "columns": {
           "type": "number",
@@ -8539,7 +8573,8 @@
         "days": {
           "type": "Array<{ id?: string; day: string; meals: Array<{ id?: string; slot: \"breakfast\" | \"lunch\" | \"dinner\" | \"snack\"; recipe: string }> }>",
           "required": true,
-          "description": "`day` is a display label (\"Mon\"). `recipe` is a recipe id from `recipes`. Swapping a meal writes a new days array."
+          "description": "`day` is a display label (\"Mon\"). `recipe` is a recipe id from `recipes`. Swapping a meal writes a new days array.",
+          "data": true
         }
       },
       "example": {
@@ -8766,12 +8801,14 @@
         "value": {
           "type": "string | number",
           "required": true,
-          "description": "The number or formatted string to display."
+          "description": "The number or formatted string to display.",
+          "data": true
         },
         "trend": {
           "type": "string",
           "required": false,
-          "description": "Change badge text, e.g. \"+12%\" or \"-3\". Leading +/- drives badge color (green/red)."
+          "description": "Change badge text, e.g. \"+12%\" or \"-3\". Leading +/- drives badge color (green/red).",
+          "data": true
         },
         "description": {
           "type": "string",
@@ -8969,7 +9006,7 @@
         "shadowIntensity": {
           "type": "number",
           "required": false,
-          "description": "Strength of the contact shadow under the model (0 to 1)."
+          "description": "Strength of the contact shadow under the model (0 to 1). Default 1."
         }
       },
       "events": {
@@ -10039,7 +10076,7 @@
         "title": {
           "type": "string",
           "required": false,
-          "description": "Heading. Defaults to \"Tracking your order\" / \"Delivered\" / \"Order paused\" based on status."
+          "description": "Heading. Defaults to the current step."
         },
         "orderId": {
           "type": "string",
@@ -10099,12 +10136,12 @@
         "mapHeight": {
           "type": "string | number",
           "required": false,
-          "description": "Map height. Default \"320px\"."
+          "description": "Map height."
         },
         "mapTiles": {
           "type": "\"osm\" | \"carto-voyager\" | \"carto-light\" | \"carto-dark\" | \"osm-hot\" | \"custom\"",
           "required": false,
-          "description": "Map tile preset. Default \"carto-voyager\"."
+          "description": "Map tile preset."
         },
         "followTracker": {
           "type": "boolean",
@@ -10129,9 +10166,9 @@
           "status": "out-for-delivery",
           "eta": "Today, 4 – 6 PM",
           "tracking": {
-            "carrier": "UPS",
-            "number": "1Z999AA10123456784",
-            "url": "https://www.ups.com/track?tracknum=1Z999AA10123456784"
+            "carrier": "Parcelwise",
+            "number": "PW4471092318840017",
+            "url": "https://track.example.com/?n=PW4471092318840017"
           },
           "origin": {
             "name": "Acme Warehouse",
@@ -10264,6 +10301,11 @@
           "type": "{ service_id?: string; start?: string; party?: number; customer?: { name?: string; email?: string; phone?: string }; notes?: string }",
           "required": false,
           "description": "Bindable: the request in progress."
+        },
+        "sound": {
+          "type": "boolean",
+          "required": false,
+          "description": "A soft pop when Book is pressed. Default true; false mutes this widget."
         }
       },
       "events": {
@@ -10555,6 +10597,11 @@
           "type": "number",
           "required": false,
           "description": "Times through the list. Default 1. Total time = rounds × exercises × workSec plus the rests."
+        },
+        "sound": {
+          "type": "boolean",
+          "required": false,
+          "description": "Quiet cues: a tick in the last 3 seconds of each interval, a chime between intervals and one when done. Default true; false mutes this widget."
         }
       },
       "example": {
@@ -10638,7 +10685,8 @@
         "habits": {
           "type": "Array<{ id: string; name: string; icon?: \"read\" | \"run\" | \"walk\" | \"bike\" | \"gym\" | \"stretch\" | \"water\" | \"sleep\" | \"meditate\" | \"journal\" | \"code\" | \"music\" | \"veg\" | \"no-sugar\" | \"vitamins\"; target_per_week: number }>",
           "required": true,
-          "description": "1 to 8 habits. target_per_week is 1 to 7 (7 = every day). Any other icon value shows a plain dot."
+          "description": "1 to 8 habits. target_per_week is 1 to 7 (7 = every day). Any other icon value shows a plain dot.",
+          "data": true
         },
         "week_start": {
           "type": "\"mon\" | \"sun\"",
@@ -10654,6 +10702,11 @@
           "type": "Record<string, number[]>",
           "required": false,
           "description": "Demo ticks per habit id as day offsets back from today (0 = today, 1 = yesterday). Leave out for a fresh tracker."
+        },
+        "sound": {
+          "type": "boolean",
+          "required": false,
+          "description": "A soft pop when a day is ticked. Default true; false mutes this widget."
         }
       },
       "example": {
@@ -10718,6 +10771,76 @@
       }
     },
     {
+      "type": "standup-board",
+      "category": "composite",
+      "description": "Team standup: people[{name, role, yesterday, today, blocker, status}]. Blocked people first, open blockers counted for you, the viewer can resolve one. Bind value.",
+      "props": {
+        "team": {
+          "type": "string",
+          "required": false,
+          "description": "Card title, e.g. \"Payments team\". Default \"Standup\"."
+        },
+        "date": {
+          "type": "string",
+          "required": false,
+          "description": "ISO day \"2026-10-14\" or a short label."
+        },
+        "summary": {
+          "type": "string",
+          "required": false,
+          "description": "One sentence naming who is stuck. Leave out and the widget writes it from the people."
+        },
+        "people": {
+          "type": "Array<{ name: string; role?: string; avatar?: string; yesterday?: string; today?: string; blocker?: string; status?: \"blocked\" | \"on-track\" | \"done\" | \"away\" }>",
+          "required": true,
+          "description": "Up to 20 people. Write blocker only when someone is stuck (it makes them blocked). status \"away\" for someone off today, with today like \"Back Monday\". Never write a blocker count.",
+          "data": true
+        }
+      },
+      "example": {
+        "type": "standup-board",
+        "bind": "{state.standup}",
+        "props": {
+          "team": "Payments team",
+          "date": "2026-10-14",
+          "people": [
+            {
+              "name": "Lina Okafor",
+              "role": "DevOps",
+              "yesterday": "Set up the staging deploy pipeline",
+              "today": "Run the first staging migration",
+              "blocker": "Waiting on staging database credentials from the infra team."
+            },
+            {
+              "name": "Aarav Mehta",
+              "role": "Backend",
+              "yesterday": "Shipped the invoice export endpoint",
+              "today": "Add pagination to the export API"
+            },
+            {
+              "name": "Mei Tanaka",
+              "role": "Frontend",
+              "yesterday": "Built the settings page",
+              "today": "Hook settings to the profile API"
+            },
+            {
+              "name": "Priya Nair",
+              "role": "QA",
+              "yesterday": "Wrote refund test cases",
+              "today": "Run the regression suite",
+              "status": "done"
+            },
+            {
+              "name": "Rui Santos",
+              "role": "Design",
+              "today": "Back Monday",
+              "status": "away"
+            }
+          ]
+        }
+      }
+    },
+    {
       "type": "notes",
       "category": "composite",
       "description": "Notepad app: the visitor writes notes straight in, #tags become filter chips, pin, edit, delete with undo. Seed notes[{title, text, tags}]. Bind value.",
@@ -10741,6 +10864,11 @@
           "type": "string",
           "required": false,
           "description": "The writing line prompt. Default \"Write a note…\"."
+        },
+        "sound": {
+          "type": "boolean",
+          "required": false,
+          "description": "A very quiet pop when a note is saved. Default true; false mutes this widget."
         }
       },
       "example": {
@@ -11048,6 +11176,11 @@
           "type": "{ phase: \"focus\" | \"short\" | \"long\"; remaining_s: number; running: boolean; rounds_done: number; task: string; log: string[] }",
           "required": false,
           "description": "Two-way bind with `bind: \"{state.focus}\"`. Written on start, pause, reset, skip, phase end and edits (not every second), so remaining_s is as of the last event. `log` holds the ISO time each focus round finished."
+        },
+        "sound": {
+          "type": "boolean",
+          "required": false,
+          "description": "A soft chime when a phase ends. Default true; false mutes this widget."
         }
       },
       "example": {
@@ -11124,6 +11257,791 @@
               "minutes": 5
             }
           ]
+        }
+      }
+    },
+    {
+      "type": "iso-scene",
+      "category": "composite",
+      "description": "Live isometric drawing of a machine from a parts list that spins, slides, swings, pulses or flows, with sliders, readouts and labels. Aim for 12-30 parts; detail is added automatically.",
+      "props": {
+        "title": {
+          "type": "string",
+          "required": false,
+          "description": "Up to 80 characters."
+        },
+        "caption": {
+          "type": "string",
+          "required": false,
+          "description": "One plain sentence under the drawing. Up to 200 characters."
+        },
+        "look": {
+          "type": "\"soft\" | \"color\"",
+          "required": false,
+          "description": "soft (default): Blueprint look, blue-grey parts in four soft tones, navy ink (white in dark), flows in brand blue, colors as faint tints. color: saturated fills."
+        },
+        "detail": {
+          "type": "\"auto\" | \"none\"",
+          "required": false,
+          "description": "auto (default) adds small parts that belong to yours: feet, hubs, bolts, spider arms, pins, collars, clamps. none draws only what you wrote."
+        },
+        "scale": {
+          "type": "number",
+          "required": false,
+          "description": "Zoom, 0.4 to 2.5. Default 1 (fits the drawing)."
+        },
+        "params": {
+          "type": "Array<{ key: string; label: string; min: number; max: number; step?: number; unit?: string; value: number }>",
+          "required": false,
+          "description": "Up to 6 sliders. `key` is an identifier that speeds and readouts can use, e.g. \"cadence / 60\"."
+        },
+        "parts": {
+          "type": "Array<{ id: string; kind: \"slab\" | \"box\" | \"cylinder\" | \"disc\" | \"gear\" | \"tube\" | \"sphere\" | \"cone\" | \"rod\" | \"arrow\" | \"plate\" | \"chain\"; at?: [x, y, z]; w?: number; d?: number; h?: number; r?: number; teeth?: number; axis?: \"x\" | \"y\" | \"z\"; path?: [x, y, z][]; from?: [x, y, z]; to?: [x, y, z]; around?: [string, string]; label?: string; detail?: \"knob\" | \"none\"; ghost?: boolean; texture?: \"guilloche\" | \"ribs\"; color?: \"neutral\" | \"accent\" | \"red\" | \"blue\" | \"green\" | \"amber\" | \"metal\"; on?: string }>",
+          "required": true,
+          "description": "Up to 150; aim for 12-30. Units are free (keep the scene within about 300 across); z is up. `at` is the centre. slab/box/plate: w, d, h (slab r rounds corners, plate shows `label`, `texture` decorates a plate or slab top). cylinder/disc/gear/cone: r, h along `axis` (default z). tube: `path` points, r. rod and arrow: from, to. chain: `around` two gear ids; it wraps both and moves with the one that spins. `on`: id of a parent part this one moves with. `ghost: true` draws a housing see-through; a solid that holds a moving part is see-through unless `ghost: false`. `detail: \"knob\"` knurls a knob, \"none\" skips added detail. Unknown kinds are skipped."
+        },
+        "motions": {
+          "type": "Array<{ part: string; kind: \"spin\" | \"slide\" | \"swing\" | \"pulse\" | \"flow\" | \"link\"; axis?: \"x\" | \"y\" | \"z\"; speed?: number | string; range?: number | [number, number]; phase?: number; from?: string; to?: string; driven?: string; throw?: number }>",
+          "required": false,
+          "description": "Up to 20. speed is turns or cycles per second, a number or an expression over params written without braces, e.g. \"cadence / 60\". range: swing degrees (default 25), slide distance (8), pulse growth 0..0.6 (0.12); or [min, max] to move between the two. phase 0..1. flow animates tubes, rods and arrows. link: a rod whose ends ride the parts `from` and `to` (crank pin to piston). A slide with `driven`: id of a spinning crank, and `throw`: crank radius, follows that crank instead of its own speed."
+        },
+        "readouts": {
+          "type": "Array<{ label: string; value: string | number; unit?: string; decimals?: number }>",
+          "required": false,
+          "description": "Up to 4 live numbers, each an expression over params without braces, e.g. \"rate * 70 / 1000\"."
+        },
+        "labels": {
+          "type": "Array<{ part?: string; at?: [x, y, z]; label: string; note?: string }>",
+          "required": false,
+          "description": "Up to 10 numbered pins on a part (they follow it) or a point, listed with their notes under the drawing."
+        },
+        "value": {
+          "type": "Record<string, number>",
+          "required": false,
+          "description": "Two-way bind with `bind: \"{state.scene}\"`: the param values, written when a slider moves."
+        }
+      },
+      "example": {
+        "type": "iso-scene",
+        "bind": "state.gears",
+        "props": {
+          "title": "Two gears",
+          "params": [
+            {
+              "key": "speed",
+              "label": "Input speed",
+              "min": 10,
+              "max": 120,
+              "step": 5,
+              "unit": "rpm",
+              "value": 40
+            }
+          ],
+          "parts": [
+            {
+              "id": "base",
+              "kind": "slab",
+              "at": [
+                20,
+                0,
+                -4
+              ],
+              "w": 120,
+              "d": 60,
+              "h": 4,
+              "r": 6
+            },
+            {
+              "id": "big",
+              "kind": "gear",
+              "at": [
+                0,
+                0,
+                6
+              ],
+              "r": 30,
+              "h": 6,
+              "teeth": 30,
+              "color": "metal"
+            },
+            {
+              "id": "small",
+              "kind": "gear",
+              "at": [
+                44,
+                0,
+                6
+              ],
+              "r": 15,
+              "h": 6,
+              "teeth": 15,
+              "color": "accent"
+            }
+          ],
+          "motions": [
+            {
+              "part": "big",
+              "kind": "spin",
+              "speed": "speed / 60"
+            },
+            {
+              "part": "small",
+              "kind": "spin",
+              "speed": "speed / 60 * -2",
+              "phase": 0.03
+            }
+          ],
+          "readouts": [
+            {
+              "label": "Output speed",
+              "value": "speed * 2",
+              "unit": "rpm",
+              "decimals": 0
+            }
+          ],
+          "labels": [
+            {
+              "part": "big",
+              "label": "Driver",
+              "note": "30 teeth"
+            },
+            {
+              "part": "small",
+              "label": "Driven",
+              "note": "15 teeth, twice as fast"
+            }
+          ]
+        }
+      },
+      "pockets": [
+        {
+          "name": "Bicycle drivetrain on a stand",
+          "description": "About 15 parts: frame tubes, chainring, cog, a chain around both, cranks and pedals.",
+          "state": {
+            "bike": {}
+          },
+          "ui": {
+            "type": "iso-scene",
+            "bind": "state.bike",
+            "props": {
+              "title": "Bicycle drivetrain",
+              "params": [
+                {
+                  "key": "cadence",
+                  "label": "Cadence",
+                  "min": 30,
+                  "max": 120,
+                  "step": 5,
+                  "unit": "rpm",
+                  "value": 80
+                }
+              ],
+              "parts": [
+                {
+                  "id": "base",
+                  "kind": "slab",
+                  "at": [
+                    50,
+                    0,
+                    -16
+                  ],
+                  "w": 200,
+                  "d": 64,
+                  "h": 4,
+                  "r": 6
+                },
+                {
+                  "id": "stand",
+                  "kind": "box",
+                  "at": [
+                    0,
+                    -12,
+                    2
+                  ],
+                  "w": 8,
+                  "d": 8,
+                  "h": 32,
+                  "color": "metal"
+                },
+                {
+                  "id": "chainstay",
+                  "kind": "rod",
+                  "from": [
+                    0,
+                    -9,
+                    30
+                  ],
+                  "to": [
+                    110,
+                    -9,
+                    30
+                  ],
+                  "r": 2.6,
+                  "color": "accent"
+                },
+                {
+                  "id": "seat-tube",
+                  "kind": "rod",
+                  "from": [
+                    0,
+                    -9,
+                    30
+                  ],
+                  "to": [
+                    -14,
+                    -9,
+                    92
+                  ],
+                  "r": 2.6,
+                  "color": "accent"
+                },
+                {
+                  "id": "seat-stay",
+                  "kind": "rod",
+                  "from": [
+                    110,
+                    -9,
+                    30
+                  ],
+                  "to": [
+                    -12,
+                    -9,
+                    84
+                  ],
+                  "r": 2.2,
+                  "color": "accent"
+                },
+                {
+                  "id": "down-tube",
+                  "kind": "rod",
+                  "from": [
+                    0,
+                    -9,
+                    30
+                  ],
+                  "to": [
+                    70,
+                    -9,
+                    96
+                  ],
+                  "r": 2.8,
+                  "color": "accent"
+                },
+                {
+                  "id": "ring",
+                  "kind": "gear",
+                  "at": [
+                    0,
+                    0,
+                    30
+                  ],
+                  "r": 22,
+                  "h": 3,
+                  "teeth": 40,
+                  "axis": "y",
+                  "color": "metal"
+                },
+                {
+                  "id": "cog",
+                  "kind": "gear",
+                  "at": [
+                    110,
+                    0,
+                    30
+                  ],
+                  "r": 9,
+                  "h": 3,
+                  "teeth": 16,
+                  "axis": "y",
+                  "color": "metal"
+                },
+                {
+                  "id": "chain",
+                  "kind": "chain",
+                  "around": [
+                    "ring",
+                    "cog"
+                  ],
+                  "r": 1.4
+                },
+                {
+                  "id": "crank",
+                  "kind": "rod",
+                  "from": [
+                    0,
+                    8,
+                    30
+                  ],
+                  "to": [
+                    0,
+                    8,
+                    -2
+                  ],
+                  "r": 2.4,
+                  "color": "metal",
+                  "on": "ring"
+                },
+                {
+                  "id": "pedal",
+                  "kind": "box",
+                  "at": [
+                    0,
+                    14,
+                    -2
+                  ],
+                  "w": 10,
+                  "d": 12,
+                  "h": 3,
+                  "on": "crank"
+                },
+                {
+                  "id": "crank-back",
+                  "kind": "rod",
+                  "from": [
+                    0,
+                    -14,
+                    30
+                  ],
+                  "to": [
+                    0,
+                    -14,
+                    62
+                  ],
+                  "r": 2.4,
+                  "color": "metal",
+                  "on": "ring"
+                },
+                {
+                  "id": "pedal-back",
+                  "kind": "box",
+                  "at": [
+                    0,
+                    -20,
+                    62
+                  ],
+                  "w": 10,
+                  "d": 12,
+                  "h": 3,
+                  "on": "crank-back"
+                },
+                {
+                  "id": "derailleur",
+                  "kind": "box",
+                  "at": [
+                    112,
+                    6,
+                    12
+                  ],
+                  "w": 8,
+                  "d": 4,
+                  "h": 12,
+                  "color": "metal"
+                },
+                {
+                  "id": "axle",
+                  "kind": "cylinder",
+                  "at": [
+                    110,
+                    -4,
+                    30
+                  ],
+                  "r": 2,
+                  "h": 22,
+                  "axis": "y",
+                  "on": "cog"
+                }
+              ],
+              "motions": [
+                {
+                  "part": "ring",
+                  "kind": "spin",
+                  "axis": "y",
+                  "speed": "cadence / 60"
+                },
+                {
+                  "part": "cog",
+                  "kind": "spin",
+                  "axis": "y",
+                  "speed": "cadence / 60 * 2.5"
+                }
+              ],
+              "readouts": [
+                {
+                  "label": "Road speed",
+                  "value": "cadence * 2.1 * 2.5 * 60 / 1000",
+                  "unit": "km/h",
+                  "decimals": 1
+                }
+              ],
+              "labels": [
+                {
+                  "part": "ring",
+                  "label": "Chainring",
+                  "note": "40 teeth"
+                },
+                {
+                  "part": "cog",
+                  "label": "Rear cog",
+                  "note": "16 teeth, 2.5 turns per pedal turn"
+                },
+                {
+                  "part": "chain",
+                  "label": "Chain"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Hand water pump",
+          "description": "About 15 parts: a see-through barrel, a piston on a link rod from the handle, check valve, spout and bucket.",
+          "state": {
+            "pump": {}
+          },
+          "ui": {
+            "type": "iso-scene",
+            "bind": "state.pump",
+            "props": {
+              "title": "Hand water pump",
+              "params": [
+                {
+                  "key": "rate",
+                  "label": "Strokes",
+                  "min": 10,
+                  "max": 60,
+                  "step": 5,
+                  "unit": "/min",
+                  "value": 30
+                }
+              ],
+              "parts": [
+                {
+                  "id": "base",
+                  "kind": "slab",
+                  "at": [
+                    10,
+                    0,
+                    -2
+                  ],
+                  "w": 130,
+                  "d": 70,
+                  "h": 4,
+                  "r": 6
+                },
+                {
+                  "id": "pedestal",
+                  "kind": "box",
+                  "at": [
+                    0,
+                    0,
+                    6
+                  ],
+                  "w": 34,
+                  "d": 34,
+                  "h": 12,
+                  "color": "metal"
+                },
+                {
+                  "id": "barrel",
+                  "kind": "cylinder",
+                  "at": [
+                    0,
+                    0,
+                    40
+                  ],
+                  "r": 14,
+                  "h": 56,
+                  "ghost": true
+                },
+                {
+                  "id": "valve",
+                  "kind": "disc",
+                  "at": [
+                    0,
+                    0,
+                    16
+                  ],
+                  "r": 10,
+                  "h": 2
+                },
+                {
+                  "id": "piston",
+                  "kind": "cylinder",
+                  "at": [
+                    0,
+                    0,
+                    40
+                  ],
+                  "r": 12,
+                  "h": 8,
+                  "color": "amber"
+                },
+                {
+                  "id": "cap",
+                  "kind": "disc",
+                  "at": [
+                    0,
+                    0,
+                    69.5
+                  ],
+                  "r": 16,
+                  "h": 3,
+                  "color": "metal"
+                },
+                {
+                  "id": "post",
+                  "kind": "box",
+                  "at": [
+                    -28,
+                    0,
+                    76
+                  ],
+                  "w": 5,
+                  "d": 5,
+                  "h": 10,
+                  "color": "metal"
+                },
+                {
+                  "id": "handle",
+                  "kind": "rod",
+                  "from": [
+                    -28,
+                    0,
+                    82
+                  ],
+                  "to": [
+                    -88,
+                    0,
+                    96
+                  ],
+                  "r": 2.4,
+                  "color": "metal"
+                },
+                {
+                  "id": "nose",
+                  "kind": "rod",
+                  "from": [
+                    -28,
+                    0,
+                    82
+                  ],
+                  "to": [
+                    0,
+                    0,
+                    82
+                  ],
+                  "r": 2.4,
+                  "color": "metal",
+                  "on": "handle"
+                },
+                {
+                  "id": "grip",
+                  "kind": "cylinder",
+                  "at": [
+                    -88,
+                    0,
+                    96
+                  ],
+                  "r": 3,
+                  "h": 12,
+                  "axis": "y",
+                  "detail": "knob",
+                  "on": "handle"
+                },
+                {
+                  "id": "pump-rod",
+                  "kind": "rod",
+                  "from": [
+                    0,
+                    0,
+                    44
+                  ],
+                  "to": [
+                    0,
+                    0,
+                    82
+                  ],
+                  "r": 1.6
+                },
+                {
+                  "id": "spout",
+                  "kind": "tube",
+                  "path": [
+                    [
+                      14,
+                      0,
+                      58
+                    ],
+                    [
+                      36,
+                      0,
+                      58
+                    ],
+                    [
+                      42,
+                      0,
+                      50
+                    ]
+                  ],
+                  "r": 3.5,
+                  "color": "blue"
+                },
+                {
+                  "id": "water",
+                  "kind": "arrow",
+                  "from": [
+                    42,
+                    0,
+                    46
+                  ],
+                  "to": [
+                    44,
+                    0,
+                    24
+                  ],
+                  "color": "blue"
+                },
+                {
+                  "id": "bucket",
+                  "kind": "cylinder",
+                  "at": [
+                    46,
+                    0,
+                    10
+                  ],
+                  "r": 11,
+                  "h": 20,
+                  "color": "blue"
+                }
+              ],
+              "motions": [
+                {
+                  "part": "handle",
+                  "kind": "swing",
+                  "axis": "y",
+                  "range": 12,
+                  "speed": "rate / 60"
+                },
+                {
+                  "part": "piston",
+                  "kind": "slide",
+                  "axis": "z",
+                  "range": [
+                    -8,
+                    8
+                  ],
+                  "speed": "rate / 60",
+                  "phase": 0.5
+                },
+                {
+                  "part": "pump-rod",
+                  "kind": "link",
+                  "from": "piston",
+                  "to": "nose"
+                },
+                {
+                  "part": "valve",
+                  "kind": "swing",
+                  "axis": "x",
+                  "range": 18,
+                  "speed": "rate / 60"
+                },
+                {
+                  "part": "spout",
+                  "kind": "flow",
+                  "speed": "rate / 60"
+                },
+                {
+                  "part": "water",
+                  "kind": "flow",
+                  "speed": "rate / 60"
+                }
+              ],
+              "readouts": [
+                {
+                  "label": "Water per minute",
+                  "value": "rate * 0.4",
+                  "unit": "L",
+                  "decimals": 1
+                }
+              ],
+              "labels": [
+                {
+                  "part": "handle",
+                  "label": "Handle",
+                  "note": "push down to lift the piston"
+                },
+                {
+                  "part": "piston",
+                  "label": "Piston",
+                  "note": "lifts water up the barrel"
+                },
+                {
+                  "part": "valve",
+                  "label": "Check valve",
+                  "note": "keeps water from falling back"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "figure",
+      "category": "composite",
+      "description": "A hand-built live isometric figure, with sliders, readouts and numbered labels. Catalog ids: heart, bike-gears, rocket-engine, ion-thruster, tokamak, fission-reactor, particle-collider. Bind value.",
+      "props": {
+        "figure": {
+          "type": "\"heart\" | \"bike-gears\" | \"rocket-engine\" | \"ion-thruster\" | \"tokamak\" | \"fission-reactor\" | \"particle-collider\"",
+          "required": true,
+          "description": "Figure id. \"heart\" is a beating heart as two pumps: sliders bpm (40-180) and stroke (50-110 ml). \"bike-gears\" is a bicycle drivetrain on a stand: sliders cadence (40-120 rpm), ring (34 or 50 teeth) and gear (1-7, 1 = the 28-tooth cog, 7 = the 11); readouts gear ratio, metres per pedal turn and km/h. \"rocket-engine\" is a liquid-oxygen and kerosene staged-combustion engine firing on a test stand: sliders throttle (40-100 %) and mixture (oxidiser to fuel by mass, 2.2-3.0); readouts thrust (kN), chamber pressure (bar) and turbopump rpm. \"ion-thruster\" is a gridded xenon ion thruster cut in half on a thrust stand: sliders voltage (600-1800 V on the grids) and flow (0.5-3 mg/s of xenon); readouts exhaust speed km/s, thrust mN and power kW. \"tokamak\" is a fusion reactor cut open: sliders current (5-17 MA) and heating (10-75 MW); readouts core temperature (million °C), fusion power (MW) and the gain Q. \"fission-reactor\" is a pressurised water reactor plant: sliders rods (control rods in, 0-100 %) and pump (coolant pump speed, 40-100 %); readouts thermal and electric power (MW) and the coolant temperature leaving the core. \"particle-collider\" is a cutaway piece of a proton collider ring (dipoles, quadrupoles, RF cavities, a layered detector where the beams cross): sliders energy (0.5-7 TeV per beam) and rate (5-40 million bunch crossings a second); readouts share of light speed, dipole field in tesla, collision energy and collisions a second."
+        },
+        "params": {
+          "type": "Record<string, number>",
+          "required": false,
+          "description": "Starting slider values, e.g. { \"bpm\": 120 }. Clamped to each slider."
+        },
+        "labels": {
+          "type": "Array<{ anchor: string; label?: string; note?: string }>",
+          "required": false,
+          "description": "Up to 10 numbered pins, plain text. heart anchors: right-atrium, right-ventricle, left-atrium, left-ventricle, tricuspid, mitral, pulmonary-valve, aortic-valve, aorta, vena-cava, pulmonary-artery, pulmonary-veins, lungs, body. bike-gears anchors: chainring, crank, pedal, chain, cassette, rear-derailleur, front-derailleur, jockey-wheels, rear-hub, wheel. rocket-engine anchors: oxidiser-tank, fuel-tank, turbopump, turbine, oxidiser-pump, fuel-pump, preburner, injector, combustion-chamber, throat, nozzle, cooling-channels, gimbal, load-cell, plume, pressure-gauge. ion-thruster anchors: xenon-tank, flow-controller, power-unit, discharge-chamber, magnets, cathode, plasma, screen-grid, accel-grid, neutraliser, ion-beam, thrust-dial. tokamak anchors: plasma, central-solenoid, tf-coil, pf-coil, vacuum-vessel, blanket, divertor, heating-beam, port. fission-reactor anchors: reactor-vessel, fuel, control-rods, pressuriser, steam-generator, coolant-pump, hot-leg, cold-leg, containment, steam-line, turbine, generator, condenser, feedwater-pump, cooling-tower, transformer. particle-collider anchors: collision-point, detector, tracker, ecal, hcal, solenoid, muon-chambers, beam-pipes, dipole, quadrupole, final-focus, separation-magnet, rf-cavities, magnet-coils, field-gauge."
+        },
+        "caption": {
+          "type": "string",
+          "required": false,
+          "description": "One or two plain sentences under the figure."
+        },
+        "value": {
+          "type": "Record<string, number>",
+          "required": false,
+          "description": "Two-way bind with `bind: \"{state.figure}\"`: the slider values, written when one moves."
+        }
+      },
+      "example": {
+        "type": "figure",
+        "bind": "{state.figure}",
+        "props": {
+          "figure": "heart",
+          "params": {
+            "bpm": 72
+          },
+          "labels": [
+            {
+              "anchor": "right-ventricle",
+              "note": "Pumps oxygen-poor blood to the lungs."
+            },
+            {
+              "anchor": "left-ventricle",
+              "note": "Pumps oxygen-rich blood to the whole body."
+            },
+            {
+              "anchor": "mitral",
+              "label": "Mitral valve",
+              "note": "Opens while the left ventricle fills."
+            }
+          ],
+          "caption": "Move the heart rate and watch the output change."
         }
       }
     },
@@ -11246,6 +12164,11 @@
           "type": "{ guesses: string[]; status: \"playing\" | \"won\" | \"lost\"; hint_used: boolean }",
           "required": false,
           "description": "The game so far, written by the widget on every guess and hint. Bind with `bind: \"{state.game}\"` to read it elsewhere; the widget never reads it back."
+        },
+        "sound": {
+          "type": "boolean",
+          "required": false,
+          "description": "A short chime when the word is solved. Default true; false mutes this widget."
         }
       },
       "events": {
@@ -11299,6 +12222,11 @@
           "type": "{ index: number; answers: (number | null)[]; score: number; done: boolean }",
           "required": false,
           "description": "Progress, written by the widget: the current question, the picked choice per answered question (null = ran out of time), the score and whether every question is answered. Bind with `bind: \"{state.quiz}\"`."
+        },
+        "sound": {
+          "type": "boolean",
+          "required": false,
+          "description": "Quiet cues for a right or wrong answer and a finished quiz. Default true; false mutes this widget."
         }
       },
       "events": {
@@ -11379,6 +12307,11 @@
           "type": "{ moves: number; matched: string[]; completed: boolean; seconds: number }",
           "required": false,
           "description": "The game so far, written by the widget on each move. `matched` lists pair ids. Bind with `bind: \"{state.game}\"` to show it elsewhere."
+        },
+        "sound": {
+          "type": "boolean",
+          "required": false,
+          "description": "Quiet cues for a pair found and a game won. Default true; false mutes this widget."
         }
       },
       "events": {
@@ -11467,6 +12400,11 @@
           "type": "{ board: string[]; turn: \"player\" | \"computer\" | null; result: \"player\" | \"computer\" | \"draw\" | null; series: { player: number; computer: number; draws: number } }",
           "required": false,
           "description": "The game so far, written by the widget on every move. `board` is row-major (\"\" empty). Bind with `bind: \"{state.game}\"` to show it elsewhere."
+        },
+        "sound": {
+          "type": "boolean",
+          "required": false,
+          "description": "A short chime when the player wins a game. Default true; false mutes this widget."
         }
       },
       "events": {
@@ -11501,12 +12439,19 @@
         "start": {
           "type": "string",
           "required": false,
-          "description": "Start time \"HH:MM\" (24 h). Without it items show offsets like +0:15."
+          "description": "Start time \"HH:MM\" (24 h). Without it items show offsets like +0:15.",
+          "data": true
         },
         "items": {
           "type": "Array<{ id?: string; title: string; owner?: string; minutes: number; notes?: string; done?: boolean }>",
           "required": true,
-          "description": "1 to 30 items in running order. minutes 1 to 240. Keep notes to one short line."
+          "description": "1 to 30 items in running order. minutes 1 to 240. Keep notes to one short line.",
+          "data": true
+        },
+        "sound": {
+          "type": "boolean",
+          "required": false,
+          "description": "A soft chime when the running item's time is up. Default true; false mutes this widget."
         }
       },
       "example": {
@@ -11573,7 +12518,8 @@
         "events": {
           "type": "Array<{ id?: string; day: string; start: string; end: string; title: string; place?: string; color?: \"blue\" | \"green\" | \"orange\" | \"purple\" | \"pink\" | \"teal\" | \"red\" | \"yellow\" | \"gray\" }>",
           "required": true,
-          "description": "Up to 60 events. start and end are \"HH:MM\" (24 h). Same color for the same kind of event; leave it out to colour by title."
+          "description": "Up to 60 events. start and end are \"HH:MM\" (24 h). Same color for the same kind of event; leave it out to colour by title.",
+          "data": true
         }
       },
       "example": {
@@ -11658,17 +12604,20 @@
         "now": {
           "type": "{ temp: number; condition: \"sunny\" | \"partly-cloudy\" | \"cloudy\" | \"rain\" | \"heavy-rain\" | \"thunder\" | \"snow\" | \"fog\" | \"wind\" | \"night-clear\"; feelsLike?: number; humidity?: number; wind?: string }",
           "required": false,
-          "description": "Current conditions. humidity is a percent; wind is text like \"14 km/h NW\"."
+          "description": "Current conditions. humidity is a percent; wind is text like \"14 km/h NW\".",
+          "data": true
         },
         "days": {
           "type": "Array<{ day: string; condition: \"sunny\" | \"partly-cloudy\" | \"cloudy\" | \"rain\" | \"heavy-rain\" | \"thunder\" | \"snow\" | \"fog\" | \"wind\" | \"night-clear\"; high: number; low: number; rainChance?: number; sunrise?: string; sunset?: string }>",
           "required": true,
-          "description": "1 to 14 days, first is today. day is \"Mon\" or an ISO date. Other condition words map to the closest icon."
+          "description": "1 to 14 days, first is today. day is \"Mon\" or an ISO date. Other condition words map to the closest icon.",
+          "data": true
         },
         "hourly": {
           "type": "Array<{ time: string; temp: number; condition: \"sunny\" | \"partly-cloudy\" | \"cloudy\" | \"rain\" | \"heavy-rain\" | \"thunder\" | \"snow\" | \"fog\" | \"wind\" | \"night-clear\"; rainChance?: number }>",
           "required": false,
-          "description": "Up to 48 hours, time like \"14:00\" or \"2 PM\"."
+          "description": "Up to 48 hours, time like \"14:00\" or \"2 PM\".",
+          "data": true
         },
         "note": {
           "type": "string",
@@ -12079,7 +13028,7 @@
     {
       "type": "pipeline-dashboard",
       "category": "composite",
-      "description": "Sales / pipeline / funnel archetype: quota progress hero + leaderboard side rail + funnel chart + stage conversion + deals table + live activity ticker.",
+      "description": "Sales or hiring pipeline: quota progress, funnel, leaderboard, deals table and recent activity.",
       "props": {
         "title": {
           "type": "string",
@@ -12099,7 +13048,7 @@
         "quota": {
           "type": "{ label?: string; current: number; target: number; currency?: string; period?: string }",
           "required": false,
-          "description": "Big quota progress hero (current vs target)."
+          "description": "Progress to a target. Currency optional."
         },
         "funnel": {
           "type": "{ title?: string; stages: Array<{ label: string; value: number; color?: string }> }",
@@ -12109,12 +13058,12 @@
         "conversion": {
           "type": "Array<{ from: string; to: string; rate: number }>",
           "required": false,
-          "description": "Stage-to-stage conversion percentages (0 to 100)."
+          "description": "Step rates 0-100; used without a funnel."
         },
         "leaderboard": {
           "type": "{ title?: string; items: Array<{ name: string; avatar?: string; value: string | number; delta?: string; sublabel?: string; position?: number }> }",
           "required": false,
-          "description": "Leaderboard sidebar (medals on top 3)."
+          "description": "Ranked people; top 3 marked."
         },
         "deals": {
           "type": "{ title?: string; columns: Array<{ key: string; label: string; align?: \"left\" | \"right\" | \"center\" }>; rows: Record<string, unknown>[] }",
@@ -12124,7 +13073,7 @@
         "ticker": {
           "type": "Array<{ time: string; label: string; actor?: string; icon?: string }>",
           "required": false,
-          "description": "Live activity ticker."
+          "description": "Recent activity."
         }
       },
       "example": {
@@ -12138,7 +13087,7 @@
             "current": 1820000,
             "target": 2500000,
             "currency": "$",
-            "period": "Q2 — 28 days remaining"
+            "period": "Q2, 28 days remaining"
           },
           "funnel": {
             "title": "Pipeline funnel",
@@ -12197,7 +13146,7 @@
             }
           ],
           "leaderboard": {
-            "title": "Top reps — Q2",
+            "title": "Top reps, Q2",
             "items": [
               {
                 "position": 1,
@@ -12561,20 +13510,28 @@
       "description": "Multi-tier pricing comparison cards with feature checklists, popular badge, and CTAs.",
       "props": {
         "tiers": {
-          "type": "Array<{ id: string; name: string; price: string | number; period?: string; description?: string; features?: Array<string | { label: string; included?: boolean }>; cta?: string; popular?: boolean }>",
+          "type": "Array<{ id: string; name: string; price: string | number; period?: string; description?: string; features?: Array<string | { label: string; included?: boolean }>; cta?: string; popular?: boolean; actions?: EventAction | EventAction[] }>",
           "required": true,
-          "description": "Pricing tiers."
+          "description": "Pricing tiers, 1 to 4 in a row; a narrow card stacks them. `period` is \"month\", not \"/month\". A tier's `actions` fire on its CTA instead of on_select.",
+          "data": true
         },
         "currency": {
           "type": "string",
           "required": false,
-          "description": "Currency symbol prepended to numeric prices. Default \"$\"."
+          "description": "ISO 4217 code for numeric prices (\"EUR\", \"USD\"), or a symbol written as is. Default \"$\"."
+        }
+      },
+      "events": {
+        "on_select": {
+          "type": "EventAction | EventAction[]",
+          "required": false,
+          "description": "Fires with { id, name } when the visitor clicks a tier's CTA (a tier with its own `actions` fires those instead)."
         }
       },
       "example": {
         "type": "pricing-table",
         "props": {
-          "currency": "$",
+          "currency": "USD",
           "tiers": [
             {
               "id": "free",
@@ -12639,12 +13596,14 @@
         "value": {
           "type": "number",
           "required": false,
-          "description": "Current progress (0 to max)."
+          "description": "Current progress (0 to max).",
+          "data": true
         },
         "max": {
           "type": "number",
           "required": false,
-          "description": "Maximum value. Default 100."
+          "description": "Maximum value. Default 100.",
+          "data": true
         },
         "color": {
           "type": "string",
@@ -12655,14 +13614,18 @@
           "type": "\"default\" | \"thin\" | \"thick\"",
           "required": false,
           "description": "Height variant."
+        },
+        "label": {
+          "type": "string",
+          "required": false,
+          "description": "Label row above the bar."
         }
       },
       "example": {
         "type": "progress",
         "props": {
           "value": 65,
-          "max": 100,
-          "variant": "default"
+          "label": "Uploading"
         }
       }
     },
@@ -12674,12 +13637,14 @@
         "value": {
           "type": "number",
           "required": false,
-          "description": "Current progress (0 to max)."
+          "description": "Current progress (0 to max).",
+          "data": true
         },
         "max": {
           "type": "number",
           "required": false,
-          "description": "Maximum value. Default 100."
+          "description": "Maximum value. Default 100.",
+          "data": true
         },
         "size": {
           "type": "number",
@@ -12717,8 +13682,7 @@
         "props": {
           "value": 72,
           "max": 100,
-          "size": 80,
-          "color": "#6366f1"
+          "size": 80
         }
       }
     },
@@ -13325,17 +14289,20 @@
         "min": {
           "type": "number",
           "required": true,
-          "description": "Minimum value (left bound)."
+          "description": "Minimum value (left bound).",
+          "data": true
         },
         "max": {
           "type": "number",
           "required": true,
-          "description": "Maximum value (right bound)."
+          "description": "Maximum value (right bound).",
+          "data": true
         },
         "current": {
           "type": "number",
           "required": true,
-          "description": "Current value (marker position)."
+          "description": "Current value (marker position).",
+          "data": true
         },
         "label": {
           "type": "string",
@@ -13517,22 +14484,26 @@
         "minutes": {
           "type": "number",
           "required": false,
-          "description": "Total time. Summed from step minutes when omitted."
+          "description": "Total time. Summed from step minutes when omitted.",
+          "data": true
         },
         "serves": {
           "type": "number",
           "required": true,
-          "description": "Servings the quantities are written for. Scaling multiplies qty by servings / serves."
+          "description": "Servings the quantities are written for. Scaling multiplies qty by servings / serves.",
+          "data": true
         },
         "kcal": {
           "type": "number",
           "required": false,
-          "description": "Calories PER SERVING."
+          "description": "Calories PER SERVING.",
+          "data": true
         },
         "protein_g": {
           "type": "number",
           "required": false,
-          "description": "Protein grams PER SERVING."
+          "description": "Protein grams PER SERVING.",
+          "data": true
         },
         "tags": {
           "type": "string[]",
@@ -13547,7 +14518,8 @@
         "ingredients": {
           "type": "Array<{ id?: string; name: string; qty?: number; unit?: string; note?: string; aisle?: \"produce\" | \"protein\" | \"dairy\" | \"grains\" | \"pantry\" | \"frozen\" | \"other\" }>",
           "required": true,
-          "description": "qty is a NUMBER (1.5, not \"1 1/2\"); the widget prints 1½. unit is separate (\"cup\", \"g\", \"tbsp\"); omit it for counted items (\"2\" eggs). note: \"finely grated\"."
+          "description": "qty is a NUMBER (1.5, not \"1 1/2\"); the widget prints 1½. unit is separate (\"cup\", \"g\", \"tbsp\"); omit it for counted items (\"2\" eggs). note: \"finely grated\".",
+          "data": true
         },
         "steps": {
           "type": "Array<{ id?: string; text: string; minutes?: number; tip?: string }>",
@@ -13936,7 +14908,7 @@
         "height": {
           "type": "number",
           "required": false,
-          "description": "Height in px. Default 320."
+          "description": "Max height in px."
         },
         "title": {
           "type": "string",
@@ -13995,12 +14967,12 @@
     {
       "type": "saved-views",
       "category": "vertical",
-      "description": "Tabbed view selector for saved filters/sorts. Renders as tab bar with optional count badges and pin stars.",
+      "description": "Saved filter views as chips with optional counts.",
       "props": {
         "views": {
           "type": "Array<{ id: string; label: string; icon?: string; pinned?: boolean; count?: number }>",
           "required": true,
-          "description": "Saved view tabs."
+          "description": "Saved views."
         },
         "value": {
           "type": "string | null",
@@ -14957,16 +15929,16 @@
         "props": {
           "sources": [
             {
-              "name": "Reuters",
-              "url": "https://reuters.com"
+              "name": "Lanternpost",
+              "url": "https://lanternpost.example.com"
             },
             {
-              "name": "AP News",
-              "url": "https://apnews.com"
+              "name": "Harbor Ledger",
+              "url": "https://harborledger.example.org"
             },
             {
-              "name": "Wall Street Journal",
-              "url": "https://wsj.com"
+              "name": "Fieldnote Review",
+              "url": "https://fieldnote.example.net"
             }
           ],
           "share": true,
@@ -14982,7 +15954,8 @@
         "values": {
           "type": "number[]",
           "required": true,
-          "description": "Numeric values, oldest to newest."
+          "description": "Numeric values, oldest to newest.",
+          "data": true
         },
         "labels": {
           "type": "(string | number)[]",
@@ -15119,7 +16092,8 @@
         "value": {
           "type": "number | string",
           "required": true,
-          "description": "Main value."
+          "description": "Main value.",
+          "data": true
         },
         "format": {
           "type": "\"number\" | \"currency\" | \"percent\" | \"compact\"",
@@ -15139,12 +16113,14 @@
         "delta": {
           "type": "number",
           "required": false,
-          "description": "Absolute change."
+          "description": "Absolute change.",
+          "data": true
         },
         "deltaPercent": {
           "type": "number",
           "required": false,
-          "description": "Percent change."
+          "description": "Percent change.",
+          "data": true
         },
         "deltaFormat": {
           "type": "\"absolute\" | \"percent\" | \"both\"",
@@ -15333,12 +16309,13 @@
         "rows": {
           "type": "Array<Record<string, unknown>>",
           "required": true,
-          "description": "Row objects."
+          "description": "Row objects.",
+          "data": true
         },
         "columns": {
-          "type": "Array<{ header?: string; accessorKey?: string; sortable?: boolean; href?: string }>",
+          "type": "Array<{ header?: string; accessorKey?: string; sortable?: boolean; href?: string; align?: \"left\" | \"center\" | \"right\" }>",
           "required": true,
-          "description": "Column definitions. `href` names a row field holding a URL; that column's cell text then links to it (new tab). Keep the URL in its own row field, not in the visible text."
+          "description": "Column definitions. `href` names a row field holding a URL; that column's cell text then links to it (new tab). Keep the URL in its own row field, not in the visible text. `align` overrides the default (all-number columns right)."
         },
         "variant": {
           "type": "\"default\" | \"compact\" | \"striped\" | \"minimal\"",
@@ -15784,7 +16761,8 @@
         "events": {
           "type": "Array<{ date: string; title: string; detail?: string; type?: \"default\" | \"success\" | \"warning\" | \"error\" | \"info\"; color?: string }>",
           "required": true,
-          "description": "Timeline events."
+          "description": "Timeline events.",
+          "data": true
         },
         "maxItems": {
           "type": "number",
@@ -16091,7 +17069,7 @@
       "description": "Hierarchical treemap showing composition and relative sizes. Click to zoom into nested groups.",
       "props": {
         "data": {
-          "type": "Array<{ name: string; value?: number; children?: Node[]; color?: string }>",
+          "type": "Array<{ name: string; value?: number; children?: Node[] }>",
           "required": true,
           "description": "Recursive node tree."
         },
@@ -16284,12 +17262,12 @@
         "itemHeight": {
           "type": "number",
           "required": false,
-          "description": "Fixed row height in px. Default 36."
+          "description": "Fixed row height in px."
         },
         "height": {
           "type": "string | number",
           "required": false,
-          "description": "Container height. Default \"320px\"."
+          "description": "Box height; fits rows to 320px."
         },
         "overscan": {
           "type": "number",
@@ -16305,17 +17283,16 @@
       "example": {
         "type": "virtual-list",
         "props": {
-          "itemHeight": 40,
-          "height": "320px",
           "items": [
             {
-              "label": "Acme Corp"
+              "label": "Acorn Labs",
+              "description": "3 open deals"
             },
             {
-              "label": "Tech Inc"
+              "label": "Bluefin Freight"
             },
             {
-              "label": "Growth Ltd"
+              "label": "Cobalt Dental"
             }
           ]
         }
@@ -16665,6 +17642,11 @@
           "type": "string",
           "required": false,
           "description": "Add-input placeholder."
+        },
+        "sound": {
+          "type": "boolean",
+          "required": false,
+          "description": "A soft pop when an item is checked off. Default true; false mutes this widget."
         }
       },
       "events": {
@@ -17121,7 +18103,6 @@
         "type": "glyph-grid",
         "props": {
           "glyph": "n1",
-          "color": "#2E6BFF",
           "cell": 14
         }
       }
@@ -17171,10 +18152,9 @@
       "example": {
         "type": "fill-grid",
         "props": {
-          "value": 100,
+          "value": 62,
           "max": 100,
-          "total": 24,
-          "color": "#2FB970"
+          "total": 24
         }
       }
     },
@@ -17219,8 +18199,7 @@
         "type": "streak-bars",
         "props": {
           "count": 12,
-          "filled": 12,
-          "color": "#E8852B"
+          "filled": 8
         }
       }
     },
@@ -17462,5 +18441,1172 @@
         }
       }
     }
-  ]
+  ],
+  "waivers": [
+    {
+      "widget": "weather-forecast",
+      "check": "overflow",
+      "reason": "the hourly strip is a designed sideways scroller; its hours past the edge are meant to scroll"
+    },
+    {
+      "widget": "data-grid",
+      "check": "overflow",
+      "reason": "a wide table scrolls sideways inside its own frame on a phone instead of squeezing its columns"
+    },
+    {
+      "widget": "standup-board",
+      "check": "clippedText",
+      "reason": "with 5 or more people, on-track and done rows clamp Today to 1 line on a phone and Today and Yesterday to 2 lines on a wide card; names and roles never clamp, and a tap expands the row to the full text"
+    }
+  ],
+  "intents": [
+    {
+      "widget": "menu-order",
+      "ask": [
+        "order",
+        "burger",
+        "pizza",
+        "food",
+        "menu",
+        "takeaway",
+        "delivery",
+        "toppings",
+        "crust"
+      ],
+      "props": [
+        "items",
+        "featured",
+        "verdict"
+      ],
+      "hints": [
+        "Food orders always use menu-order (pizza, burgers, takeaway), never a form."
+      ]
+    },
+    {
+      "widget": "booking",
+      "ask": [
+        "book",
+        "booking",
+        "table",
+        "appointment",
+        "reservation",
+        "reserve",
+        "slot",
+        "slots",
+        "dentist",
+        "haircut"
+      ],
+      "props": [
+        "services",
+        "days",
+        "party",
+        "preferred",
+        "verdict"
+      ],
+      "hints": [
+        "Write services and days only when it is not a table (a dentist, a haircut), slot start like \"2026-10-14T09:00\". When the message already names a picked slot, the visitor confirmed it on the card: confirm it in text, never send them back to the card, no new booking card."
+      ]
+    },
+    {
+      "widget": "comparison-layout",
+      "ask": [
+        "compare",
+        "comparison",
+        "pick",
+        "vs",
+        "versus",
+        "choose",
+        "which",
+        "laptop",
+        "laptops",
+        "headphones",
+        "tablet",
+        "tablets",
+        "phone",
+        "side by side"
+      ],
+      "props": [
+        "items",
+        "features",
+        "winner",
+        "picks",
+        "verdict",
+        "currency",
+        "chosen",
+        "on_choose"
+      ],
+      "hints": []
+    },
+    {
+      "widget": "notes",
+      "ask": [
+        "notes",
+        "note",
+        "notepad",
+        "jot",
+        "ideas",
+        "memo",
+        "scratchpad"
+      ],
+      "props": [
+        "notes",
+        "tags"
+      ],
+      "hints": []
+    },
+    {
+      "widget": "music-player",
+      "ask": [
+        "music",
+        "playlist",
+        "songs",
+        "song",
+        "sounds",
+        "focus music",
+        "tracks",
+        "lofi",
+        "rain",
+        "calm"
+      ],
+      "props": [
+        "tracks"
+      ],
+      "hints": []
+    },
+    {
+      "widget": "map",
+      "ask": [
+        "map",
+        "directions",
+        "route",
+        "where",
+        "walking",
+        "walk",
+        "near",
+        "nearby",
+        "distance",
+        "location"
+      ],
+      "props": [
+        "center",
+        "zoom",
+        "markers",
+        "route",
+        "height"
+      ],
+      "hints": []
+    },
+    {
+      "widget": "model-viewer",
+      "ask": [
+        "3d",
+        "model",
+        "rotate",
+        "annotate",
+        "label its parts",
+        "spin",
+        "explore"
+      ],
+      "props": [
+        "asset",
+        "annotations"
+      ],
+      "hints": []
+    },
+    {
+      "widget": "interval-workout",
+      "ask": [
+        "workout",
+        "yoga",
+        "hiit",
+        "exercise",
+        "stretch",
+        "stretching",
+        "pose",
+        "training",
+        "circuit"
+      ],
+      "props": [
+        "exercises",
+        "workSec",
+        "restSec",
+        "rounds",
+        "verdict"
+      ],
+      "hints": []
+    },
+    {
+      "widget": "meal-plan",
+      "ask": [
+        "meal plan",
+        "meals",
+        "diet",
+        "protein",
+        "calories",
+        "kcal",
+        "nutrition",
+        "week of meals"
+      ],
+      "props": [
+        "recipes",
+        "days",
+        "people",
+        "verdict"
+      ],
+      "hints": []
+    },
+    {
+      "widget": "recipe",
+      "ask": [
+        "recipe",
+        "cook",
+        "cooking",
+        "dinner",
+        "ingredients",
+        "dish",
+        "bake",
+        "vegetarian"
+      ],
+      "props": [
+        "name",
+        "serves",
+        "ingredients",
+        "steps",
+        "kcal",
+        "protein_g",
+        "verdict"
+      ],
+      "hints": []
+    },
+    {
+      "widget": "itinerary",
+      "ask": [
+        "trip",
+        "travel",
+        "itinerary",
+        "getaway",
+        "vacation",
+        "holiday",
+        "weekend away",
+        "days in",
+        "visit"
+      ],
+      "props": [
+        "days",
+        "budget",
+        "packing",
+        "verdict"
+      ],
+      "hints": []
+    },
+    {
+      "widget": "flashcard-deck",
+      "ask": [
+        "flashcards",
+        "flashcard",
+        "flash cards",
+        "study cards",
+        "vocabulary",
+        "memorize",
+        "learn words"
+      ],
+      "props": [
+        "cards",
+        "verdict"
+      ],
+      "hints": []
+    },
+    {
+      "widget": "quiz",
+      "ask": [
+        "quiz",
+        "trivia",
+        "questions",
+        "test me",
+        "score"
+      ],
+      "props": [
+        "questions"
+      ],
+      "hints": []
+    },
+    {
+      "widget": "memory-match",
+      "ask": [
+        "memory",
+        "match",
+        "matching",
+        "pairs",
+        "pairing",
+        "memory game"
+      ],
+      "props": [
+        "pairs"
+      ],
+      "hints": []
+    },
+    {
+      "widget": "word-guess",
+      "ask": [
+        "word",
+        "guess",
+        "guessing",
+        "wordle",
+        "letter"
+      ],
+      "props": [
+        "answer",
+        "hint"
+      ],
+      "hints": []
+    },
+    {
+      "widget": "board-game",
+      "ask": [
+        "tic-tac-toe",
+        "tic tac toe",
+        "connect four",
+        "connect-four",
+        "noughts",
+        "board game",
+        "play against"
+      ],
+      "props": [
+        "game",
+        "difficulty"
+      ],
+      "hints": []
+    },
+    {
+      "widget": "habit-tracker",
+      "ask": [
+        "habit",
+        "habits",
+        "streak",
+        "daily",
+        "track my",
+        "weekly target"
+      ],
+      "props": [
+        "habits"
+      ],
+      "hints": []
+    },
+    {
+      "widget": "focus-timer",
+      "ask": [
+        "focus",
+        "pomodoro",
+        "timer",
+        "concentrate",
+        "deep work"
+      ],
+      "props": [
+        "focus_min",
+        "short_break_min",
+        "goal_rounds",
+        "task"
+      ],
+      "hints": []
+    },
+    {
+      "widget": "bill-split",
+      "ask": [
+        "split",
+        "bill",
+        "tip",
+        "share the cost",
+        "each person",
+        "owe"
+      ],
+      "props": [
+        "subtotal",
+        "people",
+        "tip_percent",
+        "tax"
+      ],
+      "hints": []
+    },
+    {
+      "widget": "growth-projection",
+      "ask": [
+        "savings",
+        "save",
+        "invest",
+        "interest",
+        "compound",
+        "grow",
+        "growth",
+        "retirement",
+        "deposit"
+      ],
+      "props": [
+        "deposit",
+        "rate",
+        "years",
+        "initial",
+        "goal",
+        "verdict"
+      ],
+      "hints": [
+        "It has its own deposit, rate and years controls; never add inputs around it."
+      ]
+    },
+    {
+      "widget": "figure",
+      "ask": [],
+      "props": [
+        "figure",
+        "labels",
+        "caption"
+      ],
+      "hints": [
+        "When a figure exists for the subject, use it: pick anchors and write notes; it is hand-built and best, ahead of an iso-scene, a model-viewer or an illustration."
+      ]
+    },
+    {
+      "widget": "iso-scene",
+      "ask": [
+        "how does",
+        "how do",
+        "how it works",
+        "show how",
+        "machine",
+        "mechanism",
+        "gears",
+        "gear",
+        "engine",
+        "pump",
+        "piston",
+        "drivetrain",
+        "pulley",
+        "lever",
+        "jack",
+        "crane",
+        "winch",
+        "hoist",
+        "animated drawing",
+        "animated diagram"
+      ],
+      "props": [
+        "parts",
+        "motions",
+        "params",
+        "readouts",
+        "labels"
+      ],
+      "hints": [
+        "When the visitor asks how a physical mechanism works (a pulley, lever, jack, crane, pump, engine, lock, clock), the card is this drawing (or a figure when one exists), never a calculator, form or number inputs; add a calculator after the drawing only if they ask for one. Draw the real machine in 12-30 parts, like the example: a base plate, the frame or body that holds it (posts, casing, stays), each moving part of the mechanism (gears, cranks, levers, pistons, valves), the rods and tubes that connect them, motions on the moving parts driven by 1-3 params, 2-3 readouts computed from the params, 3-6 labels. ripple adds rims, bevels, corner screws on plates, gear spokes and tube highlights itself, so spend no parts on bolts, screws or trim. Give a housing ghost:true so the inside shows, run a chain around two gears, and link a rod between a crank pin and a piston. Write it compact: short ids, whole numbers, no default restated, no at on a rod or tube (their points are then world points), no comments. Use it over an illustration for a machine or mechanism (an illustration stays for flat diagrams), and use a figure instead when one exists for the subject."
+      ]
+    },
+    {
+      "widget": "illustration",
+      "ask": [
+        "draw",
+        "drawing",
+        "picture",
+        "diagram",
+        "illustrate",
+        "animated",
+        "how does",
+        "how do",
+        "explain"
+      ],
+      "props": [
+        "svg",
+        "title",
+        "annotations"
+      ],
+      "hints": []
+    },
+    {
+      "widget": "invoice-layout",
+      "ask": [
+        "invoice",
+        "bill client",
+        "billing",
+        "receipt",
+        "hours of",
+        "line items",
+        "bill a client"
+      ],
+      "props": [
+        "from",
+        "billTo",
+        "invoiceNumber",
+        "issueDate",
+        "lines",
+        "summary"
+      ],
+      "hints": [
+        "An invoice or quote is an invoice-layout (from, billTo, invoiceNumber, issueDate, lines [{description, quantity, unitPrice}], total), never a table of inputs; summary rows use value."
+      ]
+    },
+    {
+      "widget": "checklist-layout",
+      "ask": [
+        "checklist",
+        "due diligence",
+        "compliance",
+        "packing",
+        "study plan",
+        "tick off",
+        "audit",
+        "privacy check",
+        "packing list"
+      ],
+      "props": [
+        "items",
+        "groupBy",
+        "title"
+      ],
+      "hints": [
+        "Use for any list of items with statuses and progress, never a select per row: items [{id, label, state: pending|in-progress|done|blocked|skipped, due?}], showProgress true."
+      ]
+    },
+    {
+      "widget": "exec-dashboard",
+      "ask": [
+        "dashboard",
+        "financial summary",
+        "sales",
+        "kpis",
+        "kpi",
+        "revenue",
+        "quarterly",
+        "profit",
+        "report"
+      ],
+      "props": [
+        "rows",
+        "measures",
+        "dimensions",
+        "x",
+        "split",
+        "verdict"
+      ],
+      "hints": [
+        "A financial summary, KPIs or revenue is an exec-dashboard of raw rows and measures, never hand-built stat tiles."
+      ]
+    },
+    {
+      "widget": "form-layout",
+      "ask": [
+        "survey",
+        "form",
+        "feedback",
+        "questionnaire",
+        "signup",
+        "sign up"
+      ],
+      "props": [
+        "sections",
+        "submitLabel"
+      ],
+      "hints": [
+        "A survey, feedback form or questionnaire is a form-layout with sections [{id, title}] and a form inside holding the questions."
+      ]
+    },
+    {
+      "widget": "stat",
+      "ask": [],
+      "props": [
+        "value",
+        "label",
+        "format",
+        "decimals",
+        "currency"
+      ],
+      "hints": [
+        "Round numbers before writing them (whole numbers for counts, 1 decimal for hours): an average of fixed data is its rounded number, never a division."
+      ]
+    },
+    {
+      "widget": "table",
+      "ask": [],
+      "props": [
+        "rows",
+        "columns"
+      ],
+      "hints": [
+        "Keep cells to short phrases; put explanations in a callout or text below."
+      ]
+    },
+    {
+      "widget": "todo-list",
+      "ask": [
+        "todo",
+        "to-do",
+        "to do",
+        "tasks",
+        "task list"
+      ],
+      "props": [
+        "title"
+      ],
+      "hints": []
+    },
+    {
+      "widget": "timeline",
+      "ask": [
+        "timeline",
+        "milestones",
+        "schedule",
+        "roadmap",
+        "phases",
+        "history"
+      ],
+      "props": [
+        "events"
+      ],
+      "hints": []
+    },
+    {
+      "widget": "calendar",
+      "ask": [
+        "calendar",
+        "month",
+        "events",
+        "dates"
+      ],
+      "props": [
+        "events",
+        "view"
+      ],
+      "hints": []
+    },
+    {
+      "widget": "drawing-canvas",
+      "ask": [
+        "drawing pad",
+        "sketch",
+        "canvas",
+        "paint",
+        "brush",
+        "doodle"
+      ],
+      "props": [
+        "width",
+        "height"
+      ],
+      "hints": []
+    },
+    {
+      "widget": "rating",
+      "ask": [
+        "rating",
+        "ratings",
+        "stars",
+        "star"
+      ],
+      "props": [
+        "label",
+        "max"
+      ],
+      "hints": []
+    },
+    {
+      "widget": "pros-cons",
+      "ask": [
+        "pros",
+        "cons",
+        "pros and cons",
+        "tradeoffs"
+      ],
+      "props": [
+        "pros",
+        "cons"
+      ],
+      "hints": []
+    },
+    {
+      "widget": "kanban",
+      "ask": [
+        "kanban",
+        "board",
+        "backlog",
+        "columns"
+      ],
+      "props": [
+        "columns",
+        "value"
+      ],
+      "hints": []
+    },
+    {
+      "widget": "data-grid",
+      "ask": [
+        "filter",
+        "sort",
+        "sorted",
+        "catalog",
+        "spreadsheet"
+      ],
+      "props": [
+        "columns",
+        "rows",
+        "searchable",
+        "defaultSort"
+      ],
+      "hints": []
+    },
+    {
+      "widget": "steps",
+      "ask": [
+        "step by step",
+        "steps",
+        "how to",
+        "guide me"
+      ],
+      "props": [
+        "steps"
+      ],
+      "hints": []
+    },
+    {
+      "widget": "progress-ring",
+      "ask": [
+        "goal",
+        "progress",
+        "percent done"
+      ],
+      "props": [
+        "value",
+        "max",
+        "label"
+      ],
+      "hints": []
+    },
+    {
+      "widget": "weather-forecast",
+      "ask": [
+        "weather",
+        "forecast",
+        "temperature",
+        "rain"
+      ],
+      "props": [
+        "place",
+        "unit",
+        "now",
+        "days",
+        "hourly",
+        "note"
+      ],
+      "hints": []
+    },
+    {
+      "widget": "week-schedule",
+      "ask": [
+        "weekly schedule",
+        "timetable",
+        "week calendar",
+        "classes"
+      ],
+      "props": [
+        "events"
+      ],
+      "hints": [
+        "events start and end \"HH:MM\", color one per kind of event; bind a state key."
+      ]
+    },
+    {
+      "widget": "agenda",
+      "ask": [
+        "agenda",
+        "meeting",
+        "run of show"
+      ],
+      "props": [
+        "title",
+        "start",
+        "items"
+      ],
+      "hints": [
+        "start \"HH:MM\", minutes per item; bind a state key."
+      ]
+    },
+    {
+      "widget": "standup-board",
+      "ask": [
+        "standup",
+        "stand-up",
+        "blockers",
+        "blocker",
+        "blocked",
+        "team status",
+        "check-in",
+        "who is stuck"
+      ],
+      "props": [
+        "team",
+        "date",
+        "people",
+        "summary"
+      ],
+      "hints": [
+        "A team standup or check-in is one standup-board, never a kanban or a card per person: people[{name, role, yesterday, today, blocker, status}]. Write a blocker only when someone is stuck; leave it out otherwise. The widget counts open blockers itself."
+      ]
+    },
+    {
+      "widget": "place-results",
+      "ask": [
+        "restaurant",
+        "cafe",
+        "coffee",
+        "places",
+        "near me",
+        "bars"
+      ],
+      "props": [
+        "places"
+      ],
+      "hints": [
+        "places rows also take reviews?, price? (1 to 4), distance? (\"350 m\"), walkMinutes?, open?, hours?, tags?, blurb?, lat?, lng? (lat/lng add a map). Generic sample names unless a tool found real places. on_choose may emit ask {text}."
+      ]
+    },
+    {
+      "widget": "product-grid",
+      "ask": [
+        "deals",
+        "products",
+        "shopping",
+        "browse",
+        "buy"
+      ],
+      "props": [
+        "products"
+      ],
+      "hints": [
+        "products rows also take color? (blue|violet|teal|green|amber|rose|orange|slate) and up to 3 short specs, never an image. Generic names, never a real brand with a price. on_choose may emit ask {text}."
+      ]
+    },
+    {
+      "widget": "media-grid",
+      "ask": [
+        "documentaries",
+        "films",
+        "movies",
+        "podcasts",
+        "books to read",
+        "reading list",
+        "novels",
+        "watch",
+        "listen"
+      ],
+      "props": [
+        "kind",
+        "items"
+      ],
+      "hints": [
+        "items rows also take blurb? and color? (blue|violet|teal|green|amber|rose|orange|slate), never an image; bind a state key. on_choose may emit ask {text}."
+      ]
+    }
+  ],
+  "craft": {
+    "rules": [
+      {
+        "id": "data-fixed",
+        "lens": "data-truth",
+        "text": "Never change the data to make a widget look right."
+      },
+      {
+        "id": "no-future-dates",
+        "lens": "dates",
+        "check": "futureDate",
+        "text": "Invented dates are never after today."
+      },
+      {
+        "id": "invented-not-false",
+        "lens": "data-truth",
+        "text": "Invented is fine, false is not."
+      },
+      {
+        "id": "archetype-first",
+        "lens": "archetype",
+        "text": "Name the card's one question, then its archetype, then its widget."
+      },
+      {
+        "id": "data-widget-alone",
+        "lens": "archetype",
+        "check": "twoControls",
+        "text": "A data widget stands alone."
+      },
+      {
+        "id": "booking-widget",
+        "lens": "archetype",
+        "text": "A booking is a `booking`."
+      },
+      {
+        "id": "primitives-fallback",
+        "lens": "archetype",
+        "text": "Primitive trees are the fallback, not the default."
+      },
+      {
+        "id": "reads-at-phone",
+        "lens": "layout",
+        "check": "overflow",
+        "text": "The card must read at 360 px and at 720 px."
+      },
+      {
+        "id": "tile-rows-wrap",
+        "lens": "layout",
+        "text": "Tile rows wrap."
+      },
+      {
+        "id": "no-truncation",
+        "lens": "layout",
+        "check": "clippedText",
+        "text": "Truncation is a fault, not a style."
+      },
+      {
+        "id": "nothing-past-card",
+        "lens": "layout",
+        "check": "overflow",
+        "text": "Nothing pokes past the card."
+      },
+      {
+        "id": "designed-scroll",
+        "lens": "layout",
+        "check": "overflow",
+        "text": "A designed sideways scroll is the widget's, not yours, and the audit still counts it."
+      },
+      {
+        "id": "inputs-full-row",
+        "lens": "layout",
+        "text": "Inputs get a full row or a 2-column grid."
+      },
+      {
+        "id": "answer-leads",
+        "lens": "answer",
+        "text": "The answer leads."
+      },
+      {
+        "id": "one-primary-action",
+        "lens": "hierarchy",
+        "text": "One primary action per card."
+      },
+      {
+        "id": "one-heading-per-section",
+        "lens": "hierarchy",
+        "text": "One heading per section, most important section first."
+      },
+      {
+        "id": "colour-is-data",
+        "lens": "themes",
+        "text": "Colour encodes data or state only."
+      },
+      {
+        "id": "every-element-bound",
+        "lens": "density",
+        "text": "Every element is bound to a data field or an action."
+      },
+      {
+        "id": "no-dead-region",
+        "lens": "density",
+        "check": "emptyContainers",
+        "text": "No dead region."
+      },
+      {
+        "id": "dashboards-not-stat-rows",
+        "lens": "density",
+        "text": "Dashboards are more than a stat row."
+      },
+      {
+        "id": "phone-tiles-pair",
+        "lens": "layout",
+        "text": "On a phone, tiles pair up."
+      },
+      {
+        "id": "numbers-in-stat",
+        "lens": "numbers",
+        "text": "Every computed or decimal number goes in a `stat`."
+      },
+      {
+        "id": "money-has-currency",
+        "lens": "numbers",
+        "text": "Money carries its currency everywhere."
+      },
+      {
+        "id": "missing-shows-dash",
+        "lens": "numbers",
+        "check": "badText",
+        "text": "Missing numbers show a dash, never NaN."
+      },
+      {
+        "id": "one-number-one-value",
+        "lens": "numbers",
+        "text": "One number, one value."
+      },
+      {
+        "id": "size-worst-case",
+        "lens": "numbers",
+        "text": "Size for the worst case."
+      },
+      {
+        "id": "empty-rows",
+        "lens": "states",
+        "text": "A data widget with 0 rows passes the checks and shows a blank card."
+      },
+      {
+        "id": "widget-error",
+        "lens": "states",
+        "check": "errorBoxes",
+        "text": "A widget that throws shows \"This widget hit an error\" inside the card."
+      },
+      {
+        "id": "unknown-widget",
+        "lens": "states",
+        "check": "catalog",
+        "text": "An unknown widget type renders a red box naming it."
+      },
+      {
+        "id": "no-raw-json",
+        "lens": "states",
+        "check": "badText",
+        "text": "Raw JSON must never reach the reader."
+      },
+      {
+        "id": "choice-once",
+        "lens": "states",
+        "text": "Show each choice once."
+      },
+      {
+        "id": "theme-not-hex",
+        "lens": "themes",
+        "text": "Use the theme, not hex."
+      },
+      {
+        "id": "both-themes",
+        "lens": "themes",
+        "text": "Check both themes."
+      },
+      {
+        "id": "charts-on-canvas",
+        "lens": "layout",
+        "text": "Charts draw on canvas, so look at every chart in the screenshot."
+      },
+      {
+        "id": "bind-derive",
+        "lens": "interaction",
+        "text": "Bind inputs, derive outputs."
+      },
+      {
+        "id": "lists-fresh",
+        "lens": "interaction",
+        "text": "Lists keep their numbers fresh."
+      },
+      {
+        "id": "real-actions",
+        "lens": "interaction",
+        "check": "action",
+        "text": "Only real actions."
+      },
+      {
+        "id": "validate-first",
+        "lens": "interaction",
+        "text": "Validate before side effects."
+      },
+      {
+        "id": "small-expressions",
+        "lens": "interaction",
+        "check": "expr",
+        "text": "Expressions are small."
+      },
+      {
+        "id": "fictional-names",
+        "lens": "data-truth",
+        "text": "Fictional names and sample data."
+      },
+      {
+        "id": "labels-are-words",
+        "lens": "hierarchy",
+        "text": "Labels are words, not identifiers."
+      },
+      {
+        "id": "data-agrees",
+        "lens": "data-truth",
+        "text": "The data agrees with itself."
+      },
+      {
+        "id": "sample-says-so",
+        "lens": "data-truth",
+        "text": "Weather and other made-up live data say so."
+      },
+      {
+        "id": "words-not-bent",
+        "lens": "data-truth",
+        "text": "Words never get bent to fit either."
+      },
+      {
+        "id": "keys-in-order",
+        "lens": "states",
+        "text": "Keys in order: type, props, then bind and handlers, then children."
+      },
+      {
+        "id": "leave-out-defaults",
+        "lens": "density",
+        "check": "size",
+        "text": "Leave out defaults; repeat with `each` over state."
+      },
+      {
+        "id": "same-site-links",
+        "lens": "interaction",
+        "check": "schema",
+        "text": "Same-site links only."
+      },
+      {
+        "id": "bulk-data-from-host",
+        "lens": "density",
+        "check": "size",
+        "text": "Bulk data comes from the host, not typed into the spec."
+      }
+    ],
+    "lenses": [
+      {
+        "id": "archetype",
+        "question": "Is this the right archetype and widget for the card's one question?"
+      },
+      {
+        "id": "answer",
+        "question": "Does the answer lead, so a reader gets the point in one second?"
+      },
+      {
+        "id": "data-truth",
+        "question": "Is every given fact still there and unchanged, and do the words agree with the data?"
+      },
+      {
+        "id": "dates",
+        "question": "Is every invented date on or before today, unless it is a forecast that says it is a sample?"
+      },
+      {
+        "id": "numbers",
+        "question": "Is every number rounded, carrying its unit or currency, and the same wherever it repeats?"
+      },
+      {
+        "id": "layout",
+        "question": "Does the card read at 360 px and at 720 px with nothing cut, squeezed or past its edge?"
+      },
+      {
+        "id": "hierarchy",
+        "question": "Is there one heading per section and one primary action, with each value outweighing its label?"
+      },
+      {
+        "id": "density",
+        "question": "Is every element bound to real data or an action, with no dead region and no filler?"
+      },
+      {
+        "id": "states",
+        "question": "Do empty, error and edge cases show something honest instead of a blank, NaN or raw JSON?"
+      },
+      {
+        "id": "themes",
+        "question": "Does the card read in light and in dark, on theme tokens rather than hex or decorative tints?"
+      },
+      {
+        "id": "interaction",
+        "question": "Do inputs bind to state and outputs derive from it, with only real actions and validation before side effects?"
+      }
+    ]
+  }
 }

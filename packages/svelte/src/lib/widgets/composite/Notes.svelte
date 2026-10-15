@@ -26,6 +26,7 @@
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import { holds, nextEdit, plain } from '../data-kit/index.js';
 	import type { Edit } from '../data-kit/edit.js';
+	import { playCue } from '../../sound/index.js';
 	import {
 		MAX_NOTES,
 		NOTE_COLORS,
@@ -58,9 +59,11 @@
 		/** Two-way bindable: the notes. */
 		value?: NotesValue;
 		onchange?: (value: NotesValue) => void;
+		/** A very quiet pop when a note is saved. Default true. */
+		sound?: boolean;
 	}
 
-	let { id, class: className, style, title, notes, tags, placeholder, value = $bindable(), onchange }: Props = $props();
+	let { id, class: className, style, title, notes, tags, placeholder, value = $bindable(), onchange, sound = true }: Props = $props();
 
 	const rootStyle = $derived(
 		style && typeof style === 'object'
@@ -128,6 +131,7 @@
 			now = note.at!;
 			commit([note, ...current.notes]);
 			announce = 'Note saved.';
+			if (sound) playCue('sent', 0.5);
 		}
 		draft = { title: '', text: '', color: 'plain' };
 		writing = keepWriting;
@@ -161,6 +165,7 @@
 		next.at = now = Date.now();
 		commit(current.notes.map((x) => (x.id === n.id ? next : x)));
 		announce = 'Note updated.';
+		if (sound) playCue('sent', 0.5);
 	}
 
 	let root = $state<HTMLElement>();

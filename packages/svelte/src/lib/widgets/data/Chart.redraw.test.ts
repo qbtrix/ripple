@@ -1,10 +1,11 @@
-// Chart.redraw.test.ts — the echarts-backed data widgets (chart, heatmap,
-// treemap, sankey, funnel) and the frappe-gantt one redraw when their props
-// change after mount: state behind `data` changes, a streamed spec delivers
+// Chart.redraw.test.ts: the echarts-backed chart, the native gantt and
+// heatmap, and the DOM treemap, funnel and sankey redraw when their
+// props change after mount: state behind `data` changes, a streamed spec delivers
 // title/data in later chunks, or type/title are swapped on the live component.
-// The chart libs are mocked (jsdom has no canvas), so every assertion reads the
-// option handed to the instance's update call. The instance itself must be
-// created once and updated in place, then disposed on unmount.
+// The chart libs are mocked (jsdom has no canvas), so every echarts assertion
+// reads the option handed to the instance's update call. The instance itself
+// must be created once and updated in place, then disposed on unmount. The DOM
+// widgets (treemap, funnel, heatmap, gantt, sankey) are checked by reading what they render.
 
 import { render, fireEvent } from '@testing-library/svelte';
 import { tick } from 'svelte';
@@ -26,17 +27,6 @@ vi.mock('echarts', () => ({
 	}
 }));
 
-const gantt = vi.hoisted(() => ({ ctor: vi.fn(), refresh: vi.fn(), change_view_mode: vi.fn() }));
-vi.mock('frappe-gantt', () => ({
-	default: class {
-		constructor(...args: unknown[]) {
-			gantt.ctor(...args);
-		}
-		refresh = gantt.refresh;
-		change_view_mode = gantt.change_view_mode;
-	}
-}));
-
 /** ResizeObserver that reports a laid-out box as soon as it observes, so the
  *  widgets' "init once the element has a size" path runs in jsdom. */
 class SizedResizeObserver {
@@ -50,7 +40,7 @@ class SizedResizeObserver {
 
 beforeEach(() => {
 	vi.stubGlobal('ResizeObserver', SizedResizeObserver);
-	for (const m of [...Object.values(ec), ...Object.values(gantt)]) m.mockClear();
+	for (const m of Object.values(ec)) m.mockClear();
 });
 afterEach(() => vi.unstubAllGlobals());
 
@@ -137,36 +127,65 @@ describe('chart', () => {
 	});
 });
 
-describe.each([
-	['heatmap', Heatmap, { cells: [{ x: 'a', y: 'r', value: 1 }] }, { cells: [{ x: 'a', y: 'r', value: 9 }] }, (o: any) => o.series[0].data, [[0, 0, 9]]],
-	['treemap', Treemap, { data: [{ name: 'a', value: 1 }] }, { data: [{ name: 'b', value: 9 }] }, (o: any) => o.series[0].data.map((d: any) => d.name), ['b']],
-	[
-		'sankey',
-		Sankey,
-		{ nodes: [{ name: 'a' }, { name: 'b' }], links: [{ source: 'a', target: 'b', value: 1 }] },
-		{ nodes: [{ name: 'a' }, { name: 'b' }], links: [{ source: 'a', target: 'b', value: 9 }] },
-		(o: any) => o.series[0].links.map((l: any) => l.value),
-		[9]
-	],
-	['funnel', Funnel, { data: [{ label: 'a', value: 1 }] }, { data: [{ label: 'a', value: 9 }] }, (o: any) => o.series[0].data.map((d: any) => d.value), [9]]
-] as const)('%s', (_name, Widget, before, after, read, expected) => {
-	test('redraws when its data prop changes after mount', async () => {
-		const { rerender } = render(Widget as any, { props: before });
-		await vi.waitFor(() => expect(ec.setOption).toHaveBeenCalled());
-		await rerender(after);
-		await vi.waitFor(() => expect(read(lastOption())).toEqual(expected));
-		expect(ec.init).toHaveBeenCalledTimes(1);
+describe('sankey', () => {
+	test('redraws its figures when its links change after mount', async () => {
+		// bind:clientWidth needs entries with a target; the sized stub has none.
+		vi.unstubAllGlobals();
+		const nodes = [{ name: 'a' }, { name: 'b' }];
+		const { container, rerender } = render(Sankey, { props: { nodes, links: [{ source: 'a', target: 'b', value: 1 }] } });
+		const figs = () => [...container.querySelectorAll('.sk-fig')].map((n) => n.textContent);
+		expect(figs()).toEqual(['1', '1 · 100%']);
+		await rerender({ nodes, links: [{ source: 'a', target: 'b', value: 9 }] });
+		expect(figs()).toEqual(['9', '9 · 100%']);
+		expect(ec.init).not.toHaveBeenCalled();
+	});
+});
+
+describe('treemap', () => {
+	test('redraws its tiles when its data prop changes after mount', async () => {
+		const { container, rerender } = render(Treemap, { props: { data: [{ name: 'a', value: 1 }] } });
+		const names = () => [...container.querySelectorAll('.tm-name')].map((n) => n.textContent);
+		expect(names()).toEqual(['a']);
+		await rerender({ data: [{ name: 'b', value: 9 }] });
+		expect(names()).toEqual(['b']);
+		expect(ec.init).not.toHaveBeenCalled();
+	});
+});
+
+describe('heatmap', () => {
+	test('redraws its cells when its cells prop changes after mount', async () => {
+		// bind:clientWidth needs entries with a target; the sized stub has none.
+		vi.unstubAllGlobals();
+		const { container, rerender } = render(Heatmap, { props: { cells: [{ x: 'a', y: 'r', value: 1 }] } });
+		const values = () => [...container.querySelectorAll('.hm-cell')].map((c) => c.getAttribute('data-value'));
+		expect(values()).toEqual(['1']);
+		await rerender({ cells: [{ x: 'a', y: 'r', value: 9 }, { x: 'b', y: 'r', value: 4 }] });
+		expect(values()).toEqual(['9', '4']);
+		expect(ec.init).not.toHaveBeenCalled();
+	});
+});
+
+describe('funnel', () => {
+	test('redraws its rows when its data prop changes after mount', async () => {
+		const { container, rerender } = render(Funnel, { props: { data: [{ label: 'a', value: 1 }] } });
+		const counts = () => [...container.querySelectorAll('.fn-count')].map((n) => n.textContent);
+		expect(counts()).toEqual(['1']);
+		await rerender({ data: [{ label: 'a', value: 9 }] });
+		expect(counts()).toEqual(['9']);
+		expect(ec.init).not.toHaveBeenCalled();
 	});
 });
 
 describe('gantt', () => {
-	test('refreshes when its tasks change after mount', async () => {
+	test('redraws its rows when tasks change after mount', async () => {
 		const t1 = [{ id: '1', name: 'Plan', start: '2026-01-01', end: '2026-01-05' }];
-		const t2 = [...t1, { id: '2', name: 'Build', start: '2026-01-06', end: '2026-01-10' }];
-		const { rerender } = render(GanttChart, { props: { tasks: t1 } });
-		await vi.waitFor(() => expect(gantt.ctor).toHaveBeenCalledTimes(1));
+		const t2 = [...t1, { id: '2', name: 'Build', start: '2026-01-06', end: '2026-01-10', dependencies: '1' }];
+		const { container, rerender } = render(GanttChart, { props: { tasks: t1 } });
+		expect(container.querySelectorAll('[role="listitem"]')).toHaveLength(1);
 		await rerender({ tasks: t2 });
-		await vi.waitFor(() => expect(gantt.refresh.mock.lastCall?.[0]).toEqual(t2));
-		expect(gantt.ctor).toHaveBeenCalledTimes(1);
+		const items = container.querySelectorAll('[role="listitem"]');
+		expect(items).toHaveLength(2);
+		expect(items[1].getAttribute('aria-label')).toBe('Build, Jan 6, 2026 to Jan 10, 2026, after Plan');
+		expect(container.textContent).toContain('Jan 1 – Jan 10, 2026 · 2 tasks');
 	});
 });

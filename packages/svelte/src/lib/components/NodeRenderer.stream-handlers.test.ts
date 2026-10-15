@@ -108,9 +108,9 @@ test('streamed chip runs a generic on_close that arrived after it mounted', asyn
 			}
 		},
 		'on_close',
-		() => screen.queryByLabelText('Remove')
+		() => screen.queryByLabelText('Remove tag')
 	);
 
-	await userEvent.click(screen.getByLabelText('Remove'));
+	await userEvent.click(screen.getByLabelText('Remove tag'));
 	expect(lastState()).toMatchObject({ closed: true });
 });

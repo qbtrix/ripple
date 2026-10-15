@@ -1,3 +1,9 @@
+<!--
+  Text.svelte: a paragraph (or inline span) of body copy. Every size uses the UI
+  sans (--font-sans); monospace is for code only. Bare URLs become links that
+  route through the host's navigate action when there is one. A short value
+  does not shrink in a flex row, so it never wraps onto two lines.
+-->
 <script lang="ts">
   import { safeUrl } from '@ripple-ui/core';
   import { getContext } from 'svelte';
@@ -47,10 +53,10 @@
     xs: 'text-xs text-muted-foreground',
     sm: 'text-sm text-muted-foreground',
     base: 'text-sm text-foreground',
-    lg: 'text-base text-foreground font-mono',
-    xl: 'text-lg text-foreground font-mono',
-    '2xl': 'text-xl text-foreground font-mono',
-    '3xl': 'text-2xl text-foreground font-mono',
+    lg: 'text-base text-foreground',
+    xl: 'text-lg text-foreground',
+    '2xl': 'text-xl text-foreground',
+    '3xl': 'text-2xl text-foreground',
   };
 
   const weightClasses: Record<string, string> = {
@@ -76,13 +82,17 @@
     return styles.length > 0 ? styles.join(';') : undefined;
   });
 
+  // A short value ("12 events") keeps its width in a flex row instead of being
+  // squeezed onto two lines; longer copy still wraps.
+  const short = $derived(String(text ?? '').length <= 24 ? 'shrink-0' : undefined);
+
   const linkClass = 'text-primary underline underline-offset-2 hover:text-primary/80 break-words';
 </script>
 
 {#snippet body()}{#each segments as seg}{#if seg.url}{@const url = seg.url}<a href={safeUrl(url)} target="_blank" rel="noopener noreferrer" class={linkClass} onclick={(e) => handleLinkClick(e, url)}>{seg.text}</a>{:else}{seg.text}{/if}{/each}{/snippet}
 
 {#if inline}
-  <span {id} class={cn('m-0', sizeClasses[size], weightClasses[weight], className)} style={styleString}>{@render body()}</span>
+  <span {id} class={cn('m-0', short, sizeClasses[size], weightClasses[weight], className)} style={styleString}>{@render body()}</span>
 {:else}
-  <p {id} class={cn('m-0', sizeClasses[size], weightClasses[weight], className)} style={styleString}>{@render body()}</p>
+  <p {id} class={cn('m-0', short, sizeClasses[size], weightClasses[weight], className)} style={styleString}>{@render body()}</p>
 {/if}

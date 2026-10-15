@@ -9,7 +9,10 @@
  * pointing at a file nobody thought was part of the headless surface.
  *
  * So the check is transitive. It walks the real import graph from
- * `headless/index.ts` and asserts of every reachable file:
+ * `headless/index.ts` (and from the pure audit modules, `core/spec-audit.ts`,
+ * `core/audit-report.ts` and `core/data-guard.ts`, and the build loop,
+ * `build/index.ts`) and
+ * asserts of every reachable file:
  *
  *   1. no `.svelte` import (component or `.svelte.ts` rune module),
  *   2. no import from `svelte` or `svelte/*`,
@@ -41,7 +44,11 @@ const SOURCES = import.meta.glob('../**/*.ts', {
 	eager: true
 }) as Record<string, string>;
 
-const ENTRY = './index.ts';
+/**
+ * Crawl roots: the headless entry, plus the pure modules a node host runs
+ * without the headless runtime (the spec audit, its report type, the data guard, the build loop).
+ */
+const ENTRIES = ['./index.ts', '../core/audit-report.ts', '../core/spec-audit.ts', '../core/data-guard.ts', '../build/index.ts'];
 
 interface PackageJson {
 	exports: Record<string, { source: string }>;
@@ -140,13 +147,13 @@ function sourceOf(key: string): string | undefined {
 	return SOURCES[key];
 }
 
-/** Walk the transitive import graph from an entry point (a SOURCES key). */
+/** Walk the transitive import graph from the given entry points (SOURCES keys). */
 function crawl(
-	entry: string = ENTRY
+	entries: string[] = ENTRIES
 ): { files: string[]; svelteImports: Array<{ file: string; spec: string }> } {
 	const seen = new Set<string>();
 	const svelteImports: Array<{ file: string; spec: string }> = [];
-	const queue = [entry];
+	const queue = [...entries];
 
 	while (queue.length > 0) {
 		const key = queue.pop()!;
@@ -217,6 +224,9 @@ describe('headless purity', () => {
 		expect(graph.files.some((f) => f.endsWith('resolve-tree.ts'))).toBe(true);
 		expect(graph.files.some((f) => f.endsWith('event-dispatcher.ts'))).toBe(true);
 		expect(graph.files.some((f) => f.endsWith('expression-resolver.ts'))).toBe(true);
+		expect(graph.files).toEqual(
+			expect.arrayContaining(['../core/audit-report.ts', '../core/spec-audit.ts', '../core/data-guard.ts', '../manifest/craft.ts'])
+		);
 	});
 
 	it('imports nothing from svelte, transitively', () => {
@@ -255,7 +265,7 @@ describe('package purity', () => {
 
 	it('imports no UI framework from any export, transitively', () => {
 		const offenders = entries.flatMap((e) =>
-			crawl(e.key).svelteImports.map((hit) => ({ entry: e.name, ...hit }))
+			crawl([e.key]).svelteImports.map((hit) => ({ entry: e.name, ...hit }))
 		);
 		expect(offenders).toEqual([]);
 	});

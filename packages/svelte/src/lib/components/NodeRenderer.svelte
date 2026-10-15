@@ -28,7 +28,8 @@
     context) the boundary retries on every new frame, and while the stream is
     open the fallback is a muted `data-ripple-node-pending` block instead: a
     half-parsed node that throws usually renders once the rest arrives. After
-    the stream ends, and for a plain spec, a throw shows ErrorState.
+    the stream ends, and for a plain spec, a throw shows ErrorState and is
+    reported to the 'ui-render-error' context (Ripple's `onRenderError`).
   - `data-ripple-node` / `data-ripple-type` are stamped last into widgetProps
     for the visual editor; they reach the DOM only where a widget forwards them.
 -->
@@ -421,8 +422,13 @@
 	 */
 	let retryBoundary: (() => void) | null = null;
 
+	const reportRenderError = getContext<((nodeId: string | undefined) => void) | undefined>('ui-render-error');
+
 	function onBoundaryError(_error: unknown, reset: () => void) {
-		if (getStreamPhase?.()) retryBoundary = reset;
+		const phase = getStreamPhase?.();
+		if (phase) retryBoundary = reset;
+		// Mid-stream a throw is a half-parsed node, not a render error.
+		if (phase !== 'active') reportRenderError?.(node.id);
 	}
 
 	$effect(() => {
@@ -556,12 +562,13 @@
 			'data-ripple-node': node.id,
 			'data-ripple-type': node.type
 		}}
-		<!-- The default-children snippet is passed as a PROP (below) and only when
-		     `defaultKids` is non-empty. Inlining it as component content passed an
-		     always-truthy `children` to every widget, so a widget could not tell
-		     "renderer, zero kids" from "hand-written caller with kids" — which is
-		     why `hasChildren` had to exist. Matching header/footer/sidebar/topbar/
-		     actions makes `children` a truthful signal for both callers. -->
+		<!-- Slot snippets are passed as PROPS (below), each only when its slot has
+		     kids, so `children` is a truthful signal ("renderer, zero kids" looks
+		     like "no children"). The named slots (header, footer, sidebar, topbar,
+		     actions) are spread in only when present, never set to `undefined`:
+		     several widgets take a DATA prop of the same name (an `actions` array,
+		     a `footer` string), and an explicit `undefined` after the widgetProps
+		     spread would clobber it. An absent slot leaves the data prop alone. -->
 		{#snippet defaultSnippet()}
 			{#each defaultKids as child, i (defaultKeys[i])}
 				<Self node={child} {loopContext} />
@@ -592,6 +599,16 @@
 				<Self node={child} {loopContext} />
 			{/each}
 		{/snippet}
+		<!-- Filled slots only (see above). Widgets that type a slot name as a
+		     Snippet guard with typeof before render. `children` is always set,
+		     so a model prop of that name never lands. -->
+		{@const slotProps = {
+			...(headerKids.length > 0 && { header: headerSnippet }),
+			...(footerKids.length > 0 && { footer: footerSnippet }),
+			...(sidebarKids.length > 0 && { sidebar: sidebarSnippet }),
+			...(topbarKids.length > 0 && { topbar: topbarSnippet }),
+			...(actionsKids.length > 0 && { actions: actionsSnippet })
+		}}
 		<svelte:boundary failed={nodeFailed} onerror={onBoundaryError}>
 			<!-- RCR-4: per-node error boundary. A widget that throws during
 			     render shows an inline ErrorState for THIS node while its siblings
@@ -608,22 +625,14 @@
 			<div data-ripple-motion data-ripple-node={node.id} class="block" use:withMotion={node.motion}>
 				<WidgetComponent
 					{...widgetProps}
-					header={headerKids.length > 0 ? headerSnippet : undefined}
-					footer={footerKids.length > 0 ? footerSnippet : undefined}
-					sidebar={sidebarKids.length > 0 ? sidebarSnippet : undefined}
-					topbar={topbarKids.length > 0 ? topbarSnippet : undefined}
-					actions={actionsKids.length > 0 ? actionsSnippet : undefined}
+					{...slotProps}
 					children={defaultKids.length > 0 ? defaultSnippet : undefined}
 				/>
 			</div>
 		{:else}
 			<WidgetComponent
 				{...widgetProps}
-				header={headerKids.length > 0 ? headerSnippet : undefined}
-				footer={footerKids.length > 0 ? footerSnippet : undefined}
-				sidebar={sidebarKids.length > 0 ? sidebarSnippet : undefined}
-				topbar={topbarKids.length > 0 ? topbarSnippet : undefined}
-				actions={actionsKids.length > 0 ? actionsSnippet : undefined}
+				{...slotProps}
 				children={defaultKids.length > 0 ? defaultSnippet : undefined}
 			/>
 		{/if}

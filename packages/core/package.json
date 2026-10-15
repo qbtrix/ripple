@@ -53,6 +53,16 @@
       "types": "./dist/schema/index.d.ts",
       "default": "./dist/schema/index.js"
     },
+    "./iso": {
+      "source": "./src/iso/index.ts",
+      "types": "./dist/iso/index.d.ts",
+      "default": "./dist/iso/index.js"
+    },
+    "./build": {
+      "source": "./src/build/index.ts",
+      "types": "./dist/build/index.d.ts",
+      "default": "./dist/build/index.js"
+    },
     "./motion": {
       "source": "./src/motion/engine.ts",
       "types": "./dist/motion/engine.d.ts",
@@ -62,12 +72,14 @@
   "files": [
     "dist",
     "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
     "!dist/**/*.test.*",
     "!dist/**/__tests__/**",
     "!dist/**/fixtures/**"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+    "prepack": "cp ../../THIRD_PARTY_NOTICES.md .",
     "check": "tsc -p tsconfig.build.json --noEmit",
     "test": "vitest --run"
   },

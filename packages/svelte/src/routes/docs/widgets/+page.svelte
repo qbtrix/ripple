@@ -2,11 +2,28 @@
   @file routes/docs/widgets/+page.svelte
   @description The widget reference index: every manifest category in reading
     order with its count, each a compact list of type (mono) and one-line
-    description. Plain lists, no live renders, so this page ships no widget JS.
+    description, with `backtick` spans shown as code. A filter box narrows the
+    lists by type or description and hides empty categories; without JS every
+    row shows. The layout's rail lists the categories (+page.server.ts).
+    Plain lists, no live renders, so this page ships no widget JS.
 -->
 <script lang="ts">
+	import { codeSpans } from '$lib/site/docs/widgets.js';
+
 	let { data } = $props();
 	const total = $derived(data.categories.reduce((n, c) => n + c.widgets.length, 0));
+
+	let filter = $state('');
+	const q = $derived(filter.trim().toLowerCase());
+	const shown = $derived(
+		data.categories
+			.map((c) => ({
+				...c,
+				widgets: q ? c.widgets.filter((w) => `${w.type} ${w.description}`.toLowerCase().includes(q)) : c.widgets
+			}))
+			.filter((c) => c.widgets.length)
+	);
+	const matches = $derived(shown.reduce((n, c) => n + c.widgets.length, 0));
 </script>
 
 <svelte:head>
@@ -21,18 +38,28 @@
 		takes. Generated from the widget manifest.
 	</p>
 
-	{#each data.categories as c (c.id)}
+	<div class="filter" data-pagefind-ignore>
+		<input type="search" bind:value={filter} placeholder="Filter widgets" aria-label="Filter widgets by type or description" autocomplete="off" spellcheck="false" />
+		<span class="matches" aria-live="polite">{q ? `${matches} of ${total}` : ''}</span>
+	</div>
+
+	{#each shown as c (c.id)}
 		<section aria-labelledby={c.id}>
 			<h2 id={c.id}>{c.title} <span class="count">{c.widgets.length}</span></h2>
 			<ul>
 				{#each c.widgets as w (w.type)}
 					<li>
 						<a href="/docs/widgets/{w.type}"><code>{w.type}</code></a>
-						<span class="desc">{w.description}</span>
+						<span class="desc"
+							>{#each codeSpans(w.description) as p, i (i)}{#if p.code}<code class="inline">{p.text}</code
+								>{:else}{p.text}{/if}{/each}</span
+						>
 					</li>
 				{/each}
 			</ul>
 		</section>
+	{:else}
+		<p class="none">No widget matches "{filter}".</p>
 	{/each}
 </article>
 
@@ -101,6 +128,46 @@
 	}
 	.desc {
 		color: var(--site-soft);
+		overflow-wrap: anywhere;
+	}
+	code.inline {
+		padding: 0 4px;
+		border: 1px solid var(--code-line);
+		border-radius: 4px;
+		background: var(--code-bg);
+		font-size: 0.85em;
+	}
+	.filter {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		margin-top: 24px;
+	}
+	.filter input {
+		box-sizing: border-box;
+		width: min(100%, 320px);
+		min-height: 36px;
+		padding: 0 12px;
+		border: 1px solid var(--site-line);
+		border-radius: var(--radius-control);
+		background: transparent;
+		color: var(--site-ink);
+		font: 15px var(--font-sans);
+	}
+	.filter input:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: 2px;
+	}
+	.matches,
+	.none {
+		font-size: 14px;
+		color: var(--site-soft);
+	}
+	.matches {
+		white-space: nowrap;
+	}
+	.none {
+		margin-top: 32px;
 	}
 	@media (max-width: 559.98px) {
 		li {

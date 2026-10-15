@@ -1,0 +1,73 @@
+{
+ "id": "rocket-engine",
+ "title": "Inside a rocket engine",
+ "prompt": "How does a rocket engine work? Show me inside one and let me throttle it.",
+ "model": "hand-written",
+ "recordedAt": "2026-10-13T12:00:00.000Z",
+ "chunks": [
+  {
+   "t": 0,
+   "text": "{\"version\":\"1.0\",\"state\":{\"figure\":null},\"ui\":{\"type\":\"figure\",\""
+  },
+  {
+   "t": 18,
+   "text": "bind\":\"{state.figure}\",\"props\":{\"figure\":\"rocket-engine\",\"params"
+  },
+  {
+   "t": 36,
+   "text": "\":{\"throttle\":100,\"mixture\":2.6},\"labels\":[{\"anchor\":\"turbopump\""
+  },
+  {
+   "t": 54,
+   "text": ",\"note\":\"One shaft: a turbine in the middle drives the oxygen pu"
+  },
+  {
+   "t": 72,
+   "text": "mp on one side and the kerosene pump on the other.\"},{\"anchor\":\""
+  },
+  {
+   "t": 90,
+   "text": "preburner\",\"note\":\"Burns all the oxygen with a little kerosene. "
+  },
+  {
+   "t": 108,
+   "text": "The hot gas spins the turbine, then goes on to the injector.\"},{"
+  },
+  {
+   "t": 126,
+   "text": "\"anchor\":\"injector\",\"note\":\"Hundreds of small holes mix the hot "
+  },
+  {
+   "t": 144,
+   "text": "gas and the kerosene so they burn evenly.\"},{\"anchor\":\"throat\",\""
+  },
+  {
+   "t": 162,
+   "text": "note\":\"The narrowest point. The gas reaches the speed of sound h"
+  },
+  {
+   "t": 180,
+   "text": "ere.\"},{\"anchor\":\"cooling-channels\",\"note\":\"Kerosene runs throug"
+  },
+  {
+   "t": 198,
+   "text": "h the nozzle wall first, so the metal survives the heat.\"},{\"anc"
+  },
+  {
+   "t": 216,
+   "text": "hor\":\"load-cell\",\"note\":\"All the thrust passes through here, so "
+  },
+  {
+   "t": 234,
+   "text": "the stand can weigh it.\"}],\"caption\":\"Move the throttle and the "
+  },
+  {
+   "t": 252,
+   "text": "mixture and watch the thrust, the chamber pressure and the pump "
+  },
+  {
+   "t": 270,
+   "text": "speed. The shaft is drawn far slower than it really turns.\"}}}"
+  }
+ ]
+}

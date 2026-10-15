@@ -1,7 +1,8 @@
 // routes/pawbar/play-cards.ts: Hand-written answers for the landing's newer chips
 // (memory match, guess the word, space trivia, tic-tac-toe, connect four, habit
-// tracker, focus timer, how a heart pumps),
-// so mock mode and the offline chat can answer them with no model. Each card is
+// tracker, focus timer), so mock mode and the offline chat can answer them with
+// no model. The heart drawing (heartCard) is a gallery run only (live/app-runs.ts):
+// the landing's heart chip opens the hand-built heart figure instead. Each card is
 // the `{state, ui}` wire shape and must pass card-policy.ts (card-policy.test.ts
 // holds them to it). `playScenarios` wraps each card as a Scenario whose fixture
 // is the card's JSON cut into small timed chunks, so it streams like a recording;
@@ -12,6 +13,7 @@
 // once the bound game is done and asks from a click instead.
 
 import type { Scenario } from '../live/scenarios.js';
+import { bikeScene, engineScene, heartScene } from '../../lib/widgets/composite/iso-scenes.js';
 
 const ask = (text: string) => ({ action: 'emit', target: 'ask', value: { text } });
 
@@ -253,7 +255,10 @@ const CHUNK = 64;
 const STEP_MS = 18;
 
 /** A card as a Scenario: its JSON (with the version recordings carry) in small chunks on an even beat. */
-function handWritten(id: string, title: string, category: string, group: string, prompt: string, card: object): Scenario {
+/** An iso-scene card bound to its own state key, so the sliders survive a re-render. */
+export const isoCard = (key: string, props: object) => ({ state: {}, ui: { type: 'iso-scene', bind: `{state.${key}}`, props } });
+
+export function handWritten(id: string, title: string, category: string, group: string, prompt: string, card: object): Scenario {
 	const text = JSON.stringify({ version: '1.0', ...card });
 	const chunks = Array.from({ length: Math.ceil(text.length / CHUNK) }, (_, i) => ({ t: i * STEP_MS, text: text.slice(i * CHUNK, (i + 1) * CHUNK) }));
 	return { id, title, category, group, fixture: { id, title, prompt, model: 'hand-written', recordedAt: '2026-10-10T00:00:00Z', chunks } };
@@ -266,6 +271,12 @@ export const playScenarios: Scenario[] = [
 	handWritten('tic-tac-toe', 'Tic-tac-toe', 'Games', 'Play', "Let's play tic-tac-toe against you, I'm X, medium difficulty", ticTacToeCard),
 	handWritten('connect-four', 'Connect four', 'Games', 'Play', 'Play connect four against me, best of 3', connectFourCard),
 	handWritten('habit-tracker', 'Habit tracker', 'Habits', 'Track', 'Track my habits this week: reading, running, water and sleep, each with a weekly target', habitCard),
-	handWritten('focus-timer', 'Focus timer', 'Habits', 'Track', 'Make me a pomodoro focus timer: 25 minutes focus, 5 minute breaks, 4 rounds, goal of 6 today', focusTimerCard),
-	handWritten('heart', 'How a heart pumps', 'Learning', 'Learn', 'How does the heart pump blood? Draw an animated picture with numbered notes on the chambers and valves.', heartCard)
+	handWritten('focus-timer', 'Focus timer', 'Habits', 'Track', 'Make me a pomodoro focus timer: 25 minutes focus, 5 minute breaks, 4 rounds, goal of 6 today', focusTimerCard)
+];
+
+/** Live isometric drawings (iso-scene): gallery runs only, not landing chips. */
+export const isoScenarios: Scenario[] = [
+	handWritten('iso-bike', 'Bicycle drivetrain', 'Learning', 'Learn', "Show how a bike's chain drive works as a live drawing, with a cadence slider and how far one pedal turn takes you", isoCard('bike', bikeScene)),
+	handWritten('iso-heart', 'The heart as two pumps', 'Learning', 'Learn', 'Draw the heart as two pumps I can watch beating, with a heart rate slider and labels on the chambers', isoCard('heart', heartScene)),
+	handWritten('iso-engine', 'Inside a piston engine', 'Learning', 'Learn', 'Show me how a one-cylinder piston engine moves, with an engine speed slider', isoCard('engine', engineScene))
 ];

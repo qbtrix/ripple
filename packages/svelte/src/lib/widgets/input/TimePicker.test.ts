@@ -40,4 +40,13 @@ describe('TimePicker', () => {
     expect(hourInput.value).toBe('12');
     expect(container.textContent).toContain('AM');
   });
+
+  it('shows --:-- placeholders, not midnight, when no value is set', () => {
+    const { container } = render(TimePicker, { props: { use12Hour: true } });
+    const spins = container.querySelectorAll('[role="spinbutton"]') as NodeListOf<HTMLInputElement>;
+    expect(spins[0].value).toBe('');
+    expect(spins[0].placeholder).toBe('--');
+    expect(spins[1].value).toBe('');
+    expect(container.textContent).not.toContain('AM');
+  });
 });

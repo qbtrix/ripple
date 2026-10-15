@@ -11,7 +11,7 @@ source is the markdown under [`packages/svelte/src/docs/`](../packages/svelte/sr
 - Architecture: [How Ripple works](https://ripple.pocketpaw.xyz/docs/architecture/overview)
 - For agents: [llms.txt](https://ripple.pocketpaw.xyz/llms.txt), [llms-full.txt](https://ripple.pocketpaw.xyz/llms-full.txt), [manifest.json](https://ripple.pocketpaw.xyz/manifest.json)
 
-Repo-only notes that stay here: [Discover cards](./discover.md), [Publishing](./publishing.md), [Monorepo layout](./monorepo.md).
+Repo-only notes that stay here: [Discover cards](./discover.md), [Publishing](./publishing.md), [Monorepo layout](./monorepo.md), [Figure review](./figure-review.md).
 
 > **The manifest is the source of truth** for widget props. Every widget's prop
 > schema and example ships in `dist/manifest.json`; when a page and the

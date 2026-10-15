@@ -269,7 +269,12 @@
 			border-bottom: 1px solid var(--site-line);
 			background: var(--site-ground);
 		}
+		.drawer-btn {
+			flex-shrink: 0;
+			white-space: nowrap;
+		}
 		.crumb {
+			min-width: 0;
 			overflow: hidden;
 			text-overflow: ellipsis;
 			white-space: nowrap;

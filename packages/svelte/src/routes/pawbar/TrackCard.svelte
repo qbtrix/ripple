@@ -6,8 +6,7 @@
     and never comes from the model; each poll only changes the `state` prop,
     which Ripple syncs key by key, so the card and its map never remount and
     keep the visitor's pan and zoom. Tiles are OpenStreetMap's (`osm` preset,
-    attribution kept); on the dark theme a filter scoped to this card's tile
-    pane darkens them, leaving markers and the route untouched.
+    attribution kept); the map darkens them itself on the dark theme.
 -->
 <script lang="ts">
 	import { Ripple } from '$lib/index.js';
@@ -30,8 +29,5 @@
 		border-radius: var(--radius-paw);
 		background: var(--site-card, var(--card));
 		min-width: 0;
-	}
-	:global(.dark) .track :global(.leaflet-tile-pane) {
-		filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9);
 	}
 </style>

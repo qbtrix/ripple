@@ -1,17 +1,29 @@
 <!--
   @file InvoiceLayout.svelte
-  @description Full invoice / quote / receipt document. Composes the existing
-  `invoice-lines` widget for the line items and wraps it with branded header,
-  bill-to / ship-to blocks, status badge, totals block, payment instructions,
-  notes, and footer. Print-friendly.
+  @description Invoice / quote / receipt / credit note as one chat card. It
+  answers "how much, to whom, by when" first: a hero with the doc label and
+  number, the status chip, the grand total and a due (or paid / valid-until /
+  void) sentence. Parties, a label/value meta list, the line table
+  (`invoice-lines`, flush, sharing invoice-math.ts so the hero equals the
+  table's Total), payment methods, notes and action buttons follow.
+
+  Model strings are trimmed; blank means absent, and no label renders without
+  its value. Unknown statuses get a neutral chip. One leading `#` is stripped
+  from the number, never added. Actions with a blank label are dropped; one
+  without an id gets it from its label so `onaction` still fires.
+
+  Colours are --ripple-* tokens only. Layout keys off the card's own width
+  (480px, the same break invoice-lines uses). Print hides the actions and the
+  collapse toggle and shows every line.
 -->
 <script lang="ts">
-  import { safeUrl } from '@ripple-ui/core';
+  import { asText, safeUrl } from '@ripple-ui/core';
   import { getContext } from 'svelte';
   import { cn } from '$lib/utils.js';
   import { safeArray } from '$lib/utils/safe-props.js';
   import Icon from '$lib/widgets/display/Icon.svelte';
   import InvoiceLines from '$lib/widgets/vertical/InvoiceLines.svelte';
+  import { formatAmount, invoiceTotals, type InvoiceLine, type SummaryRow } from '$lib/widgets/vertical/invoice-math.js';
   import type { EventHandler, EventHandlerOrArray } from '@ripple-ui/core';
   import type { EventDispatcher } from '@ripple-ui/core';
   import type { StateManager } from '$lib/core/state-manager.svelte.js';
@@ -25,24 +37,6 @@
     email?: string;
     phone?: string;
     taxId?: string;
-  }
-
-  interface Line {
-    id?: string | number;
-    description: string;
-    quantity?: number;
-    unitPrice?: number;
-    total?: number;
-    note?: string;
-  }
-
-  interface SummaryLine {
-    label: string;
-    /** The row amount. `amount` and `total` are accepted aliases. */
-    value?: number;
-    amount?: number;
-    total?: number;
-    isNegative?: boolean;
   }
 
   interface PaymentMethod {
@@ -71,8 +65,8 @@
     dueDate?: string;
     status?: Status;
     currency?: string;
-    lines: Line[];
-    summary?: SummaryLine[];
+    lines: InvoiceLine[];
+    summary?: SummaryRow[];
     subtotal?: number;
     total?: number;
     notes?: string;
@@ -86,7 +80,7 @@
     id,
     class: className,
     style,
-    docType = 'Invoice',
+    docType,
     from,
     billTo,
     shipTo,
@@ -106,10 +100,86 @@
     onaction
   }: Props = $props();
 
-  const lines = $derived(safeArray<Line>(rawLines, { widget: 'invoice-layout', key: 'lines' }));
-  const summary = $derived(safeArray<SummaryLine>(rawSummary, { widget: 'invoice-layout', key: 'summary' }));
-  const paymentMethods = $derived(safeArray<PaymentMethod>(rawPaymentMethods, { widget: 'invoice-layout', key: 'paymentMethods' }));
-  const actions = $derived(safeArray<Action>(rawActions, { widget: 'invoice-layout', key: 'actions' }));
+  /** Model text, trimmed; blank and non-text both read as absent. */
+  const t = (v: unknown) => (v === null || typeof v === 'object' ? '' : asText(v).trim());
+
+  const lines = $derived(safeArray<InvoiceLine>(rawLines, { widget: 'invoice-layout', key: 'lines' }).filter((l) => l && typeof l === 'object'));
+  const summary = $derived(safeArray<SummaryRow>(rawSummary, { widget: 'invoice-layout', key: 'summary' }).filter((s) => s && typeof s === 'object'));
+  const totals = $derived(invoiceTotals({ lines, summary, subtotal, total }));
+  const fmt = (n: number | undefined) => formatAmount(n, t(currency) || '$');
+  const heroAmount = $derived(lines.length > 0 ? totals.total : undefined);
+
+  const kind = $derived(t(docType) || 'Invoice');
+  const docNumber = $derived(t(invoiceNumber).replace(/^#/, '').trim());
+  const issued = $derived(t(issueDate));
+  const due = $derived(t(dueDate));
+  const terms = $derived(t(paymentTerms));
+  const statusKey = $derived(t(status).toLowerCase());
+  const isQuote = $derived(/^quote$/i.test(kind));
+  const validUntil = $derived(due.replace(/^valid\s+until\s*:?\s*/i, ''));
+
+  const STATUS: Record<Status, { label: string; tone: string }> = {
+    draft: { label: 'Draft', tone: 'neutral' },
+    sent: { label: 'Sent', tone: 'accent' },
+    paid: { label: 'Paid', tone: 'success' },
+    overdue: { label: 'Overdue', tone: 'error' },
+    void: { label: 'Void', tone: 'neutral' }
+  };
+  const chip = $derived.by(() => {
+    if (!statusKey) return undefined;
+    const known = STATUS[statusKey as Status];
+    if (known) return known;
+    const word = t(status).slice(0, 16).trim();
+    return { label: word.charAt(0).toUpperCase() + word.slice(1), tone: 'neutral' };
+  });
+
+  // The sentence under the amount. No date to carry, no sentence.
+  const when = $derived.by(() => {
+    const issuedPart = (lead: string) => (issued ? `${lead} · issued ${issued}` : '');
+    if (statusKey === 'void') return issuedPart('Void');
+    if (statusKey === 'paid' || /^receipt$/i.test(kind)) return issuedPart('Paid');
+    if (isQuote) return validUntil ? `Valid until ${validUntil}` : issued ? `Issued ${issued}` : '';
+    if (/^credit\s*note$/i.test(kind)) return issued ? `Credit issued ${issued}` : '';
+    if (due) return terms ? `Due ${due} · ${terms}` : `Due ${due}`;
+    return issued ? `Issued ${issued}` : '';
+  });
+
+  /** Emails break after `@` and before each `.`, not inside a word. */
+  const breakable = (s: string) => (/^\S+@\S+$/.test(s) ? s.split(/(?<=@)|(?=\.)/) : [s]);
+
+  type PartyView = { label: string; name: string; logo: string; rows: string[] };
+  function party(label: string, p: Partial<Party> | undefined, withLogo = false): PartyView | undefined {
+    const name = t(p?.name);
+    const tax = t(p?.taxId);
+    const rows = [t(p?.address), t(p?.email), t(p?.phone), tax ? `Tax ID ${tax}` : ''].filter(Boolean);
+    const logo = withLogo ? t(p?.logo) : '';
+    if (!name && rows.length === 0) return undefined;
+    return { label, name, logo, rows };
+  }
+  const parties = $derived(
+    [party('From', from, true), party('Bill to', billTo), party('Ship to', shipTo)].filter((p): p is PartyView => !!p)
+  );
+
+  const meta = $derived(
+    [
+      ['Issue date', issued],
+      [isQuote ? 'Valid until' : 'Due date', isQuote ? validUntil : due],
+      ['Terms', terms]
+    ].filter(([, v]) => v)
+  );
+
+  const paymentMethods = $derived(
+    safeArray<PaymentMethod>(rawPaymentMethods, { widget: 'invoice-layout', key: 'paymentMethods' })
+      .map((m) => ({ label: t(m?.label), detail: t(m?.detail) }))
+      .filter((m) => m.label || m.detail)
+  );
+  const notesText = $derived(t(notes));
+
+  const actions = $derived(
+    safeArray<Action>(rawActions, { widget: 'invoice-layout', key: 'actions' })
+      .filter((a) => a && typeof a === 'object' && t(a.label))
+      .map((a) => ({ ...a, label: t(a.label), id: t(a.id) || t(a.label).toLowerCase().replace(/\s+/g, '-') }))
+  );
 
   const styleString = $derived(
     style ? Object.entries(style).map(([k, v]) => `${k}:${v}`).join(';') : undefined
@@ -118,120 +188,109 @@
   const eventDispatcher = getContext<EventDispatcher | undefined>('ui-events');
   const stateManager = getContext<StateManager | undefined>('ui-state');
 
-  const STATUS_CLASS: Record<Status, string> = {
-    draft: 'rinv-status-draft',
-    sent: 'rinv-status-sent',
-    paid: 'rinv-status-paid',
-    overdue: 'rinv-status-overdue',
-    void: 'rinv-status-void'
-  };
-
-  const VARIANT_CLASS: Record<NonNullable<Action['variant']>, string> = {
+  const VARIANT_CLASS: Record<string, string> = {
     default: 'rinv-btn-primary',
     outline: 'rinv-btn-outline',
     ghost: 'rinv-btn-ghost'
   };
 
-  function fireAction(a: Action) {
+  function fireAction(a: Action & { id: string }) {
     if (a.actions && eventDispatcher) {
       const handlers = Array.isArray(a.actions) ? a.actions : [a.actions];
       void eventDispatcher.dispatch(handlers as EventHandler[], { state: stateManager?.state ?? {} }, a.id);
       return;
     }
-    if (a.id) onaction?.(a.id);
+    onaction?.(a.id);
   }
 </script>
 
 <div {id} class={cn('rinv', className)} style={styleString}>
-  <header class="rinv-header">
-    <div class="rinv-brand">
-      {#if from.logo}
-        <img src={safeUrl(from.logo, { kind: 'resource' })} alt={from.name} class="rinv-logo" />
-      {/if}
-      <div>
-        <div class="rinv-brand-name">{from.name}</div>
-        {#if from.address}<div class="rinv-brand-line">{from.address}</div>{/if}
-        {#if from.email}<div class="rinv-brand-line">{from.email}</div>{/if}
-        {#if from.phone}<div class="rinv-brand-line">{from.phone}</div>{/if}
-        {#if from.taxId}<div class="rinv-brand-line">Tax ID: {from.taxId}</div>{/if}
+  <section class="rinv-hero">
+    <div class="rinv-idrow">
+      <div class="rinv-id">
+        <span class="rinv-kind">{kind}</span>{#if docNumber}<span class="rinv-dot" aria-hidden="true">·</span><span class="rinv-num">{docNumber}</span>{/if}
       </div>
-    </div>
-    <div class="rinv-doc">
-      <div class="rinv-doc-type">{docType}</div>
-      <div class="rinv-doc-num">#{invoiceNumber}</div>
-      {#if status}
-        <span class={cn('rinv-status', STATUS_CLASS[status])}>{status}</span>
+      {#if chip}
+        <span class="rinv-chip" data-tone={chip.tone}>{chip.label}</span>
       {/if}
     </div>
-  </header>
-
-  <div class="rinv-meta">
-    <div class="rinv-meta-block">
-      <div class="rinv-meta-label">Bill to</div>
-      <div class="rinv-meta-name">{billTo.name}</div>
-      {#if billTo.address}<div class="rinv-meta-line">{billTo.address}</div>{/if}
-      {#if billTo.email}<div class="rinv-meta-line">{billTo.email}</div>{/if}
-      {#if billTo.taxId}<div class="rinv-meta-line">Tax ID: {billTo.taxId}</div>{/if}
-    </div>
-    {#if shipTo}
-      <div class="rinv-meta-block">
-        <div class="rinv-meta-label">Ship to</div>
-        <div class="rinv-meta-name">{shipTo.name}</div>
-        {#if shipTo.address}<div class="rinv-meta-line">{shipTo.address}</div>{/if}
-      </div>
+    <div class="rinv-amount" class:rinv-void={statusKey === 'void'}>{fmt(heroAmount)}</div>
+    {#if when}
+      <div class="rinv-when" class:rinv-late={statusKey === 'overdue'}>{when}</div>
     {/if}
-    <div class="rinv-meta-block">
-      <div class="rinv-meta-row">
-        <span class="rinv-meta-label">Issue date</span>
-        <span class="rinv-meta-value">{issueDate}</span>
-      </div>
-      {#if dueDate}
-        <div class="rinv-meta-row">
-          <span class="rinv-meta-label">Due date</span>
-          <span class="rinv-meta-value">{dueDate}</span>
+  </section>
+
+  {#if parties.length > 0 || meta.length > 0}
+    <section class="rinv-record">
+      {#if parties.length > 0}
+        <div class="rinv-parties">
+          {#each parties as p (p.label)}
+            <div class="rinv-party">
+              <div class="rinv-label">{p.label}</div>
+              {#if p.logo}
+                <img src={safeUrl(p.logo, { kind: 'resource' })} alt={p.name} class="rinv-logo" />
+              {/if}
+              {#if p.name}<div class="rinv-name">{p.name}</div>{/if}
+              {#each p.rows as row, i (i)}<div class="rinv-line">{#each breakable(row) as seg, j (j)}{#if j}<wbr />{/if}{seg}{/each}</div>{/each}
+            </div>
+          {/each}
         </div>
       {/if}
-      {#if paymentTerms}
-        <div class="rinv-meta-row">
-          <span class="rinv-meta-label">Terms</span>
-          <span class="rinv-meta-value">{paymentTerms}</span>
-        </div>
+      {#if meta.length > 0}
+        <dl class="rinv-meta">
+          {#each meta as [label, value] (label)}
+            <div class="rinv-pair">
+              <dt>{label}</dt>
+              <dd>{value}</dd>
+            </div>
+          {/each}
+        </dl>
       {/if}
-    </div>
-  </div>
+    </section>
+  {/if}
 
-  <InvoiceLines {lines} {currency} {summary} {subtotal} {total} />
+  <section class="rinv-lines">
+    {#if lines.length > 0}
+      <InvoiceLines class="ril-flush" {lines} currency={t(currency) || '$'} {summary} {subtotal} {total} />
+    {:else}
+      <p class="rinv-empty">No line items</p>
+    {/if}
+  </section>
 
-  {#if (notes || paymentMethods.length > 0)}
-    <div class="rinv-bottom">
+  {#if paymentMethods.length > 0 || notesText}
+    <section class="rinv-bottom">
       {#if paymentMethods.length > 0}
-        <div class="rinv-pay">
-          <div class="rinv-pay-title">Payment methods</div>
-          <ul class="rinv-pay-list">
-            {#each paymentMethods as m}
+        <div>
+          <div class="rinv-label">Payment</div>
+          <ul class="rinv-pay">
+            {#each paymentMethods as m, i (i)}
               <li>
-                <span class="rinv-pay-label">{m.label}</span>
+                {#if m.label}<span class="rinv-pay-label">{m.label}</span>{/if}
                 {#if m.detail}<span class="rinv-pay-detail">{m.detail}</span>{/if}
               </li>
             {/each}
           </ul>
         </div>
       {/if}
-      {#if notes}
-        <div class="rinv-notes">
-          <div class="rinv-notes-title">Notes</div>
-          <p class="rinv-notes-body">{notes}</p>
+      {#if notesText}
+        <div>
+          <div class="rinv-label">Notes</div>
+          <p class="rinv-notes">{notesText}</p>
         </div>
       {/if}
-    </div>
+    </section>
   {/if}
 
   {#if actions.length > 0}
     <div class="rinv-actions rinv-print-hide">
-      {#each actions as a}
-        <button type="button" class={cn('rinv-btn', VARIANT_CLASS[a.variant ?? 'default'])} onclick={() => fireAction(a)}>
-          {#if a.icon}<Icon name={a.icon} size={14} />{/if}
-          <span>{a.label}</span>
+      {#each actions as a, i (`${a.id}:${i}`)}
+        <button
+          type="button"
+          class={cn('rinv-btn', VARIANT_CLASS[a.variant ?? 'default'] ?? 'rinv-btn-primary')}
+          data-action-id={a.id}
+          onclick={() => fireAction(a)}
+        >
+          <span class="rinv-btn-label">{#if a.icon}<span class="rinv-btn-icon"><Icon name={a.icon} size={14} /></span>{/if}{a.label}</span>
         </button>
       {/each}
     </div>
@@ -240,250 +299,317 @@
 
 <style>
   .rinv {
+    container-type: inline-size;
     display: flex;
     flex-direction: column;
-    gap: 18px;
-    padding: 28px 32px;
-    border-radius: 14px;
-    border: 1px solid var(--border);
-    background: var(--card);
-    max-width: 880px;
-    margin: 0 auto;
-  }
-
-  .rinv-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 24px;
-    flex-wrap: wrap;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 16px;
-  }
-  .rinv-brand {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    flex: 1;
+    padding: 16px;
+    border: 1px solid var(--ripple-border);
+    border-radius: var(--ripple-radius);
+    background: var(--ripple-surface);
+    color: var(--ripple-surface-foreground);
+    font-size: 13px;
+    line-height: 1.45;
     min-width: 0;
   }
-  .rinv-logo {
-    height: 36px;
-    width: auto;
-    object-fit: contain;
+  .rinv > * + * {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--ripple-border);
   }
-  .rinv-brand-name {
-    font-weight: 600;
-    font-size: 15px;
-    color: var(--foreground);
-    margin-bottom: 2px;
+  /* The table carries its own header row; no rule above it. */
+  .rinv > .rinv-lines {
+    border-top: 0;
+    padding-top: 0;
   }
-  .rinv-brand-line {
-    font-size: 11.5px;
-    color: var(--muted-foreground);
-    line-height: 1.5;
-  }
-  .rinv-doc {
-    text-align: right;
+
+  /* Hero: label + number and chip, then the amount, then when. */
+  .rinv-idrow {
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 2px;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px 12px;
   }
-  .rinv-doc-type {
+  .rinv-id {
+    flex: 1 1 auto;
+    min-width: 0;
+    color: var(--ripple-muted-foreground);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+  }
+  .rinv-kind {
     font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--muted-foreground);
-  }
-  .rinv-doc-num {
-    font-size: 22px;
-    font-weight: 700;
-    letter-spacing: -0.01em;
-    color: var(--foreground);
-  }
-  .rinv-status {
-    margin-top: 4px;
-    text-transform: uppercase;
-    font-size: 10.5px;
     font-weight: 600;
-    letter-spacing: 0.08em;
-    padding: 3px 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .rinv-dot {
+    margin: 0 6px;
+  }
+  .rinv-num {
+    font-variant-numeric: tabular-nums;
+  }
+  .rinv-chip {
+    flex: none;
+    padding: 2px 10px;
     border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 600;
+    line-height: 18px;
+    white-space: nowrap;
+    background: var(--ripple-muted);
+    color: var(--ripple-muted-foreground);
   }
-  .rinv-status-draft {
-    background: var(--muted);
-    color: var(--muted-foreground);
+  .rinv-chip[data-tone='accent'] {
+    background: color-mix(in oklab, var(--ripple-accent) 13%, var(--ripple-surface));
+    color: var(--ripple-accent-text);
   }
-  .rinv-status-sent {
-    background: color-mix(in oklab, oklch(0.55 0.18 250) 12%, transparent);
-    color: oklch(0.55 0.18 250);
+  .rinv-chip[data-tone='success'] {
+    background: color-mix(in oklab, var(--ripple-success) 13%, var(--ripple-surface));
+    color: var(--ripple-success-text);
   }
-  .rinv-status-paid {
-    background: color-mix(in oklab, oklch(0.55 0.18 150) 14%, transparent);
-    color: oklch(0.55 0.18 150);
+  .rinv-chip[data-tone='error'] {
+    background: color-mix(in oklab, var(--ripple-error) 13%, var(--ripple-surface));
+    color: var(--ripple-error-text);
   }
-  .rinv-status-overdue {
-    background: color-mix(in oklab, oklch(0.55 0.22 25) 14%, transparent);
-    color: oklch(0.55 0.22 25);
+  .rinv-amount {
+    margin-top: 6px;
+    font-size: var(--text-title-2, 22px);
+    line-height: 1.2;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
   }
-  .rinv-status-void {
-    background: var(--muted);
-    color: var(--muted-foreground);
+  .rinv-void {
+    color: var(--ripple-muted-foreground);
     text-decoration: line-through;
   }
-
-  .rinv-meta {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 16px 28px;
+  .rinv-when {
+    margin-top: 2px;
+    color: var(--ripple-muted-foreground);
+    overflow-wrap: anywhere;
   }
-  .rinv-meta-block {
+  .rinv-when.rinv-late {
+    color: var(--ripple-error-text);
+    font-weight: 500;
+  }
+
+  /* Parties and meta. */
+  .rinv-record {
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 16px;
   }
-  .rinv-meta-label {
-    font-size: 10.5px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-    color: var(--muted-foreground);
-    margin-bottom: 2px;
-  }
-  .rinv-meta-name {
-    font-weight: 600;
-    color: var(--foreground);
-    font-size: 13.5px;
-  }
-  .rinv-meta-line {
-    font-size: 12px;
-    color: var(--muted-foreground);
-    line-height: 1.5;
-  }
-  .rinv-meta-row {
-    display: flex;
-    justify-content: space-between;
-    font-size: 12px;
-    gap: 12px;
-  }
-  .rinv-meta-row .rinv-meta-label {
-    margin: 0;
-    color: var(--muted-foreground);
-    font-weight: 500;
-    text-transform: none;
-    letter-spacing: 0;
-    font-size: 12px;
-  }
-  .rinv-meta-value {
-    color: var(--foreground);
-    font-weight: 500;
-  }
-
-  .rinv-bottom {
+  .rinv-parties {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
-    padding-top: 8px;
-    border-top: 1px solid var(--border);
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px 24px;
   }
-  @media (max-width: 640px) {
-    .rinv-bottom { grid-template-columns: 1fr; }
+  .rinv-party {
+    min-width: 0;
   }
-  .rinv-pay-title,
-  .rinv-notes-title {
+  .rinv-label {
+    margin-bottom: 4px;
+    color: var(--ripple-muted-foreground);
     font-size: 11px;
     font-weight: 600;
-    text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: var(--muted-foreground);
-    margin-bottom: 6px;
+    text-transform: uppercase;
   }
-  .rinv-pay-list {
+  .rinv-logo {
+    display: block;
+    height: 28px;
+    width: auto;
+    max-width: 100%;
+    margin-bottom: 6px;
+    object-fit: contain;
+  }
+  .rinv-name {
+    font-weight: 600;
+    overflow-wrap: break-word;
+  }
+  .rinv-line {
+    color: var(--ripple-muted-foreground);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+  }
+  /* Under 480: a label column and a value column, values on one left edge
+     so a wrapping value never goes ragged. */
+  .rinv-meta {
+    margin: 0;
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: 6px 16px;
+  }
+  .rinv-pair {
+    display: contents;
+  }
+  .rinv-pair dt {
+    flex: none;
+    white-space: nowrap;
+    color: var(--ripple-muted-foreground);
+  }
+  .rinv-pair dd {
+    margin: 0;
+    min-width: 0;
+    font-weight: 500;
+    overflow-wrap: break-word;
+  }
+
+  .rinv-empty {
+    margin: 0;
+    padding: 12px 0;
+    color: var(--ripple-muted-foreground);
+  }
+
+  /* Payment and notes. */
+  .rinv-bottom {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px 24px;
+  }
+  .rinv-pay {
     list-style: none;
     margin: 0;
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 8px;
   }
-  .rinv-pay-list li {
-    font-size: 12.5px;
-    color: var(--foreground);
+  .rinv-pay li {
     display: flex;
     flex-direction: column;
+    min-width: 0;
   }
   .rinv-pay-label {
     font-weight: 500;
   }
   .rinv-pay-detail {
-    color: var(--muted-foreground);
-    font-size: 11.5px;
+    color: var(--ripple-muted-foreground);
+    font-size: 12px;
     font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
   }
-  .rinv-notes-body {
-    font-size: 12.5px;
-    color: var(--foreground);
+  .rinv-notes {
     margin: 0;
+    font-size: var(--text-callout, 12px);
     line-height: 1.55;
+    overflow-wrap: break-word;
   }
 
+  /* Actions: stacked full width with the primary first, then a right-aligned row. */
   .rinv-actions {
     display: flex;
+    flex-direction: column;
     gap: 8px;
-    justify-content: flex-end;
-    border-top: 1px solid var(--border);
-    padding-top: 14px;
   }
   .rinv-btn {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: 6px;
-    height: 34px;
-    padding: 0 14px;
-    border-radius: 8px;
-    font-size: 13px;
+    justify-content: center;
+    min-height: 36px;
+    padding: 7px 14px;
+    border: 1px solid transparent;
+    border-radius: calc(var(--ripple-radius) - 2px);
+    font: inherit;
     font-weight: 500;
     cursor: pointer;
-    border: 0;
-    transition: background 0.15s, border-color 0.15s;
+    transition: background-color 0.15s, border-color 0.15s;
+  }
+  /* The icon is inline at the start of the label, so a wrapped label keeps
+     it beside its first line and both centre as one run of text. */
+  .rinv-btn-label {
+    min-width: 0;
+    text-align: center;
+    text-wrap: balance;
+  }
+  .rinv-btn-icon {
+    display: inline-flex;
+    width: 14px;
+    height: 14px;
+    margin-right: 8px;
+    vertical-align: -2px;
+  }
+  .rinv-btn:focus-visible {
+    outline: 2px solid var(--ripple-ring);
+    outline-offset: 2px;
   }
   .rinv-btn-primary {
-    background: oklch(0.55 0.18 250);
-    color: white;
+    order: -1;
+    background: var(--ripple-accent);
+    color: var(--ripple-accent-foreground);
   }
   .rinv-btn-primary:hover {
-    background: oklch(0.5 0.18 250);
+    background: color-mix(in oklab, var(--ripple-accent) 88%, var(--ripple-surface-foreground));
   }
   .rinv-btn-outline {
     background: transparent;
-    color: var(--foreground);
-    border: 1px solid var(--border);
-  }
-  .rinv-btn-outline:hover {
-    background: var(--muted);
+    border-color: var(--ripple-border);
+    color: var(--ripple-surface-foreground);
   }
   .rinv-btn-ghost {
     background: transparent;
-    color: var(--foreground);
+    color: var(--ripple-surface-foreground);
   }
+  .rinv-btn-outline:hover,
   .rinv-btn-ghost:hover {
-    background: var(--muted);
+    background: color-mix(in oklab, var(--ripple-surface-foreground) 6%, transparent);
+  }
+  .rinv-btn:active {
+    transform: translateY(0.5px);
+  }
+
+  @container (min-width: 480px) {
+    .rinv {
+      padding: 24px;
+    }
+    .rinv > * + * {
+      margin-top: 20px;
+      padding-top: 20px;
+    }
+    .rinv > .rinv-lines {
+      padding-top: 0;
+    }
+    /* Parties and meta share one 3-track grid so every label starts on a
+       column edge used above it. */
+    .rinv-parties,
+    .rinv-meta {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      column-gap: 24px;
+    }
+    .rinv-meta {
+      row-gap: 12px;
+    }
+    .rinv-pair {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+    .rinv-pair dt {
+      font-size: 12px;
+    }
+    .rinv-bottom {
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+    .rinv-actions {
+      flex-direction: row;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .rinv-btn-primary {
+      order: 0;
+    }
   }
 
   @media print {
     .rinv {
       border: 0;
-      background: white;
-      color: black;
       padding: 0;
-      max-width: 100%;
     }
     .rinv-print-hide {
       display: none !important;
-    }
-    @page {
-      margin: 18mm 16mm;
     }
   }
 </style>

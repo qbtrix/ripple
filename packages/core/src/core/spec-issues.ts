@@ -5,10 +5,13 @@
 //   (`validateCatalog`). Every path uses validateCatalog's style
 //   (`ui.children[2].props`), so a model sees one notation whichever check
 //   found the problem. The catalog is injected exactly as validateCatalog
-//   takes it; the engine has no widgets of its own.
+//   takes it; the engine has no widgets of its own. `formatSpecIssues` also
+//   takes `AuditItem`s (JSON Pointer paths, a `code`), so the build loop can
+//   fold every audit's findings into one feedback block.
 
 import { safeParseUISpec } from '../schema/ui-spec.js';
 import { validateCatalog, type ValidateCatalogOptions } from './validate-catalog.js';
+import type { AuditItem } from './audit-report.js';
 
 /** One problem in a spec, located and worded for the model that wrote it. */
 export interface SpecIssue {
@@ -62,11 +65,15 @@ export function specIssues(spec: unknown, opts: ValidateCatalogOptions = {}): Sp
 
 /**
  * Render issues as a short text block to append to the model's next turn.
- * Returns `''` for no issues, so a host can write `if (text) ...`.
+ * Takes `SpecIssue`s and `AuditItem`s, mixed; an audit item shows its code
+ * and reads an empty pointer as `spec`. Returns `''` for no issues, so a
+ * host can write `if (text) ...`.
  */
-export function formatSpecIssues(issues: readonly SpecIssue[]): string {
+export function formatSpecIssues(issues: readonly (SpecIssue | AuditItem)[]): string {
   if (issues.length === 0) return '';
-  const lines = issues.map((i) => `- ${i.path}: ${i.message}`);
+  const lines = issues.map((i) =>
+    'code' in i ? `- ${i.path || 'spec'} (${i.code}): ${i.message}` : `- ${i.path}: ${i.message}`
+  );
   const noun = issues.length === 1 ? 'problem' : 'problems';
   return `The last UI spec has ${issues.length} ${noun}. Fix them in the next spec:\n${lines.join('\n')}`;
 }

@@ -1,10 +1,11 @@
 <!--
   @file widgets/marketing/Navbar.svelte
   @description Marketing top nav: brand + links + optional CTA. Layout + text.
-  @created 2026-05-30 — RFC 12 marketing widget pack.
-  Updated 2026-09-12: body gate is `hasChildren || children` with an optional
-  `children?.()` call, so a hand-written Svelte caller that passes children but no
-  `hasChildren` renders them. The spec renderer's `hasChildren` path is unchanged.
+    On a narrow card the links and CTA wrap under the brand instead of running
+    past the edge; a label never breaks inside itself. The body gate is
+    `hasChildren || children` with an optional `children?.()` call, so a
+    hand-written Svelte caller that passes children but no `hasChildren`
+    renders them.
 -->
 <script lang="ts">
   import { safeUrl } from '@ripple-ui/core';
@@ -31,14 +32,14 @@
   const styleString = $derived(style ? Object.entries(style).map(([k, v]) => `${k}:${v}`).join(';') : undefined);
 </script>
 
-<nav {id} class={cn('flex items-center justify-between gap-6 px-6 py-4 w-full', sticky && 'sticky top-0 z-40 backdrop-blur bg-background/80 border-b border-border', className)} style={styleString}>
+<nav {id} class={cn('flex flex-wrap items-center justify-between gap-x-6 gap-y-3 px-6 py-4 w-full', sticky && 'sticky top-0 z-40 backdrop-blur bg-background/80 border-b border-border', className)} style={styleString}>
   {#if brand}<span class="text-lg font-semibold tracking-tight">{brand}</span>{/if}
-  <div class="flex items-center gap-6">
+  <div class="flex flex-wrap items-center gap-x-6 gap-y-2">
     {#each links as link}
-      <a href={safeUrl(link.href)} class="text-sm text-muted-foreground hover:text-foreground transition-colors">{link.label}</a>
+      <a href={safeUrl(link.href)} class="text-sm whitespace-nowrap text-muted-foreground hover:text-foreground transition-colors">{link.label}</a>
     {/each}
     {#if cta}
-      <a href={safeUrl(ctaHref)} class="text-sm font-medium rounded-md bg-primary text-primary-foreground px-4 py-2 hover:opacity-90 transition-opacity">{cta}</a>
+      <a href={safeUrl(ctaHref)} class="text-sm font-medium whitespace-nowrap rounded-md bg-primary text-primary-foreground px-4 py-2 hover:opacity-90 transition-opacity">{cta}</a>
     {/if}
     {#if hasChildren || children}{@render children?.()}{/if}
   </div>

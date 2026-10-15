@@ -1,6 +1,6 @@
-// manifest/entries/bill-split.ts — the LLM-facing entry for the bill-split data
+// manifest/entries/bill-split.ts: the LLM-facing entry for the bill-split data
 // widget. The model writes the bill, the tip and the people; the widget does
-// the cents-exact split, the cards and the totals, and lets the visitor edit
+// the cents-exact split, a row per person and the totals, and lets the visitor edit
 // all of it. `tax` is on top of `subtotal`; the tip is a percent of `subtotal`.
 // The bound field is `value` ({ subtotal, tip_percent, people }).
 import type { WidgetManifestEntry } from '../index.js';
@@ -10,7 +10,7 @@ export const billSplitEntry: WidgetManifestEntry = {
   category: 'composite',
   staticSafe: true,
   description:
-    'Split a bill with tip: subtotal, tip_percent, people with optional extras (drinks). Widget does the cents-exact maths, cards, totals; visitor edits everything. Bind value.',
+    'Split a bill with tip: subtotal, tip_percent, people with optional extras (drinks). Widget does the cents-exact maths, rows, totals; visitor edits everything. Bind value.',
   props: {
     title: { type: 'string', required: false, description: 'e.g. "Dinner for 4".' },
     currency: { type: 'string', required: false, description: 'ISO 4217 code. Default "USD". Never put a symbol in the numbers.' },

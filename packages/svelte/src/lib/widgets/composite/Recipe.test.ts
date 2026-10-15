@@ -195,6 +195,7 @@ describe('recipe.ts: scaling and formatting', () => {
 			'3 tbsp',
 			'2 g'
 		]);
+		expect([qtyLabel(6, 'stalk'), qtyLabel(4, 'clove'), qtyLabel(1, 'stalks')]).toEqual(['6 stalks', '4 cloves', '1 stalk']);
 		expect(qtyLabel(undefined, 'to taste')).toBe('to taste');
 	});
 

@@ -1,12 +1,15 @@
 // site/docs/widgets.ts — The generated widget reference under /docs/widgets:
 // categories, per-widget page data, the raw .md for each widget and its lines
-// in the llms.txt family. Everything comes from the widget manifest; nothing
-// here is hand-written per widget. Server and test only: it imports every
-// manifest entry, so keep it out of client code (load it from +page.server.ts).
+// in the llms.txt family. Everything comes from the widget manifest, except
+// that a page previews its hand-written showcase.ts spec when one exists (the
+// .md and llms.txt output keep the manifest example). Server and test only: it
+// imports every manifest entry, so keep it out of client code (load it from
+// +page.server.ts).
 // The pure builders take an entry list so tests can feed fixtures.
 
 import { manifestEntries, type WidgetManifestEntry, type WidgetPropSpec } from '../../manifest/index.js';
 import { SITE_URL } from './model.js';
+import { SHOWCASE } from './showcase.js';
 
 export const SPEC_VERSION = '1.0';
 const REPO_WIDGETS = 'https://github.com/qbtrix/ripple-iui/tree/main/packages/svelte/src/lib/widgets';
@@ -74,6 +77,31 @@ export function widgetPrevNext(type: string, list: WidgetManifestEntry[] = manif
 	return { prev: i > 0 ? sibs[i - 1].type : null, next: i >= 0 ? (sibs[i + 1]?.type ?? null) : null };
 }
 
+/**
+ * A description's first sentence: up to the first full stop followed by a space
+ * or the end, skipping the stops inside "e.g.", "i.e." and "vs.".
+ */
+export function firstSentence(text: string): string {
+	const m = /(?<!\be\.g|\bi\.e|\bvs)\.(?=\s|$)/.exec(text);
+	return m ? text.slice(0, m.index + 1) : text;
+}
+
+/**
+ * Site-only notes under a widget page's Example heading, for an example that
+ * hides something its description or props promise. The manifest stays as it is.
+ */
+export const PAGE_NOTES: Record<string, string> = {
+	workflow:
+		'The zoom controls appear only when the graph does not fit at full size, and the minimap only when `minimap` is on, the graph has 12 or more steps and the box is at least 560px wide. This example is small enough to show neither.'
+};
+
+/** Split manifest prose on `backtick` spans, so a page can show them as <code> (Svelte escapes each part). */
+export const codeSpans = (text: string): { text: string; code: boolean }[] =>
+	text
+		.split(/`([^`]+)`/)
+		.map((t, i) => ({ text: t, code: i % 2 === 1 }))
+		.filter((p) => p.text);
+
 /** The entry's `example` node wrapped in the smallest valid spec. */
 export const exampleSpec = (e: WidgetManifestEntry): Record<string, unknown> => ({ version: SPEC_VERSION, ui: e.example });
 
@@ -95,9 +123,13 @@ export function interactiveSpecs(e: WidgetManifestEntry): NamedSpec[] {
  */
 export const EMPTY_EXAMPLES = new Set(['each', 'coachmark', 'command-palette', 'confirm-dialog', 'modal', 'sheet']);
 
-/** What a widget page previews: the example, or the first pocket when the example renders empty (then not repeated below). */
+/**
+ * What a widget page previews: its site-only showcase spec (showcase.ts) when it has one, else the
+ * example, or the first pocket when the example renders empty (then not repeated below).
+ */
 export function pageSpecs(e: WidgetManifestEntry): { example: Record<string, unknown>; interactive: NamedSpec[] } {
 	const interactive = interactiveSpecs(e);
+	if (SHOWCASE[e.type]) return { example: SHOWCASE[e.type], interactive };
 	if (!EMPTY_EXAMPLES.has(e.type) || !interactive.length) return { example: exampleSpec(e), interactive };
 	return { example: interactive[0].spec, interactive: interactive.slice(1) };
 }

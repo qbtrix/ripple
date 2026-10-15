@@ -1,6 +1,9 @@
 <!--
   Stat.svelte: single metric display (label + formatted value + optional delta).
-  Values are model output, so formatValue never paints "NaN" (non-finite
+  In a grid or dashboard tile the value takes the tile value size metric uses
+  (`size: sm` is the one smaller step) and, under 140px of tile, swaps to the
+  compact form ('$45.2K') while a two-part delta drops to its percent alone;
+  the delta pill stays on one line. Values are model output, so formatValue never paints "NaN" (non-finite
   numbers render blank, strings pass through verbatim) and a plain number is
   rounded for display by magnitude (0 decimals from 100, 1 from 10, else 2)
   unless `decimals` / `precision` pins the digits. Status-coloured text uses
@@ -9,7 +12,7 @@
 <script lang="ts">
   import { tv } from 'tailwind-variants';
   import { cn } from '$lib/utils.js';
-  import { ArrowUp, ArrowDown, Minus } from '@lucide/svelte';
+  import Delta from '$lib/widgets/data-kit/Delta.svelte';
 
   type DirectionInput = 'up' | 'down' | 'neutral' | 'auto' | 'up-good' | 'down-good';
   type DirectionResolved = 'up' | 'down' | 'neutral';
@@ -52,7 +55,7 @@
     align = 'left',
   }: Props = $props();
 
-  function formatValue(v: number | string): string {
+  function formatValue(v: number | string, compact = false): string {
     // Strings pass through untouched (existing behavior): a numeric string
     // like "125000" (httpbin echoes query params as strings) renders as
     // "125000", and a non-numeric string ("pending") renders verbatim.
@@ -91,6 +94,9 @@
         opts.notation = 'compact';
         break;
     }
+    if (compact && format !== 'percent') {
+      Object.assign(opts, { notation: 'compact', minimumFractionDigits: 0, maximumFractionDigits: 1 });
+    }
     return new Intl.NumberFormat(locale, opts).format(v);
   }
 
@@ -115,9 +121,9 @@
     return { dir: 'neutral', sentiment: 'neutral' };
   }
 
-  function formatDelta(): string {
+  function formatDelta(compact = false): string {
     const absPart =
-      delta !== undefined ? `${delta > 0 ? '+' : ''}${formatValue(delta)}` : '';
+      delta !== undefined ? `${delta > 0 ? '+' : ''}${formatValue(delta, compact)}` : '';
     const pctPart =
       deltaPercent !== undefined
         ? `${deltaPercent > 0 ? '+' : ''}${deltaPercent}%`
@@ -132,6 +138,19 @@
   const hasDelta = $derived(delta !== undefined || deltaPercent !== undefined);
   const displayValue = $derived(formatValue(value));
   const displayDelta = $derived(hasDelta ? formatDelta() : '');
+  // The narrow-tile forms ('$45.2K'), shown by a container query under 140px.
+  const compactValue = $derived.by(() => {
+    // Only a long value swaps ('$45,230.00'); '1,240' still fits a narrow tile.
+    const c = displayValue.length > 7 ? formatValue(value, true) : displayValue;
+    return c !== displayValue ? c : '';
+  });
+  const compactDelta = $derived.by(() => {
+    if (!hasDelta) return '';
+    const pct = deltaPercent !== undefined ? `${deltaPercent > 0 ? '+' : ''}${deltaPercent}%` : '';
+    const c = deltaFormat === 'both' && delta !== undefined && pct ? pct
+      : displayDelta.length > 7 ? formatDelta(true) : displayDelta;
+    return c !== displayDelta ? c : '';
+  });
 
   const root = tv({
     base: 'flex flex-col min-w-0',
@@ -158,24 +177,13 @@
   });
 
   const valueCls = tv({
-    base: 'font-semibold font-mono tabular-nums leading-tight',
+    base: 'font-semibold tabular-nums leading-tight',
     variants: {
-      size: { sm: 'text-sm', md: 'text-xl', lg: 'text-3xl' },
+      size: { sm: 'text-body', md: 'text-title-3', lg: 'text-title-2' },
     },
     defaultVariants: { size: 'md' },
   });
 
-  const deltaCls = tv({
-    base: 'inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[11px] font-medium tabular-nums',
-    variants: {
-      sentiment: {
-        positive: 'text-ripple-success-text bg-ripple-success/10',
-        negative: 'text-ripple-error-text bg-ripple-error/10',
-        neutral: 'text-muted-foreground bg-muted',
-      },
-    },
-    defaultVariants: { sentiment: 'neutral' },
-  });
 
   const iconSize = $derived(size === 'sm' ? 12 : size === 'lg' ? 14 : 12);
 </script>
@@ -184,25 +192,41 @@
   {id}
   class={cn(root({ size, align }), className)}
   data-size={size}
+  data-ripple-tile
   data-direction={resolved.dir}
   data-sentiment={resolved.sentiment}
 >
   {#if label}
     <span class={labelCls({ size })}>{label}</span>
   {/if}
-  <div class="flex items-center gap-2 min-w-0">
-    <span class={valueCls({ size })}>{displayValue}</span>
+  <div data-ripple-tile-value class="flex max-w-full min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+    <span data-slot="stat-value" class={cn(valueCls({ size }), 'stat-fit', compactValue && 'stat-full')}>{displayValue}</span>
+    {#if compactValue}
+      <span data-slot="stat-value-compact" class={cn(valueCls({ size }), 'stat-fit stat-compact')}>{compactValue}</span>
+    {/if}
     {#if hasDelta}
-      <span data-slot="stat-delta" class={deltaCls({ sentiment: resolved.sentiment })}>
-        {#if resolved.dir === 'up'}
-          <ArrowUp size={iconSize} strokeWidth={2.5} />
-        {:else if resolved.dir === 'down'}
-          <ArrowDown size={iconSize} strokeWidth={2.5} />
-        {:else}
-          <Minus size={iconSize} strokeWidth={2.5} />
-        {/if}
-        <span>{displayDelta}</span>
-      </span>
+      <Delta text={displayDelta} dir={resolved.dir} sentiment={resolved.sentiment} size={iconSize} slot="stat-delta" class={compactDelta ? 'stat-full' : undefined} />
+      {#if compactDelta}
+        <Delta text={compactDelta} dir={resolved.dir} sentiment={resolved.sentiment} size={iconSize} slot="stat-delta-compact" class="stat-compact" />
+      {/if}
     {/if}
   </div>
 </div>
+
+<style>
+  /* Sized from the tile's own box (grid and dashboard make tiles containers):
+     md and lg take metric's tile value size, sm stays one step smaller, and
+     under 140px the compact forms replace the full ones. */
+  .stat-fit { font-size: var(--stat-fs); line-height: 1.25; }
+  [data-size='sm'] .stat-fit { --stat-fs: var(--text-body); }
+  [data-size='md'] .stat-fit { --stat-fs: var(--text-title-3); }
+  [data-size='lg'] .stat-fit { --stat-fs: var(--text-title-2); }
+  :global(:is(.rdash, .rgrid)) > [data-ripple-tile]:not([data-size='sm']) .stat-fit {
+    font-size: clamp(var(--text-body), 22cqi, var(--text-title-3));
+  }
+  [data-ripple-tile-value] > :global(.stat-compact) { display: none; }
+  @container (max-width: 139px) {
+    [data-ripple-tile-value] > :global(.stat-full) { display: none; }
+    [data-ripple-tile-value] > :global(.stat-compact) { display: inline-flex; }
+  }
+</style>

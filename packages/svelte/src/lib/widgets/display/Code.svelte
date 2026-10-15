@@ -28,7 +28,7 @@
 
 <code
   {id}
-  class={cn('px-1 py-0.5 rounded bg-muted text-[0.875em] font-mono text-foreground', className)}
+  class={cn('px-1 py-0.5 rounded bg-ripple-track text-[0.875em] font-mono text-foreground', className)}
   style={styleString}
 >
   {#if children}

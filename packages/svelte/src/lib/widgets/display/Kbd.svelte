@@ -19,7 +19,8 @@
   const list = $derived(Array.isArray(keys) ? keys : [keys]);
 
   const baseClass =
-    'inline-flex items-center justify-center min-w-[1.5em] px-1.5 py-0.5 rounded border border-border bg-muted/40 text-[11px] font-mono leading-none text-muted-foreground shadow-[inset_0_-1px_0_0_var(--border)]';
+    // A keycap: 1px rim with a 2px darker bottom edge, one fixed height so a chord lines up.
+    'inline-flex h-5 min-w-5 items-center justify-center px-1.5 rounded-[5px] border border-ripple-border border-b-2 border-b-ripple-track bg-ripple-surface text-[11px] font-mono leading-none text-ripple-surface-foreground';
 </script>
 
 <span {id} class={cn('inline-flex items-center gap-1', className)} style={styleString}>

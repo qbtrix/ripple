@@ -7,7 +7,7 @@ export const sankeyEntry: WidgetManifestEntry = {
   props: {
     nodes: { type: 'Array<{ name: string }>', required: true, description: 'Node names.' },
     links: { type: 'Array<{ source: string; target: string; value: number }>', required: true, description: 'Flows.' },
-    height: { type: 'number', required: false, description: 'Height in px. Default 320.' },
+    height: { type: 'number', required: false, description: 'Max height in px.' },
     title: { type: 'string', required: false, description: 'Chart title.' },
     orient: { type: '"horizontal" | "vertical"', required: false, description: 'Flow direction.' },
     curveness: { type: 'number', required: false, description: 'Link curve factor 0-1. Default 0.5.' },

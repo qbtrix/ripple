@@ -37,7 +37,7 @@
     max = 100,
     total = 24,
     cols,
-    color = 'var(--primary)',
+    color = 'var(--ripple-accent)',
     cellHeight = 12,
     gap = 3,
   }: Props = $props();
@@ -76,7 +76,7 @@
   {#each cells as c (c.key)}
     <span
       class="rounded-[1px]"
-      style={safeStyle(`height:${cellHeight}px; background:${c.on ? color : 'var(--foreground)'}; opacity:${c.on ? 1 : 0.08}`)}
+      style={safeStyle(`height:${cellHeight}px; background:${c.on ? color : 'var(--ripple-track)'}`)}
     ></span>
   {/each}
 </div>

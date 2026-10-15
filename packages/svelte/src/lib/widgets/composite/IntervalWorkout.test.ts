@@ -12,6 +12,11 @@ import { expectStreamParity } from '$lib/streaming/__fixtures__/stream-parity.js
 import { getWidget, hasWidget } from '../index.js';
 import { _resetBindContractWarnings, getBindContract, warnUnregisteredBindContract } from '@ripple-ui/core';
 import IntervalWorkout, { buildPlan, clampSec, clock, REST, WORK, type WorkoutExercise } from './IntervalWorkout.svelte';
+import { playCue } from '$lib/sound/index.js';
+
+vi.mock('$lib/sound/index.js', () => ({ playCue: vi.fn() }));
+const cues = () => vi.mocked(playCue).mock.calls.map((c) => c[0]);
+
 
 afterEach(() => {
 	cleanup();
@@ -300,5 +305,35 @@ describe('interval-workout: exercise figures', () => {
 		});
 		expect(hero(container)?.getAttribute('data-figure')).toBe('squat');
 		expect(container.innerHTML).not.toContain('onload');
+	});
+});
+
+describe('interval-workout: sound', () => {
+	beforeEach(() => {
+		vi.useFakeTimers();
+		vi.mocked(playCue).mockClear();
+	});
+	afterEach(() => vi.useRealTimers());
+
+	it('ticks the last 3 seconds, chimes between intervals and once when done', async () => {
+		render(IntervalWorkout, { props: { exercises: two(), workSec: 5, restSec: 2, rounds: 1 } });
+		await fireEvent.click(btn('Start'));
+		await advance(1500);
+		expect(cues()).toEqual([]);
+		await advance(500);
+		expect(cues()).toEqual(['tick']);
+		await advance(3000);
+		expect(cues()).toEqual(['tick', 'tick', 'tick', 'phase']);
+		await advance(2000 + 5000);
+		expect(cues().filter((c) => c === 'phase')).toHaveLength(2);
+		expect(cues().at(-1)).toBe('complete');
+		expect(cues().filter((c) => c === 'complete')).toHaveLength(1);
+	});
+
+	it('stays silent with sound false', async () => {
+		render(IntervalWorkout, { props: { exercises: two(), workSec: 5, restSec: 2, rounds: 1, sound: false } });
+		await fireEvent.click(btn('Start'));
+		await advance(20_000);
+		expect(playCue).not.toHaveBeenCalled();
 	});
 });

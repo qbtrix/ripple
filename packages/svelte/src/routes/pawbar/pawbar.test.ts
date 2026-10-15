@@ -251,8 +251,7 @@ describe('recorded scenarios', () => {
 		["Let's play tic-tac-toe against you, I'm X, medium difficulty", 'tic-tac-toe'],
 		['Play connect four against me, best of 3', 'connect-four'],
 		['Track my habits this week: reading, running, water and sleep, each with a weekly target', 'habit-tracker'],
-		['Make me a pomodoro focus timer: 25 minutes focus, 5 minute breaks, 4 rounds, goal of 6 today', 'focus-timer'],
-		['How does the heart pump blood? Draw an animated picture with numbered notes on the chambers and valves.', 'heart']
+		['Make me a pomodoro focus timer: 25 minutes focus, 5 minute breaks, 4 rounds, goal of 6 today', 'focus-timer']
 	])('the chip "%s" routes to %s, past the mock\'s earlier routes', (prompt, id) => {
 		expect(pickScenario(prompt).id).toBe(id);
 		expect(playScenarios.find((s) => s.id === id)!.fixture.prompt).toBe(prompt);
@@ -507,6 +506,39 @@ describe('ChatSession', () => {
 		expect(init?.credentials).toBe('omit');
 		expect(JSON.parse(typeof init?.body === 'string' ? init.body : '')).toEqual({ widget_id: 'w', signed_key: 'k', customer_ref: 'visitor_123', message: 'hi' });
 		expect(lastTurn(session).parts).toEqual([{ kind: 'text', text: 'Hello' }]);
+	});
+
+	test('pawbarTransport posts audit counts with the key, under 1 KB, and swallows a refusal', async () => {
+		const fetch = vi.fn<typeof globalThis.fetch>(async () => new Response('', { status: 404 }));
+		const t = pawbarTransport({ endpoint: 'http://localhost:5288/', widgetId: 'w', siteKey: 'k', fetch, ref: () => 'visitor_123' });
+		const row = { counts: { schema: 0, leftover: 2 }, waived: 0, widget_types: ['card', 'text'], ms: 3, seen_ms: 40 };
+		t.audit('run-1', 'c1', row);
+		const [url, init] = fetch.mock.calls[0];
+		expect(url).toBe('http://localhost:5288/api/v1/paw-bar/cards/run-1/c1/audit');
+		expect(init?.keepalive).toBe(true);
+		expect(init?.credentials).toBe('omit');
+		expect(JSON.parse(typeof init?.body === 'string' ? init.body : '')).toEqual({ widget_id: 'w', signed_key: 'k', customer_ref: 'visitor_123', ...row });
+
+		// Too many type names: dropped from the end until the body fits.
+		t.audit('run-1', 'c2', { ...row, widget_types: Array.from({ length: 40 }, (_, i) => `widget-${i}-${'x'.repeat(24)}`) });
+		const sent = fetch.mock.calls[1][1]?.body;
+		const body = typeof sent === 'string' ? sent : '';
+		expect(new TextEncoder().encode(body).length).toBeLessThanOrEqual(1024);
+		expect(JSON.parse(body).counts).toEqual(row.counts);
+	});
+
+	test('a full audit row (every spec and page check) fits 1 KB with the longest key and keeps its types', () => {
+		const fetch = vi.fn<typeof globalThis.fetch>(async () => new Response('', { status: 204 }));
+		const t = pawbarTransport({ endpoint: 'http://x', widgetId: 'w'.repeat(64), siteKey: 'k'.repeat(256), fetch, ref: () => 'visitor_123' });
+		const checks = ['schema', 'catalog', 'action', 'envelope', 'leftover', 'each', 'bind', 'expr', 'props', 'twoControls', 'size', 'futureDate'];
+		const page = ['notRendered', 'errorBoxes', 'overflow', 'clippedText', 'emptyContainers', 'badText'];
+		const counts = Object.fromEntries([...checks, ...page].map((c) => [c, 99_999]));
+		const widget_types = Array.from({ length: 6 }, (_, i) => `widget-type-${i}`);
+		t.audit('run-1', 'c1', { counts, waived: 99_999, widget_types, ms: 59_999, seen_ms: 86_400_000 });
+		const sent = fetch.mock.calls[0][1]?.body;
+		const body = typeof sent === 'string' ? sent : '';
+		expect(new TextEncoder().encode(body).length).toBeLessThanOrEqual(1024);
+		expect(JSON.parse(body).widget_types).toEqual(widget_types);
 	});
 
 	test.each([

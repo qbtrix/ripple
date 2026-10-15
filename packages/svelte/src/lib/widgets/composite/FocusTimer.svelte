@@ -66,6 +66,7 @@
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import { clampSec, clock, finite, holds, nextEdit, plain } from '../data-kit/index.js';
 	import type { Edit } from '../data-kit/edit.js';
+	import { playCue } from '../../sound/index.js';
 
 	interface Props {
 		id?: string;
@@ -89,6 +90,8 @@
 		/** Two-way bindable session state. */
 		value?: FocusValue;
 		onchange?: (value: FocusValue) => void;
+		/** A soft chime when a phase ends. Default true. */
+		sound?: boolean;
 	}
 
 	let {
@@ -104,7 +107,8 @@
 		task,
 		auto_start_next,
 		value = $bindable(),
-		onchange
+		onchange,
+		sound = true
 	}: Props = $props();
 
 	const uid = $props.id();
@@ -234,6 +238,7 @@
 		if (ended) {
 			flashNow();
 			emit();
+			if (sound) playCue('complete');
 		}
 	}
 

@@ -113,7 +113,7 @@
   {#if hasChildren || children}
     <div class="mt-1">{@render children?.()}</div>
   {/if}
-  {#if actions}
+  {#if typeof actions === 'function'}
     <div data-empty-actions class="mt-1 flex flex-wrap items-center justify-center gap-2">{@render actions()}</div>
   {/if}
 </div>

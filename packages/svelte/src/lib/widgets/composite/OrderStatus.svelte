@@ -1,45 +1,64 @@
 <!--
   @file OrderStatus.svelte
-  @description Multi-step shipment / order / fulfillment status with optional
-  embedded live map and event timeline. Composes the existing `map` widget
-  for the courier position + route, and renders a horizontal stepper inline.
-  The map frames the whole trip (origin, destination, route, courier, 32px
-  padding) at mount and refits only when origin or destination move. The route
-  is latched: an empty `route` (a tracker API's final state) keeps the last one
-  drawn, and a null `tracker` just drops the courier marker.
+  @description `order-status`: where an order is, when it arrives and whether
+  anything went wrong, in a chat card. Top to bottom: eyebrow (order id),
+  status headline (a success check when finished, an error pill when failed or
+  cancelled), the when line (label word plus ETA), tracking, a progress rail,
+  the map with From / To, the updates list and the actions. One frame, no
+  inner boxes, tokens only; the root is an inline-size container and every
+  layout switch keys on the card's own width (tracking moves beside the
+  headline from 480px; from 560px the rail names every step and the map sits
+  beside the places; under 560px the rail is markers plus "Step N of M").
 
-  Use cases: package delivery, courier tracking, RMA, ticket lifecycle,
-  manufacturing job status, build pipeline, repair status.
+  The pure rules (status aliases, step states, headline, ETA label, event and
+  action hygiene, finite points) live in order-status-data.ts. A failed step
+  becomes the active one; a failed or cancelled default pipeline hides the rail.
 
-  Two default pipelines: delivery (placed to delivered) and pickup (placed to
-  picked-up, chosen when status is ready-for-pickup or picked-up). Reaching the
-  last step by `status` (or the last step having `completedAt`) renders it done
-  with a check, not active, and the header uses that step's label.
+  Map: composes `map` with the host's default tiles (no preset of its own),
+  route and destination in the accent, origin neutral, the courier in the
+  accent unless the host gives `tracker.color`; on the pickup pipeline the
+  origin is where the customer goes, so it reads "Pickup at" in the accent. It
+  frames the whole trip at mount, padded clear of the zoom buttons (top left)
+  and the attribution (bottom right), and refits only when origin or
+  destination move; a single point is centre plus street zoom. The route is latched: an empty
+  `route` (a tracker API's final state) keeps the last one drawn, and a null
+  `tracker` drops the courier marker. The map block never depends on step
+  state, so a polling host never remounts it.
 -->
 <script lang="ts">
-  import { safeUrl } from '@ripple-ui/core';
+  import { safeStyle, safeUrl } from '@ripple-ui/core';
   import { getContext, untrack } from 'svelte';
+  import Check from '@lucide/svelte/icons/check';
+  import X from '@lucide/svelte/icons/x';
+  import CircleCheck from '@lucide/svelte/icons/circle-check';
+  import ExternalLink from '@lucide/svelte/icons/external-link';
+  import Package from '@lucide/svelte/icons/package';
+  import MapPin from '@lucide/svelte/icons/map-pin';
   import { cn } from '$lib/utils.js';
-  import { safeArray } from '$lib/utils/safe-props.js';
-  import Icon from '$lib/widgets/display/Icon.svelte';
+  import { safeArray, uniqueKeys } from '$lib/utils/safe-props.js';
+  import { resolveIcon } from '$lib/widgets/display/Icon.svelte';
   import Map from '$lib/widgets/data/Map.svelte';
+  import StatusPill from '../data-kit/StatusPill.svelte';
+  import { plain } from '../data-kit/format.js';
+  import {
+    EVENT_FOLD,
+    cleanActions,
+    cleanEvents,
+    cleanPlace,
+    cleanTracking,
+    etaLabel,
+    headline,
+    point,
+    progress,
+    type CleanAction,
+    type DefaultStatus,
+    type LatLng,
+    type StepState
+  } from './order-status-data.js';
   import type { EventHandler, EventHandlerOrArray } from '@ripple-ui/core';
   import type { EventDispatcher } from '@ripple-ui/core';
   import type { StateManager } from '$lib/core/state-manager.svelte.js';
-
-  type LatLng = [number, number];
-
-  type DefaultStatus =
-    | 'placed'
-    | 'confirmed'
-    | 'preparing'
-    | 'in-transit'
-    | 'out-for-delivery'
-    | 'delivered'
-    | 'ready-for-pickup'
-    | 'picked-up'
-    | 'failed'
-    | 'cancelled';
+  import { asText } from '$lib/widgets/text-coerce';
 
   type TilePreset = 'osm' | 'carto-voyager' | 'carto-light' | 'carto-dark' | 'osm-hot' | 'custom';
 
@@ -106,6 +125,7 @@
     route?: LatLng[];
     showMap?: boolean;
     mapHeight?: string | number;
+    /** Tile preset; unset uses the host's map default (setMapDefaultTiles). */
     mapTiles?: TilePreset;
     /** Auto-pan the map to follow the tracker. Default false. */
     followTracker?: boolean;
@@ -121,7 +141,7 @@
     title,
     orderId,
     status,
-    steps: rawSteps,
+    steps,
     currentStep,
     eta,
     tracking,
@@ -130,21 +150,13 @@
     tracker,
     route,
     showMap,
-    mapHeight = '320px',
-    mapTiles = 'carto-voyager',
+    mapHeight,
+    mapTiles,
     followTracker = false,
     events: rawEvents = [],
     actions: rawActions = [],
     onaction
   }: Props = $props();
-
-  const steps = $derived(
-    rawSteps === undefined
-      ? undefined
-      : safeArray<Step>(rawSteps, { widget: 'order-status', key: 'steps' })
-  );
-  const events = $derived(safeArray<OrderEvent>(rawEvents, { widget: 'order-status', key: 'events' }));
-  const actions = $derived(safeArray<Action>(rawActions, { widget: 'order-status', key: 'actions' }));
 
   const styleString = $derived(
     style ? Object.entries(style).map(([k, v]) => `${k}:${v}`).join(';') : undefined
@@ -153,70 +165,40 @@
   const eventDispatcher = getContext<EventDispatcher | undefined>('ui-events');
   const stateManager = getContext<StateManager | undefined>('ui-state');
 
-  const DEFAULT_STEPS: { id: DefaultStatus; label: string }[] = [
-    { id: 'placed', label: 'Placed' },
-    { id: 'confirmed', label: 'Confirmed' },
-    { id: 'preparing', label: 'Preparing' },
-    { id: 'in-transit', label: 'In transit' },
-    { id: 'out-for-delivery', label: 'Out for delivery' },
-    { id: 'delivered', label: 'Delivered' }
-  ];
-  const PICKUP_STEPS: { id: DefaultStatus; label: string }[] = [
-    { id: 'placed', label: 'Placed' },
-    { id: 'confirmed', label: 'Confirmed' },
-    { id: 'preparing', label: 'Preparing' },
-    { id: 'ready-for-pickup', label: 'Ready for pickup' },
-    { id: 'picked-up', label: 'Picked up' }
-  ];
+  // Header ------------------------------------------------------------------
+  const p = $derived(progress(steps, status, currentStep));
+  const head = $derived(headline(title, p));
+  const order = $derived(asText(orderId).trim());
+  const etaText = $derived(plain(eta));
+  const whenLabel = $derived(etaLabel(p, etaText));
+  const track = $derived(cleanTracking(tracking));
 
-  const effectiveSteps = $derived.by<Step[]>(() => {
-    if (steps && steps.length > 0) return steps;
-    const base = status === 'ready-for-pickup' || status === 'picked-up' ? PICKUP_STEPS : DEFAULT_STEPS;
-    return base.map((s) => ({ id: s.id, label: s.label }));
-  });
+  // Rail --------------------------------------------------------------------
+  const STATE_WORD: Record<StepState, string> = { done: 'done', active: 'current', pending: 'not started', failed: 'failed' };
+  const stepKeys = $derived(uniqueKeys(p.steps, (s) => s.id));
+  const focus = $derived(p.active >= 0 ? p.steps[p.active] : undefined);
+  /** Connector after step i: accent once step i is done, dotted after a failure, else a track. */
+  const lineOf = (i: number) => (p.states[i] === 'done' ? 'done' : p.bad && i >= p.active ? 'dotted' : 'todo');
 
-  const activeIdx = $derived.by(() => {
-    if (currentStep) {
-      const idx = effectiveSteps.findIndex((s) => s.id === currentStep);
-      if (idx >= 0) return idx;
-    }
-    if (status === 'failed' || status === 'cancelled') return -1;
-    if (status) {
-      const idx = effectiveSteps.findIndex((s) => s.id === status);
-      if (idx >= 0) return idx;
-    }
-    const explicit = effectiveSteps.findIndex((s) => s.current);
-    if (explicit >= 0) return explicit;
-    // First not-yet-completed step.
-    const firstPending = effectiveSteps.findIndex((s) => !s.completedAt);
-    return firstPending >= 0 ? firstPending : effectiveSteps.length - 1;
-  });
-
-  const isFailed = $derived(status === 'failed' || status === 'cancelled' || effectiveSteps.some((s) => s.failed));
-  const lastStep = $derived(effectiveSteps[effectiveSteps.length - 1]);
-  // The final step is done, not in progress, once status lands on it or it has
-  // a completion time. An explicit `current`/`currentStep` on it without either
-  // still reads as in progress (e.g. a pipeline's last "Deploy" stage).
-  const finished = $derived(
-    !isFailed && activeIdx === effectiveSteps.length - 1 && (status === lastStep?.id || Boolean(lastStep?.completedAt))
+  // Places and map -------------------------------------------------------------
+  const from = $derived(cleanPlace(origin, 'Origin'));
+  // On the pickup pipeline the origin is the customer's destination.
+  const pickup = $derived(p.pipeline === 'pickup');
+  const to = $derived(cleanPlace(destination, 'Destination'));
+  const courier = $derived(point(tracker));
+  const routePts = $derived(
+    safeArray<unknown>(route, { widget: 'order-status', key: 'route' })
+      .map(point)
+      .filter((q): q is LatLng => q !== undefined)
   );
-  const isComplete = $derived(finished || status === 'delivered');
-  const completeLabel = $derived(finished ? lastStep.label : 'Delivered');
-
-  const computedShowMap = $derived(
-    showMap !== undefined
-      ? showMap
-      : Boolean(tracker || (origin?.lat && origin?.lng) || (destination?.lat && destination?.lng) || (route && route.length > 0))
-  );
+  const hasPoint = $derived(Boolean(courier || from?.at || to?.at || routePts.length > 0));
+  // An explicit false hides it; otherwise it shows whenever there is something to draw.
+  const computedShowMap = $derived(showMap !== false && hasPoint);
 
   const mapMarkers = $derived.by(() => {
     const m: { id: string; lat: number; lng: number; label: string; color: string }[] = [];
-    if (origin?.lat !== undefined && origin?.lng !== undefined) {
-      m.push({ id: 'origin', lat: origin.lat, lng: origin.lng, label: origin.name ?? 'Origin', color: 'oklch(0.65 0.16 150)' });
-    }
-    if (destination?.lat !== undefined && destination?.lng !== undefined) {
-      m.push({ id: 'destination', lat: destination.lat, lng: destination.lng, label: destination.name ?? 'Destination', color: 'oklch(0.55 0.18 250)' });
-    }
+    if (from?.at) m.push({ id: 'origin', lat: from.at[0], lng: from.at[1], label: from.name || 'Origin', color: pickup ? 'var(--ripple-accent)' : 'var(--ripple-muted-foreground)' });
+    if (to?.at) m.push({ id: 'destination', lat: to.at[0], lng: to.at[1], label: to.name || 'Destination', color: 'var(--ripple-accent)' });
     return m;
   });
 
@@ -225,34 +207,29 @@
   // a new route keeps the old line; clear on tripKey change if a host does that.
   let lastRoute: LatLng[] = [];
   const tripRoute = $derived.by<LatLng[]>(() => {
-    if (route && route.length > 0) lastRoute = route;
+    if (routePts.length > 0) lastRoute = routePts;
     return lastRoute;
   });
 
+  // Stroke colour is set in CSS (.rorder-map path): Leaflet writes `color` into
+  // an SVG attribute, where var() does not resolve.
   const mapPaths = $derived.by(() => {
-    if (tripRoute.length > 1) {
-      return [{ id: 'route', points: tripRoute, color: 'oklch(0.55 0.18 250)', weight: 4, dashed: true, animate: true }];
-    }
-    if (origin?.lat !== undefined && origin?.lng !== undefined && destination?.lat !== undefined && destination?.lng !== undefined) {
-      return [{ id: 'route', points: [[origin.lat, origin.lng], [destination.lat, destination.lng]] as LatLng[], color: 'oklch(0.55 0.18 250)', weight: 3, dashed: true, animate: true }];
-    }
+    if (tripRoute.length > 1) return [{ id: 'route', points: tripRoute, weight: 4, dashed: true, animate: true }];
+    if (from?.at && to?.at) return [{ id: 'route', points: [from.at, to.at], weight: 3, dashed: true, animate: true }];
     return [];
   });
 
   const mapTrackers = $derived.by(() => {
-    if (!tracker) return [];
-    const trail: LatLng[] = [];
-    if (origin?.lat !== undefined && origin?.lng !== undefined) trail.push([origin.lat, origin.lng]);
-    trail.push([tracker.lat, tracker.lng]);
+    if (!courier || !tracker) return [];
+    const color = asText(tracker.color).trim();
     return [
       {
         id: 'courier',
-        lat: tracker.lat,
-        lng: tracker.lng,
+        lat: courier[0],
+        lng: courier[1],
         heading: tracker.heading,
-        label: tracker.label ?? 'Courier',
-        color: tracker.color ?? 'oklch(0.65 0.22 25)',
-        trail,
+        label: plain(tracker.label) || 'Courier',
+        color: color || 'var(--ripple-accent)',
         follow: followTracker
       }
     ];
@@ -261,17 +238,17 @@
   // Frame the whole trip: origin, destination, route and courier. Keyed on the
   // origin/destination coordinates only (a string, so an equal value stops
   // here), so courier polling never refits over the visitor's pan and zoom.
-  const tripKey = $derived(JSON.stringify([origin?.lat, origin?.lng, destination?.lat, destination?.lng]));
+  const tripKey = $derived(JSON.stringify([from?.at, to?.at]));
   const tripBounds = $derived.by<[LatLng, LatLng] | undefined>(() => {
     void tripKey;
     return untrack(() => {
       const pts: LatLng[] = [...tripRoute];
-      if (origin?.lat !== undefined && origin?.lng !== undefined) pts.push([origin.lat, origin.lng]);
-      if (destination?.lat !== undefined && destination?.lng !== undefined) pts.push([destination.lat, destination.lng]);
-      if (tracker) pts.push([tracker.lat, tracker.lng]);
-      const lats = pts.map((p) => p[0]).filter(Number.isFinite);
-      const lngs = pts.map((p) => p[1]).filter(Number.isFinite);
-      if (lats.length < 2 || lngs.length < 2) return undefined;
+      if (from?.at) pts.push(from.at);
+      if (to?.at) pts.push(to.at);
+      if (courier) pts.push(courier);
+      if (pts.length < 2) return undefined;
+      const lats = pts.map((q) => q[0]);
+      const lngs = pts.map((q) => q[1]);
       const sw: LatLng = [Math.min(...lats), Math.min(...lngs)];
       const ne: LatLng = [Math.max(...lats), Math.max(...lngs)];
       // A single spot has no extent; center + zoom handles that.
@@ -279,20 +256,19 @@
     });
   });
 
-  const mapCenter = $derived.by<LatLng>(() => {
-    if (tracker) return [tracker.lat, tracker.lng];
-    if (destination?.lat !== undefined && destination?.lng !== undefined) return [destination.lat, destination.lng];
-    if (origin?.lat !== undefined && origin?.lng !== undefined) return [origin.lat, origin.lng];
-    return [0, 0];
-  });
+  // Clear of the 28px zoom stack (top left) and the attribution bar (bottom right).
+  const MAP_PAD = { topLeft: [44, 58] as LatLng, bottomRight: [28, 32] as LatLng };
+  const mapCenter = $derived<LatLng>(courier ?? to?.at ?? from?.at ?? tripRoute[0] ?? [0, 0]);
+  const listed = $derived([from?.listed && from, to?.listed && to].some(Boolean));
 
-  const VARIANT_CLASS: Record<NonNullable<Action['variant']>, string> = {
-    default: 'rorder-btn-primary',
-    outline: 'rorder-btn-outline',
-    ghost: 'rorder-btn-ghost'
-  };
+  // Updates and actions --------------------------------------------------------
+  const events = $derived(cleanEvents(rawEvents));
+  let showAll = $state(false);
+  const shown = $derived(showAll ? events : events.slice(0, EVENT_FOLD));
+  const folded = $derived(events.length - EVENT_FOLD);
+  const actions = $derived(cleanActions<EventHandlerOrArray>(rawActions));
 
-  function fireAction(a: Action) {
+  function fireAction(a: CleanAction<EventHandlerOrArray>) {
     if (a.actions && eventDispatcher) {
       const handlers = Array.isArray(a.actions) ? a.actions : [a.actions];
       void eventDispatcher.dispatch(handlers as EventHandler[], { state: stateManager?.state ?? {} }, a.id);
@@ -302,139 +278,152 @@
   }
 </script>
 
+{#snippet place(pl: NonNullable<typeof from>, word: string, kind: 'origin' | 'destination')}
+  <div class="rorder-place">
+    {#if kind === 'origin'}<Package size={14} strokeWidth={1.75} class="rorder-place-icon" aria-hidden="true" />{:else}<MapPin size={14} strokeWidth={1.75} class="rorder-place-icon" aria-hidden="true" />{/if}
+    <div class="rorder-place-text">
+      <span class="rorder-place-word text-caption-2">
+        {word}
+        {#if computedShowMap && pl.at}<span class={cn('rorder-place-dot', `rorder-place-dot-${kind}`)} aria-hidden="true"></span>{/if}
+      </span>
+      <span class="rorder-place-name text-body-emph" title={pl.name}>{pl.name}</span>
+      {#if pl.address}<span class="rorder-place-addr text-callout" title={pl.address}>{pl.address}</span>{/if}
+    </div>
+  </div>
+{/snippet}
+
 <div {id} class={cn('rorder', className)} style={styleString}>
   <header class="rorder-header">
-    <div class="rorder-header-main">
-      <div class="rorder-eyebrow">Order #{orderId}</div>
-      <h2 class="rorder-title">{title ?? (isFailed ? 'Order paused' : isComplete ? completeLabel : 'Tracking your order')}</h2>
-      {#if eta}
-        <p class="rorder-eta">
-          <Icon name="clock" size={13} />
-          {isComplete ? completeLabel : 'ETA'}: <span class="rorder-eta-value">{eta}</span>
-        </p>
-      {/if}
+    <div class="rorder-head">
+      <p class="rorder-eyebrow text-caption-1">{order ? `Order ${order}` : 'Order'}</p>
+      <div class="rorder-headline">
+        {#if p.finished}<CircleCheck size={16} strokeWidth={2} class="rorder-done-icon" aria-hidden="true" />{/if}
+        <h2 class="rorder-title text-title-3 font-semibold text-pretty" title={head}>{head}</h2>
+        {#if p.bad}<StatusPill status="bad" label={p.bad === 'cancelled' ? 'Cancelled' : 'Failed'} class="rorder-pill" />{/if}
+      </div>
     </div>
-    {#if tracking}
+    {#if etaText}
+      <p class="rorder-when">
+        {#if whenLabel}<span class="rorder-when-label text-callout">{whenLabel}</span>{/if}
+        <span class="rorder-when-value text-body-emph">{etaText}</span>
+      </p>
+    {/if}
+    {#if track}
       <div class="rorder-tracking">
-        <span class="rorder-tracking-label">Tracking</span>
-        {#if tracking.url}
-          <a href={safeUrl(tracking.url)} target="_blank" rel="noopener noreferrer" class="rorder-tracking-num">
-            {tracking.carrier} · {tracking.number}
-            <Icon name="external-link" size={12} />
-          </a>
-        {:else}
-          <span class="rorder-tracking-num">{tracking.carrier} · {tracking.number}</span>
-        {/if}
+        <span class="rorder-tracking-label text-caption-1">Tracking</span>
+        <span class="rorder-tracking-line text-callout">
+          {#if track.carrier}<span class="rorder-carrier">{track.carrier}</span>{/if}
+          {#if track.url && safeUrl(track.url)}
+            <a href={safeUrl(track.url)} target="_blank" rel="noopener noreferrer" class="rorder-tracking-num">
+              {track.number}<ExternalLink size={12} strokeWidth={2} class="rorder-ext" aria-hidden="true" /><span class="sr-only"> (opens in a new tab)</span>
+            </a>
+          {:else}
+            <span class="rorder-tracking-num">{track.number}</span>
+          {/if}
+        </span>
       </div>
     {/if}
   </header>
 
-  <!-- Stepper -->
-  <ol class={cn('rorder-steps', isFailed && 'rorder-steps-failed')}>
-    {#each effectiveSteps as s, i}
-      {@const state = i < activeIdx || (i === activeIdx && finished) ? 'done' : i === activeIdx ? (isFailed ? 'failed' : 'active') : 'pending'}
-      <li class={cn('rorder-step', `rorder-step-${state}`)}>
-        <span class="rorder-step-pip">
-          {#if state === 'done'}
-            <Icon name="check" size={12} color="white" />
-          {:else if state === 'failed'}
-            <Icon name="x" size={12} color="white" />
-          {:else if state === 'active'}
-            <span class="rorder-step-pulse"></span>
-          {/if}
-        </span>
-        <span class="rorder-step-text">
-          <span class="rorder-step-label">{s.label}</span>
-          {#if s.completedAt}<span class="rorder-step-time">{s.completedAt}</span>{/if}
-        </span>
-        {#if i < effectiveSteps.length - 1}
-          <span class="rorder-step-line"></span>
-        {/if}
-      </li>
-    {/each}
-  </ol>
+  {#if p.showRail}
+    <div class="rorder-progress">
+      <ol class="rorder-steps" aria-label="Progress" style={safeStyle(`--rorder-n:${p.steps.length}`)}>
+        {#each p.steps as s, i (stepKeys[i])}
+          {@const st = p.states[i]}
+          <li class={cn('rorder-step', `rorder-step-${st}`)} aria-current={st === 'active' || st === 'failed' ? 'step' : undefined}>
+            <span class="rorder-step-pip" aria-hidden="true">
+              {#if st === 'done'}
+                <Check size={12} strokeWidth={3} />
+              {:else if st === 'failed'}
+                <X size={12} strokeWidth={3} />
+              {:else if st === 'active'}
+                <span class="rorder-step-pulse"></span>
+              {/if}
+            </span>
+            {#if i < p.steps.length - 1}<span class="rorder-step-line" data-line={lineOf(i)} aria-hidden="true"></span>{/if}
+            <span class="rorder-step-text">
+              <span class="rorder-step-label" title={s.label}>{s.label}</span>
+              <span class="sr-only">, {STATE_WORD[st]}</span>
+              {#if s.completedAt}<span class="rorder-step-time">{s.completedAt}</span>{/if}
+            </span>
+          </li>
+        {/each}
+      </ol>
+      {#if focus}
+        <p class="rorder-step-summary text-callout" aria-hidden="true">
+          <span class="rorder-muted">Step {p.active + 1} of {p.steps.length}</span>
+          <span class="rorder-muted"> · </span>
+          <span class="rorder-step-summary-label">{focus.label}</span>
+          {#if focus.completedAt}<span class="rorder-muted"> · {focus.completedAt}</span>{/if}
+        </p>
+        {#if focus.description}<p class="rorder-step-desc text-callout">{focus.description}</p>{/if}
+      {/if}
+    </div>
+  {/if}
 
-  <!-- Map + Address row -->
-  <div class={cn('rorder-mid', computedShowMap ? 'rorder-mid-with-map' : '')}>
-    {#if computedShowMap}
-      <div class="rorder-map">
-        <Map
-          tiles={mapTiles}
-          center={mapCenter}
-          zoom={12}
-          bounds={tripBounds}
-          boundsPadding={32}
-          height={mapHeight}
-          markers={mapMarkers}
-          paths={mapPaths}
-          trackers={mapTrackers}
-          showAttribution={true}
-          showControls={true}
-          interactive={true}
-        />
-      </div>
-    {/if}
+  {#if computedShowMap || listed}
+    <div class={cn('rorder-mid', computedShowMap && listed && 'rorder-mid-split')}>
+      {#if computedShowMap}
+        <div class="rorder-map" role="region" aria-label={pickup ? 'Map of the pickup place' : 'Map of the delivery route'}>
+          <Map
+            tiles={mapTiles}
+            center={mapCenter}
+            zoom={14}
+            bounds={tripBounds}
+            boundsPadding={MAP_PAD}
+            height={mapHeight ?? 'var(--rorder-map-h)'}
+            markers={mapMarkers}
+            paths={mapPaths}
+            trackers={mapTrackers}
+            showAttribution={true}
+            showControls={true}
+            interactive={true}
+          />
+        </div>
+      {/if}
+      {#if listed}
+        <div class="rorder-places">
+          {#if from?.listed}{@render place(from, pickup ? 'Pickup at' : 'From', pickup ? 'destination' : 'origin')}{/if}
+          {#if to?.listed}{@render place(to, 'To', 'destination')}{/if}
+        </div>
+      {/if}
+    </div>
+  {/if}
 
-    {#if origin || destination}
-      <div class="rorder-places">
-        {#if origin}
-          <div class="rorder-place">
-            <div class="rorder-place-icon" style="background:oklch(0.65 0.16 150);">
-              <Icon name="package" size={14} color="white" />
-            </div>
-            <div>
-              <div class="rorder-place-label">From</div>
-              <div class="rorder-place-name">{origin.name ?? 'Origin'}</div>
-              {#if origin.address}<div class="rorder-place-addr">{origin.address}</div>{/if}
-            </div>
-          </div>
-        {/if}
-        {#if destination}
-          <div class="rorder-place">
-            <div class="rorder-place-icon" style="background:oklch(0.55 0.18 250);">
-              <Icon name="map-pin" size={14} color="white" />
-            </div>
-            <div>
-              <div class="rorder-place-label">To</div>
-              <div class="rorder-place-name">{destination.name ?? 'Destination'}</div>
-              {#if destination.address}<div class="rorder-place-addr">{destination.address}</div>{/if}
-            </div>
-          </div>
-        {/if}
-      </div>
-    {/if}
-  </div>
-
-  <!-- Activity timeline -->
   {#if events.length > 0}
-    <div class="rorder-activity">
-      <h3 class="rorder-activity-title">Activity</h3>
+    <section class="rorder-updates">
+      <h3 class="rorder-updates-title text-caption-2">Updates</h3>
       <ol class="rorder-events">
-        {#each events as ev}
-          <li class="rorder-event">
-            <span class="rorder-event-dot"></span>
+        {#each shown as ev, i (ev.key)}
+          {@const Glyph = resolveIcon(ev.icon)}
+          <li class={cn('rorder-event', i === 0 && 'rorder-event-latest')}>
+            <span class={cn('rorder-event-mark', Glyph && 'rorder-event-mark-icon')} aria-hidden="true">
+              {#if Glyph}<Glyph size={10} strokeWidth={2.25} />{/if}
+            </span>
             <div class="rorder-event-body">
-              <div class="rorder-event-row">
-                <span class="rorder-event-label">
-                  {#if ev.icon}<Icon name={ev.icon} size={12} />{/if}
-                  {ev.label}
-                </span>
-                <span class="rorder-event-time">{ev.time}</span>
-              </div>
-              {#if ev.location}<div class="rorder-event-loc">{ev.location}</div>{/if}
+              <span class="rorder-event-label text-callout">{ev.label}</span>
+              {#if ev.time}<span class="rorder-event-time text-caption-1">{ev.time}</span>{/if}
+              {#if ev.time && ev.location}<span class="rorder-event-sep text-caption-1" aria-hidden="true"> · </span>{/if}
+              {#if ev.location}<span class="rorder-event-loc text-caption-1">{ev.location}</span>{/if}
             </div>
           </li>
         {/each}
       </ol>
-    </div>
+      {#if folded > 0}
+        <button type="button" class="rorder-fold text-callout" aria-expanded={showAll} onclick={() => (showAll = !showAll)}>
+          {showAll ? 'Show fewer' : `Show ${folded} earlier ${folded === 1 ? 'update' : 'updates'}`}
+        </button>
+      {/if}
+    </section>
   {/if}
 
   {#if actions.length > 0}
     <div class="rorder-actions">
-      {#each actions as a}
-        <button type="button" class={cn('rorder-btn', VARIANT_CLASS[a.variant ?? 'default'])} onclick={() => fireAction(a)}>
-          {#if a.icon}<Icon name={a.icon} size={14} />{/if}
-          <span>{a.label}</span>
+      {#each actions as a (a.key)}
+        {@const Glyph = resolveIcon(a.icon)}
+        <button type="button" class={cn('rorder-btn', `rorder-btn-${a.variant}`)} title={a.label} onclick={() => fireAction(a)}>
+          {#if Glyph}<Glyph size={14} strokeWidth={2} aria-hidden="true" />{/if}
+          <span class="rorder-btn-label">{a.label}</span>
         </button>
       {/each}
     </div>
@@ -443,308 +432,606 @@
 
 <style>
   .rorder {
+    container: rorder / inline-size;
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 14px;
     width: 100%;
+    min-width: 0;
+    color: var(--ripple-surface-foreground);
+    font-size: var(--text-body);
+    line-height: var(--lh-body);
+    --rorder-map-h: 180px;
+  }
+  .rorder p,
+  .rorder h2,
+  .rorder h3 {
+    margin: 0;
+  }
+  .rorder-muted {
+    color: var(--ripple-muted-foreground);
   }
 
+  /* Header ---------------------------------------------------------------- */
   .rorder-header {
     display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 16px;
-    flex-wrap: wrap;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 12px;
+    flex-direction: column;
+    gap: 8px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--ripple-border);
   }
-  .rorder-header-main {
-    flex: 1;
+  .rorder-head {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
     min-width: 0;
   }
   .rorder-eyebrow {
-    font-size: 11px;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--muted-foreground);
-    margin-bottom: 2px;
+    color: var(--ripple-muted-foreground);
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+  }
+  .rorder-headline {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    min-width: 0;
+  }
+  .rorder-headline :global(.rorder-done-icon) {
+    flex-shrink: 0;
+    color: var(--ripple-success);
   }
   .rorder-title {
-    font-size: 22px;
-    font-weight: 600;
-    margin: 0;
+    flex: 0 1 auto;
+    min-width: 0;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    overflow-wrap: anywhere;
   }
-  .rorder-eta {
-    font-size: 13px;
-    color: var(--muted-foreground);
-    margin: 6px 0 0;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
+  .rorder-headline :global(.rorder-pill) {
+    flex-shrink: 0;
   }
-  .rorder-eta-value {
-    color: var(--foreground);
-    font-weight: 500;
+  .rorder-when {
+    overflow-wrap: anywhere;
+  }
+  .rorder-when-label {
+    color: var(--ripple-muted-foreground);
+    margin-right: 4px;
   }
   .rorder-tracking {
     display: flex;
     flex-direction: column;
-    align-items: flex-end;
     gap: 2px;
+    min-width: 0;
   }
   .rorder-tracking-label {
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--muted-foreground);
+    color: var(--ripple-muted-foreground);
+  }
+  /* Carrier and number wrap as two flex items. The dot between them hangs
+     in the column gap off the item that meets the edge when they share a
+     line; once the number wraps, the dot falls past the clipped edge, so it
+     never dangles at a line end. The 4px padding keeps the focus ring. */
+  .rorder-tracking-line {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: 14px;
+    margin-inline: -4px;
+    padding-inline: 4px;
+    overflow-x: clip;
+  }
+  .rorder-carrier,
+  .rorder-tracking-num {
+    position: relative;
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
   .rorder-tracking-num {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--foreground);
     font-variant-numeric: tabular-nums;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
+  }
+  .rorder-carrier + .rorder-tracking-num::before {
+    content: '·' / '';
+    position: absolute;
+    right: 100%;
+    width: 14px;
+    text-align: center;
+    color: var(--ripple-muted-foreground);
+  }
+  a.rorder-tracking-num {
+    color: var(--ripple-accent-text);
+    text-decoration: none;
+    border-radius: 2px;
   }
   a.rorder-tracking-num:hover {
-    color: oklch(0.55 0.18 250);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  a.rorder-tracking-num:focus-visible {
+    outline: 2px solid var(--ripple-ring);
+    outline-offset: 2px;
+  }
+  a.rorder-tracking-num :global(.rorder-ext) {
+    display: inline;
+    margin-left: 3px;
+    vertical-align: -1px;
   }
 
-  .rorder-steps {
-    list-style: none;
-    margin: 0;
-    padding: 8px 4px;
+  /* Rail -------------------------------------------------------------------- */
+  .rorder-progress {
     display: flex;
-    align-items: flex-start;
-    gap: 0;
-    overflow-x: auto;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .rorder-steps {
+    display: grid;
+    grid-template-columns: repeat(var(--rorder-n), minmax(0, 1fr));
+    margin: 0;
+    padding: 0;
+    list-style: none;
   }
   .rorder-step {
-    display: flex;
-    flex: 1 1 0;
-    min-width: 90px;
-    align-items: flex-start;
-    gap: 6px;
     position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    padding: 0 3px;
+    text-align: center;
   }
   .rorder-step-pip {
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background: var(--muted);
-    border: 2px solid var(--border);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    position: relative;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
     flex-shrink: 0;
-    transition: all 0.18s ease;
+    border-radius: 9999px;
+    background: var(--ripple-surface);
+    box-shadow: inset 0 0 0 1.5px var(--ripple-control-border);
+    color: var(--ripple-accent-foreground);
   }
   .rorder-step-done .rorder-step-pip {
-    background: oklch(0.55 0.18 150);
-    border-color: oklch(0.55 0.18 150);
+    background: var(--ripple-accent);
+    box-shadow: none;
   }
   .rorder-step-active .rorder-step-pip {
-    background: oklch(0.55 0.18 250);
-    border-color: oklch(0.55 0.18 250);
+    box-shadow: inset 0 0 0 2px var(--ripple-accent);
   }
   .rorder-step-failed .rorder-step-pip {
-    background: oklch(0.55 0.22 25);
-    border-color: oklch(0.55 0.22 25);
+    background: var(--ripple-error);
+    color: var(--ripple-error-foreground);
+    box-shadow: none;
   }
   .rorder-step-pulse {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: white;
-    box-shadow: 0 0 0 0 white;
-    animation: rorder-pulse 1.6s ease-out infinite;
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: var(--ripple-accent);
+    animation: rorder-pulse 2s ease-out infinite;
   }
   @keyframes rorder-pulse {
-    0% { box-shadow: 0 0 0 0 color-mix(in oklab, white 70%, transparent); }
-    100% { box-shadow: 0 0 0 10px transparent; }
+    0% {
+      box-shadow: 0 0 0 0 color-mix(in oklab, var(--ripple-accent) 50%, transparent);
+    }
+    70%,
+    100% {
+      box-shadow: 0 0 0 5px transparent;
+    }
+  }
+  /* From this marker's centre to the next one's, with a 4px gap each side. */
+  .rorder-step-line {
+    position: absolute;
+    top: 9px;
+    left: calc(50% + 14px);
+    right: calc(-50% + 14px);
+    height: 2px;
+    border-radius: 1px;
+    background: var(--ripple-track);
+  }
+  .rorder-step-line[data-line='done'] {
+    background: var(--ripple-accent);
+  }
+  .rorder-step-line[data-line='dotted'] {
+    height: 0;
+    background: none;
+    border-top: 2px dotted var(--ripple-control-border);
   }
   .rorder-step-text {
     display: flex;
     flex-direction: column;
     gap: 1px;
-    padding-top: 2px;
     min-width: 0;
+    max-width: 100%;
   }
   .rorder-step-label {
-    font-size: 12px;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    font-size: var(--text-caption-2);
+    line-height: 1.3;
     font-weight: 500;
-    color: var(--muted-foreground);
+    color: var(--ripple-surface-foreground);
+  }
+  .rorder-step-pending .rorder-step-label {
+    color: var(--ripple-muted-foreground);
   }
   .rorder-step-active .rorder-step-label,
-  .rorder-step-done .rorder-step-label {
-    color: var(--foreground);
+  .rorder-step-failed .rorder-step-label {
+    font-weight: 600;
   }
   .rorder-step-time {
-    font-size: 10.5px;
-    color: var(--muted-foreground);
+    font-size: var(--text-caption-1);
+    line-height: 1.3;
+    color: var(--ripple-muted-foreground);
     font-variant-numeric: tabular-nums;
   }
-  .rorder-step-line {
-    flex: 1;
-    height: 2px;
-    margin-top: 12px;
-    background: var(--border);
+  .rorder-step-summary {
+    display: none;
+    overflow-wrap: anywhere;
   }
-  .rorder-step-done + .rorder-step .rorder-step-line,
-  .rorder-step-done .rorder-step-line {
-    background: oklch(0.55 0.18 150);
+  .rorder-step-summary-label {
+    font-weight: 500;
+  }
+  .rorder-step-desc {
+    color: var(--ripple-muted-foreground);
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    overflow: hidden;
+    text-wrap: pretty;
   }
 
+  /* Map and places ---------------------------------------------------------- */
   .rorder-mid {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 12px;
+    min-width: 0;
   }
-  @media (min-width: 720px) {
-    .rorder-mid-with-map {
-      display: grid;
-      grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-      gap: 18px;
-      align-items: start;
-    }
+  .rorder-map {
+    min-width: 0;
   }
-
+  /* Leaflet writes path colour as an SVG attribute; CSS wins over it. */
+  .rorder-map :global(.leaflet-overlay-pane path) {
+    stroke: var(--ripple-accent);
+  }
   .rorder-places {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: 14px 16px;
-    border-radius: 12px;
-    border: 1px solid var(--border);
-    background: var(--card);
+    gap: 10px;
+    min-width: 0;
   }
   .rorder-place {
     display: flex;
-    gap: 12px;
+    gap: 8px;
     align-items: flex-start;
+    min-width: 0;
   }
-  .rorder-place-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .rorder-place :global(.rorder-place-icon) {
     flex-shrink: 0;
+    margin-top: 1px;
+    color: var(--ripple-muted-foreground);
   }
-  .rorder-place-label {
-    font-size: 10.5px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--muted-foreground);
+  .rorder-place-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
   }
-  .rorder-place-name {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--foreground);
+  .rorder-place-word {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--ripple-muted-foreground);
+  }
+  .rorder-place-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+  }
+  .rorder-place-dot-origin {
+    background: var(--ripple-muted-foreground);
+  }
+  .rorder-place-dot-destination {
+    background: var(--ripple-accent);
+  }
+  .rorder-place-name,
+  .rorder-place-addr {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    overflow-wrap: anywhere;
   }
   .rorder-place-addr {
-    font-size: 12px;
-    color: var(--muted-foreground);
-    line-height: 1.45;
+    color: var(--ripple-muted-foreground);
   }
 
-  .rorder-activity-title {
-    margin: 0 0 8px;
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--muted-foreground);
+  /* Updates ----------------------------------------------------------------- */
+  .rorder-updates {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+  }
+  .rorder-updates-title {
+    color: var(--ripple-muted-foreground);
   }
   .rorder-events {
-    list-style: none;
-    margin: 0;
-    padding: 0;
     display: flex;
     flex-direction: column;
     gap: 10px;
-    position: relative;
+    align-self: stretch;
+    margin: 0;
+    padding: 0;
+    list-style: none;
   }
   .rorder-event {
-    display: flex;
-    gap: 10px;
     position: relative;
-    padding-left: 4px;
+    display: grid;
+    grid-template-columns: 16px minmax(0, 1fr);
+    column-gap: 10px;
   }
-  .rorder-event-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: oklch(0.55 0.18 250);
-    margin-top: 6px;
-    flex-shrink: 0;
-    box-shadow: 0 0 0 3px color-mix(in oklab, oklch(0.55 0.18 250) 18%, transparent);
+  /* The rail: from under this marker to the next one. */
+  .rorder-event:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: 7.5px;
+    top: 18px;
+    bottom: -9px;
+    width: 1px;
+    background: var(--ripple-border);
   }
-  .rorder-event-body {
-    flex: 1;
-    min-width: 0;
-  }
-  .rorder-event-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-  }
-  .rorder-event-label {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--foreground);
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-  }
-  .rorder-event-time {
-    font-size: 11.5px;
-    color: var(--muted-foreground);
-    font-variant-numeric: tabular-nums;
-  }
-  .rorder-event-loc {
-    font-size: 11.5px;
-    color: var(--muted-foreground);
+  .rorder-event-mark {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 16px;
+    height: 16px;
     margin-top: 1px;
   }
+  .rorder-event-mark::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 9999px;
+    background: var(--ripple-muted-foreground);
+  }
+  .rorder-event-latest .rorder-event-mark::before {
+    background: var(--ripple-accent);
+  }
+  .rorder-event-mark-icon {
+    border-radius: 9999px;
+    background: var(--ripple-muted-foreground);
+    color: var(--ripple-surface);
+  }
+  .rorder-event-mark-icon::before {
+    display: none;
+  }
+  .rorder-event-latest .rorder-event-mark-icon {
+    background: var(--ripple-accent);
+    color: var(--ripple-accent-foreground);
+  }
+  .rorder-event-body {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .rorder-event-label {
+    display: block;
+    color: var(--ripple-surface-foreground);
+    line-height: 18px;
+  }
+  .rorder-event-time,
+  .rorder-event-sep,
+  .rorder-event-loc {
+    color: var(--ripple-muted-foreground);
+  }
+  .rorder-event-time {
+    font-variant-numeric: tabular-nums;
+  }
+  .rorder-fold {
+    padding: 2px 0;
+    border: 0;
+    border-radius: 4px;
+    background: none;
+    font: inherit;
+    font-size: var(--text-callout);
+    font-weight: 500;
+    color: var(--ripple-accent-text);
+    cursor: pointer;
+  }
+  .rorder-fold:hover {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .rorder-fold:focus-visible {
+    outline: 2px solid var(--ripple-ring);
+    outline-offset: 2px;
+  }
 
+  /* Actions ----------------------------------------------------------------- */
   .rorder-actions {
     display: flex;
-    gap: 8px;
     flex-wrap: wrap;
+    gap: 8px;
+    min-width: 0;
   }
   .rorder-btn {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    height: 34px;
+    max-width: 100%;
+    height: 40px;
     padding: 0 14px;
-    border-radius: 8px;
-    font-size: 13px;
+    border: 1px solid transparent;
+    border-radius: var(--ripple-radius);
+    background: transparent;
+    font: inherit;
+    font-size: var(--text-body);
     font-weight: 500;
+    color: var(--ripple-surface-foreground);
     cursor: pointer;
-    border: 0;
-    transition: background 0.15s, border-color 0.15s;
+    transition:
+      background-color 150ms var(--ripple-ease-out),
+      border-color 150ms var(--ripple-ease-out);
   }
-  .rorder-btn-primary {
-    background: oklch(0.55 0.18 250);
-    color: white;
+  .rorder-btn :global(svg) {
+    flex-shrink: 0;
   }
-  .rorder-btn-primary:hover { background: oklch(0.5 0.18 250); }
+  .rorder-btn-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .rorder-btn:focus-visible {
+    outline: 2px solid var(--ripple-ring);
+    outline-offset: 2px;
+  }
+  .rorder-btn-default {
+    background: var(--ripple-accent);
+    color: var(--ripple-accent-foreground);
+  }
+  .rorder-btn-default:hover {
+    background: color-mix(in oklab, var(--ripple-accent) 88%, var(--ripple-surface-foreground));
+  }
   .rorder-btn-outline {
-    background: transparent;
-    color: var(--foreground);
-    border: 1px solid var(--border);
+    border-color: var(--ripple-control-border);
   }
-  .rorder-btn-outline:hover { background: var(--muted); }
-  .rorder-btn-ghost {
-    background: transparent;
-    color: var(--foreground);
+  .rorder-btn-outline:hover,
+  .rorder-btn-ghost:hover {
+    background: var(--ripple-muted);
   }
-  .rorder-btn-ghost:hover { background: var(--muted); }
+  .rorder-btn:active {
+    transform: translateY(0.5px);
+  }
+
+  /* Narrow card: markers only on the rail, then "Step N of M". -------------- */
+  @container rorder (max-width: 559px) {
+    .rorder-step {
+      padding: 0;
+    }
+    .rorder-step-line {
+      left: calc(50% + 13px);
+      right: calc(-50% + 13px);
+    }
+    .rorder-step-text {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+    .rorder-step-summary {
+      display: block;
+    }
+  }
+
+  @container rorder (min-width: 480px) {
+    .rorder-header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, max-content);
+      grid-template-areas: 'head track' 'when when';
+      column-gap: 24px;
+      align-items: start;
+    }
+    .rorder-head {
+      grid-area: head;
+    }
+    .rorder-when {
+      grid-area: when;
+    }
+    .rorder-tracking {
+      grid-area: track;
+      max-width: 17rem;
+      align-items: flex-end;
+      text-align: right;
+      padding-top: 2px;
+    }
+    /* Right-aligned: the dot hangs off the carrier's end instead. */
+    .rorder-tracking-line {
+      justify-content: flex-end;
+    }
+    .rorder-carrier + .rorder-tracking-num::before {
+      content: none;
+    }
+    .rorder-carrier:has(+ .rorder-tracking-num)::after {
+      content: '·' / '';
+      position: absolute;
+      left: 100%;
+      width: 14px;
+      text-align: center;
+      color: var(--ripple-muted-foreground);
+    }
+  }
+
+  @container rorder (min-width: 560px) {
+    .rorder {
+      gap: 16px;
+    }
+    .rorder-btn {
+      height: 36px;
+    }
+    .rorder-map {
+      --rorder-map-h: 240px;
+    }
+    .rorder-mid-split {
+      display: grid;
+      grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+      gap: 20px;
+      align-items: start;
+    }
+    .rorder-mid:not(.rorder-mid-split) .rorder-places {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 20px;
+    }
+    .rorder-event-body {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      column-gap: 16px;
+      align-items: baseline;
+    }
+    .rorder-event-time {
+      grid-column: 2;
+      grid-row: 1;
+      text-align: right;
+      white-space: nowrap;
+    }
+    .rorder-event-label {
+      grid-column: 1;
+      grid-row: 1;
+    }
+    .rorder-event-loc {
+      grid-column: 1;
+      grid-row: 2;
+    }
+    .rorder-event-sep {
+      display: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rorder-step-pulse {
+      animation: none;
+    }
+    .rorder-map :global(.rmap-path-animated) {
+      animation: none;
+    }
+    .rorder-btn {
+      transition: none;
+    }
+  }
 </style>

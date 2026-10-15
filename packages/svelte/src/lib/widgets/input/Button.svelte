@@ -1,60 +1,38 @@
 <!--
-  Button.svelte — Ripple button widget.
+  Button.svelte: Ripple button widget.
   origin: slev12397/beautiful-ui@ff0f74d components/atoms/Button.tsx
 
-  Updated 2026-09-14 (beautiful-ui re-skin, lane A). The button is now a PILL —
-  the source's core button shape — instead of a rounded rectangle, with the
-  source's per-size rhythm: roomier symmetric side padding, and a gap that
-  steps with the size (sm 1 / md 1.5 / lg 2) rather than one gap for all. Type
-  was already on the source's 12px/13px/14px medium ladder, so it is unchanged.
-  Colour transitions now ride var(--ripple-ease-out), the skin's signature
-  curve. The dead Tailwind `transition-[…] ease-out` class came off the base:
-  the scoped .ripple-btn shorthand below overrides it, so it described nothing.
+  A pill on --ripple-radius with the source's per-size rhythm (padding and gap
+  step with size) and a 12/13/14px medium type ladder. Colour transitions ride
+  var(--ripple-ease-out). No box-shadows: solid keys carry a faint gradient
+  face instead. Colours are token-driven; accent TEXT (link, lit ghost) is
+  --ripple-accent-text, never the fill token.
 
-  NOT taken from the source: its `filledShadow`
-  (inset 0 1px 0 rgba(255,255,255,0.14)) and the `shadow-btn` on secondary —
-  every box-shadow stack is dropped this arc, and the faint gradient face below
-  already does that job without one. Its variant palette is dropped too: it is
-  built on --ink/--canvas grounds the host owns. Variant and size NAMES, props,
-  events and defaults are all unchanged.
+  SPRING PRESS: on :active the button compresses to scale(0.965) and settles
+  with a spring, timed from resolvePreset('snappy'/'bouncy') easing and
+  FF_SPRING_TOKENS durations (80ms compress / 160ms release). Button.test.ts
+  asserts those custom properties; that test is the contract. Reduced motion
+  drops the transform and stops the loading spinner.
 
-  SPRING PRESS (kept, deliberately): on :active the button compresses to
-  scale(0.965) and settles with a spring bounce-back. The physics come from
-  resolvePreset('snappy')/('bouncy') -> springToCssTiming paired with
-  FF_SPRING_TOKENS durations (80ms compress / 160ms release), so the press
-  matches every other ripple spring. This is not decoration the skin may
-  replace — Button.test.ts asserts the injected press custom properties and
-  their 80ms/160ms values, and that test is the contract. The source's flat
-  `active:scale-[0.96] duration-150` would be a strictly worse press anyway.
-  Reduced motion: the scoped @media block drops the transform and collapses the
-  transition, matching reduce-motion.ts. No $state rune is used for the press —
-  :active + CSS carries it, so there is no vitest "$state is not a function"
-  surface.
+  GHOST lights up in the accent text colour when pressed/selected (data-active).
+  DESTRUCTIVE darkens its fill toward black in scoped CSS so the white label
+  holds 4.5:1 in every state without touching the host's --destructive.
 
-  GHOST (special): transparent by default with a subtle hover bg so it reads as
-  a control, not naked text. When pressed/selected it "lights up" — label and
-  icons take the accent colour with no fill. Driven by data-active below.
+  LINK reads as inline text: content-sized (w-fit, so a stretching column flex
+  cannot widen or centre it), no inline padding, left-aligned when it wraps,
+  a quiet resting underline that firms up on hover/focus, and no fixed height
+  so wrapped rows keep the chip rhythm; an ::after pad keeps the hit target.
 
-  Colors stay token-driven (bg-primary / bg-destructive / --primary etc.).
-
-  Updated 2026-09-17 (fix/port-gaps, destructive label): the destructive
-  variant darkens its fill toward black in the scoped CSS below (78% rest, 70%
-  hover, 64% pressed). White on the raw --destructive measured 3.59:1 light
-  and 2.89:1 dark, under 4.5 for a label; darkened it is 5.25:1 or better in
-  every state. The host's --destructive is untouched, so nothing else that
-  paints it changes. The dead hover:bg-destructive/95 utility came off: the
-  unlayered scoped rule would beat it anyway.
-
-  Updated 2026-09-17 (fix/port-gaps): the loading spinner stops under
-  prefers-reduced-motion (`motion-reduce:animate-none`, the same variant
-  Segmented uses). Tailwind's animate-spin ships no guard of its own. The
-  static Loader2 glyph still reads as loading.
+  A button with no label, aria-label, children, icon or spinner renders
+  nothing, so an empty spec node never leaves a nameless control in the tab
+  order.
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { tv } from 'tailwind-variants';
   import { Loader2 } from '@lucide/svelte';
   import { cn } from '$lib/utils.js';
+  import { asText } from '$lib/widgets/text-coerce';
   import { FF_SPRING_TOKENS, resolvePreset, springToCssTiming } from '@ripple-ui/core';
   import type { ResolvedPhysics } from '@ripple-ui/core';
 
@@ -137,8 +115,9 @@
       // INSIDE the fixed size height, so every variant of a given size is the
       // SAME height (canonical) regardless of border/padding/consumer preflight.
       'ripple-btn box-border relative isolate inline-flex items-center justify-center whitespace-nowrap select-none cursor-pointer',
-      // Pill — the source's core button shape.
-      'rounded-full font-medium tracking-[-0.01em] leading-none',
+      // Radius follows --ripple-radius so a button sits beside inputs and
+      // selects on one radius scale; only the icon size stays round.
+      'rounded-ripple font-medium tracking-[-0.01em] leading-none',
       // Transitions are owned entirely by the scoped .ripple-btn block below:
       // its shorthand overrides any Tailwind transition-* class set here, so a
       // class here would only describe something that never applies. Colour
@@ -169,7 +148,7 @@
         // accent when active (.ripple-ghost + data-active handle the accent text).
         ghost:
           'ripple-ghost bg-transparent text-foreground hover:bg-muted',
-        link: 'bg-transparent text-primary underline-offset-4 hover:underline px-0 h-auto',
+        link: 'bg-transparent text-ripple-accent-text underline decoration-current/40 underline-offset-2 hover:decoration-current focus-visible:decoration-current px-0 h-auto',
       },
       // The source's pill rhythm: roomier sides than a rounded rectangle needs
       // (round caps eat visual space), and a gap that steps with the size.
@@ -177,12 +156,26 @@
         sm: 'h-7 px-3 text-[12px] gap-1',
         md: 'h-8 px-4 text-[13px] gap-1.5',
         lg: 'h-10 px-5 text-sm gap-2',
-        icon: 'h-8 w-8 p-0 gap-0',
+        icon: 'h-8 w-8 p-0 gap-0 rounded-full',
       },
     },
+    // link reads as text: no inline padding (size's px would otherwise win) and
+    // content-sized, so it keeps the left edge its siblings hold; a long label
+    // wraps inside the card, left-aligned. No fixed height keeps wrapped rows
+    // tight; the ::after pad restores a comfortable hit target.
+    compoundVariants: [
+      {
+        variant: 'link',
+        class:
+          "h-auto w-fit max-w-full px-0 justify-start whitespace-normal text-left leading-snug after:absolute after:-inset-x-1 after:-inset-y-2 after:content-['']",
+      },
+    ],
     defaultVariants: { variant: 'default', size: 'md' },
   });
 
+  const labelText = $derived(asText(label).trim());
+  // Nothing to show or name: render no element at all.
+  const isEmpty = $derived(!children && !labelText && !ariaLabel && !leading && !trailing && !loading);
   const isDisabled = $derived(disabled || loading);
   const state = $derived(loading ? 'loading' : disabled ? 'disabled' : 'idle');
   // Ghost "lit" look: explicitly pressed/selected. link never lights up.
@@ -209,6 +202,7 @@
   }
 </script>
 
+{#if !isEmpty}
 <button
   {id}
   {type}
@@ -237,14 +231,15 @@
 
   {#if children}
     {@render children()}
-  {:else if label}
-    <span data-slot="button-label">{label}</span>
+  {:else if labelText}
+    <span data-slot="button-label">{labelText}</span>
   {/if}
 
   {#if !loading && trailing}
     <span data-slot="button-trailing" class="inline-flex shrink-0">{@render trailing()}</span>
   {/if}
 </button>
+{/if}
 
 <style>
   /* ── Fluid Functionalism depth + spring press ──────────────────────────────
@@ -320,7 +315,7 @@
      (:active), the label + icons take the primary accent color. */
   .ripple-ghost[data-active='true'],
   .ripple-ghost:active:not(:disabled) {
-    color: var(--primary);
+    color: var(--ripple-accent-text);
     background-color: transparent;
   }
   /* Icons inherit currentColor, so the leading/trailing slots light up too. */

@@ -1,7 +1,7 @@
 ---
 title: Claude
 description: A SvelteKit endpoint that streams a Ripple spec from Claude with the Anthropic TypeScript SDK.
-order: 6
+order: 2
 ---
 
 This endpoint sends the user's request to Claude with the Ripple system prompt and streams the text back as it is written. The page feeds the stream to `streamSpec`, as in [SvelteKit end to end](/docs/guides/sveltekit).

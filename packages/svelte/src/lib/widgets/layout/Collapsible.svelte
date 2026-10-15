@@ -52,24 +52,24 @@
 
 <div
   {id}
-  class={cn('rounded-md border border-border overflow-hidden', className)}
+  class={cn('border-b border-ripple-border', className)}
   style={styleString}
 >
   <button
     type="button"
     aria-expanded={open}
     onclick={toggle}
-    class="flex w-full items-center justify-between gap-2 px-3 py-2 text-sm font-medium hover:bg-muted/40 transition-colors"
+    class="group flex w-full cursor-pointer items-center gap-2 rounded-sm py-2.5 text-left text-sm font-medium transition-colors hover:text-ripple-accent-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ripple-ring"
   >
-    <span class="flex-1 text-left">{title}</span>
     {#if !hideChevron}
-      <span class={cn('opacity-60 transition-transform', open && 'rotate-90')}>
+      <span class={cn('text-ripple-muted-foreground transition-transform duration-200 ease-ripple-out motion-reduce:transition-none', open && 'rotate-90')}>
         <ChevronRightIcon size={14} />
       </span>
     {/if}
+    <span class="flex-1">{title}</span>
   </button>
   {#if open}
-    <div class="border-t border-border px-3 py-2">
+    <div class="pb-3 text-sm {hideChevron ? '' : 'pl-[22px]'}">
       {@render children?.()}
     </div>
   {/if}

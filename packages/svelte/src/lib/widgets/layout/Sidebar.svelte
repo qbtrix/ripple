@@ -138,7 +138,7 @@
     {/each}
   </nav>
 
-  {#if footer}
+  {#if typeof footer === 'function'}
     <div class="mt-auto pt-2 border-t border-border">
       {@render footer()}
     </div>

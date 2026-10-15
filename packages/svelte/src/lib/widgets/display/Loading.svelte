@@ -1,8 +1,8 @@
-<!-- src/lib/widgets/display/Loading.svelte
-     Updated 2026-09-17 (fix/port-gaps): the spinner stops under
-     prefers-reduced-motion (`motion-reduce:animate-none`, the variant Segmented
-     uses). Tailwind's animate-spin ships no guard; the static loader glyph
-     still reads as loading. -->
+<!-- Loading.svelte: a spinner with a status label. A label the spec passes is
+     shown (muted, centred under the spinner in the block form, beside it when
+     inline); the built-in 'Loading…' default stays screen-reader only unless
+     showLabel is set. The spinner stops under prefers-reduced-motion; the
+     static glyph still reads as loading. -->
 <script lang="ts">
   import { cn } from '$lib/utils.js';
   import LoaderIcon from '@lucide/svelte/icons/loader-2';
@@ -19,8 +19,10 @@
 
   let {
     id, class: className, style,
-    size = 16, label = 'Loading…', inline = false, showLabel = false
+    size = 16, label, inline = false, showLabel = label !== undefined && label !== ''
   }: Props = $props();
+
+  const text = $derived(label || 'Loading…');
 
   const styleString = $derived(
     style ? Object.entries(style).map(([k, v]) => `${k}:${v}`).join(';') : undefined
@@ -29,15 +31,15 @@
   const wrapperClass = $derived(
     inline
       ? 'inline-flex items-center gap-2'
-      : 'flex items-center justify-center gap-2 py-4'
+      : 'flex flex-col items-center justify-center gap-2 py-4 text-center'
   );
 </script>
 
 <span {id} class={cn(wrapperClass, className)} style={styleString} role="status" aria-live="polite">
   <LoaderIcon {size} class="animate-spin motion-reduce:animate-none text-muted-foreground" aria-hidden="true" />
   {#if showLabel}
-    <span class="text-sm text-muted-foreground">{label}</span>
+    <span class="text-sm text-muted-foreground">{text}</span>
   {:else}
-    <span class="sr-only">{label}</span>
+    <span class="sr-only">{text}</span>
   {/if}
 </span>

@@ -4,21 +4,24 @@
   between rows (80ms), merged backgrounds for adjacent checked items (a 160ms
   spring morph; hovering a checked row paints no second highlight), and
   disabled states. The highlight and focus ring come from the movingIndicator
-  primitive (see /ds/moving-indicator).
+  primitive (see /ds/moving-indicator). Copy names the springs by speed
+  (fast, moderate), not by the token constant.
 -->
 <script lang="ts">
   import { Ripple } from '$lib/index.js';
-  import type { RippleEvent } from '@ripple-ui/core';
+  import Showcase from '../Showcase.svelte';
 
-  let lastEvent = $state('—');
-  function handleEvent(event: RippleEvent) {
-    lastEvent = `${event.type}${event.name ? ` · ${event.name}` : ''}`;
-    console.log('RippleEvent:', event);
-  }
+  const nav = [
+    { href: '#glide', label: 'The glide' },
+    { href: '#merge', label: 'Merged backgrounds' },
+    { href: '#states', label: 'States' },
+    { href: '/ds/moving-indicator', label: 'Moving indicator' },
+    { href: '/ds/motion', label: 'Motion' }
+  ];
 
   // ── 1. The gliding highlight ────────────────────────────────────
-  // Hover down the list — one background element travels between rows on the
-  // 80ms FF-fast timing. Realistic, specific copy (no "Option 1/2/3" slop).
+  // Hover down the list: one background element travels between rows on the
+  // 80ms fast spring.
   const glideSpec = {
     version: '1.0' as const,
     state: { alerts: ['mentions'] },
@@ -28,7 +31,7 @@
       children: [
         {
           type: 'text',
-          props: { text: 'Move your cursor slowly down the rows — the highlight glides to follow it.', size: 'sm' },
+          props: { text: 'Move your cursor slowly down the rows: the highlight glides to follow it.', size: 'sm' },
           class: 'text-muted-foreground'
         },
         {
@@ -50,9 +53,9 @@
     }
   };
 
-  // ── 2. Merged backgrounds (FF signature) ────────────────────────
-  // Check adjacent rows → their backgrounds merge into one rounded shape; the
-  // merge morphs on the 160ms FF-moderate overshoot timing. Start with a run
+  // ── 2. Merged backgrounds ───────────────────────────────────────
+  // Check adjacent rows and their backgrounds merge into one rounded shape; the
+  // merge morphs on the 160ms moderate spring. Start with a run
   // already selected so the merged shape is visible on load.
   const mergeSpec = {
     version: '1.0' as const,
@@ -63,7 +66,7 @@
       children: [
         {
           type: 'text',
-          props: { text: 'Check two neighbouring rows — their backgrounds merge into one shape. Now hover that merged block: no second highlight paints inside it (the hover highlight tracks unselected rows only).', size: 'sm' },
+          props: { text: 'Check two neighbouring rows and their backgrounds merge into one shape. Hover that merged block: no second highlight paints inside it, because the hover highlight tracks unchecked rows only.', size: 'sm' },
           class: 'text-muted-foreground'
         },
         {
@@ -98,10 +101,10 @@
         {
           type: 'checkbox-group',
           props: {
-            label: 'Add-ons (one locked to your plan)',
+            label: 'Add-ons (one not on your plan)',
             options: [
               { value: 'pro', label: 'Priority support' },
-              { value: 'sso', label: 'SSO / SAML' },
+              { value: 'sso', label: 'Single sign-on' },
               { value: 'audit', label: 'Audit log' },
               { value: 'sla', label: 'Custom SLA', disabled: true }
             ]
@@ -121,135 +124,41 @@
   };
 </script>
 
-<div class="showcase">
-  <header class="showcase-header">
-    <h1>Checkbox group: the gliding highlight</h1>
+<Showcase slug="checkbox-group" {nav}>
+  {#snippet intro()}
     <p>
-      Ported from <a href="https://www.fluidfunctionalism.com/docs/checkbox-group" target="_blank" rel="noreferrer">Fluid Functionalism</a>
-      (MIT) onto Ripple's motion primitive. A single background element
-      <strong>glides</strong> between rows as you hover — driven by a CSS
-      transition on the highlight's box, timed by the FF spring tokens
-      (<code>fast</code> 80ms for the glide, <code>moderate</code> 160ms for the
-      merge). Everything below is a declarative <code>&lt;Ripple&gt;</code> spec.
+      The <code>checkbox-group</code> widget is a list of checkboxes bound to one array in state. A single background
+      element glides between rows as you hover, on a fast 80ms spring, and neighbouring checked rows merge into one
+      shape on a moderate 160ms spring. Each demo below is a <code>&lt;Ripple&gt;</code> spec.
     </p>
-    <nav class="showcase-nav">
-      <a href="#glide">The glide</a>
-      <a href="#merge">Merged backgrounds</a>
-      <a href="#states">States</a>
-      <a href="/ds/moving-indicator">Moving-indicator primitive →</a>
-      <a href="/ds/motion">← Motion primitive</a>
-    </nav>
-    <p class="last-event">Last host event: <strong>{lastEvent}</strong></p>
-  </header>
+  {/snippet}
 
   <section id="glide" class="showcase-section">
-    <h2 class="showcase-section-title">The gliding highlight — <code>FF_SPRING_TOKENS.fast</code> (80ms)</h2>
+    <h2 class="showcase-section-title">The gliding highlight</h2>
+    <p class="section-caption">The fast spring, 80ms.</p>
     <div class="showcase-item">
       <div class="showcase-item-demo">
-        <Ripple spec={glideSpec} onEvent={handleEvent} />
+        <Ripple spec={glideSpec} />
       </div>
     </div>
   </section>
 
   <section id="merge" class="showcase-section">
-    <h2 class="showcase-section-title">Merged backgrounds for contiguous selections — <code>FF_SPRING_TOKENS.moderate</code> (160ms)</h2>
+    <h2 class="showcase-section-title">Merged backgrounds for neighbouring picks</h2>
+    <p class="section-caption">The moderate spring, 160ms.</p>
     <div class="showcase-item">
       <div class="showcase-item-demo">
-        <Ripple spec={mergeSpec} onEvent={handleEvent} />
+        <Ripple spec={mergeSpec} />
       </div>
     </div>
   </section>
 
   <section id="states" class="showcase-section">
-    <h2 class="showcase-section-title">States — disabled group &amp; per-item disabled</h2>
+    <h2 class="showcase-section-title">Disabled group and disabled row</h2>
     <div class="showcase-item">
       <div class="showcase-item-demo">
-        <Ripple spec={statesSpec} onEvent={handleEvent} />
+        <Ripple spec={statesSpec} />
       </div>
     </div>
   </section>
-</div>
-
-<style>
-  .showcase {
-    max-width: 960px;
-    margin: 0 auto;
-    padding: 2rem 1.5rem 4rem;
-    color: var(--foreground);
-  }
-  .showcase-header {
-    margin-bottom: 2.5rem;
-  }
-  .showcase-header h1 {
-    font-size: 1.75rem;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    margin: 0 0 0.25rem;
-  }
-  .showcase-header p {
-    font-size: 0.875rem;
-    color: var(--muted-foreground);
-    margin: 0 0 1rem;
-    max-width: 65ch;
-    line-height: 1.6;
-  }
-  .showcase-header a {
-    color: var(--foreground);
-    text-decoration: underline;
-    text-underline-offset: 2px;
-  }
-  .showcase-header code {
-    background: color-mix(in srgb, var(--muted) 50%, transparent);
-    padding: 1px 5px;
-    border-radius: 4px;
-    font-size: 0.8rem;
-  }
-  .last-event {
-    font-size: 0.8rem;
-  }
-  .showcase-nav {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 1rem;
-  }
-  .showcase-nav a {
-    padding: 4px 12px;
-    border-radius: 6px;
-    font-size: 0.8rem;
-    font-weight: 500;
-    background: color-mix(in srgb, var(--muted) 40%, transparent);
-    color: var(--foreground);
-    text-decoration: none;
-    transition: background 0.15s;
-  }
-  .showcase-nav a:hover {
-    background: var(--muted);
-  }
-  .showcase-section {
-    margin-bottom: 2.5rem;
-  }
-  .showcase-section-title {
-    font-size: 1.15rem;
-    font-weight: 600;
-    margin: 0 0 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--border);
-  }
-  .showcase-section-title code {
-    background: color-mix(in srgb, var(--muted) 50%, transparent);
-    padding: 1px 5px;
-    border-radius: 4px;
-    font-size: 0.85rem;
-    font-weight: 500;
-  }
-  .showcase-item {
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    overflow: hidden;
-  }
-  .showcase-item-demo {
-    padding: 1.5rem;
-    background: var(--background);
-  }
-</style>
+</Showcase>

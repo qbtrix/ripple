@@ -1,0 +1,173 @@
+{
+  "version": "1.0",
+  "state": {
+    "salesFilter": {}
+  },
+  "ui": {
+    "type": "exec-dashboard",
+    "bind": "salesFilter",
+    "props": {
+      "title": "Q3 sales",
+      "subtitle": "Online orders, July to September 2026",
+      "verdict": {
+        "text": "September was the strongest month; East leads on revenue.",
+        "status": "good"
+      },
+      "currency": "USD",
+      "x": "date",
+      "split": "channel",
+      "measures": [
+        {
+          "key": "amount",
+          "label": "Revenue",
+          "format": "money"
+        },
+        {
+          "label": "Orders",
+          "agg": "count"
+        },
+        {
+          "key": "amount",
+          "label": "Avg order",
+          "format": "money",
+          "agg": "avg"
+        },
+        {
+          "key": "items",
+          "label": "Items sold"
+        }
+      ],
+      "dimensions": [
+        {
+          "key": "region",
+          "label": "Region"
+        }
+      ],
+      "table": {
+        "title": "Orders"
+      },
+      "rows": [
+        {
+          "id": "1041",
+          "date": "2026-07-01",
+          "region": "West",
+          "channel": "Marketplace",
+          "items": 3,
+          "amount": 133.38
+        },
+        {
+          "id": "1046",
+          "date": "2026-07-09",
+          "region": "East",
+          "channel": "Web",
+          "items": 2,
+          "amount": 98.4
+        },
+        {
+          "id": "1050",
+          "date": "2026-07-18",
+          "region": "North",
+          "channel": "Social",
+          "items": 1,
+          "amount": 42.5
+        },
+        {
+          "id": "1055",
+          "date": "2026-07-27",
+          "region": "South",
+          "channel": "Web",
+          "items": 2,
+          "amount": 87.1
+        },
+        {
+          "id": "1058",
+          "date": "2026-07-30",
+          "region": "East",
+          "channel": "Web",
+          "items": 1,
+          "amount": 54.2
+        },
+        {
+          "id": "1061",
+          "date": "2026-08-04",
+          "region": "East",
+          "channel": "Web",
+          "items": 3,
+          "amount": 151.2
+        },
+        {
+          "id": "1066",
+          "date": "2026-08-12",
+          "region": "West",
+          "channel": "Social",
+          "items": 1,
+          "amount": 38.9
+        },
+        {
+          "id": "1070",
+          "date": "2026-08-19",
+          "region": "South",
+          "channel": "Marketplace",
+          "items": 2,
+          "amount": 76
+        },
+        {
+          "id": "1074",
+          "date": "2026-08-28",
+          "region": "North",
+          "channel": "Web",
+          "items": 2,
+          "amount": 104.75
+        },
+        {
+          "id": "1081",
+          "date": "2026-09-03",
+          "region": "East",
+          "channel": "Web",
+          "items": 4,
+          "amount": 212.6
+        },
+        {
+          "id": "1086",
+          "date": "2026-09-11",
+          "region": "West",
+          "channel": "Web",
+          "items": 2,
+          "amount": 95.3
+        },
+        {
+          "id": "1090",
+          "date": "2026-09-17",
+          "region": "East",
+          "channel": "Social",
+          "items": 1,
+          "amount": 49
+        },
+        {
+          "id": "1095",
+          "date": "2026-09-22",
+          "region": "South",
+          "channel": "Web",
+          "items": 3,
+          "amount": 139.45
+        },
+        {
+          "id": "1099",
+          "date": "2026-09-29",
+          "region": "North",
+          "channel": "Marketplace",
+          "items": 2,
+          "amount": 88.2
+        },
+        {
+          "id": "1102",
+          "date": "2026-09-30",
+          "region": "West",
+          "channel": "Web",
+          "items": 3,
+          "amount": 127.8
+        }
+      ]
+    }
+  }
+}

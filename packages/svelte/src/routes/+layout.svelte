@@ -6,7 +6,7 @@
     mark on the left; a centred icon nav (Chat, Gallery, Playground, Docs, Design system)
     where every item is an icon with an aria-label and a tooltip and the
     current one is PE's liquid-glass pill carrying its icon and label; on the
-    right the docs search as a ⌘K chip, the GitHub and theme icon buttons, and a
+    right the docs search as a ⌘K chip, the GitHub, sound and theme icon buttons, and a
     blue "Try Paw OS" pill in PlanBadge's paid style. The strip is PE's frosted
     shade over the warm ground with its faint cool tint, mirrored in light.
     Below 640px the nav sits between the mark and the tools, GitHub and Try Paw
@@ -18,11 +18,12 @@
     Glass falls back to solid under prefers-reduced-transparency. Tokens and
     fonts come from ./site.css. Theme: static/theme-init.js sets `dark` on
     <html> before paint; this reads and flips that class and remembers it.
+    Sound: the speaker button flips $lib/sound's on/off flag (widget cues).
     Labs and dev routes stay reachable by URL, unlinked. The bar says "Try Paw
     OS" (the pill's accessible name carries "by PocketPaw"), and the footer
     links "Paw OS by PocketPaw". It points the model-viewer library at the
     site's own /models/ so 3D cards load same-origin, and defaults maps to OSM
-    tiles, the one tile host the CSP allows.
+    tiles (the CSP also admits CARTO's, for specs that pick a carto preset).
 -->
 <script lang="ts">
 	import { onMount } from 'svelte';
@@ -34,6 +35,9 @@
 	import Palette from '@lucide/svelte/icons/palette';
 	import Sun from '@lucide/svelte/icons/sun';
 	import Moon from '@lucide/svelte/icons/moon';
+	import Volume2 from '@lucide/svelte/icons/volume-2';
+	import VolumeX from '@lucide/svelte/icons/volume-x';
+	import { setSoundEnabled, soundEnabled } from '$lib/sound/index.js';
 	import '$lib/styles.css';
 	import './site.css';
 	import Search from '$lib/site/docs/Search.svelte';
@@ -49,7 +53,8 @@
 	let { children } = $props();
 
 	const GITHUB_URL = 'https://github.com/qbtrix/ripple-iui';
-	const NPM_URL = 'https://www.npmjs.com/package/@ripple-ui/svelte';
+	// The packages are not on npm yet; the footer points at the release tarballs.
+	const RELEASES_URL = 'https://github.com/qbtrix/ripple-iui/releases';
 	const PAWOS_TRY = `${pawosBase(import.meta.env.PUBLIC_PAWOS_URL ?? '')}/?ref=ripple`;
 	// `short` is the active pill's label on phones; null means icon only there.
 	const nav = [
@@ -65,7 +70,14 @@
 	let dark = $state(true);
 	onMount(() => {
 		dark = document.documentElement.classList.contains('dark');
+		sound = soundEnabled();
 	});
+
+	let sound = $state(true);
+	function toggleSound() {
+		sound = !sound;
+		setSoundEnabled(sound);
+	}
 
 	function toggleTheme() {
 		dark = !dark;
@@ -123,6 +135,15 @@
 				<button
 					class="util"
 					type="button"
+					onclick={toggleSound}
+					aria-label={sound ? 'Turn sounds off' : 'Turn sounds on'}
+					data-tip={sound ? 'Sounds on' : 'Sounds off'}
+				>
+					{#if sound}<Volume2 size={14} strokeWidth={2} aria-hidden="true" />{:else}<VolumeX size={14} strokeWidth={2} aria-hidden="true" />{/if}
+				</button>
+				<button
+					class="util"
+					type="button"
 					onclick={toggleTheme}
 					aria-label={dark ? 'Switch to light theme' : 'Switch to dark theme'}
 					data-tip={dark ? 'Light theme' : 'Dark theme'}
@@ -138,9 +159,7 @@
 
 	<footer class="foot">
 		<p>
-			<span>MIT</span><span aria-hidden="true">·</span><a href={NPM_URL}>npm</a><span aria-hidden="true">·</span><a
-				href={GITHUB_URL}>GitHub</a
-			><span aria-hidden="true">·</span><a href="/playground">Playground</a><span aria-hidden="true">·</span><a href={PAWOS_TRY}
+			<span>MIT</span><a href={RELEASES_URL}>Releases</a><a href={GITHUB_URL}>GitHub</a><a href="/playground">Playground</a><a href={PAWOS_TRY}
 				>Paw OS by PocketPaw</a
 			>
 		</p>
@@ -437,7 +456,8 @@
 		padding-inline: var(--site-gutter);
 		display: flex;
 		flex-wrap: wrap;
-		gap: 4px 10px;
+		/* No separator characters: a wrap can never strand one at a line end. */
+		gap: 4px 20px;
 	}
 	.foot a {
 		color: inherit;

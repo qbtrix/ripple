@@ -942,7 +942,7 @@
         orderId: 'AC-1042',
         status: 'out-for-delivery',
         eta: 'Today, 4 – 6 PM',
-        tracking: { carrier: 'UPS', number: '1Z999AA10123456784' },
+        tracking: { carrier: 'Parcelwise', number: 'PW4471092318840017' },
         origin: { name: 'Acme Warehouse', address: 'Oakland, CA', lat: 37.79, lng: -122.41 },
         destination: { name: 'Customer', address: '500 Howard St, San Francisco, CA', lat: 37.7884, lng: -122.4 },
         tracker: { lat: 37.785, lng: -122.405, heading: 45, label: 'Driver' },
@@ -2306,7 +2306,8 @@
               { id: 'recent', label: 'Recently updated', count: 12 },
               { id: 'archived', label: 'Archived', count: 41 }
             ]
-          }
+          },
+          on_create: { action: 'toast', message: 'New view is not set up in this demo', variant: 'info' }
         },
         { type: 'text', props: { text: 'Active view → {state.activeView}', size: 'xs' } }
       ]
@@ -2954,9 +2955,9 @@
           const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
           const hours = ['9', '10', '11', '12', '13', '14', '15', '16', '17'];
           const out: Array<{ x: string; y: string; value: number }> = [];
-          for (const d of days) for (const h of hours) {
-            out.push({ x: d, y: h, value: Math.floor(Math.random() * 12) });
-          }
+          days.forEach((d, i) => hours.forEach((h, j) => {
+            out.push({ x: d, y: h, value: (i * 7 + j * 5 + i * j) % 12 });
+          }));
           return out;
         })(),
         xLabels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
@@ -5342,7 +5343,7 @@
   <a href="/ds/call">Call</a>
   <a href="/ds/checkbox-group">Checkbox group</a>
   <a href="/ds/marketing">Marketing pack</a>
-  <a href="/ds/premium">Premium pack</a>
+  <a href="/ds/effects">Effects</a>
   <span class="subroute-nav-sep" aria-hidden="true">·</span>
   <a href="/ds/card">Card</a>
   <a href="/ds/stat">Stat</a>

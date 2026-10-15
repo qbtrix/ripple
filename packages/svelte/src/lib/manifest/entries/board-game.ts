@@ -33,6 +33,7 @@ export const boardGameEntry: WidgetManifestEntry = {
       required: false,
       description: 'The game so far, written by the widget on every move. `board` is row-major ("" empty). Bind with `bind: "{state.game}"` to show it elsewhere.',
     },
+    sound: { type: 'boolean', required: false, description: 'A short chime when the player wins a game. Default true; false mutes this widget.' },
   },
   events: {
     on_complete: {

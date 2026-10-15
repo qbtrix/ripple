@@ -117,6 +117,10 @@ export {
 	formatSpecIssues,
 	type SpecIssue
 } from './core/spec-issues.js';
+/** The pure spec audit as one `AuditReport` per check, paths as JSON Pointers. */
+export { specAudit, type SpecAuditOptions } from './core/spec-audit.js';
+export type { AuditItem, AuditReport } from './core/audit-report.js';
+export { dataGuard, type DataGuardOptions, type DataGuardResult, type Fact } from './core/data-guard.js';
 
 // --------------------------------------------------------------- registry
 export {

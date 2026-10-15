@@ -19,6 +19,6 @@ export const glyphGridEntry: WidgetManifestEntry = {
   },
   example: {
     type: 'glyph-grid',
-    props: { glyph: 'n1', color: '#2E6BFF', cell: 14 },
+    props: { glyph: 'n1', cell: 14 },
   },
 };

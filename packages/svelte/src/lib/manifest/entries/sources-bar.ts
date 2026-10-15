@@ -15,9 +15,9 @@ export const sourcesBarEntry: WidgetManifestEntry = {
     type: 'sources-bar',
     props: {
       sources: [
-        { name: 'Reuters', url: 'https://reuters.com' },
-        { name: 'AP News', url: 'https://apnews.com' },
-        { name: 'Wall Street Journal', url: 'https://wsj.com' },
+        { name: 'Lanternpost', url: 'https://lanternpost.example.com' },
+        { name: 'Harbor Ledger', url: 'https://harborledger.example.org' },
+        { name: 'Fieldnote Review', url: 'https://fieldnote.example.net' },
       ],
       share: true,
       copy: true,

@@ -1,0 +1,133 @@
+{
+ "id": "heart-pump",
+ "title": "How a heart pumps",
+ "prompt": "How does the heart pump blood? Show me the two sides and the valves, and let me change the heart rate.",
+ "model": "hand-written",
+ "recordedAt": "2026-10-12T12:00:00.000Z",
+ "chunks": [
+  {
+   "t": 0,
+   "text": "{\"version\":\"1.0\",\"state\""
+  },
+  {
+   "t": 18,
+   "text": ":{\"figure\":null},\"ui\":{\""
+  },
+  {
+   "t": 36,
+   "text": "type\":\"figure\",\"bind\":\"{"
+  },
+  {
+   "t": 54,
+   "text": "state.figure}\",\"props\":{"
+  },
+  {
+   "t": 72,
+   "text": "\"figure\":\"heart\",\"params"
+  },
+  {
+   "t": 90,
+   "text": "\":{\"bpm\":72},\"labels\":[{"
+  },
+  {
+   "t": 108,
+   "text": "\"anchor\":\"right-ventricl"
+  },
+  {
+   "t": 126,
+   "text": "e\",\"note\":\"Pumps oxygen-"
+  },
+  {
+   "t": 144,
+   "text": "poor blood to the lungs."
+  },
+  {
+   "t": 162,
+   "text": "\"},{\"anchor\":\"left-ventr"
+  },
+  {
+   "t": 180,
+   "text": "icle\",\"note\":\"Pumps oxyg"
+  },
+  {
+   "t": 198,
+   "text": "en-rich blood out to the"
+  },
+  {
+   "t": 216,
+   "text": " whole body.\"},{\"anchor\""
+  },
+  {
+   "t": 234,
+   "text": ":\"mitral\",\"note\":\"Opens "
+  },
+  {
+   "t": 252,
+   "text": "while the left ventricle"
+  },
+  {
+   "t": 270,
+   "text": " fills, shuts before it "
+  },
+  {
+   "t": 288,
+   "text": "squeezes.\"},{\"anchor\":\"a"
+  },
+  {
+   "t": 306,
+   "text": "ortic-valve\",\"note\":\"Ope"
+  },
+  {
+   "t": 324,
+   "text": "ns only while the left v"
+  },
+  {
+   "t": 342,
+   "text": "entricle pushes blood ou"
+  },
+  {
+   "t": 360,
+   "text": "t.\"},{\"anchor\":\"lungs\",\""
+  },
+  {
+   "t": 378,
+   "text": "note\":\"Blood picks up ox"
+  },
+  {
+   "t": 396,
+   "text": "ygen here and comes back"
+  },
+  {
+   "t": 414,
+   "text": " red.\"}],\"caption\":\"Two "
+  },
+  {
+   "t": 432,
+   "text": "pumps in one. The right "
+  },
+  {
+   "t": 450,
+   "text": "side sends blood to the "
+  },
+  {
+   "t": 468,
+   "text": "lungs, the left side sen"
+  },
+  {
+   "t": 486,
+   "text": "ds it round the body. Mo"
+  },
+  {
+   "t": 504,
+   "text": "ve the heart rate and wa"
+  },
+  {
+   "t": 522,
+   "text": "tch the output and the p"
+  },
+  {
+   "t": 540,
+   "text": "ressure change.\"}}}"
+  }
+ ]
+}

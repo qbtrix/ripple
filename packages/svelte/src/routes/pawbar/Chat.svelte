@@ -2,69 +2,54 @@
   @file routes/pawbar/Chat.svelte
   @description The landing's chat: the conversation log, a composer that stays
     in reach while a long card is read, and the suggestion panel above it.
-    The panel starts collapsed: one sideways-scrolling row (round-robin, the
-    first chip of each group, up to ROW chips) and a round toggle centred
-    under it (aria-expanded, aria-controls the panel). Expanded, it is the
-    full grid: an uppercase label per group over wrapping pill chips (lucide
-    icon from chip-icons.ts, then the title, then "step by step" on steps
-    chips), on its own panel that floats over the bottom of the conversation
-    above the toggle (never taking the log's height), scrolling inside itself
-    past 55vh. Escape or a chip tap collapses it (focus inside it returns to
-    the toggle); a chip runs here (session.send); text the visitor types goes to Paw OS
-    (session.handoff, opened from the send gesture) unless `typedLocal` keeps
-    it on the Paw Bar (mock and dev only); the hint under the composer says so.
-    The look follows Paw OS: the composer is ChatPill's glass pill (a round
-    send that turns into a stop while a turn streams), the visitor's message
-    a blue-tint bubble, cards on --site-card with a hairline. A waiting turn
-    shows typing dots and a shimmer label, a streaming card shimmer bars.
-    Assistant text is markdown-lite (paragraphs, **bold**, `code`) built from
-    Svelte nodes, never {@html}, and never a card's raw spec (hideSpecText;
-    "Card hidden." when no card shows). A card renders through <Ripple
-    streaming> while it arrives and swaps to <Ripple spec> on final (a remount, so the validated
-    spec is what the visitor keeps using). A map card's OSM tiles take TrackCard's
-    dark-theme filter. Host events go to session.hostEvent,
-    which ignores them until the card is final; a checkout's progress or
-    failure shows as the card's note, an opened one as a PayCard under the card
-    (keyed by session, so a retry starts fresh), and a confirmed booking as a
-    BookingReceipt under the card. An order resumed from sessionStorage
-    (session.resumed) shows its PayCard above the log. A finished flow card
-    hands its result to session.flowComplete; it and a card's `ask` arrive as
-    the visitor's next message. A notice that offers a replay gets a button
-    that plays the closest recorded answer into the same turn
-    (session.replayRecorded).
-    Each card has a spec peek (its JSON, pretty-printed as it streams, soft
-    wrapped, following its newest line while the card streams and showing
-    its start once final), closed except on the first card the visitor
-    triggers per browser session. It is clipped, never its own scroll
-    container, so a wheel over it scrolls the conversation: under 1024px to 8
-    lines, from 1024px beside the card to the card's height; Expand shows the
-    whole spec and the pane grows. Turns already there at
-    mount (the prerendered exchange) neither animate in nor open a peek. A
-    card whose spec root is a `card` widget gets a bare frame.
-    Scrolling: the log (with the optional `top` snippet above it, the
-    landing's hero) is the chat's own scroll container; the chat never
-    scrolls the page (no scrollIntoView anywhere). It follows new content only
-    while the visitor is at its bottom; a visitor's own message (chip, typed
-    or sent by a card) always jumps there; scrolled up, growth while a turn
-    streams shows a "New" pill instead; a reader at the bottom stays there when
-    the chat itself resizes (a keyboard). At mount it stays at its top. Below
-    it the dock: the panel, the composer with the `more` snippet to its
-    right, and a foot row (the `foot` snippet, then the hint, which hides
-    when narrow but stays as the textarea's description). The log is role="log"
-    and aria-busy while a turn streams; one polite region says "Building"
-    and "Done" per turn instead of reading tokens.
-    DOM ids are positional, never Card.id: that counter can differ between the
-    prerender and hydration. Reduced motion lives in CSS, plus the label
-    rotation, which stays on "Thinking".
-    The playground hosts it with two optional props, both off on the landing:
-    `chips` renders each card as a compact chip (title, status, size) that
-    picks it into the playground's own preview, and `onspec` swaps the peek's
-    Expand for an Open button that hands the card to a fuller JSON view.
-    `ask` and `focus` are exported for its prompt cards and the `/` key.
+    Suggestions: collapsed, one sideways row (round-robin, the first chip of
+    each group, up to ROW) over a round toggle (aria-expanded); expanded, a
+    grid of labelled groups of pill chips (chip-icons.ts icon, "step by step"
+    on steps chips, an arrow on handoff chips) floating over the log, scrolling
+    inside itself past 55vh. Escape or a chip tap folds it, focus inside it
+    going to the toggle. With `foldChips` (the landing), the visitor's first
+    turn (not a seeded one) removes the row and puts the toggle left of the
+    composer, giving the log that height.
+    Sending: a chip runs here (session.send); typed text goes to Paw OS
+    (session.handoff, opened from the send gesture) unless `typedLocal` keeps it
+    on the Paw Bar (mock and dev only), as the hint under the composer says. A
+    `handoff` chip takes the typed path and says "Opens in Paw OS" (one hidden
+    note shared through aria-describedby).
+    Look: Paw OS. ChatPill's glass composer (send turns into stop while a turn
+    streams), the visitor's message a blue-tint bubble, cards on --site-card
+    with a hairline, typing dots and a shimmer label while waiting, shimmer bars
+    while a card streams. Assistant text is markdown-lite (paragraphs, **bold**,
+    `code`) from Svelte nodes, never {@html}, and never a card's raw spec
+    (hideSpecText; "Card hidden." when no card shows).
+    Cards: <Ripple streaming> while it arrives, remounted as <Ripple spec> on
+    final. A map card's OSM tiles take TrackCard's dark filter; a spec rooted in
+    a `card` widget gets a bare frame. Host events go to session.hostEvent
+    (inert until final): checkout progress or failure is the card's note, an
+    opened checkout a PayCard under it, a booking a BookingReceipt; an order
+    resumed from sessionStorage shows its PayCard above the log. A finished flow
+    goes to session.flowComplete; a notice that offers a replay gets a button
+    for session.replayRecorded. Once a final card has mounted, an idle callback
+    posts its audit once (session.auditCard; onRenderError feeds
+    Card.renderErrors); pagehide or a hidden tab re-posts it with time on screen.
+    Spec peek: the card's JSON, following its newest line while streaming and
+    its start once final; open only on the first card the visitor triggers per
+    browser session. Clipped, never its own scroll container: 8 lines under
+    1024px, beside the card from 1024px; Expand shows it all. Turns there at
+    mount (the prerendered exchange) neither animate in nor open a peek.
+    Scrolling: the log (with the optional `top` snippet, the hero) is the chat's
+    own scroll container; nothing calls scrollIntoView. It follows new content
+    only while the visitor is at the bottom; their own message always jumps
+    there; scrolled up, growth shows a "New" pill. Until the first turn it stays
+    at its top. The dock: the panel, the composer with `more` to its right, a
+    foot row (`foot`, then the hint). The log is role="log", aria-busy while
+    streaming; one polite region says "Building" and "Done" per turn. DOM ids
+    are positional, never Card.id. Playground props: `chips`, `onspec`; exports
+    `ask`, `focus`.
 -->
 <script lang="ts">
 	import { tick, untrack, type Snippet } from 'svelte';
 	import ArrowUp from '@lucide/svelte/icons/arrow-up';
+	import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
 	import X from '@lucide/svelte/icons/x';
 	import ChevronsDownUp from '@lucide/svelte/icons/chevrons-down-up';
 	import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
@@ -93,6 +78,8 @@
 		group?: string;
 		/** A lucide icon name from chip-icons.ts, shown before the title. */
 		icon?: string;
+		/** No answer here: the prompt opens Paw OS, like typed text. */
+		handoff?: boolean;
 	}
 
 	let {
@@ -106,7 +93,8 @@
 		more,
 		foot,
 		chips = null,
-		onspec
+		onspec,
+		foldChips = false
 	}: {
 		session: ChatSession;
 		suggestions?: Suggestion[];
@@ -127,6 +115,8 @@
 		chips?: Chips | null;
 		/** The peek's Open button: hands the card to the host's fuller JSON view. */
 		onspec?: (card: Card) => void;
+		/** After the visitor's first turn the chip row folds into a toggle beside the composer (the landing). */
+		foldChips?: boolean;
 	} = $props();
 
 	// Chip rows in the order their groups first appear.
@@ -212,12 +202,13 @@
 		if (stuck) unseen = false;
 	}
 
-	// Growth (a turn arriving, a card streaming and drawing) follows only while stuck.
+	// Growth (a turn arriving, a card streaming and drawing) follows only while stuck,
+	// and only once there are turns: the `top` snippet growing (a note, an alert) keeps the top in view.
 	$effect(() => {
 		if (!scroller || !inner || typeof ResizeObserver === 'undefined') return;
 		stuck = nearBottom(scroller);
 		const ro = new ResizeObserver(() => {
-			if (stuck) toBottom();
+			if (stuck && session.turns.length) toBottom();
 			else if (session.busy) unseen = true;
 		});
 		ro.observe(inner);
@@ -230,6 +221,16 @@
 	// What is on screen at mount is the prerendered fold: no entry animation, peeks closed.
 	const seeded = untrack(() => new Set(session.turns.map((t) => t.id)));
 	const known = untrack(() => new Set(cardsIn(session)));
+	// The visitor has sent something here (a seeded turn does not count): the row gives its height to the log.
+	const folded = $derived(foldChips && session.turns.some((t) => t.role === 'user' && !seeded.has(t.id)));
+	// Folding removes the row: a focused row chip went with it, so focus lands on the toggle, not the page.
+	$effect(() => {
+		if (!folded) return;
+		untrack(() => {
+			const lost = !document.activeElement || document.activeElement === document.body;
+			if (lost) void tick().then(() => toggle?.focus({ preventScroll: true }));
+		});
+	});
 
 	let peek = $state<Record<string, boolean>>({});
 	/** Under 1024px a peek shows 8 lines until expanded. */
@@ -266,6 +267,11 @@
 		const text = draft;
 		if (session.busy || !text.trim()) return;
 		draft = '';
+		toPawOS(text);
+	}
+
+	/** Typed text and handoff chips: Paw OS, or the Paw Bar when `typedLocal`. Call it from the gesture. */
+	function toPawOS(text: string) {
 		if (typedLocal) void session.send(text);
 		else session.handoff(text, pawosUrl, open);
 	}
@@ -309,6 +315,19 @@
 		void card.text;
 		el.scrollTop = card.status === 'streaming' ? el.scrollHeight : 0;
 	};
+
+	/** Runs `fn` when the page is idle (a short timer where requestIdleCallback is missing); returns a cancel. */
+	function whenIdle(fn: () => void): () => void {
+		if (typeof requestIdleCallback === 'function') {
+			const id = requestIdleCallback(fn, { timeout: 2000 });
+			return () => cancelIdleCallback(id);
+		}
+		const id = setTimeout(fn, 1);
+		return () => clearTimeout(id);
+	}
+
+	/** Once a final card has mounted, its pure and page audits run on its box when the page is idle (session.auditCard posts once). */
+	const auditWhenIdle = (card: Card) => (el: HTMLElement) => (card.status === 'final' ? whenIdle(() => session.auditCard(card, el)) : undefined);
 
 	/** The spec root is itself a card widget, so our frame would draw a card in a card. */
 	const bare = (c: Card) =>
@@ -428,9 +447,14 @@
 				</span>
 			</figcaption>
 			<div class="card-body" data-open={open}>
-				<div class="card-ui">
+				<div class="card-ui" {@attach auditWhenIdle(card)}>
 					{#if card.status === 'final' && card.spec}
-						<Ripple spec={card.spec} onEvent={(e) => session.hostEvent(card, e)} onComplete={(r) => session.flowComplete(card, r)} />
+						<Ripple
+							spec={card.spec}
+							onEvent={(e) => session.hostEvent(card, e)}
+							onComplete={(r) => session.flowComplete(card, r)}
+							onRenderError={(id) => card.renderErrors.add(id ?? `#${card.renderErrors.size}`)}
+						/>
 					{:else}
 						<div class="placeholder" aria-hidden="true"><span></span><span></span><span></span></div>
 						<Ripple streaming={card.store} skeleton="none" onEvent={(e) => session.hostEvent(card, e)} onComplete={(r) => session.flowComplete(card, r)} />
@@ -481,7 +505,8 @@
 	{/if}
 {/snippet}
 
-<svelte:window onkeydown={(e) => e.key === 'Escape' && closePanel()} />
+<svelte:window onkeydown={(e) => e.key === 'Escape' && closePanel()} onpagehide={() => session.reportSeen()} />
+<svelte:document onvisibilitychange={() => document.visibilityState === 'hidden' && session.reportSeen()} />
 
 <div class="chat">
 	<p class="sr-only" aria-live="polite">{announce}</p>
@@ -562,18 +587,34 @@
 					type="button"
 					class="chip"
 					disabled={session.busy}
-					title={s.prompt}
+					title={s.handoff ? `${s.prompt} (Opens in Paw OS)` : s.prompt}
+					aria-describedby={s.handoff ? 'ripple-chip-handoff' : undefined}
 					onclick={() => {
 						closePanel();
-						void ask(s.prompt);
+						if (s.handoff) toPawOS(s.prompt);
+						else void ask(s.prompt);
 					}}
 					>{#if Icon}<Icon class="chip-icon" size={15} aria-hidden="true" />{/if}{s.title}{#if s.steps}{' '}<span class="chip-steps"
 							>step by step</span
-						>{/if}</button
+						>{/if}{#if s.handoff}<ArrowUpRight class="chip-out" size={13} aria-hidden="true" />{/if}</button
 				>
 			</li>
 		{/snippet}
-		{#if suggestions.length}
+		{#snippet chipsToggle()}
+			<button
+				type="button"
+				class="chips-toggle"
+				bind:this={toggle}
+				aria-expanded={showAll}
+				aria-controls={folded && !showAll ? undefined : 'ripple-suggestions'}
+				aria-label={showAll ? 'Show fewer' : 'Show all suggestions'}
+				onclick={() => (showAll = !showAll)}
+			>
+				{#if showAll}<ChevronsDownUp size={16} aria-hidden="true" />{:else}<ChevronsUpDown size={16} aria-hidden="true" />{/if}
+			</button>
+		{/snippet}
+		{#if suggestions.some((s) => s.handoff)}<span id="ripple-chip-handoff" hidden>Opens in Paw OS</span>{/if}
+		{#if suggestions.length && (!folded || showAll)}
 			<div id="ripple-suggestions" class="chip-groups" data-expanded={expanded} data-overlay={showAll || undefined}>
 				{#if expanded}
 					{#each groups as [name, chips] (name)}
@@ -590,21 +631,10 @@
 					</ul>
 				{/if}
 			</div>
-			{#if suggestions.length > ROW}
-				<button
-					type="button"
-					class="chips-toggle"
-					bind:this={toggle}
-					aria-expanded={showAll}
-					aria-controls="ripple-suggestions"
-					aria-label={showAll ? 'Show fewer' : 'Show all suggestions'}
-					onclick={() => (showAll = !showAll)}
-				>
-					{#if showAll}<ChevronsDownUp size={16} aria-hidden="true" />{:else}<ChevronsUpDown size={16} aria-hidden="true" />{/if}
-				</button>
-			{/if}
+			{#if suggestions.length > ROW && !folded}{@render chipsToggle()}{/if}
 		{/if}
 		<div class="composer-row">
+			{#if folded && suggestions.length}{@render chipsToggle()}{/if}
 			<form
 				class="composer"
 				data-multiline={multiline || undefined}
@@ -965,10 +995,6 @@
 		padding: 16px;
 		/* A card can be wider than a phone: it scrolls inside itself, never clips. */
 		overflow-x: auto;
-	}
-	/* Map cards: OSM tiles darkened on the dark theme, as TrackCard does; markers and paths keep their color. */
-	:global(.dark) .card-ui :global(.leaflet-tile-pane) {
-		filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9);
 	}
 	.peek {
 		min-height: 0;
@@ -1478,9 +1504,13 @@
 			background 0.15s,
 			transform 0.1s;
 	}
-	.chip :global(.chip-icon) {
+	.chip :global(.chip-icon),
+	.chip :global(.chip-out) {
 		flex: none;
 		color: var(--site-soft);
+	}
+	.chip :global(.chip-out) {
+		margin-left: -3px;
 	}
 	.chips-toggle {
 		display: grid;
@@ -1494,6 +1524,13 @@
 		background: color-mix(in oklch, var(--site-ink) 4%, transparent);
 		color: var(--site-soft);
 		cursor: pointer;
+	}
+	/* Folded: the toggle sits left of the composer, matching `more` on its right. */
+	.composer-row > .chips-toggle {
+		flex: none;
+		width: 44px;
+		height: 44px;
+		margin: 0 0 4px;
 	}
 	.chips-toggle:hover {
 		background: var(--site-hover);

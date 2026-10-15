@@ -1,6 +1,6 @@
 {
  "id": "explainer",
- "title": "How bike gears work",
+ "title": "How bicycle gears work",
  "prompt": "Explain how a bicycle's gears work. Show the drivetrain as a diagram where I can pick a part to see what it does, and let me change the chainring and cog teeth to see the gear ratio and how far one pedal turn takes me.",
  "model": "sonnet",
  "recordedAt": "2026-10-08T08:53:11.309Z",

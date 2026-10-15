@@ -1,9 +1,14 @@
 <!--
   widgets/composite/Quiz.svelte — `quiz`: a trivia game the model fills. One
-  question at a time with a progress rail, big choice tiles, instant right or
-  wrong with the right answer marked and the `why` line, a streak, an optional
-  per-question countdown, then a score screen with a verdict band, a review
-  of the misses and Retry. Rules and scoring live in ./quiz.ts.
+  question at a time under a numberless segmented progress bar, outlined
+  choice tiles with key chips, instant right or wrong with the right answer
+  marked and the `why` line beside Next, a streak, an optional per-question
+  countdown, then a left-aligned score beside a review of the misses and
+  Retry. Rules, scoring and the choice columns live in ./quiz.ts.
+
+  Frame budget: the card shell and the choice tiles. Play, results and empty
+  states sit straight on the card; spacing separates them, not panels. The
+  score and streak only show once something is answered.
 
   Invariants:
   - `value` ({ index, answers, score, done }) is the bound field (default
@@ -18,8 +23,11 @@
     Date.now() checked every 200ms; running out records null (a miss).
   - `shuffle_choices` is seeded from the run number and the question, never
     Math.random, so the server and the client deal the same order.
-  - Choice tiles copy OptionList's card look but wrap real radios with right
-    and wrong states, so every state also has an icon and a word.
+  - Choice tiles wrap real radios with right and wrong states, so every state
+    also has an icon and a word. Losing choices go muted in ink, never opacity.
+    Tiles fill with an ink wash, not the card colour, so dark lifts them.
+  - Once answered, the countdown stops in muted ink, never empties.
+  - A photo that is refused or fails to load is replaced by one note line.
 -->
 <script lang="ts">
 	import { safeStyle, safeUrl } from '@ripple-ui/core';
@@ -35,9 +43,11 @@
 	import { PhotoTile, VerdictLine, holds, nextEdit, plain, rise } from '../data-kit/index.js';
 	import type { Edit } from '../data-kit/edit.js';
 	import { shuffled } from './FlashcardDeck.svelte';
+	import { playCue } from '../../sound/index.js';
 	import {
 		bandOf,
 		bestStreakOf,
+		choiceColumns,
 		clampSeconds,
 		cleanQuestions,
 		scoreOf,
@@ -64,6 +74,8 @@
 		onchange?: (value: QuizValue) => void;
 		/** Fires once per run when the last question is answered. */
 		oncomplete?: (result: { score: number; total: number }) => void;
+		/** Quiet cues for a right or wrong answer and a finished quiz. Default true. */
+		sound?: boolean;
 	}
 
 	let {
@@ -77,7 +89,8 @@
 		shuffle_choices = false,
 		value = $bindable(),
 		onchange,
-		oncomplete
+		oncomplete,
+		sound = true
 	}: Props = $props();
 
 	const uid = $props.id();
@@ -146,6 +159,7 @@
 	let deadline = 0;
 	const waitingToStart = $derived(secs !== undefined && !armed && !!q && !revealed);
 	const ticking = $derived(secs !== undefined && armed && !!q && !revealed);
+	const timed = $derived(secs !== undefined && !waitingToStart);
 	const secsLeft = $derived(Math.max(0, Math.ceil(leftMs / 1000)));
 	const C = 2 * Math.PI * 16;
 	const frac = $derived(secs ? Math.min(Math.max(leftMs / (secs * 1000), 0), 1) : 1);
@@ -178,6 +192,7 @@
 	function answer(choice: number | null) {
 		if (!q || revealed || waitingToStart) return;
 		const next = [...answers, choice];
+		if (sound) playCue(scoreOf(list, next) > scoreOf(list, answers) ? 'correct' : 'wrong');
 		commit({ index: at, answers: next });
 		if (next.length === total) oncomplete?.({ score: scoreOf(list, next), total });
 		void focusSlot('[data-slot="next"]');
@@ -190,7 +205,10 @@
 		if (n < total) {
 			arm();
 			void focusSlot('[data-slot="prompt"]');
-		} else void focusSlot('[data-slot="score"]');
+		} else {
+			if (sound) playCue('complete');
+			void focusSlot('[data-slot="score"]');
+		}
 	}
 
 	function start() {
@@ -248,62 +266,75 @@
 
 	const focusRing = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ripple-ring';
 	const primaryBtn = [
-		'inline-flex h-11 items-center justify-center gap-2 rounded-md bg-ripple-accent px-5 text-body-emph text-ripple-accent-foreground transition-opacity hover:opacity-90',
+		'inline-flex h-11 items-center justify-center gap-2 rounded-md bg-ripple-accent px-5 text-body-emph text-ripple-accent-foreground transition-opacity hover:opacity-90 motion-reduce:transition-none',
 		focusRing
 	];
-	const meta = $derived(
-		[total ? `${total} ${total === 1 ? 'question' : 'questions'}` : '', secs ? `${secs}s each` : ''].filter(Boolean).join(' · ')
-	);
+	const secondaryBtn = [
+		'inline-flex h-11 items-center justify-center gap-2 rounded-md border border-ripple-control-border bg-ripple-surface px-5 text-body-emph transition-colors hover:border-ripple-accent hover:bg-ripple-accent/6 motion-reduce:transition-none',
+		focusRing
+	];
+	const count = (n: number) => `${n} ${n === 1 ? 'question' : 'questions'}`;
+	const meta = $derived([total ? count(total) : '', secs ? `${secs}s each` : ''].filter(Boolean).join(' · '));
+	const best = $derived(onScoreScreen ? bestStreakOf(list, answers) : 0);
+	const cols = $derived(q ? choiceColumns(q.choices) : 1);
+
+	// A photo that is set but refused, or that fails to load, becomes one note line.
+	let failedPhoto = $state<string>();
+	const hasPhoto = $derived(!!q && q.image !== undefined && q.image !== null && q.image !== '');
+	const photoUrl = $derived(hasPhoto ? safeUrl(q?.image, { kind: 'resource' }) : undefined);
+	const photoOk = $derived(photoUrl !== undefined && failedPhoto !== photoUrl);
 </script>
 
 <div {id} bind:this={root} class={['@container text-ripple-surface-foreground', className]} style={rootStyle} data-widget="quiz">
-	<div class="flex flex-col gap-3">
+	<div class="flex flex-col gap-4">
 		{#if heading || sub || meta}
-			<header class="flex min-w-0 flex-col gap-0.5">
-				{#if sub}<p class="text-caption-1 font-medium tracking-[0.04em] text-ripple-muted-foreground uppercase" data-slot="topic">{sub}</p>{/if}
+			<header class="flex min-w-0 flex-col gap-1 border-b border-ripple-border pb-3">
+				{#if sub}
+					<div class="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+						<p class="min-w-0 text-footnote font-medium text-pretty text-ripple-muted-foreground" data-slot="topic">{sub}</p>
+						{#if meta}<p class="text-footnote text-ripple-muted-foreground tabular-nums" data-slot="meta">{meta}</p>{/if}
+					</div>
+				{/if}
 				{#if heading}<h2 class="text-title-3 font-semibold text-pretty">{heading}</h2>{/if}
-				{#if meta}<p class="text-footnote text-ripple-muted-foreground tabular-nums" data-slot="meta">{meta}</p>{/if}
+				{#if meta && !sub}<p class="text-footnote text-ripple-muted-foreground tabular-nums" data-slot="meta">{meta}</p>{/if}
 			</header>
 		{/if}
 
 		{#if !total}
-			<p class="rounded-ripple border border-ripple-border bg-ripple-surface px-3 py-4 text-callout text-ripple-muted-foreground">
-				No questions yet. Ask for a quiz.
-			</p>
+			<p class="text-callout text-ripple-muted-foreground">No questions yet. Ask for a quiz.</p>
 		{:else if onScoreScreen}
 			<section
-				class="grid gap-4 rounded-ripple border border-ripple-border bg-ripple-surface p-4 @min-[720px]:grid-cols-2 @min-[720px]:gap-6"
+				class="grid gap-6 @min-[480px]:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] @min-[480px]:gap-8"
 				aria-label="Results"
 				data-slot="results"
 				in:rise={{ index: 0 }}
 			>
-				<div class="flex flex-col items-center gap-3 text-center @min-[720px]:justify-center">
-					<span class="grid size-12 place-items-center rounded-full bg-ripple-accent/12 text-ripple-accent" aria-hidden="true">
-						<Trophy size={22} strokeWidth={1.75} />
-					</span>
+				<div class="flex min-w-0 flex-col items-start gap-2">
 					<h3 class="tabular-nums outline-none" tabindex="-1" data-slot="score">
 						<span class="sr-only">Score: </span>
-						<span class="text-[44px] leading-none font-semibold">{score}</span>
-						<span class="text-title-2 text-ripple-muted-foreground">/ {total}</span>
+						<span class="text-title-1 font-semibold">{score}</span>
+						<span class="text-title-3 text-ripple-muted-foreground">/ {total}</span>
 					</h3>
-					<p class="text-title-3 font-semibold" data-slot="band">{band.word}</p>
-					<VerdictLine verdict={{ text: band.line, status: band.status }} class="justify-center" />
-					<p class="text-callout text-ripple-muted-foreground tabular-nums">Best streak: {bestStreakOf(list, answers)}</p>
-					<button type="button" class={[primaryBtn, 'w-full max-w-72']} onclick={retry}>
+					<p class="inline-flex items-center gap-1.5 text-headline font-semibold" data-slot="band">
+						{#if band.status === 'good'}<Trophy size={20} strokeWidth={1.75} class="shrink-0 text-ripple-accent-text" aria-hidden="true" />{/if}{band.word}
+					</p>
+					<VerdictLine verdict={{ text: band.line, status: band.status }} />
+					{#if best >= 2}<p class="text-footnote text-ripple-muted-foreground tabular-nums" data-slot="best">Best streak {best}</p>{/if}
+					<button type="button" class={[secondaryBtn, 'mt-2 w-full @min-[480px]:w-auto']} onclick={retry}>
 						<RotateCcw size={16} strokeWidth={2} aria-hidden="true" />Retry
 					</button>
 				</div>
 
 				<div class="flex min-w-0 flex-col gap-2">
 					{#if misses.length}
-						<p class="text-caption-1 font-medium tracking-[0.04em] text-ripple-muted-foreground uppercase">
+						<p class="text-footnote font-medium text-ripple-muted-foreground">
 							{misses.length === 1 ? '1 to review' : `${misses.length} to review`}
 						</p>
 						<ul class="flex flex-col divide-y divide-ripple-border" data-slot="review">
 							{#each misses as m, k (m.item.key)}
-								<li class="flex items-start gap-2.5 py-2.5 first:pt-0 last:pb-0" in:rise={{ index: k }}>
-									<span class="grid size-8 shrink-0 place-items-center rounded-md bg-ripple-error/12 text-ripple-error-text">
-										{#if m.pick === null}<Clock size={16} strokeWidth={1.75} aria-hidden="true" />{:else}<X size={16} strokeWidth={1.75} aria-hidden="true" />{/if}
+								<li class="flex items-start gap-3 py-3 first:pt-0 last:pb-0" in:rise={{ index: k }}>
+									<span class="mt-px grid size-6 shrink-0 place-items-center rounded-full bg-ripple-error/12 text-ripple-error-text">
+										{#if m.pick === null}<Clock size={14} strokeWidth={2} aria-hidden="true" />{:else}<X size={14} strokeWidth={2.25} aria-hidden="true" />{/if}
 									</span>
 									<span class="flex min-w-0 flex-1 flex-col gap-0.5">
 										<span class="text-body-emph text-pretty">{m.item.prompt}</span>
@@ -324,167 +355,182 @@
 				</div>
 			</section>
 		{:else if q}
-			<section class="flex flex-col gap-4 rounded-ripple border border-ripple-border bg-ripple-surface p-4" aria-label="Question" data-slot="play">
-				<div class="flex items-center gap-3">
-					<ol class="flex min-w-0 flex-1 flex-wrap gap-1" aria-label="Progress" data-slot="rail">
-						{#each list as item, k (item.key)}
-							{@const a = k < answers.length ? answers[k] : undefined}
-							{@const mark = a === undefined ? (k === at ? 'now' : 'todo') : a === item.answer ? 'right' : 'wrong'}
-							<li
-								class={[
-									'grid size-5 place-items-center rounded-full text-[10px] font-semibold tabular-nums',
-									mark === 'right'
-										? 'bg-ripple-success text-ripple-success-foreground'
-										: mark === 'wrong'
-											? 'bg-ripple-error text-ripple-error-foreground'
-											: mark === 'now'
-												? 'bg-ripple-accent text-ripple-accent-foreground ring-2 ring-ripple-accent/30'
-												: 'bg-ripple-muted text-ripple-muted-foreground'
-								]}
-								data-mark={mark}
-								aria-current={mark === 'now' ? 'step' : undefined}
-							>
-								{#if mark === 'right'}<Check size={11} strokeWidth={3} aria-hidden="true" />{:else if mark === 'wrong'}<X size={11} strokeWidth={3} aria-hidden="true" />{:else}<span aria-hidden="true">{k + 1}</span>{/if}
-								<span class="sr-only">Question {k + 1}: {mark === 'right' ? 'right' : mark === 'wrong' ? 'wrong' : mark === 'now' ? 'current' : 'to do'}</span>
-							</li>
-						{/each}
-					</ol>
-					{#if secs !== undefined && !waitingToStart}
-						<div class="relative grid size-11 shrink-0 place-items-center" data-slot="countdown">
-							<svg class="absolute inset-0 size-full -rotate-90 motion-reduce:hidden" viewBox="0 0 36 36" aria-hidden="true">
-								<circle cx="18" cy="18" r="16" fill="none" stroke-width="2.5" class="stroke-ripple-border" />
-								<circle
-									cx="18"
-									cy="18"
-									r="16"
-									fill="none"
-									stroke-width="3"
-									stroke-linecap="round"
-									stroke-dasharray={C}
-									stroke-dashoffset={C * (1 - (revealed ? 0 : frac))}
-									class={[secsLeft <= 3 && !revealed ? 'stroke-ripple-warning' : 'stroke-ripple-accent', 'transition-[stroke-dashoffset] duration-200 ease-linear']}
-								/>
-							</svg>
-							<span role="timer" aria-label="{revealed ? 0 : secsLeft} seconds left" class="relative text-callout font-semibold tabular-nums">
-								{revealed ? '·' : secsLeft}
-							</span>
+			<section class="flex flex-col gap-4" aria-label="Question" data-slot="play">
+				{#if waitingToStart && at === 0}
+					<div class="flex flex-col items-center gap-3 py-4 text-center" data-slot="start">
+						<Clock size={20} strokeWidth={1.75} class="text-ripple-muted-foreground" aria-hidden="true" />
+						<div class="flex flex-col gap-0.5">
+							<p class="text-body-emph text-pretty">{count(total)}, {secs} seconds each.</p>
+							<p class="text-callout text-pretty text-ripple-muted-foreground">Running out counts as a miss.</p>
 						</div>
-					{/if}
-				</div>
-
-				<div class="flex items-center justify-between gap-2 text-footnote text-ripple-muted-foreground tabular-nums">
-					<span data-slot="position">Question {at + 1} of {total}</span>
-					<span class="inline-flex items-center gap-3">
-						<span data-slot="tally">Score {score}</span>
-						<span class={['inline-flex items-center gap-1', streak > 1 && 'font-medium text-ripple-warning-text']} data-slot="streak">
-							<Flame size={13} strokeWidth={2} aria-hidden="true" />Streak {streak}
-						</span>
-					</span>
-				</div>
-
-				{#if waitingToStart}
-					<div class="flex flex-col items-center gap-3 py-6 text-center" data-slot="start">
-						<p class="text-callout text-ripple-muted-foreground">
-							{at === 0 ? `${total} questions, ${secs} seconds each. Running out counts as a miss.` : 'Paused. The clock restarts when you resume.'}
-						</p>
-						<button type="button" class={primaryBtn} onclick={start}>
-							<Play size={16} strokeWidth={2} aria-hidden="true" />{at === 0 ? 'Start quiz' : 'Resume'}
+						<button type="button" class={[primaryBtn, 'mt-1 w-full max-w-72']} onclick={start}>
+							<Play size={16} strokeWidth={2} aria-hidden="true" />Start quiz
 						</button>
 					</div>
 				{:else}
-					{#key at}
-						<div class="flex flex-col gap-3" in:rise>
-							{#if q.image && safeUrl(q.image, { kind: 'resource' })}
-								<PhotoTile src={safeUrl(q.image, { kind: 'resource' })} ratio="16:9" class="w-full max-h-[200px]" />
+					<div class="flex flex-col gap-2">
+						<div class="flex min-h-6 items-center gap-3 text-footnote text-ripple-muted-foreground tabular-nums">
+							<span class="min-w-0 flex-1" data-slot="position">Question {at + 1} of {total}</span>
+							{#if answers.length}
+								<span class="inline-flex shrink-0 items-center gap-3">
+									<span data-slot="tally">Score {score}</span>
+									<span class={['inline-flex items-center gap-1', streak > 1 && 'font-medium text-ripple-warning-text']} data-slot="streak">
+										<Flame size={13} strokeWidth={2} aria-hidden="true" />Streak {streak}
+									</span>
+								</span>
 							{/if}
-							<div class="flex min-w-0 flex-col gap-3">
-								<h3 id="{uid}-prompt" class="text-title-2 font-semibold text-balance outline-none" tabindex="-1" data-slot="prompt">{q.prompt}</h3>
-								<div role="radiogroup" aria-labelledby="{uid}-prompt" class="grid grid-cols-1 gap-2 @min-[480px]:grid-cols-2" data-slot="choices">
-									{#each order as ci, pos (ci)}
-										{@const isRight = revealed && ci === q.answer}
-										{@const isWrongPick = revealed && ci === picked && ci !== q.answer}
-										<label
-											data-choice={ci}
-											data-state={isRight ? 'right' : isWrongPick ? 'wrong' : revealed ? 'idle' : 'open'}
-											class={[
-												'relative flex min-h-14 min-w-0 items-center gap-3 rounded-ripple border p-3 text-left transition-[background-color,border-color,box-shadow,transform] duration-150 ease-out motion-reduce:transition-none',
-												'has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ripple-ring',
-												isRight
-													? 'border-ripple-success bg-ripple-success/10 ring-1 ring-inset ring-ripple-success/30'
-													: isWrongPick
-														? 'border-ripple-error bg-ripple-error/10 ring-1 ring-inset ring-ripple-error/30'
-														: revealed
-															? 'border-ripple-border/70 bg-ripple-surface opacity-60'
-															: 'cursor-pointer border-ripple-border/70 bg-ripple-surface hover:-translate-y-0.5 hover:border-ripple-accent/50 hover:shadow-sm has-[:checked]:border-ripple-accent motion-reduce:hover:translate-y-0'
-											]}
-										>
-											<input
-												class="sr-only"
-												type="radio"
-												name={uid}
-												value={ci}
-												checked={revealed && ci === picked}
-												disabled={revealed}
-												aria-keyshortcuts={pos < 5 ? String(pos + 1) : undefined}
-												onchange={() => onChoiceChange(ci)}
-												onkeydown={(e) => onChoiceKey(e, ci)}
-												onkeyup={() => (arrowing = false)}
-											/>
-											<span
-												aria-hidden="true"
-												class={[
-													'grid size-8 shrink-0 place-items-center rounded-lg text-callout font-semibold tabular-nums',
-													isRight
-														? 'bg-ripple-success text-ripple-success-foreground'
-														: isWrongPick
-															? 'bg-ripple-error text-ripple-error-foreground'
-															: 'bg-ripple-muted text-ripple-muted-foreground'
-												]}
-											>
-												{#if isRight}<Check size={16} strokeWidth={3} />{:else if isWrongPick}<X size={16} strokeWidth={3} />{:else}{pos + 1}{/if}
-											</span>
-											<span class="min-w-0 flex-1 text-body-emph text-pretty">{q.choices[ci]}</span>
-											{#if isRight}
-												<span class="shrink-0 text-footnote font-medium text-ripple-success-text">{picked === ci ? 'Your pick, correct' : 'Correct answer'}</span>
-											{:else if isWrongPick}
-												<span class="shrink-0 text-footnote font-medium text-ripple-error-text">Your pick</span>
-											{/if}
-										</label>
-									{/each}
+							{#if timed}
+								<!-- 36px ring pulled into the 24px row, so a timed row keeps the untimed rhythm. Once answered the clock
+								     stops in muted ink: the seconds that were left, or a clock glyph when none were. -->
+								<div class={['relative -my-1.5 grid size-9 shrink-0 place-items-center', revealed ? 'text-ripple-muted-foreground' : 'text-ripple-surface-foreground']} data-slot="countdown">
+									<svg class="absolute inset-0 size-full -rotate-90" viewBox="0 0 36 36" aria-hidden="true">
+										<circle cx="18" cy="18" r="16" fill="none" stroke-width="2.5" class="stroke-ripple-track" />
+										<circle
+											cx="18"
+											cy="18"
+											r="16"
+											fill="none"
+											stroke-width="3"
+											stroke-linecap="round"
+											stroke-dasharray={C}
+											stroke-dashoffset={C * (1 - frac)}
+											class={[revealed ? 'stroke-ripple-muted-foreground' : secsLeft <= 3 ? 'stroke-ripple-warning' : 'stroke-ripple-accent', 'transition-[stroke-dashoffset] duration-200 ease-linear motion-reduce:transition-none']}
+										/>
+									</svg>
+									<span role="timer" aria-label="{secsLeft} seconds left" class="relative grid place-items-center text-footnote font-semibold tabular-nums">
+										{#if revealed && !secsLeft}<Clock size={14} strokeWidth={2} aria-hidden="true" />{:else}{secsLeft}{/if}
+									</span>
 								</div>
-							</div>
-
-							{#if revealed}
-								<div class="flex flex-col gap-3 @min-[480px]:flex-row @min-[480px]:items-center @min-[480px]:justify-between" in:rise>
-									<div class="flex min-w-0 flex-col gap-1" data-slot="feedback">
-										<p
-											class={[
-												'inline-flex items-center gap-1.5 text-body-emph',
-												picked === q.answer ? 'text-ripple-success-text' : 'text-ripple-error-text'
-											]}
-											data-slot="outcome"
-										>
-											{#if picked === q.answer}
-												<Check size={16} strokeWidth={2.5} aria-hidden="true" />Correct{streak > 1 ? `, ${streak} in a row` : ''}
-											{:else if picked === null}
-												<Clock size={16} strokeWidth={2.5} aria-hidden="true" />Time's up
-											{:else}
-												<X size={16} strokeWidth={2.5} aria-hidden="true" />Not quite
-											{/if}
-										</p>
-										{#if q.why}<p class="max-w-prose text-callout text-pretty text-ripple-muted-foreground" data-slot="why">{q.why}</p>{/if}
-									</div>
-									<button type="button" class={[primaryBtn, 'shrink-0']} data-slot="next" onclick={next}>
-										{at + 1 < total ? 'Next' : 'See results'}<ArrowRight size={16} strokeWidth={2} aria-hidden="true" />
-									</button>
-								</div>
-							{:else}
-								<p class="hidden text-center text-footnote text-ripple-muted-foreground @min-[480px]:block">
-									Press 1 to {Math.min(order.length, 5)} to answer, Enter for the next question.
-								</p>
 							{/if}
 						</div>
-					{/key}
+						<ol class={['flex gap-0.5', timed && 'mt-1.5']} aria-label="Progress" data-slot="rail">
+							{#each list as item, k (item.key)}
+								{@const a = k < answers.length ? answers[k] : undefined}
+								{@const mark = a === undefined ? (k === at ? 'now' : 'todo') : a === item.answer ? 'right' : 'wrong'}
+								<li
+									class={[
+										'h-1 min-w-0 flex-1 first:rounded-l-full last:rounded-r-full @min-[480px]:h-1.5',
+										mark === 'right' ? 'bg-ripple-success' : mark === 'wrong' ? 'bg-ripple-error' : mark === 'now' ? 'bg-ripple-accent' : 'bg-ripple-track'
+									]}
+									data-mark={mark}
+									aria-current={mark === 'now' ? 'step' : undefined}
+								>
+									<span class="sr-only">Question {k + 1}: {mark === 'right' ? 'right' : mark === 'wrong' ? 'wrong' : mark === 'now' ? 'current' : 'to do'}</span>
+								</li>
+							{/each}
+						</ol>
+					</div>
+
+					{#if waitingToStart}
+						<div class="flex flex-col items-center gap-3 py-4 text-center" data-slot="start">
+							<p class="text-callout text-pretty text-ripple-muted-foreground">Paused. The clock restarts when you resume.</p>
+							<button type="button" class={[primaryBtn, 'w-full max-w-72']} onclick={start}>
+								<Play size={16} strokeWidth={2} aria-hidden="true" />Resume
+							</button>
+						</div>
+					{:else}
+						{#key at}
+							<div class="flex flex-col gap-4" in:rise>
+								{#if hasPhoto}
+									{#if photoOk}
+										<PhotoTile src={safeUrl(q.image, { kind: 'resource' })} ratio="16:9" class="w-full max-w-[360px]" onerror={() => (failedPhoto = photoUrl)} />
+									{:else}
+										<p class="text-footnote text-pretty text-ripple-muted-foreground" data-slot="photo-note">The picture for this question did not load.</p>
+									{/if}
+								{/if}
+								<div class="flex min-w-0 flex-col gap-3">
+									<h3 id="{uid}-prompt" class={[q.prompt.length > 90 ? 'text-title-3' : 'text-title-2', 'font-semibold text-balance outline-none']} tabindex="-1" data-slot="prompt">{q.prompt}</h3>
+									<div
+										role="radiogroup"
+										aria-labelledby="{uid}-prompt"
+										class={['grid grid-cols-1 gap-2', cols === 2 && '@min-[480px]:auto-rows-fr @min-[480px]:grid-cols-2']}
+										data-slot="choices"
+										data-cols={cols}
+									>
+										{#each order as ci, pos (ci)}
+											{@const isRight = revealed && ci === q.answer}
+											{@const isWrongPick = revealed && ci === picked && ci !== q.answer}
+											<label
+												data-choice={ci}
+												data-state={isRight ? 'right' : isWrongPick ? 'wrong' : revealed ? 'idle' : 'open'}
+												class={[
+													'relative flex min-h-12 min-w-0 items-center gap-3 rounded-ripple border px-3 py-2.5 text-left transition-colors duration-150 ease-out motion-reduce:transition-none',
+													'has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ripple-ring',
+													isRight
+														? 'border-ripple-success bg-ripple-success/12'
+														: isWrongPick
+															? 'border-ripple-error bg-ripple-error/12'
+															: revealed
+																? 'border-ripple-border bg-ripple-surface-foreground/4 text-ripple-muted-foreground'
+																: 'cursor-pointer border-ripple-control-border bg-ripple-surface-foreground/4 hover:border-ripple-accent hover:bg-ripple-accent/6 has-[:focus-visible]:border-ripple-accent has-[:focus-visible]:bg-ripple-accent/6'
+												]}
+											>
+												<input
+													class="sr-only"
+													type="radio"
+													name={uid}
+													value={ci}
+													checked={revealed && ci === picked}
+													disabled={revealed}
+													aria-keyshortcuts={pos < 5 ? String(pos + 1) : undefined}
+													onchange={() => onChoiceChange(ci)}
+													onkeydown={(e) => onChoiceKey(e, ci)}
+													onkeyup={() => (arrowing = false)}
+												/>
+												<span
+													aria-hidden="true"
+													class={[
+														'grid size-6 shrink-0 place-items-center rounded-full text-footnote font-semibold tabular-nums',
+														isRight
+															? 'bg-ripple-success text-ripple-success-foreground'
+															: isWrongPick
+																? 'bg-ripple-error text-ripple-error-foreground'
+																: 'text-ripple-muted-foreground ring-1 ring-ripple-control-border ring-inset'
+													]}
+												>
+													{#if isRight}<Check size={14} strokeWidth={3} />{:else if isWrongPick}<X size={14} strokeWidth={3} />{:else}{pos + 1}{/if}
+												</span>
+												<span class={['flex min-w-0 flex-1 flex-col gap-0.5', cols === 1 && '@min-[480px]:flex-row @min-[480px]:items-center @min-[480px]:justify-between @min-[480px]:gap-3']}>
+													<span class="min-w-0 text-body-emph text-pretty">{q.choices[ci]}</span>
+													{#if isRight}
+														<span class="shrink-0 text-footnote font-medium text-ripple-success-text">{picked === ci ? 'Your pick, correct' : 'Correct answer'}</span>
+													{:else if isWrongPick}
+														<span class="shrink-0 text-footnote font-medium text-ripple-error-text">Your pick</span>
+													{/if}
+												</span>
+											</label>
+										{/each}
+									</div>
+								</div>
+
+								{#if revealed}
+									<div class="flex flex-col gap-3 @min-[480px]:flex-row @min-[480px]:items-center @min-[480px]:gap-6" in:rise>
+										<div class="flex min-w-0 flex-1 flex-col gap-1" data-slot="feedback">
+											<p
+												class={[
+													'inline-flex items-center gap-1.5 text-body-emph',
+													picked === q.answer ? 'text-ripple-success-text' : 'text-ripple-error-text'
+												]}
+												data-slot="outcome"
+											>
+												{#if picked === q.answer}
+													<Check size={16} strokeWidth={2.5} aria-hidden="true" />Correct{streak > 1 ? `, ${streak} in a row` : ''}
+												{:else if picked === null}
+													<Clock size={16} strokeWidth={2.5} aria-hidden="true" />Time's up
+												{:else}
+													<X size={16} strokeWidth={2.5} aria-hidden="true" />Not quite
+												{/if}
+											</p>
+											{#if q.why}<p class="max-w-prose text-callout text-pretty text-ripple-muted-foreground" data-slot="why">{q.why}</p>{/if}
+										</div>
+										<button type="button" class={[primaryBtn, 'w-full shrink-0 @min-[480px]:w-auto']} data-slot="next" onclick={next}>
+											{at + 1 < total ? 'Next' : 'See results'}<ArrowRight size={16} strokeWidth={2} aria-hidden="true" />
+										</button>
+									</div>
+								{/if}
+							</div>
+						{/key}
+					{/if}
 				{/if}
 			</section>
 		{/if}

@@ -1,0 +1,225 @@
+{
+  "version": "1.0",
+  "ui": {
+    "type": "card",
+    "props": {
+      "title": "Quote for Fernhill Bakery",
+      "description": "Edit quantities to update the quote"
+    },
+    "children": [
+      {
+        "type": "flex",
+        "props": {
+          "direction": "column",
+          "gap": "12px"
+        },
+        "children": [
+          {
+            "type": "each",
+            "items": "{state.lines}",
+            "children": [
+              {
+                "type": "flex",
+                "props": {
+                  "direction": "column",
+                  "gap": "6px"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "props": {
+                      "text": "{item.name} ({item.price} per {item.unit})",
+                      "weight": "semibold",
+                      "size": "sm"
+                    }
+                  },
+                  {
+                    "type": "grid",
+                    "props": {
+                      "columns": 2,
+                      "gap": "8px"
+                    },
+                    "children": [
+                      {
+                        "type": "number-input",
+                        "props": {
+                          "label": "Qty",
+                          "min": 0,
+                          "step": 1
+                        },
+                        "bind": "lines.{index}.qty"
+                      },
+                      {
+                        "type": "stat",
+                        "props": {
+                          "label": "Line total",
+                          "value": "{item.qty * item.price}",
+                          "format": "currency",
+                          "size": "sm"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "separator",
+            "props": {}
+          },
+          {
+            "type": "switch",
+            "props": {
+              "label": "Pay upfront for a discount"
+            },
+            "bind": "{state.upfront}"
+          },
+          {
+            "type": "slider",
+            "props": {
+              "label": "Upfront discount %",
+              "min": 0,
+              "max": 30,
+              "step": 1,
+              "showValue": true
+            },
+            "bind": "{state.discountPercent}"
+          },
+          {
+            "type": "slider",
+            "props": {
+              "label": "Sales tax %",
+              "min": 0,
+              "max": 20,
+              "step": 1,
+              "showValue": true
+            },
+            "bind": "{state.taxPercent}"
+          },
+          {
+            "type": "separator",
+            "props": {}
+          },
+          {
+            "type": "grid",
+            "props": {
+              "columns": 2,
+              "gap": "8px"
+            },
+            "children": [
+              {
+                "type": "stat",
+                "props": {
+                  "label": "Subtotal",
+                  "value": "{state.lines[0].qty * state.lines[0].price + state.lines[1].qty * state.lines[1].price + state.lines[2].qty * state.lines[2].price + state.lines[3].qty * state.lines[3].price}",
+                  "format": "currency",
+                  "size": "sm"
+                }
+              },
+              {
+                "type": "stat",
+                "props": {
+                  "label": "Upfront discount",
+                  "value": "{state.upfront * (state.lines[0].qty * state.lines[0].price + state.lines[1].qty * state.lines[1].price + state.lines[2].qty * state.lines[2].price + state.lines[3].qty * state.lines[3].price) * state.discountPercent / 100}",
+                  "format": "currency",
+                  "size": "sm"
+                }
+              },
+              {
+                "type": "stat",
+                "props": {
+                  "label": "Sales tax",
+                  "value": "{(state.lines[0].qty * state.lines[0].price + state.lines[1].qty * state.lines[1].price + state.lines[2].qty * state.lines[2].price + state.lines[3].qty * state.lines[3].price) * (1 - state.upfront * state.discountPercent / 100) * state.taxPercent / 100}",
+                  "format": "currency",
+                  "size": "sm"
+                }
+              },
+              {
+                "type": "stat",
+                "props": {
+                  "label": "Total",
+                  "value": "{(state.lines[0].qty * state.lines[0].price + state.lines[1].qty * state.lines[1].price + state.lines[2].qty * state.lines[2].price + state.lines[3].qty * state.lines[3].price) * (1 - state.upfront * state.discountPercent / 100) * (1 + state.taxPercent / 100)}",
+                  "format": "currency",
+                  "size": "md"
+                }
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "props": {
+              "text": "Valid for {state.validDays} days. Copywriting is optional: raise its quantity to add it.",
+              "size": "xs"
+            }
+          },
+          {
+            "type": "button",
+            "props": {
+              "label": "Send quote"
+            },
+            "on_click": {
+              "action": "flow",
+              "steps": [
+                {
+                  "action": "validate",
+                  "condition": "state.lines[0].qty * state.lines[0].price + state.lines[1].qty * state.lines[1].price + state.lines[2].qty * state.lines[2].price + state.lines[3].qty * state.lines[3].price > 0",
+                  "message": "Add at least one item before sending",
+                  "variant": "error"
+                },
+                {
+                  "action": "emit",
+                  "target": "send_quote",
+                  "value": {
+                    "client": "{state.client}",
+                    "lines": "{state.lines}",
+                    "upfront": "{state.upfront}",
+                    "total": "{(state.lines[0].qty * state.lines[0].price + state.lines[1].qty * state.lines[1].price + state.lines[2].qty * state.lines[2].price + state.lines[3].qty * state.lines[3].price) * (1 - state.upfront * state.discountPercent / 100) * (1 + state.taxPercent / 100)}"
+                  }
+                },
+                {
+                  "action": "toast",
+                  "message": "Quote sent to {state.client}",
+                  "variant": "success"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "state": {
+    "client": "Fernhill Bakery",
+    "upfront": true,
+    "discountPercent": 10,
+    "taxPercent": 8,
+    "validDays": 30,
+    "lines": [
+      {
+        "name": "Website page, design and build",
+        "unit": "page",
+        "qty": 5,
+        "price": 650
+      },
+      {
+        "name": "Logo refresh",
+        "unit": "flat",
+        "qty": 1,
+        "price": 900
+      },
+      {
+        "name": "Hosting and care plan",
+        "unit": "month",
+        "qty": 12,
+        "price": 35
+      },
+      {
+        "name": "Copywriting",
+        "unit": "page",
+        "qty": 0,
+        "price": 120
+      }
+    ]
+  }
+}

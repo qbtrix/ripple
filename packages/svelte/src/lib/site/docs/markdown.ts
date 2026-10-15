@@ -14,9 +14,16 @@
 //   an optional first line `%% caption: ...`, a figcaption. Parsing is checked
 //   by diagrams.test.ts, not here: mermaid needs a DOM. toPlainMarkdown (the
 //   .md and llms outputs) keeps the fence as written.
+// - parseFrontmatter expands `{{SITE_URL}}` and `{{SETUP_PROMPT}}` in the body,
+//   so the site host lives in one constant (model.ts) and the coding-agent
+//   prompt in one file (setup-prompt.ts). Every output (page, .md, llms) reads
+//   the body through it. A multi-line token shifts the line numbers of errors
+//   in fences after it; keep ripple fences above it or on other pages.
 // The HTML is ours (files in src/docs), so it is not sanitized.
 
 import { Marked, type Token, type Tokens } from 'marked';
+import { SITE_URL } from './model.js';
+import { SETUP_PROMPT } from '../setup-prompt.js';
 import { validateCatalog } from '$lib/widgets/validate-catalog-bound.js';
 import { escapeHtml } from './highlight.js';
 import { highlightCode } from './highlight-code.js';
@@ -38,6 +45,10 @@ export interface RenderedDoc {
 	headings: Heading[];
 }
 
+/** Fill the site-wide placeholders a docs page may use. */
+export const expandTokens = (body: string): string =>
+	body.replaceAll('{{SITE_URL}}', SITE_URL).replaceAll('{{SETUP_PROMPT}}', SETUP_PROMPT);
+
 /** Split `---` frontmatter (flat `key: value` lines) from the body. */
 export function parseFrontmatter(raw: string, file: string): { meta: DocMeta; body: string; bodyLine: number } {
 	const m = /^---\r?\n([\s\S]*?)\r?\n---\r?\n/.exec(raw);
@@ -50,7 +61,7 @@ export function parseFrontmatter(raw: string, file: string): { meta: DocMeta; bo
 	if (!fields.title || !fields.description) throw new Error(`${file}:1: frontmatter needs title and description`);
 	return {
 		meta: { title: fields.title, description: fields.description, order: Number(fields.order ?? 0) },
-		body: raw.slice(m[0].length),
+		body: expandTokens(raw.slice(m[0].length)),
 		bodyLine: m[0].split('\n').length
 	};
 }

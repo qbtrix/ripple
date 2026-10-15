@@ -3,12 +3,17 @@
   @description "Which should I pick": 2 to 6 items side by side (design doc
   2026-10-09 §3.2), on the data kit and the ripple tokens.
   Order: title, the verdict line, the best-pick card (`winner`, with its
-  reason, photo, price and runner-up), the other items as compact cards (photo,
-  price with its difference from the winner, `picks` tags, spec pills), then
-  the detailed comparison: section chips, a differences-only filter, and per
-  item cards below 720px of container width or a table with a sticky label
-  column at 720px+. A feature with `better` marks its best numeric cell (ties
-  mark all; non-finite values skip).
+  reason, photo, price, spec pills and runner-up), the other items as compact
+  cards (photo, price with its difference from the winner, `picks` tags, spec
+  pills), then the detailed comparison: section chips, a differences-only
+  filter, and a table (per-item cards below 720px only when `defaultView` is
+  "card" or the visitor picks them, since the cards above already list every
+  item). Under 560px each table row's label sits on its own line above the
+  values, so 3 items fit a ~300px card; 4+ scroll sideways by design. A
+  feature with `better` marks its best numeric cell (ties mark all; non-finite
+  values skip). Whole prices print without cents (`money` `whole`). Photo
+  tiles show only when some item has an image; an icon-less row gets a spacer
+  when other rows have icons.
   Choose is state only: it sets the bindable `chosen` id (bind contract
   `chosen` / `onchosenchange`) and calls `onchoose({id, name, product_id?})`,
   the hook a spec's `on_choose` reaches. Legacy item `actions` and `onselect`
@@ -104,7 +109,7 @@
 		secondaryLabel?: string;
 		showPrimary?: boolean;
 		showSecondary?: boolean;
-		/** View mode for the detailed grid below 720px until the visitor picks one. */
+		/** View mode for the detailed comparison below 720px until the visitor picks one. Default 'table'. */
 		defaultView?: 'card' | 'table';
 		showDiffToggle?: boolean;
 		onchoose?: (detail: { id: string; name: string; product_id?: string }) => void;
@@ -131,7 +136,7 @@
 		secondaryLabel = 'Learn more',
 		showPrimary = true,
 		showSecondary = true,
-		defaultView = 'card',
+		defaultView = 'table',
 		showDiffToggle = true,
 		onchoose,
 		onchosenchange,
@@ -207,7 +212,7 @@
 	const itemId = (item: CompareItem) => (typeof item.id === 'string' ? item.id : '');
 
 	function priceText(item: CompareItem): string {
-		if (finite(item.price) !== undefined) return money(item.price, currency);
+		if (finite(item.price) !== undefined) return money(item.price, currency, { whole: true });
 		return typeof item.price === 'string' ? plain(item.price) : '';
 	}
 
@@ -240,7 +245,7 @@
 		const b = finite(winnerItem.price);
 		if (a === undefined || b === undefined) return '';
 		const w = nameOf(winnerItem) || 'the best pick';
-		return a === b ? `Same price as ${w}` : `${money(a - b, currency, { sign: true })} vs ${w}`;
+		return a === b ? `Same price as ${w}` : `${money(a - b, currency, { sign: true, whole: true })} vs ${w}`;
 	}
 
 	// ── features ────────────────────────────────────────────────────────────
@@ -281,9 +286,10 @@
 		pickedSection !== null && sectionNames.includes(pickedSection) ? pickedSection : (sectionNames[0] ?? null)
 	);
 
-	// The visitor's pick wins; until then follow `defaultView`.
+	// The visitor's pick wins; until then follow `defaultView`. The table is the
+	// default because the cards above already list every item once.
 	let pickedView = $state<'card' | 'table' | null>(null);
-	const viewMode = $derived(pickedView ?? (defaultView === 'table' ? 'table' : 'card'));
+	const viewMode = $derived(pickedView ?? (defaultView === 'card' ? 'card' : 'table'));
 	let showDiffOnly = $state(false);
 
 	function isDifferent(f: CompareFeature): boolean {
@@ -295,6 +301,11 @@
 	const shownFeatures = $derived(
 		allFeatures.filter((f) => sectionOf(f) === activeSection && (!showDiffOnly || isDifferent(f)))
 	);
+
+	/** Photo tiles only when some item has a photo; a list without any shows none. */
+	const anyImage = $derived(list.some((i) => safeUrl(i.image, { kind: 'resource' }) !== undefined));
+	/** When any row has an icon, an icon-less row gets a same-size spacer so labels line up. */
+	const anyIcon = $derived(allFeatures.some((f) => typeof f.icon === 'string' && f.icon !== ''));
 
 	const highlightFeatures = $derived.by(() => {
 		const marked = allFeatures.filter((f) => f.highlight === true);
@@ -332,7 +343,7 @@
 			case 'boolean':
 				return yes(v) ? 'Yes' : 'No';
 			case 'price':
-				return finite(v) !== undefined ? money(v, currency) : txt(v);
+				return finite(v) !== undefined ? money(v, currency, { whole: true }) : txt(v);
 			case 'number':
 				return `${num(v)}${unit && finite(v) !== undefined ? ` ${unit}` : ''}`;
 			case 'rating':
@@ -389,10 +400,10 @@
 	const colsFor = (n: number) => (n <= 1 ? '' : (COLS[n] ?? '@min-[560px]:grid-cols-2 @min-[720px]:grid-cols-3'));
 </script>
 
-{#snippet itemName(item: CompareItem, cls: string, tag: 'h3' | 'span' = 'h3')}
+{#snippet itemName(item: CompareItem, cls: string, tag: 'h3' | 'span' = 'h3', wrap = false)}
 	{@const name = nameOf(item)}
 	{#if name}
-		<svelte:element this={tag} class={['block min-w-0 truncate', cls]}>{name}</svelte:element>
+		<svelte:element this={tag} class={['block min-w-0', wrap ? 'text-balance [overflow-wrap:anywhere]' : 'truncate', cls]}>{name}</svelte:element>
 	{:else if pending(item)}
 		<!-- A product_id the server has not hydrated yet: a placeholder, not a blank. -->
 		<svelte:element this={tag} class="block min-w-0" data-slot="name-pending">
@@ -449,12 +460,31 @@
 	{/if}
 {/snippet}
 
-{#snippet featureIcon(f: CompareFeature)}
+{#snippet featureIcon(f: CompareFeature, align = false)}
 	{#if typeof f.icon === 'string' && Object.hasOwn(FEATURE_ICONS, f.icon)}
 		{@const I = kindIcon(FEATURE_ICONS, f.icon)}
 		<I size={14} strokeWidth={1.75} aria-hidden="true" class="shrink-0" />
 	{:else if typeof f.icon === 'string' && f.icon}
 		<Icon name={f.icon} size={14} class="shrink-0" />
+	{:else if align && anyIcon}
+		<span class="size-3.5 shrink-0" aria-hidden="true" data-slot="icon-spacer"></span>
+	{/if}
+{/snippet}
+
+{#snippet specPills(item: CompareItem)}
+	{#if highlightFeatures.length > 0}
+		<div class="flex flex-wrap gap-1" data-slot="specs">
+			{#each highlightFeatures as f, fi (`${f.key}:${fi}`)}
+				{@const hv = val(item, f.key)}
+				{#if !missing(hv)}
+					<span class="inline-flex max-w-full items-center gap-1 rounded-md bg-ripple-muted px-1.5 py-0.5 text-footnote">
+						{@render featureIcon(f)}
+						<span class="text-ripple-muted-foreground">{labelOf(f)}</span>
+						<span class="truncate font-medium tabular-nums">{textOf(f, hv)}</span>
+					</span>
+				{/if}
+			{/each}
+		</div>
 	{/if}
 {/snippet}
 
@@ -528,9 +558,11 @@
 					isChosen(w) ? 'border-ripple-accent bg-ripple-accent/8' : 'border-ripple-accent/50 bg-ripple-surface'
 				]}
 			>
-				<!-- Photo | details; the actions sit under the photo below 560px, under the details from 560px. -->
-				<div class="grid grid-cols-[auto_minmax(0,1fr)] gap-3">
-					<PhotoTile src={safeUrl(w.image, { kind: 'resource' })} alt={nameOf(w)} icon={PackageIcon} class="w-14 self-start @min-[560px]:row-span-2 @min-[720px]:w-[72px]" />
+				<!-- Photo | details; the actions sit under the photo below 560px, under the details from 560px. No photo: one column. -->
+				<div class={anyImage ? 'grid grid-cols-[auto_minmax(0,1fr)] gap-3' : 'flex flex-col gap-3'}>
+					{#if anyImage}
+						<PhotoTile src={safeUrl(w.image, { kind: 'resource' })} alt={nameOf(w)} icon={PackageIcon} class="w-14 self-start @min-[560px]:row-span-2 @min-[720px]:w-[72px]" />
+					{/if}
 					<div class="flex min-w-0 flex-col gap-1">
 						<p class="flex items-center gap-1 text-caption-1 font-medium tracking-[0.04em] text-ripple-muted-foreground uppercase">
 							<AwardIcon size={12} strokeWidth={2} aria-hidden="true" class="text-ripple-accent" />Best pick
@@ -548,9 +580,10 @@
 						</div>
 						{#if reason}<p class="text-callout text-pretty" data-slot="reason">{reason}</p>{/if}
 						{@render tags(w)}
+						{@render specPills(w)}
 					</div>
 					{#if showPrimary || hasSecondary(w)}
-						<div class="col-span-2 @min-[560px]:col-span-1 @min-[560px]:col-start-2">{@render actions(w, true)}</div>
+						<div class={anyImage ? 'col-span-2 @min-[560px]:col-span-1 @min-[560px]:col-start-2' : undefined}>{@render actions(w, true)}</div>
 					{/if}
 				</div>
 				{#if runnerUp}
@@ -574,7 +607,9 @@
 						]}
 					>
 						<div class="flex gap-3">
-							<PhotoTile src={safeUrl(item.image, { kind: 'resource' })} alt={nameOf(item)} icon={PackageIcon} class="w-14 shrink-0 self-start" />
+							{#if anyImage}
+								<PhotoTile src={safeUrl(item.image, { kind: 'resource' })} alt={nameOf(item)} icon={PackageIcon} class="w-14 shrink-0 self-start" />
+							{/if}
 							<div class="min-w-0 flex-1">
 								{@render itemName(item, 'text-headline')}
 								{#if item.subtitle || item.chip}
@@ -589,20 +624,7 @@
 							</div>
 						</div>
 						{@render tags(item)}
-						{#if highlightFeatures.length > 0}
-							<div class="flex flex-wrap gap-1">
-								{#each highlightFeatures as f, fi (`${f.key}:${fi}`)}
-									{@const hv = val(item, f.key)}
-									{#if !missing(hv)}
-										<span class="inline-flex max-w-full items-center gap-1 rounded-md bg-ripple-muted px-1.5 py-0.5 text-footnote">
-											{@render featureIcon(f)}
-											<span class="text-ripple-muted-foreground">{labelOf(f)}</span>
-											<span class="truncate font-medium tabular-nums">{textOf(f, hv)}</span>
-										</span>
-									{/if}
-								{/each}
-							</div>
-						{/if}
+						{@render specPills(item)}
 						{@render actions(item, false)}
 					</li>
 				{/each}
@@ -667,7 +689,9 @@
 							{#each list as item, idx (`${item.id ?? ''}:${idx}`)}
 								<article class="min-w-0 overflow-hidden rounded-ripple border border-ripple-border bg-ripple-surface">
 									<header class="flex items-center gap-2.5 border-b border-ripple-border px-3 py-2">
-										<PhotoTile src={safeUrl(item.image, { kind: 'resource' })} alt={nameOf(item)} icon={PackageIcon} iconSize={14} class="w-8 shrink-0" />
+										{#if anyImage}
+											<PhotoTile src={safeUrl(item.image, { kind: 'resource' })} alt={nameOf(item)} icon={PackageIcon} iconSize={14} class="w-8 shrink-0" />
+										{/if}
 										<div class="min-w-0 flex-1">
 											{@render itemName(item, 'text-body-emph')}
 											{#if priceText(item)}<p class="truncate text-footnote tabular-nums text-ripple-muted-foreground">{priceText(item)}</p>{/if}
@@ -678,7 +702,7 @@
 										{#each shownFeatures as f, fi (`${f.key}:${fi}`)}
 											<div class="flex items-center justify-between gap-3 px-3 py-2 text-callout">
 												<dt class="flex min-w-0 items-center gap-1.5 text-ripple-muted-foreground">
-													{@render featureIcon(f)}<span class="truncate">{labelOf(f)}</span>
+													{@render featureIcon(f, true)}<span class="truncate">{labelOf(f)}</span>
 												</dt>
 												<dd class="min-w-0 text-right [overflow-wrap:anywhere]">{@render cell(f, item, idx)}</dd>
 											</div>
@@ -689,24 +713,27 @@
 						</div>
 					</div>
 
-					<!-- Table: always at 720px+; below that when picked. -->
+					<!-- Table: always at 720px+, and the default below it. Under 560px the label
+					     moves to a full-width line above its values, so three items fit a phone card. -->
 					<div class={viewMode === 'card' ? 'hidden @min-[720px]:block' : ''} data-view="table">
 						<div class="cmp-scroll overflow-x-auto rounded-ripple border border-ripple-border bg-ripple-surface">
-							<table class="w-full min-w-[420px] border-collapse text-callout">
+							<table class="cmp-table w-full border-collapse text-callout" style={safeStyle(`--cmp-n:${list.length}`)}>
 								<caption class="sr-only">{activeSection}</caption>
 								<thead>
 									<tr>
-										<th scope="col" class="cmp-sticky px-3 py-2 text-left align-bottom text-caption-1 font-medium tracking-[0.04em] text-ripple-muted-foreground uppercase">
+										<th scope="col" class="cmp-sticky hidden px-3 py-2 text-left align-bottom text-caption-1 font-medium tracking-[0.04em] text-ripple-muted-foreground uppercase @min-[560px]:table-cell">
 											{activeSection ?? ''}
 										</th>
 										{#each list as item, idx (`${item.id ?? ''}:${idx}`)}
 											<th
 												scope="col"
-												class={['border-l border-ripple-border px-3 py-2 text-center align-bottom font-normal', item === winnerItem && 'border-t-2 border-t-ripple-accent']}
+												class={['border-ripple-border px-2 py-2 text-center align-bottom font-normal @min-[560px]:px-3', idx > 0 ? 'border-l' : '@min-[560px]:border-l', item === winnerItem && 'border-t-2 border-t-ripple-accent']}
 											>
 												<div class="flex flex-col items-center gap-1">
-													<PhotoTile src={safeUrl(item.image, { kind: 'resource' })} alt="" icon={PackageIcon} iconSize={14} class="w-8" />
-													{@render itemName(item, 'text-body-emph', 'span')}
+													{#if anyImage}
+														<PhotoTile src={safeUrl(item.image, { kind: 'resource' })} alt="" icon={PackageIcon} iconSize={14} class="w-8" />
+													{/if}
+													{@render itemName(item, 'text-body-emph', 'span', true)}
 													{#if priceText(item)}<span class="text-footnote tabular-nums text-ripple-muted-foreground">{priceText(item)}</span>{/if}
 													{#if item === winnerItem}
 														<span class="inline-flex items-center gap-1 text-footnote font-medium"><AwardIcon size={12} strokeWidth={2} aria-hidden="true" class="text-ripple-accent" />Best pick</span>
@@ -716,18 +743,23 @@
 										{/each}
 									</tr>
 								</thead>
-								<tbody>
-									{#each shownFeatures as f, fi (`${f.key}:${fi}`)}
-										<tr class="border-t border-ripple-border">
-											<th scope="row" class="cmp-sticky px-3 py-2 text-left font-normal text-ripple-muted-foreground">
-												<span class="flex items-center gap-1.5">{@render featureIcon(f)}<span class="cmp-clamp-2">{labelOf(f)}</span></span>
+								{#each shownFeatures as f, fi (`${f.key}:${fi}`)}
+									<tbody class="border-t border-ripple-border">
+										<tr class="@min-[560px]:hidden" data-slot="row-label">
+											<th scope="rowgroup" colspan={list.length} class="px-2 pt-2 text-left text-footnote font-normal text-ripple-muted-foreground">
+												<span class="flex items-center gap-1.5">{@render featureIcon(f, true)}<span>{labelOf(f)}</span></span>
+											</th>
+										</tr>
+										<tr>
+											<th scope="row" class="cmp-sticky hidden px-3 py-2 text-left font-normal text-ripple-muted-foreground @min-[560px]:table-cell">
+												<span class="flex items-center gap-1.5">{@render featureIcon(f, true)}<span class="cmp-clamp-2">{labelOf(f)}</span></span>
 											</th>
 											{#each list as item, idx (`${item.id ?? ''}:${idx}`)}
-												<td class="border-l border-ripple-border px-3 py-2 text-center [overflow-wrap:anywhere]">{@render cell(f, item, idx)}</td>
+												<td class={['border-ripple-border px-2 pt-1 pb-2 text-center [overflow-wrap:anywhere] @min-[560px]:px-3 @min-[560px]:py-2', idx > 0 ? 'border-l' : '@min-[560px]:border-l']}>{@render cell(f, item, idx)}</td>
 											{/each}
 										</tr>
-									{/each}
-								</tbody>
+									</tbody>
+								{/each}
 							</table>
 						</div>
 					</div>
@@ -746,6 +778,17 @@
 	}
 	.cmp-scroll {
 		scrollbar-width: thin;
+	}
+	/* Up to 3 items fit a ~300px card in equal columns; more scroll sideways (designed). */
+	.cmp-table {
+		table-layout: fixed;
+		min-width: calc(var(--cmp-n, 3) * 5.5rem);
+	}
+	@container (min-width: 560px) {
+		.cmp-table {
+			table-layout: auto;
+			min-width: calc(7rem + var(--cmp-n, 3) * 6rem);
+		}
 	}
 	/* The label column stays put while the item columns scroll under it. */
 	.cmp-sticky {

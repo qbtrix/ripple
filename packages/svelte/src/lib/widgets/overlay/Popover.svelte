@@ -9,6 +9,8 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { cn } from '$lib/utils.js';
+  import { GHOST_TRIGGER } from '$lib/components/ui/trigger.js';
+  import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
   import * as Popover from '$lib/components/ui/popover/index.js';
   import NodeRenderer from '$lib/components/NodeRenderer.svelte';
 
@@ -48,11 +50,11 @@
 </script>
 
 <Popover.Root bind:open onOpenChange={onopenchange}>
-  <Popover.Trigger {id} class={cn(className)} style={styleString}>
+  <Popover.Trigger {id} class={cn(!children && isString(trigger) && GHOST_TRIGGER, className)} style={styleString}>
     {#if children}
       {@render children()}
     {:else if isString(trigger)}
-      {trigger}
+      {trigger}<ChevronDownIcon size={14} class="opacity-70" aria-hidden="true" />
     {:else if isSpec(trigger)}
       <NodeRenderer node={trigger} />
     {/if}

@@ -7,6 +7,7 @@ import { manifestEntries } from '$lib/manifest/index.js';
 import { findNode, variantAxes } from '$lib/site/docs/props.js';
 import {
 	categoryTitle,
+	PAGE_NOTES,
 	pageSpecs,
 	rows,
 	sourceUrl,
@@ -55,6 +56,7 @@ export const load: PageServerLoad = ({ params }) => {
 		events,
 		nodeFields,
 		headings,
+		note: PAGE_NOTES[e.type] ?? null,
 		source: sourceUrl(e.type),
 		markdown: widgetMarkdown(e),
 		...widgetPrevNext(e.type)

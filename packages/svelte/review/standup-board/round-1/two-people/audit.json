@@ -1,0 +1,83 @@
+{
+  "spec": "/Users/prakash-1/Documents/paw-workspace/paw-worktrees/ripple-feat-standup-board/packages/svelte/review/standup-board/specs/two-people.json",
+  "base": "http://localhost:4820",
+  "url": "http://localhost:4820/playground?s=…(683 chars)",
+  "specStatus": "Valid, 1 node, 748 B",
+  "clean": true,
+  "counts": {
+    "notRendered": 0,
+    "themeNotApplied": 0,
+    "errorBoxes": 0,
+    "consoleErrors": 0,
+    "overflow": 0,
+    "clippedText": 0,
+    "emptyContainers": 0,
+    "badText": 0,
+    "axeViolations": null
+  },
+  "consoleErrors": [],
+  "axe": null,
+  "axeHint": "axe-core is not installed: npm i -D axe-core (or set RIPPLE_AXE=/path/to/axe.min.js)",
+  "shots": [
+    {
+      "file": "/Users/prakash-1/Documents/paw-workspace/paw-worktrees/ripple-feat-standup-board/packages/svelte/review/standup-board/round-1/two-people/380-light.png",
+      "width": 380,
+      "theme": "light",
+      "rendered": true,
+      "themeApplied": true,
+      "surfaces": 1,
+      "surfaceWidth": 322,
+      "surfaceHeight": 472,
+      "errorBoxes": [],
+      "overflow": [],
+      "clippedText": [],
+      "emptyContainers": [],
+      "badText": []
+    },
+    {
+      "file": "/Users/prakash-1/Documents/paw-workspace/paw-worktrees/ripple-feat-standup-board/packages/svelte/review/standup-board/round-1/two-people/1024-light.png",
+      "width": 1024,
+      "theme": "light",
+      "rendered": true,
+      "themeApplied": true,
+      "surfaces": 1,
+      "surfaceWidth": 623,
+      "surfaceHeight": 354,
+      "errorBoxes": [],
+      "overflow": [],
+      "clippedText": [],
+      "emptyContainers": [],
+      "badText": []
+    },
+    {
+      "file": "/Users/prakash-1/Documents/paw-workspace/paw-worktrees/ripple-feat-standup-board/packages/svelte/review/standup-board/round-1/two-people/380-dark.png",
+      "width": 380,
+      "theme": "dark",
+      "rendered": true,
+      "themeApplied": true,
+      "surfaces": 1,
+      "surfaceWidth": 322,
+      "surfaceHeight": 472,
+      "errorBoxes": [],
+      "overflow": [],
+      "clippedText": [],
+      "emptyContainers": [],
+      "badText": []
+    },
+    {
+      "file": "/Users/prakash-1/Documents/paw-workspace/paw-worktrees/ripple-feat-standup-board/packages/svelte/review/standup-board/round-1/two-people/1024-dark.png",
+      "width": 1024,
+      "theme": "dark",
+      "rendered": true,
+      "themeApplied": true,
+      "surfaces": 1,
+      "surfaceWidth": 623,
+      "surfaceHeight": 354,
+      "errorBoxes": [],
+      "overflow": [],
+      "clippedText": [],
+      "emptyContainers": [],
+      "badText": []
+    }
+  ]
+}

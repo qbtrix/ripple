@@ -69,7 +69,7 @@ export const modelViewerEntry: WidgetManifestEntry = {
     shadowIntensity: {
       type: 'number',
       required: false,
-      description: 'Strength of the contact shadow under the model (0 to 1).',
+      description: 'Strength of the contact shadow under the model (0 to 1). Default 1.',
     },
   },
   events: {

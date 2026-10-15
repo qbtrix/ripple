@@ -10,5 +10,5 @@ export const iconEntry: WidgetManifestEntry = {
     strokeWidth: { type: 'number', required: false, description: 'Stroke width. Default 2.' },
     color: { type: 'string', required: false, description: 'Icon color (CSS color).' },
   },
-  example: { type: 'icon', props: { name: 'check-circle', size: 24, color: '#10b981' } },
+  example: { type: 'icon', props: { name: 'check-circle', size: 24 } },
 };

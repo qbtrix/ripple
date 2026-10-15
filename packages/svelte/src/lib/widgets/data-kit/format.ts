@@ -18,12 +18,29 @@ export function finite(v: unknown): number | undefined {
 	return typeof n === 'number' && Number.isFinite(n) ? n : undefined;
 }
 
-/** A plain number for display; non-finite input renders 'n/a'. */
-export function num(v: unknown, opts: { locale?: string; digits?: number } = {}): string {
+/** A percentage from 42, "42" or "42%", clamped to 0..100; anything else is undefined. */
+export function percent(v: unknown): number | undefined {
+	const n = finite(typeof v === 'string' ? v.trim().replace(/%$/, '') : v);
+	return n === undefined ? undefined : Math.min(100, Math.max(0, n));
+}
+
+/**
+ * A plain number for display; non-finite input renders 'n/a'. `sign: true`
+ * prints '+4' / '-4' / '0' for deltas; `compact: true` prints '12.8M'.
+ */
+export function num(
+	v: unknown,
+	opts: { locale?: string; digits?: number; sign?: boolean; compact?: boolean } = {}
+): string {
 	const n = finite(v);
 	if (n === undefined) return 'n/a';
+	const o: Intl.NumberFormatOptions = {
+		maximumFractionDigits: opts.digits ?? (opts.compact ? 1 : 2),
+		signDisplay: opts.sign ? 'exceptZero' : 'auto',
+		...(opts.compact ? { notation: 'compact' } : {})
+	};
 	try {
-		return new Intl.NumberFormat(opts.locale, { maximumFractionDigits: opts.digits ?? 2 }).format(n);
+		return new Intl.NumberFormat(opts.locale, o).format(n);
 	} catch {
 		return String(n);
 	}
@@ -40,15 +57,20 @@ export function sum(values: unknown): number {
  * Money through Intl. `currency` is ISO 4217 from the widget (default USD);
  * a malformed code or locale falls back to USD instead of throwing a
  * RangeError into the widget. `sign: true` prints '+$8.00' for deltas.
+ * `whole: true` drops the cents of a whole amount ('$1,890', still '$19.50'),
+ * the way pricing-table prints prices; bills and invoices keep the cents.
+ * `compact: true` prints '$45.2K' for a narrow tile.
  */
 export function money(
 	v: unknown,
 	currency: unknown = 'USD',
-	opts: { locale?: string; sign?: boolean } = {}
+	opts: { locale?: string; sign?: boolean; whole?: boolean; compact?: boolean } = {}
 ): string {
 	const n = finite(v);
 	if (n === undefined) return 'n/a';
 	const base: Intl.NumberFormatOptions = { style: 'currency', signDisplay: opts.sign ? 'exceptZero' : 'auto' };
+	if (opts.whole && Number.isInteger(n)) Object.assign(base, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+	if (opts.compact) Object.assign(base, { notation: 'compact', minimumFractionDigits: 0, maximumFractionDigits: 1 });
 	const code = typeof currency === 'string' && currency.trim() ? currency.trim().toUpperCase() : 'USD';
 	try {
 		return new Intl.NumberFormat(opts.locale, { ...base, currency: code }).format(n);
@@ -66,6 +88,9 @@ export function plain(v: unknown): string {
 	return asText(v)
 		.replace(/\*\*([^*\s](?:[^*]*[^*\s])?)\*\*/g, '$1')
 		.replace(/__([^_\s](?:[^_]*[^_\s])?)__/g, '$1')
+		// Single *x* and _x_ emphasis, only at word edges: 2*3*4 and snake_case_names stay.
+		.replace(/(^|[^\w*])\*([^*\s](?:[^*]*[^*\s])?)\*(?![\w*])/g, '$1$2')
+		.replace(/(^|[^\w_])_([^_\s](?:[^_]*[^_\s])?)_(?![\w_])/g, '$1$2')
 		.replace(/^[ \t]*- +/gm, '')
 		.trim();
 }

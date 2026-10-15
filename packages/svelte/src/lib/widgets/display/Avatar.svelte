@@ -14,10 +14,11 @@
       reads as an intentional placeholder in light/dark.
 -->
 <script lang="ts">
-  import { safeUrl } from '@ripple-ui/core';
+  import { safeStyle, safeUrl } from '@ripple-ui/core';
   import { cn } from '$lib/utils.js';
   import * as Avatar from '$lib/components/ui/avatar/index.js';
   import { asText } from '$lib/widgets/text-coerce';
+  import { nameTint } from '$lib/widgets/data-kit/tint.js';
 
   interface Props {
     id?: string;
@@ -61,7 +62,10 @@
   style={styleString}
 >
   <Avatar.Image src={safeUrl(src, { kind: 'resource' })} {alt} />
-  <Avatar.Fallback class="bg-muted text-muted-foreground font-medium tracking-tight">
+  <Avatar.Fallback
+    class="bg-ripple-track text-ripple-muted-foreground font-medium tracking-tight"
+    style={safeStyle(initials ? nameTint(asText(alt) || initials) : '')}
+  >
     {#if initials}
       {initials}
     {:else}

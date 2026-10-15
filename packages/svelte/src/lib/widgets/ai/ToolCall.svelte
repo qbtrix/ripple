@@ -1,37 +1,18 @@
 <!--
-  @file widgets/ai/ToolCall.svelte
-  @description NEW (AI-native tier, 2026-06-24). An agent tool-invocation card —
-    the unit a generative-UI engine renders for each tool an agent calls. Shows
-    the tool name + an icon, a status badge (pending | running | success |
-    error), a collapsible args block (formatted JSON / kv), a collapsible
-    result/output (markdown or code), and optional durationMs + relative time.
-    Default collapsed on success; auto-expanded on error so failures are never
-    hidden behind a click.
-  @a11y A real button disclosure carries aria-expanded and controls the body
-    via aria-controls. Status is conveyed by TEXT + icon, never color alone.
-    The collapsed body is `inert` so its content leaves the accessibility tree.
-    The header chip's hover preview is a convenience only — the same arguments
-    are reachable by expanding the disclosure from the keyboard.
-  Modified: 2026-06-28 — forward node id (data-ripple-node) for visual-editor selection.
-  Modified: 2026-09-14 — re-skinned on beautiful-ui. The header gains the source's
-    inline argument CHIP, whose overflow opens a HoverCard from ./ui (the source
-    hand-rolled a createPortal for this; ripple has an overlay canonical). The
-    status glyph swaps to a chevron on hover, the way the source's tool rows do.
-    The body height-animates via grid-template-rows instead of snapping, and the
-    frame moves onto ripple surface/border tokens. Props and events are untouched.
-  Modified: 2026-09-16 — the ENTRY MOTION the first pass never wrote. The card
-    fades up on the source's row timing (300ms), and the inline argument chip
-    pops in on the source's chip timing (250ms). A list of these — ApprovalGate
-    renders one per proposed call — staggers 80ms apart, driven by an `--i`
-    custom property the caller sets on `style`; with no `--i` a lone card falls
-    back to 0 and simply fades up. Same mechanism TaskRows uses for its rows, and
-    it needs no new prop.
+  ToolCall.svelte: an agent tool-invocation card. The header is one row,
+  always: status glyph (it swaps to a chevron on hover or when open), the tool
+  name (truncates first), the argument chip right after it (its HoverCard shows
+  the full arguments), then duration, time and a status badge. Under a 420px
+  card the chip and the time drop out; duration and status stay. The body
+  (args, result, error) height-animates via grid-template-rows; it starts
+  collapsed on success and open on error, so failures are never hidden.
+  Status-coloured text uses the readable text tokens; raw tones are fills.
+  Entry motion: the card fades up (300ms), the chip pops in (250ms), and a
+  caller-set `--i` staggers a list of cards 80ms apart.
+  a11y: a real button disclosure (aria-expanded, aria-controls); status is
+  text plus icon, never colour alone; the collapsed body is inert. The node id
+  is forwarded (data-ripple-node) for editor selection.
   origin: slev12397/beautiful-ui@ff0f74d components/primitives/ToolChips.tsx
-  2026-09-17 (fix/port-gaps): status-coloured text moved onto the readable
-  text tokens (text-ripple-{error,success,warning,info}-text; red text that
-  read text-destructive now reads text-ripple-error-text, the same hue since
-  --ripple-error aliases --destructive). The raw tones are fill colours and
-  measured 1.7-3.3:1 as text in light mode. Fills and tints are unchanged.
 -->
 <script lang="ts">
   import { cn } from '$lib/utils.js';
@@ -175,17 +156,20 @@
   )}
   style={styleString}
 >
-  <div class="flex items-center gap-2 px-2.5 py-1.5">
+  <!-- One header row, always: a grid of the name cluster (minmax(0,1fr), so
+       the name truncates first) and the meta group (auto). The argument chip
+       sits right after the name. Under a 420px card the chip and the
+       timestamp drop out; duration and status stay. -->
+  <div class="@container">
+  <div class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-2.5 py-1.5">
+    <div class="flex min-w-0 items-center gap-2">
     <button
       type="button"
       aria-expanded={isOpen}
       aria-controls={bodyId}
       onclick={toggle}
       class={cn(
-        'group -mx-1 flex min-w-0 shrink items-center gap-2 rounded-md px-1 py-0.5 text-left transition-colors duration-100 hover:bg-ripple-accent/10',
-        // With no chip there is nothing else competing for the row, so the
-        // disclosure keeps the full-width hit area it had before the re-skin.
-        !chipText && 'flex-1'
+        'group -mx-1 flex min-w-0 shrink items-center gap-2 rounded-md px-1 py-0.5 text-left transition-colors duration-100 hover:bg-ripple-accent/10'
       )}
     >
       <!-- The source's trick: the glyph gives way to a chevron on hover/open. -->
@@ -222,7 +206,7 @@
       <!-- The chip pops in on the source's chip timing. It sits on this wrapper
            rather than on the trigger: the trigger is rendered by bits-ui, so
            styling it from here would need a :global escape. -->
-      <div class="ripple-tool-pop-in min-w-0 flex-1">
+      <div class="ripple-tool-pop-in hidden max-w-[45%] min-w-0 shrink-0 @min-[420px]:block">
         <HoverCard.Root openDelay={120} closeDelay={80}>
           <!-- tabindex: the trigger renders an <a> with no href, which bits-ui
                stamps role="button" + aria-expanded and wires onfocus/onblur to.
@@ -245,7 +229,9 @@
         </HoverCard.Root>
       </div>
     {/if}
+    </div>
 
+    <div class="flex shrink-0 items-center gap-2">
     {#if duration}
       <span
         class="inline-flex shrink-0 items-center gap-1 text-[11px] tabular-nums text-ripple-muted-foreground"
@@ -254,7 +240,7 @@
       </span>
     {/if}
     {#if time}
-      <span class="shrink-0 text-[11px] text-ripple-muted-foreground">{time}</span>
+      <span class="hidden shrink-0 text-[11px] text-ripple-muted-foreground @min-[420px]:inline">{time}</span>
     {/if}
 
     <span
@@ -265,6 +251,8 @@
     >
       {statusMeta.label}
     </span>
+    </div>
+  </div>
   </div>
 
   <!-- The height animation: body stays mounted, the grid row goes 0fr → 1fr. -->

@@ -178,6 +178,10 @@ const DEFAULT_BIND_WIDGETS: ReadonlySet<string> = new Set([
   'week-schedule', 'weekly-schedule', 'timetable',
   // agenda binds its items as edited ([{ id, title, owner, minutes, notes, done }])
   'agenda', 'meeting-agenda', 'run-of-show',
+  // standup-board binds the viewer's resolves ({ resolved: person ids })
+  'standup-board', 'standup', 'team-standup',
+  // figure binds its slider values ({ [param]: number }), written when one moves
+  'figure',
 ]);
 
 const warnedTypes = new Set<string>();

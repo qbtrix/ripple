@@ -1,9 +1,7 @@
 <!-- src/lib/widgets/display/Trend.svelte -->
 <script lang="ts">
-  import { cn } from '$lib/utils.js';
-  import ArrowUpIcon from '@lucide/svelte/icons/arrow-up';
-  import ArrowDownIcon from '@lucide/svelte/icons/arrow-down';
-  import MinusIcon from '@lucide/svelte/icons/minus';
+  import Delta from '$lib/widgets/data-kit/Delta.svelte';
+  import { money, num } from '$lib/widgets/data-kit/format.js';
 
   type Format = 'percent' | 'number' | 'currency';
 
@@ -32,39 +30,13 @@
 
   const sign = $derived(numeric > 0 ? 'up' : numeric < 0 ? 'down' : 'flat');
 
-  const toneClass = $derived(
-    sign === 'up' ? 'text-emerald-600 dark:text-emerald-400'
-    : sign === 'down' ? 'text-rose-600 dark:text-rose-400'
-    : 'text-muted-foreground'
-  );
 
-  const formatted = $derived.by(() => {
-    const abs = Math.abs(numeric);
-    if (format === 'percent') return `${numeric > 0 ? '+' : numeric < 0 ? '-' : ''}${abs.toFixed(precision)}%`;
-    if (format === 'currency') {
-      try {
-        return new Intl.NumberFormat(undefined, {
-          style: 'currency',
-          currency,
-          maximumFractionDigits: precision
-        }).format(numeric);
-      } catch {
-        return `${numeric > 0 ? '+' : numeric < 0 ? '-' : ''}${abs.toFixed(precision)}`;
-      }
-    }
-    return `${numeric > 0 ? '+' : numeric < 0 ? '-' : ''}${abs.toFixed(precision)}`;
-  });
+  // One number style: format.ts, signed, no forced decimals ('+$2,400', '0', '+12.4%').
+  const formatted = $derived(
+    format === 'currency'
+      ? money(numeric, currency, { sign: true, whole: true })
+      : `${num(numeric, { digits: precision, sign: true })}${format === 'percent' ? '%' : ''}`
+  );
 </script>
 
-<span {id} class={cn('inline-flex items-center gap-0.5 text-xs font-medium tabular-nums', toneClass, className)} style={styleString}>
-  {#if arrow}
-    {#if sign === 'up'}
-      <ArrowUpIcon size={12} />
-    {:else if sign === 'down'}
-      <ArrowDownIcon size={12} />
-    {:else}
-      <MinusIcon size={12} />
-    {/if}
-  {/if}
-  <span>{formatted}</span>
-</span>
+<Delta text={formatted} dir={sign === 'flat' ? 'neutral' : sign} {arrow} class={className} {id} style={styleString} />
