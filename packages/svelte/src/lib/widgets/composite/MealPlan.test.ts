@@ -255,7 +255,7 @@ describe('meal-plan: the week', () => {
 	it('summarises a closed day in slot order and marks a ref not in recipes', () => {
 		const days: PlanDay[] = [
 			{ day: 'Mon', meals: [{ slot: 'breakfast', recipe: 'oats' }] },
-			{ day: 'Tue', meals: [{ slot: 'brunch', recipe: 'leftover-pizza' }, { slot: 'dinner', recipe: 'chili' }, { slot: 'breakfast', recipe: 'oats' }] }
+			{ day: 'Tue', meals: [{ slot: 'brunch' as never, recipe: 'leftover-pizza' }, { slot: 'dinner', recipe: 'chili' }, { slot: 'breakfast', recipe: 'oats' }] }
 		];
 		const { container } = render(MealPlan, { props: { people: 2, recipes: recipes(), days } });
 		const summary = container.querySelector('[data-day="Tue"] [data-slot="summary"]')!;

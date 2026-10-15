@@ -136,7 +136,7 @@ describe('weather-forecast: behaviour', () => {
 
 	it('keeps bar positions and colours when the unit toggles, keeps the now dot on the track, and dots a flat day', async () => {
 		const { container } = render(WeatherForecast, {
-			props: { place: 'Lisbon', now: { temp: 9, condition: 'rain' }, days: [...days, { day: 'Thu', high: 15, low: 15 }] }
+			props: { place: 'Lisbon', now: { temp: 9, condition: 'rain' }, days: [...days, { day: 'Thu', high: 15, low: 15 } as never] }
 		});
 		const styles = () => [...container.querySelectorAll('.wf-track')].map((e) => e.getAttribute('style'));
 		const before = styles();
