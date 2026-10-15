@@ -163,6 +163,9 @@
 		font-size: 14px;
 		color: var(--site-soft);
 	}
+	.matches {
+		white-space: nowrap;
+	}
 	.none {
 		margin-top: 32px;
 	}
