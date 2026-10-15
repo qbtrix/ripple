@@ -6,12 +6,12 @@
 
   Anatomy: optional title (text-headline, two lines then an ellipsis, full
   text in `title`), a muted summary line (`120 from Landing · most end at
-  Active (70, 58%)`; two lines under 480px), the plot, a one-line readout and,
-  only when something was not drawn, a footnote. No inner frame: the card is
+  Active (70, 58%)`), the plot, a readout and, only when something was not
+  drawn, a footnote; under 480px those three lines may wrap to two. No inner frame: the card is
   the only one.
 
-  Layout follows the measured plot width: 480px and up runs left to right;
-  under 480px, or with `orient: "vertical"`, ranks are rows top to bottom with
+  Layout follows the measured plot width: 480px and up runs left to right,
+  each label just before its own bar; under 480px, or with `orient: "vertical"`, ranks are rows top to bottom with
   each label under its bar. The SVG uses a viewBox at the laid-out width and
   labels sit at a percent of it, so the SSR frame (laid out at 640px) never
   scrolls sideways. `height` is a max: past it the plot scrolls inside the
@@ -20,9 +20,9 @@
   Colour, one hue from tokens only: nodes are solid --ripple-accent; bands are
   the accent at BAND% over the card (more in dark, under .dark or
   data-theme="dark"), LIT% when focused, the rest dimmed to DIM; the remainder
-  stub ("35 stop here") is --ripple-track with a muted figure; a chip placed
-  away from its bar or stub gets a muted 1px leader back to it. Labels are HTML
-  on a surface chip, so ink always comes from tokens and the theme flips live.
+  stub ("35 stop here") is --ripple-track with a muted figure at its free end.
+  Labels are HTML on a surface chip, so ink always comes from tokens and the
+  theme flips live.
   status-text.test.ts measures the band and node pairs on both themes.
 
   Interaction: hover, tap or keyboard focus on a node, or hover or tap on a
@@ -52,7 +52,6 @@
 		layout,
 		nodeReadout,
 		nodeName,
-		nodeFigure,
 		linkReadout,
 		restReadout,
 		parseHeight,
@@ -215,11 +214,6 @@
 					{#each L.nodes as nd (nd.i)}
 						<rect class="sk-node" x={nd.x} y={nd.y} width={nd.w} height={nd.h} rx="2" />
 					{/each}
-					{#each L.labels as lb (lb.key)}
-						{#if lb.lines && lb.lead}
-							<line class="sk-lead" x1={lb.lead[0]} y1={lb.lead[1]} x2={lb.lead[2]} y2={lb.lead[3]} />
-						{/if}
-					{/each}
 				</svg>
 
 				{#each tabOrder as nd (nd.i)}
@@ -263,7 +257,13 @@
 							onblur={() => (active = null)}
 						>
 							<span class="sk-name" aria-hidden="true" title={g.nodes[nd.i].name}>{g.nodes[nd.i].name}</span>
-							<span class="sk-fig" aria-hidden="true" title={nodeFigure(st, nd.i)}>{lb.fig}</span>
+							{#if lb.lines === 3}
+								{#each lb.fig.split(' · ') as part, k (k)}
+									<span class="sk-fig" aria-hidden="true">{part}</span>
+								{/each}
+							{:else if lb.fig}
+								<span class="sk-fig" aria-hidden="true">{lb.fig}</span>
+							{/if}
 						</button>
 					{:else}
 						<button
@@ -362,7 +362,9 @@
 	}
 	/* A phone card gets two lines for the answer instead of losing its end. */
 	@container (max-width: 479px) {
-		.sk-summary {
+		.sk-summary,
+		.sk-readout,
+		.sk-note {
 			white-space: normal;
 			display: -webkit-box;
 			-webkit-box-orient: vertical;
@@ -404,11 +406,6 @@
 	}
 	.sk-stub {
 		fill: var(--ripple-track);
-	}
-	.sk-lead {
-		stroke: var(--ripple-muted-foreground);
-		stroke-width: 1;
-		vector-effect: non-scaling-stroke;
 	}
 	.sk-band {
 		fill: color-mix(in oklab, var(--ripple-accent) var(--sk-band), transparent);
