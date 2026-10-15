@@ -983,10 +983,6 @@
 		/* A card can be wider than a phone: it scrolls inside itself, never clips. */
 		overflow-x: auto;
 	}
-	/* Map cards: OSM tiles darkened on the dark theme, as TrackCard does; markers and paths keep their color. */
-	:global(.dark) .card-ui :global(.leaflet-tile-pane) {
-		filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9);
-	}
 	.peek {
 		min-height: 0;
 		min-width: 0;

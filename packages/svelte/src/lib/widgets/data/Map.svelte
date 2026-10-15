@@ -24,6 +24,12 @@
   default is `carto-voyager`; a page whose CSP only allows OSM calls
   setMapDefaultTiles('osm') once at startup. All Leaflet imports are dynamic so the widget is SSR-safe and only pulls the
   ~42 KB library in when the widget actually mounts.
+
+  Theme: the map owns its dark look. Under a `.dark` or `data-theme="dark"`
+  ancestor the tile pane is inverted (markers and paths keep their colour), and
+  the zoom buttons, attribution, pins and labels wear --ripple-* tokens in both
+  themes, so a host never patches Leaflet from outside (a second invert would
+  turn the tiles light again).
 -->
 <script lang="ts" module>
   export type TilePreset = 'osm' | 'carto-voyager' | 'carto-light' | 'carto-dark' | 'osm-hot' | 'custom';
@@ -540,11 +546,53 @@
   .rmap {
     position: relative;
     width: 100%;
-    border-radius: 12px;
+    border-radius: var(--ripple-radius, 12px);
     overflow: hidden;
-    border: 1px solid var(--border);
-    background: var(--muted);
+    border: 1px solid var(--ripple-border);
+    background: var(--ripple-muted);
     z-index: 0;
+  }
+
+  /* Dark theme: darken the tiles only. */
+  :global(.dark) .rmap :global(.leaflet-tile-pane),
+  :global([data-theme='dark']) .rmap :global(.leaflet-tile-pane) {
+    filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9);
+  }
+
+  /* Leaflet chrome on tokens; these out-specify leaflet.css's own colours. */
+  .rmap :global(.leaflet-bar) {
+    border: 1px solid var(--ripple-border);
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    overflow: hidden;
+  }
+  .rmap :global(.leaflet-bar a) {
+    width: 28px;
+    height: 28px;
+    line-height: 28px;
+    font-size: 16px;
+    background: var(--ripple-surface);
+    color: var(--ripple-surface-foreground);
+    border-bottom: 1px solid var(--ripple-border);
+  }
+  .rmap :global(.leaflet-bar a:last-child) {
+    border-bottom: 0;
+  }
+  .rmap :global(.leaflet-bar a:hover) {
+    background: var(--ripple-muted);
+  }
+  .rmap :global(.leaflet-bar a.leaflet-disabled) {
+    background: var(--ripple-surface);
+    color: var(--ripple-muted-foreground);
+  }
+  .rmap :global(.leaflet-control-attribution) {
+    background: color-mix(in oklab, var(--ripple-surface) 85%, transparent);
+    color: var(--ripple-muted-foreground);
+    font-size: 10px;
+    line-height: 1.4;
+  }
+  .rmap :global(.leaflet-control-attribution a) {
+    color: var(--ripple-accent-text);
   }
 
   /* Markers — divIcon-based to avoid Leaflet's default-icon path issues */
@@ -563,26 +611,26 @@
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    border: 2px solid white;
+    border: 2px solid var(--ripple-surface);
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
   }
   :global(.rmap-pin-icon) {
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    border: 2px solid white;
+    border: 2px solid var(--ripple-surface);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
     display: inline-block;
   }
   :global(.rmap-pin-label) {
     margin-top: 4px;
     padding: 1px 6px;
-    background: var(--background);
-    color: var(--foreground);
+    background: var(--ripple-surface);
+    color: var(--ripple-surface-foreground);
     font-size: 11px;
     font-weight: 500;
     border-radius: 4px;
-    border: 1px solid var(--border);
+    border: 1px solid var(--ripple-border);
     white-space: nowrap;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
   }
@@ -624,12 +672,12 @@
     position: absolute;
     bottom: -22px;
     padding: 1px 6px;
-    background: var(--background);
-    color: var(--foreground);
+    background: var(--ripple-surface);
+    color: var(--ripple-surface-foreground);
     font-size: 11px;
     font-weight: 500;
     border-radius: 4px;
-    border: 1px solid var(--border);
+    border: 1px solid var(--ripple-border);
     white-space: nowrap;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
   }
@@ -644,5 +692,12 @@
   }
   @keyframes rmap-flow {
     to { stroke-dashoffset: -32; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :global(.rmap-tracker-pulse),
+    :global(.rmap-path-animated) {
+      animation: none;
+    }
   }
 </style>
