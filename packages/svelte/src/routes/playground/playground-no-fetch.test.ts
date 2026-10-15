@@ -96,6 +96,7 @@ test('the page keeps its h1 after the first turn, and Replay keeps the size and 
 	const valid = () => view.getByText(/^Valid, /).textContent;
 	await waitFor(() => expect(valid()).toMatch(/ B$/));
 	const before = [meta(), valid()];
+	expect(meta()).toMatch(/^\d+ B · \d+ lines$/);
 
 	const replay = view.getByRole('button', { name: 'Replay' });
 	await fireEvent.click(replay);

@@ -147,7 +147,7 @@
 				<span class="flash" data-ok={flash.ok} role="status">{flash.what}</span>
 			{:else if version}
 				<span class="meta" title="{formatBytes(byteLength(text))} · {lineCount} lines, {status}"
-					>{formatBytes(byteLength(text))}<span class="lines"> · {lineCount} lines</span></span
+					>{formatBytes(byteLength(text))}<span class="lines">{' · '}{lineCount} lines</span></span
 				>
 			{/if}
 		</span>
