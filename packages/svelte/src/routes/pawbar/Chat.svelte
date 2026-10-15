@@ -7,7 +7,10 @@
     grid with an uppercase label per group over pill chips (chip-icons.ts icon,
     title, "step by step" on steps chips, an arrow on handoff chips), floating
     over the bottom of the log and scrolling inside itself past 55vh. Escape or
-    a chip tap folds it, returning focus inside it to the toggle.
+    a chip tap folds it, returning focus inside it to the toggle. With
+    `foldChips` (the landing), the visitor's first turn (not a seeded one)
+    removes the row and moves the toggle left of the composer, giving the log
+    that height; the toggle still opens the panel over the log.
     Sending: a chip runs here (session.send); typed text goes to Paw OS
     (session.handoff, opened from the send gesture) unless `typedLocal` keeps it
     on the Paw Bar (mock and dev only), and the hint under the composer says so.
@@ -96,7 +99,8 @@
 		more,
 		foot,
 		chips = null,
-		onspec
+		onspec,
+		foldChips = false
 	}: {
 		session: ChatSession;
 		suggestions?: Suggestion[];
@@ -117,6 +121,8 @@
 		chips?: Chips | null;
 		/** The peek's Open button: hands the card to the host's fuller JSON view. */
 		onspec?: (card: Card) => void;
+		/** After the visitor's first turn the chip row folds into a toggle beside the composer (the landing). */
+		foldChips?: boolean;
 	} = $props();
 
 	// Chip rows in the order their groups first appear.
@@ -221,6 +227,16 @@
 	// What is on screen at mount is the prerendered fold: no entry animation, peeks closed.
 	const seeded = untrack(() => new Set(session.turns.map((t) => t.id)));
 	const known = untrack(() => new Set(cardsIn(session)));
+	// The visitor has sent something here (a seeded turn does not count): the row gives its height to the log.
+	const folded = $derived(foldChips && session.turns.some((t) => t.role === 'user' && !seeded.has(t.id)));
+	// Folding removes the row: a focused row chip went with it, so focus lands on the toggle, not the page.
+	$effect(() => {
+		if (!folded) return;
+		untrack(() => {
+			const lost = !document.activeElement || document.activeElement === document.body;
+			if (lost) void tick().then(() => toggle?.focus({ preventScroll: true }));
+		});
+	});
 
 	let peek = $state<Record<string, boolean>>({});
 	/** Under 1024px a peek shows 8 lines until expanded. */
@@ -590,8 +606,21 @@
 				>
 			</li>
 		{/snippet}
+		{#snippet chipsToggle()}
+			<button
+				type="button"
+				class="chips-toggle"
+				bind:this={toggle}
+				aria-expanded={showAll}
+				aria-controls={folded && !showAll ? undefined : 'ripple-suggestions'}
+				aria-label={showAll ? 'Show fewer' : 'Show all suggestions'}
+				onclick={() => (showAll = !showAll)}
+			>
+				{#if showAll}<ChevronsDownUp size={16} aria-hidden="true" />{:else}<ChevronsUpDown size={16} aria-hidden="true" />{/if}
+			</button>
+		{/snippet}
 		{#if suggestions.some((s) => s.handoff)}<span id="ripple-chip-handoff" hidden>Opens in Paw OS</span>{/if}
-		{#if suggestions.length}
+		{#if suggestions.length && (!folded || showAll)}
 			<div id="ripple-suggestions" class="chip-groups" data-expanded={expanded} data-overlay={showAll || undefined}>
 				{#if expanded}
 					{#each groups as [name, chips] (name)}
@@ -608,21 +637,10 @@
 					</ul>
 				{/if}
 			</div>
-			{#if suggestions.length > ROW}
-				<button
-					type="button"
-					class="chips-toggle"
-					bind:this={toggle}
-					aria-expanded={showAll}
-					aria-controls="ripple-suggestions"
-					aria-label={showAll ? 'Show fewer' : 'Show all suggestions'}
-					onclick={() => (showAll = !showAll)}
-				>
-					{#if showAll}<ChevronsDownUp size={16} aria-hidden="true" />{:else}<ChevronsUpDown size={16} aria-hidden="true" />{/if}
-				</button>
-			{/if}
+			{#if suggestions.length > ROW && !folded}{@render chipsToggle()}{/if}
 		{/if}
 		<div class="composer-row">
+			{#if folded && suggestions.length}{@render chipsToggle()}{/if}
 			<form
 				class="composer"
 				data-multiline={multiline || undefined}
@@ -1512,6 +1530,13 @@
 		background: color-mix(in oklch, var(--site-ink) 4%, transparent);
 		color: var(--site-soft);
 		cursor: pointer;
+	}
+	/* Folded: the toggle sits left of the composer, matching `more` on its right. */
+	.composer-row > .chips-toggle {
+		flex: none;
+		width: 44px;
+		height: 44px;
+		margin: 0 0 4px;
 	}
 	.chips-toggle:hover {
 		background: var(--site-hover);
