@@ -105,7 +105,7 @@
 			type="button"
 			aria-expanded={open[key]}
 			onclick={() => (open[key] = !open[key])}
-			class="-mx-1.5 inline-flex min-h-8 items-center self-start rounded-md px-1.5 text-callout font-medium text-ripple-muted-foreground transition-colors hover:bg-ripple-track hover:text-ripple-surface-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ripple-ring active:bg-ripple-border"
+			class="-mx-1.5 -my-1 inline-flex min-h-8 items-center self-start rounded-md px-1.5 text-callout font-medium text-ripple-muted-foreground transition-colors hover:bg-ripple-track hover:text-ripple-surface-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ripple-ring active:bg-ripple-border"
 		>
 			{open[key] ? 'Show fewer' : moreLabel(total, CAP[key], noun)}
 		</button>
@@ -196,8 +196,8 @@
 								</span>
 								<span aria-hidden="true" class="contents"><Avatar src={safeUrl(l.avatar, { kind: 'resource' })} alt={l.name} class="size-7 text-[11px]" /></span>
 								<span aria-hidden="true" class="flex min-w-0 flex-col @min-[480px]:flex-row @min-[480px]:items-baseline @min-[480px]:gap-2">
-									<span class={cn('min-w-0 truncate text-body', !l.name && 'italic text-ripple-muted-foreground')} title={l.name || undefined}>{l.name || 'Unnamed'}</span>
-									{#if l.sublabel}<span class="min-w-0 shrink-[3] truncate text-callout text-ripple-muted-foreground">{l.sublabel}</span>{/if}
+									<span class={cn('min-w-0 truncate text-body', !l.name && 'pr-1 italic text-ripple-muted-foreground')} title={l.name || undefined}>{l.name || 'Unnamed'}</span>
+									{#if l.sublabel}<span class="min-w-0 shrink-[3] text-callout text-ripple-muted-foreground [overflow-wrap:break-word]">{l.sublabel}</span>{/if}
 								</span>
 								<span aria-hidden="true" class="flex flex-col items-end gap-0.5 @min-[480px]:flex-row-reverse @min-[480px]:items-center @min-[480px]:gap-2">
 									{#if l.value}<span class="whitespace-nowrap text-body font-medium tabular-nums">{l.value}</span>{:else}<span class="text-callout text-ripple-muted-foreground">n/a</span>{/if}
@@ -223,7 +223,7 @@
 					{@render label('Recent activity')}
 					<ol class="m-0 flex list-none flex-col p-0">
 						{#each cut(events, 'events') as e (e.key)}
-							<li class="grid grid-cols-[1rem_minmax(0,1fr)] gap-x-3 py-2.5 first:pt-0 last:pb-0 @min-[480px]:grid-cols-[1rem_minmax(0,1fr)_auto] {row}">
+							<li class="grid grid-cols-[1rem_minmax(0,1fr)] gap-x-3 py-2 first:pt-0 last:pb-0 @min-[480px]:grid-cols-[1rem_minmax(0,1fr)_auto] {row}">
 								<span class="flex h-[1lh] items-center justify-center text-body text-ripple-muted-foreground" aria-hidden="true" data-slot="event-icon">
 									{#if iconExists(e.icon)}<Icon name={e.icon} size={14} />{:else}<span class="size-1.5 rounded-full bg-ripple-muted-foreground"></span>{/if}
 								</span>

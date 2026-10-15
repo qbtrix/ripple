@@ -12,8 +12,8 @@
      no editable, sortable, searchable or pageSize) fits a phone-width card.
      From 480px of the table's own width it is the same table, but text cells
      wrap at spaces with no min width, so a word never splits. Under 480px it
-     is a list, one labelled group per row: the first column as the title (2
-     lines) with the first right-aligned column trailing it, then the other
+     is a list, one labelled group per row: the first column as the title (it
+     wraps in full) with the first right-aligned column trailing it, then the other
      columns as one muted meta line, each value after its column label.
      Both are in the DOM; a container query shows one.
 
@@ -424,7 +424,7 @@
         </div>
     {/if}
 
-    <div class={cn("rounded-md", variantClasses, stack && "hidden @min-[480px]:block")}>
+    <div class={cn("rounded-md", variantClasses, stack && "hidden @min-[480px]:block [&_td]:py-1.5 [&_th]:h-8 [&_td:first-child]:pl-0 [&_th:first-child]:pl-0 [&_td:last-child]:pr-0 [&_th:last-child]:pr-0")}>
         <Table.Root>
             <Table.Header>
                 <Table.Row>
@@ -568,7 +568,7 @@
                     class="border-b border-ripple-border py-2.5 first:pt-0 last:border-b-0 last:pb-0"
                 >
                     <div class="flex items-baseline justify-between gap-3">
-                        <span class="line-clamp-2 min-w-0 text-body-emph [overflow-wrap:break-word]" title={title}>{title}</span>
+                        <span class="min-w-0 text-body-emph [overflow-wrap:break-word]">{title}</span>
                         {#if trail}
                             <span class="shrink-0 whitespace-nowrap text-body-emph tabular-nums"
                                 ><span class="sr-only">{trailCol?.header} </span>{trail}</span
