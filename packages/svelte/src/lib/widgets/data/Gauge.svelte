@@ -9,10 +9,11 @@
 
   Layout keys on the widget's own width (container queries, never the
   viewport): 440px and up puts the dial left and the words right; below that
-  it stacks title, dial, label (three lines at most, two under 160px). The dial is
-  its own container, so stroke weight, number size and the full/compact
-  number swap follow the dial's drawn size. `height` caps the dial's drawn
-  height, it never reserves an empty box.
+  it stacks title, dial, label (two lines at most then an ellipsis, one for the
+  label under 160px; full text in `title`). The dial is its own container, so
+  stroke weight, number size and the full/compact number swap follow the
+  dial's drawn size. `height` caps the dial's drawn height, it never reserves
+  an empty box.
 
   Invariants: the root forwards `id` and `data-ripple-node`; it is the
   role="meter" with a name and aria-valuetext in words; the SVG is
@@ -157,8 +158,8 @@
     overflow-wrap: anywhere;
     display: -webkit-box;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
-    line-clamp: 3;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
   }
   .g-label { grid-area: label; margin: 4px 0 0; text-align: center; }
   .g-meta { grid-area: meta; display: none; margin: 4px 0 0; }
@@ -213,7 +214,7 @@
   }
 
   @container gauge (max-width: 159px) {
-    .g-label { -webkit-line-clamp: 2; line-clamp: 2; }
+    .g-label { -webkit-line-clamp: 1; line-clamp: 1; }
   }
   @container gauge (min-width: 440px) {
     .g-body {

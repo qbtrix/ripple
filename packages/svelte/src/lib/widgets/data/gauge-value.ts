@@ -6,7 +6,8 @@
 // A percent scale (max 100 or 1) prints a percent with two rounding guards
 // (100% only when value >= max, never 0% for a positive value); any other max
 // prints the real value and a target line ("of 10,000"), plus the overshoot in
-// words when over. A value that does not parse reads "No value", never NaN.
+// words when over. Negatives print a true minus sign. A value that does not
+// parse reads "No value", never NaN.
 // Full and compact strings are both returned; the component's container
 // query picks one, so nothing clips.
 import { finite, num, plain } from '../data-kit/format.js';
@@ -18,6 +19,8 @@ const DIAL_MIN = 88;
 const DIAL_MAX = 220;
 /** Longest full number before the compact form is used at every size. */
 const FULL_MAX_CHARS = 11;
+/** A true minus sign (U+2212): a hyphen with tabular figures reads as "- 12". */
+const minus = (s: string) => s.replace(/^-/, '\u2212');
 
 export interface GaugeInput {
 	value?: unknown;
@@ -67,7 +70,7 @@ export function percentText(value: number, max: number): string {
 	let r = Math.round(pct) || 0;
 	if (value < max && r >= 100) r = 99;
 	if (value > 0 && r <= 0) return '<1%';
-	return `${num(r)}%`;
+	return `${minus(num(r))}%`;
 }
 
 export function gaugeView(p: GaugeInput): GaugeView {
@@ -95,8 +98,8 @@ export function gaugeView(p: GaugeInput): GaugeView {
 		spoken = number.replace('<1%', 'less than 1 percent').replace('%', ' percent');
 	} else if (hasValue) {
 		const full = num(value);
-		const compact = num(value, { compact: true });
-		number = full.length > FULL_MAX_CHARS ? compact : full;
+		const compact = minus(num(value, { compact: true }));
+		number = full.length > FULL_MAX_CHARS ? compact : minus(full);
 		numberCompact = compact !== number ? compact : '';
 		target = `of ${num(max)}`;
 		const tc = `of ${num(max, { compact: true })}`;

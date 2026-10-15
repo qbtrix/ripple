@@ -58,7 +58,7 @@ describe('gaugeView', () => {
 		const a = gaugeView({ value: '60%', max: 0, label: '' });
 		expect(a).toMatchObject({ max: 100, number: '60%', label: '', name: 'Gauge', ariaText: '60 percent' });
 		const b = gaugeView({ value: -12, max: 50, label: 'Free seats', height: '200px' });
-		expect(b).toMatchObject({ fraction: 0, number: '-12', target: 'of 50', diameter: 220 });
+		expect(b).toMatchObject({ fraction: 0, number: '\u2212' + '12', target: 'of 50', diameter: 220 });
 		const c = gaugeView({ value: 'lots', label: 'Queue depth' });
 		expect(c).toMatchObject({ hasValue: false, number: 'No value', value: 0, fraction: 0, ariaText: 'No value, Queue depth' });
 		const d = gaugeView({ value: 99.6, max: 100, label: '**Uptime** this month', color: 'not-a-colour' });
