@@ -29,9 +29,47 @@ const entry = (type: string) => manifestEntries.find((e) => e.type === type);
 const cases = Object.entries(SHOWCASE).map(([type, spec]) => ({ type, spec }));
 
 describe('widget showcase specs', () => {
-	it('covers at least the wave-1 polished widgets', () => {
+	it('covers the wave-1, wave-2 and preview-polish widgets', () => {
 		expect(Object.keys(SHOWCASE)).toEqual(
-			expect.arrayContaining(['gantt', 'treemap', 'workflow', 'bulk-action-bar', 'calendar', 'invoice-layout'])
+			expect.arrayContaining([
+				'gantt',
+				'treemap',
+				'workflow',
+				'bulk-action-bar',
+				'calendar',
+				'invoice-layout',
+				'heatmap',
+				'audit-log',
+				'funnel',
+				'kanban',
+				'menu-order',
+				'saved-views',
+				'image',
+				'avatar',
+				'avatar-group',
+				'parallax',
+				'marquee',
+				'quote',
+				'soul-status',
+				'breadcrumb',
+				'split',
+				'code-editor',
+				'toast',
+				'map',
+				'video',
+				'audio',
+				'embed',
+				'model-viewer',
+				'location-picker',
+				'citation',
+				'company-header',
+				'ticker',
+				'news-card',
+				'source-card',
+				'sources-bar',
+				'discover-card',
+				'logo-cloud'
+			])
 		);
 	});
 
