@@ -9,7 +9,7 @@
 
   Layout keys on the widget's own width (container queries, never the
   viewport): 440px and up puts the dial left and the words right; below that
-  it stacks title, dial, label; under 160px the label is one line. The dial is
+  it stacks title, dial, label (three lines at most, two under 160px). The dial is
   its own container, so stroke weight, number size and the full/compact
   number swap follow the dial's drawn size. `height` caps the dial's drawn
   height, it never reserves an empty box.
@@ -50,6 +50,8 @@
   const R = 45.5;
   const ARC = `M ${50 - R * Math.sin(Math.PI / 3)} ${50 + R / 2} A ${R} ${R} 0 1 1 ${50 + R * Math.sin(Math.PI / 3)} ${50 + R / 2}`;
   const VB_H = DIAL_RATIO * 100;
+  const uid = $props.id();
+  const maskId = `gauge-cut-${uid}`;
   const dash = $derived(g.fraction > 0 ? Math.max(g.fraction * 100, 0.5) : 0);
 </script>
 
@@ -71,7 +73,26 @@
     {/if}
     <div class="g-dial">
       <svg viewBox="0 0 100 {VB_H}" aria-hidden="true" focusable="false">
-        <path class="g-arc stroke-ripple-track" d={ARC} fill="none" stroke-linecap="round" />
+        {#if dash > 0}
+          <!-- The track is cut a little past the value's end, so the arc meets
+               the card there instead of the track: the accent reaches 3:1
+               against the card but not against the track. A mask, not a
+               painted halo, so the cut shows whatever the card is. -->
+          <mask id={maskId} maskUnits="userSpaceOnUse" x="-5" y="-5" width="110" height="95">
+            <rect x="-5" y="-5" width="110" height="95" fill="white" />
+            <path
+              class="g-arc g-cut transition-[stroke-dashoffset] duration-[400ms] ease-ripple-out motion-reduce:transition-none"
+              d={ARC}
+              fill="none"
+              stroke="black"
+              stroke-linecap="round"
+              pathLength="100"
+              stroke-dasharray="100 200"
+              stroke-dashoffset={100 - Math.min(100, dash + 2.5)}
+            />
+          </mask>
+        {/if}
+        <path class="g-arc stroke-ripple-track" d={ARC} fill="none" stroke-linecap="round" mask={dash > 0 ? `url(#${maskId})` : undefined} />
         {#if dash > 0}
           <path
             class={cn(
@@ -136,8 +157,8 @@
     overflow-wrap: anywhere;
     display: -webkit-box;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
   }
   .g-label { grid-area: label; margin: 4px 0 0; text-align: center; }
   .g-meta { grid-area: meta; display: none; margin: 4px 0 0; }
@@ -149,7 +170,10 @@
     width: min(100%, var(--gd));
   }
   .g-dial svg { display: block; width: 100%; height: auto; overflow: visible; }
-  .g-arc { stroke-width: 6.4px; }
+  .g-dial svg { --gsw: 6.4px; }
+  .g-arc { stroke-width: var(--gsw); }
+  /* Wider than the arc so no anti-aliased track edge survives in the cut. */
+  .g-cut { stroke-width: calc(var(--gsw) + 2px); }
   /* Centred on the circle's centre (y 50 of the 78-high viewBox), not the box. */
   .g-centre {
     position: absolute;
@@ -176,7 +200,7 @@
   .g-compact { display: none; }
 
   @container gdial (max-width: 179px) {
-    .g-arc { stroke-width: 7.5px; }
+    .g-dial svg { --gsw: 7.5px; }
   }
   @container gdial (max-width: 159px) {
     .g-full { display: none; }
@@ -185,11 +209,11 @@
     .g-target { font-size: var(--text-caption-1); line-height: var(--lh-caption); }
   }
   @container gdial (max-width: 119px) {
-    .g-arc { stroke-width: 9px; }
+    .g-dial svg { --gsw: 9px; }
   }
 
   @container gauge (max-width: 159px) {
-    .g-label { -webkit-line-clamp: 1; line-clamp: 1; }
+    .g-label { -webkit-line-clamp: 2; line-clamp: 2; }
   }
   @container gauge (min-width: 440px) {
     .g-body {
