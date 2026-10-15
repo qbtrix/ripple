@@ -233,7 +233,7 @@ describe('meal-plan: the week', () => {
 		expect(head('Mon').getAttribute('aria-expanded')).toBe('true');
 		expect(meals('Mon').classList.contains('hidden')).toBe(false);
 		expect(meals('Tue').classList.contains('hidden')).toBe(true);
-		expect(container.querySelector('[data-day="Tue"] [data-slot="summary"]')!.textContent).toBe('Protein oats · Salmon bowl');
+		expect(container.querySelector('[data-day="Tue"] [data-slot="summary"]')!.textContent).toBe('Protein oats\u00a0· Salmon bowl');
 		await fireEvent.click(head('Tue'));
 		expect(head('Tue').getAttribute('aria-expanded')).toBe('true');
 		expect(head('Mon').getAttribute('aria-expanded')).toBe('false');
@@ -299,6 +299,9 @@ describe('meal-plan: the week', () => {
 		const dinner = screen.getByRole('combobox', { name: 'Swap Mon Dinner' }) as HTMLSelectElement;
 		expect([...dinner.options].map((o) => o.value)).toEqual(['rice', 'Peanut noodles']);
 		expect(container.querySelector('[data-day="Mon"] [data-meal="Peanut noodles"]')).not.toBeNull();
+		// A one-day plan renders open, with no disclosure to collapse it.
+		expect(container.querySelector('[data-day="Mon"] > button[aria-expanded]')).toBeNull();
+		expect(container.querySelector('[data-day="Mon"] [data-slot="meals"]')!.classList.contains('hidden')).toBe(false);
 	});
 });
 

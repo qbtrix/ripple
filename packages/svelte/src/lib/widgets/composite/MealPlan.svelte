@@ -6,11 +6,14 @@
   `goal` (value / goal, the goal word), and the week as day rows.
 
   Layout (one DOM, CSS-only): under 540px container width, and at any width
-  with more than four slots, each day is a disclosure row (label, totals, a
-  meter against the goal, a one-line pill only when the day misses, the meal
-  names as a summary); the first day starts open, one open at a time. At 540px
-  and up with four slots or fewer the same rows are a days-by-slots grid with
-  every day shown. Every meal row ends in the same swap control (a native
+  with more than four slots, each day is a disclosure row (label, a pill only
+  when the day misses, totals, then a full-width meter against the goal so the
+  goal tick sits at one x on every row, then the meal names clamped to two
+  lines); the first day starts open, one open at a time, and a one-day plan is
+  simply open. At 540px and up with four slots or fewer the same rows are a
+  days-by-slots grid with every day shown and a three-line day cell; there
+  the swap control is pinned top-right and a float spacer keeps it beside the
+  name's first line only, so the second line gets the full cell width. Every meal row ends in the same swap control (a native
   select, disabled with a title when the slot has no alternative). Tapping a
   meal opens its Recipe inline under the day, scaled to `people`.
 
@@ -158,6 +161,8 @@
 	});
 	// The days-by-slots grid only reads with four columns or fewer.
 	const grid = $derived(slots.length > 0 && slots.length <= 4);
+	// A one-day plan has nothing to collapse: its day renders open, no disclosure.
+	const single = $derived(view.length === 1);
 	const canSwap = $derived(view.some((d) => d.meals.some((m) => m.opts.length > 1)));
 
 	const mean = (xs: (number | undefined)[]) => {
@@ -202,6 +207,9 @@
 	const people$ = (n: number) => (n === 1 ? '1 person' : `${n} people`);
 	const totals = (d: (typeof view)[number]) =>
 		[d.protein !== undefined && `${num(g0(d.protein))} g protein`, d.kcal !== undefined && `${num(g0(d.kcal))} kcal`].filter(Boolean) as string[];
+	// Collapsed summary: the separator stays on the name before it (never starts a
+	// line) and a hyphenated name does not split at its hyphen.
+	const summary = (names: string[]) => names.map((n) => n.replaceAll('-', '\u2011')).join('\u00a0· ');
 	const focusRing = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ripple-ring';
 	// Meter scale runs to 120% so an overshoot shows past the goal tick.
 	const SCALE = 1.2;
@@ -268,11 +276,11 @@
 			{#if view.length}
 				<div style:--slots={slots.length || 1} data-slot="week-grid">
 					{#if grid}
-						<div class="hidden gap-x-1.5 border-b border-ripple-border pb-1.5 @min-[540px]:grid @min-[540px]:grid-cols-[6.5rem_repeat(var(--slots),minmax(0,1fr))]" aria-hidden="true">
+						<div class="hidden gap-x-1 border-b border-ripple-border pb-1.5 @min-[540px]:grid @min-[540px]:grid-cols-[6.75rem_repeat(var(--slots),minmax(0,1fr))]" aria-hidden="true">
 							<span></span>
 							{#each slots as s (s)}
 								{@const SlotIcon = kindIcon(MEAL_ICONS, s)}
-								<span class="flex min-w-0 items-center gap-1.5 px-1 text-footnote text-ripple-muted-foreground">
+								<span class="flex min-w-0 items-center gap-1.5 px-0.5 text-footnote text-ripple-muted-foreground">
 									<SlotIcon size={14} strokeWidth={1.75} class="shrink-0" /><span class="truncate">{slotLabel(s)}</span>
 								</span>
 							{/each}
@@ -280,37 +288,36 @@
 					{/if}
 					<ol class="divide-y divide-ripple-border" aria-label="Days">
 						{#each view as d, di (d.key)}
-							{@const open = openDay === d.di}
+							{@const open = single || openDay === d.di}
 							{@const cells = slots.map((s) => d.meals.filter((m) => m.slot === s))}
 							{@const sums = totals(d)}
 							<li
-								class={['flex flex-col py-2.5', grid && '@min-[540px]:grid @min-[540px]:grid-cols-[6.5rem_repeat(var(--slots),minmax(0,1fr))] @min-[540px]:items-start @min-[540px]:gap-x-1.5 @min-[540px]:py-2']}
+								class={['flex flex-col py-2.5', grid && '@min-[540px]:grid @min-[540px]:grid-cols-[6.75rem_repeat(var(--slots),minmax(0,1fr))] @min-[540px]:items-start @min-[540px]:gap-x-1 @min-[540px]:py-2']}
 								in:rise={{ index: di }}
 								data-day={d.label}
 							>
-								<!-- Disclosure header (rows). In the grid it is replaced by a plain header: nothing to expand. -->
-								<button
-									type="button"
-									class={['flex w-full min-w-0 items-start gap-2 rounded-md text-left', focusRing, grid && '@min-[540px]:hidden']}
-									aria-expanded={open}
-									aria-controls="{uid}-day-{d.di}"
-									onclick={() => (openDay = open ? null : d.di)}
+								<!-- Row header: a disclosure, or a plain header for a one-day plan. Hidden in the grid, which has its own. -->
+								<svelte:element
+									this={single ? 'div' : 'button'}
+									class={['flex w-full min-w-0 items-start gap-2 rounded-md text-left', !single && focusRing, grid && '@min-[540px]:hidden']}
+									{...single ? {} : { type: 'button', 'aria-expanded': open, 'aria-controls': `${uid}-day-${d.di}`, onclick: () => (openDay = open ? null : d.di) }}
 								>
 									<span class="flex min-w-0 flex-1 flex-col gap-1">
-										<span class="flex min-w-0 items-baseline gap-2">
-											<span class="min-w-0 flex-1 text-callout font-medium break-words">{d.label}</span>
+										<!-- Pill sits on the header line so every row's meter runs the full width with the goal tick at one x. -->
+										<span class="flex min-w-0 items-center gap-2">
+											<span class="min-w-0 flex-1 truncate text-callout font-medium" title={d.label}>{d.label}</span>
+											{@render miss(d)}
 											{#if sums.length}<span class="shrink-0 text-footnote text-ripple-muted-foreground tabular-nums" data-slot="day-totals">{sums.join(' · ')}</span>{/if}
 										</span>
-										{#if d.ratio !== undefined || (d.check && d.check.status !== 'good')}
-											<span class="flex min-w-0 items-center gap-2">{@render meter(d)}{@render miss(d)}</span>
-										{/if}
+										{#if d.ratio !== undefined}<span class="flex">{@render meter(d)}</span>{/if}
 										{#if !d.meals.length}
 											<span class="text-footnote text-ripple-muted-foreground">Nothing planned</span>
 										{:else if !open}
-											<span class="text-footnote text-pretty text-ripple-muted-foreground" data-slot="summary">{d.meals.map((m) => m.name).join(' · ')}</span>
+											{@const names = d.meals.map((m) => m.name)}
+											<span class="line-clamp-2 text-footnote text-ripple-muted-foreground" title={names.join(' · ')} data-slot="summary">{summary(names)}</span>
 										{/if}
 									</span>
-									{#if d.meals.length}
+									{#if d.meals.length && !single}
 										<ChevronDown
 											size={16}
 											strokeWidth={1.75}
@@ -318,15 +325,17 @@
 											class={['mt-px shrink-0 text-ripple-muted-foreground transition-transform duration-150 motion-reduce:transition-none', open && 'rotate-180']}
 										/>
 									{/if}
-								</button>
+								</svelte:element>
 								{#if grid}
-									<div class="hidden min-w-0 flex-col gap-1 py-1 @min-[540px]:flex">
-										<span class="text-callout font-medium break-words">{d.label}</span>
-										{#if sums.length}
-											<span class="flex flex-col text-footnote text-ripple-muted-foreground tabular-nums">{#each sums as s (s)}<span>{s}</span>{/each}</span>
+									<div class="hidden min-w-0 flex-col gap-1 py-1 pr-1 @min-[540px]:flex">
+										<span class="flex min-w-0 items-center gap-1">
+											<span class="min-w-0 flex-1 truncate text-callout font-medium" title={d.label}>{d.label}</span>
+											{@render miss(d)}
+										</span>
+										{#if d.protein !== undefined || d.kcal !== undefined}
+											<span class="truncate text-footnote text-ripple-muted-foreground tabular-nums">{[d.protein !== undefined && `${num(g0(d.protein))} g`, d.kcal !== undefined && `${num(g0(d.kcal))} kcal`].filter(Boolean).join(' · ')}</span>
 										{/if}
 										{#if d.ratio !== undefined}<span class="flex">{@render meter(d)}</span>{/if}
-										{#if d.check && d.check.status !== 'good'}<span class="flex">{@render miss(d)}</span>{/if}
 									</div>
 								{/if}
 
@@ -344,6 +353,7 @@
 												<div
 													class={[
 														'flex min-w-0 items-center gap-1 rounded-md transition-colors @min-[540px]:gap-0.5 duration-150 motion-reduce:transition-none',
+														grid && '@min-[540px]:relative @min-[540px]:block',
 														isOpen ? 'bg-ripple-accent/8 ring-1 ring-ripple-accent' : m.recipe && 'hover:bg-ripple-muted'
 													]}
 													data-meal={m.recipe?.ref}
@@ -352,14 +362,14 @@
 													{#if m.recipe}
 														<button
 															type="button"
-															class={['flex min-w-0 flex-1 items-start gap-2 rounded-md px-1.5 py-1.5 text-left', focusRing, grid && '@min-[540px]:px-1']}
+															class={['flex min-w-0 flex-1 items-start gap-2 rounded-md px-1.5 py-1.5 text-left', focusRing, grid && '@min-[540px]:pr-0 @min-[540px]:pl-0.5']}
 															aria-expanded={isOpen}
 															aria-controls="{uid}-recipe-{d.di}"
 															onclick={() => (openAt = isOpen ? null : at)}
 														>
 															{@render slotCol(SlotIcon, m.slot)}
-															<span class="flex min-w-0 flex-col">
-																<span class={['line-clamp-2 text-callout font-medium break-words', grid && '@min-[540px]:line-clamp-3']} title={m.name}>{m.name}</span>
+															<span class="flex min-w-0 flex-1 flex-col">
+																<span class="line-clamp-2 text-callout font-medium break-words" title={m.name}>{#if grid}<span class="hidden h-3 w-5 @min-[540px]:float-right @min-[540px]:block" aria-hidden="true"></span>{/if}{m.name}</span>
 																{#if m.recipe.kcal !== undefined || m.recipe.protein !== undefined}
 																	<span class={['text-footnote text-ripple-muted-foreground tabular-nums', grid && '@min-[540px]:hidden']}>
 																		{[m.recipe.protein !== undefined && `${num(m.recipe.protein)} g protein`, m.recipe.kcal !== undefined && `${num(m.recipe.kcal)} kcal`].filter(Boolean).join(' · ')}
@@ -368,17 +378,17 @@
 															</span>
 														</button>
 													{:else}
-														<span class="flex min-w-0 flex-1 items-start gap-2 px-1.5 py-1.5">
+														<span class={['flex min-w-0 flex-1 items-start gap-2 px-1.5 py-1.5', grid && '@min-[540px]:pr-0 @min-[540px]:pl-0.5']}>
 															{@render slotCol(SlotIcon, m.slot)}
-															<span class="flex min-w-0 flex-col">
-																<span class={['line-clamp-2 text-callout break-words text-ripple-muted-foreground', grid && '@min-[540px]:line-clamp-3']} title={m.name}>{m.name}</span>
+															<span class="flex min-w-0 flex-1 flex-col">
+																<span class="line-clamp-2 text-callout break-words text-ripple-muted-foreground" title={m.name}>{#if grid}<span class="hidden h-3 w-5 @min-[540px]:float-right @min-[540px]:block" aria-hidden="true"></span>{/if}{m.name}</span>
 																<span class="text-footnote text-ripple-muted-foreground">Not in recipes</span>
 															</span>
 														</span>
 													{/if}
 													<label
 														class={[
-															grid && '@min-[540px]:size-6',
+															grid && '@min-[540px]:absolute @min-[540px]:top-0.5 @min-[540px]:right-0 @min-[540px]:size-6',
 															'relative grid size-7 shrink-0 place-items-center rounded-md text-ripple-muted-foreground transition-colors focus-within:outline-2 focus-within:outline-ripple-ring motion-reduce:transition-none',
 															m.opts.length > 1 ? 'hover:bg-ripple-muted hover:text-ripple-surface-foreground' : 'opacity-40'
 														]}
