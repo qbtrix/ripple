@@ -11,6 +11,10 @@
   funnel), leaderboard, deals, recent activity. A section with no data renders
   nothing; with no data at all one muted line says so.
 
+  Leaderboard: at 480px and up the sublabel sits on the name line and wraps
+  under the name when both cannot fit, so it never squeezes the name.
+  Deltas are plain muted text with an arrow, no pill.
+
   Colour: one accent. Only the quota fill, the funnel's own bars and worst
   step, the lowest conversion rate (accent ink) and the success line at or
   past target carry colour. No pace judgement: the widget has no pace data.
@@ -80,7 +84,7 @@
 	const rates = $derived(usableFunnel(stages) ? [] : readRates(conversion));
 	const board = $derived(leaderboard && typeof leaderboard === 'object' ? leaderboard : undefined);
 	const leaders = $derived(readLeaders(board?.items, readCurrency(quota?.currency)));
-	const d = $derived(readDeals(deals));
+	const d = $derived(readDeals(deals, readCurrency(quota?.currency)));
 	const events = $derived(readTicker(ticker));
 	const empty = $derived(!q && !stages.length && !rates.length && !leaders.length && !d.rows.length && !events.length);
 
@@ -174,7 +178,7 @@
 								<span class="min-w-0 text-body [overflow-wrap:break-word]">
 									{#if r.from && r.to}{r.from}<ArrowRight size={12} class="mx-1 inline-block align-[-1px] text-ripple-muted-foreground" aria-hidden="true" /><span class="sr-only">{' to '}</span>{r.to}{:else if r.from}From {r.from}{:else}To {r.to}{/if}
 								</span>
-								<span class={cn('shrink-0 font-medium tabular-nums', r.lowest && 'text-ripple-accent-text')}>{r.text}</span>
+								<span class={cn('shrink-0 text-body font-medium tabular-nums', r.lowest && 'text-ripple-accent-text')}>{r.text}</span>
 							</li>
 						{/each}
 					</ul>
@@ -195,13 +199,13 @@
 									{/if}
 								</span>
 								<span aria-hidden="true" class="contents"><Avatar src={safeUrl(l.avatar, { kind: 'resource' })} alt={l.name} class="size-7 text-[11px]" /></span>
-								<span aria-hidden="true" class="flex min-w-0 flex-col @min-[480px]:flex-row @min-[480px]:items-baseline @min-[480px]:gap-2">
+								<span aria-hidden="true" class="flex min-w-0 flex-col @min-[480px]:flex-row @min-[480px]:flex-wrap @min-[480px]:items-baseline @min-[480px]:gap-x-2">
 									<span class={cn('min-w-0 truncate text-body', !l.name && 'pr-1 italic text-ripple-muted-foreground')} title={l.name || undefined}>{l.name || 'Unnamed'}</span>
-									{#if l.sublabel}<span class="min-w-0 shrink-[3] text-callout text-ripple-muted-foreground [overflow-wrap:break-word]">{l.sublabel}</span>{/if}
+									{#if l.sublabel}<span class="min-w-0 text-callout text-ripple-muted-foreground [overflow-wrap:break-word] @min-[480px]:truncate" title={l.sublabel}>{l.sublabel}</span>{/if}
 								</span>
 								<span aria-hidden="true" class="flex flex-col items-end gap-0.5 @min-[480px]:flex-row-reverse @min-[480px]:items-center @min-[480px]:gap-2">
 									{#if l.value}<span class="whitespace-nowrap text-body font-medium tabular-nums">{l.value}</span>{:else}<span class="text-callout text-ripple-muted-foreground">n/a</span>{/if}
-									{#if l.delta}<Delta text={l.delta} dir={l.dir} sentiment="neutral" />{/if}
+									{#if l.delta}<Delta text={l.delta} dir={l.dir} sentiment="neutral" class="bg-transparent px-0 py-0" />{/if}
 								</span>
 							</li>
 						{/each}
@@ -220,7 +224,7 @@
 
 			{#if events.length}
 				<section class={sec} data-slot="activity">
-					{@render label('Recent activity')}
+					{@render label('Recent activity', events.length)}
 					<ol class="m-0 flex list-none flex-col p-0">
 						{#each cut(events, 'events') as e (e.key)}
 							<li class="grid grid-cols-[1rem_minmax(0,1fr)] gap-x-3 py-2 first:pt-0 last:pb-0 @min-[480px]:grid-cols-[1rem_minmax(0,1fr)_auto] {row}">

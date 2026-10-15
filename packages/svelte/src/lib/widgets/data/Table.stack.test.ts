@@ -47,3 +47,29 @@ test('an interactive table ignores stack', () => {
 	const { container } = render(Table, { props: { columns, rows, layout: 'stack', searchable: true } });
 	expect(container.querySelector('[data-slot="table-stack"]')).toBeNull();
 });
+
+test('stack clamps the title, keeps short columns on one line and marks an untitled row', () => {
+	const { container } = render(Table, {
+		props: { columns, rows: [...rows, { name: '', stage: 'Qualified', value: '$12k', owner: 'Esme Tanaka' }], layout: 'stack' }
+	});
+	const title = container.querySelector('[data-slot="table-stack"] li span[title]')!;
+	expect(title.className).toContain('line-clamp-2');
+	expect(title.getAttribute('aria-hidden')).toBe('true');
+	expect(screen.getAllByRole('group')[2].getAttribute('aria-label')).toBe('Untitled');
+	expect(screen.getAllByText('Untitled').length).toBe(2);
+	const td = screen.getAllByText('Negotiation').find((e) => e.tagName === 'TD')!;
+	expect(td.className).toContain('whitespace-nowrap');
+	const owner = screen.getAllByText('Esme Tanaka').find((e) => e.tagName === 'TD')!;
+	expect(owner.className).toContain('whitespace-nowrap');
+});
+
+test('stack keeps a bare count in the labelled meta line, not the trailing slot', () => {
+	const cols = [
+		{ key: 'name', label: 'Candidate' },
+		{ key: 'stage', label: 'Stage' },
+		{ key: 'days', label: 'Days in stage', align: 'right' as const }
+	];
+	const { container } = render(Table, { props: { columns: cols, rows: [{ name: 'Noor Haddad', stage: 'Offer', days: 2 }], layout: 'stack' } });
+	const meta = container.querySelector('[data-slot="table-stack-meta"]')!.textContent!.replace(/\s+/g, ' ').trim();
+	expect(meta).toBe('Stage Offer · Days in stage 2');
+});

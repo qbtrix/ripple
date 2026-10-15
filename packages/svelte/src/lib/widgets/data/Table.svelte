@@ -11,11 +11,16 @@
      `layout="stack"` (internal, not in the manifest; read-only tables only:
      no editable, sortable, searchable or pageSize) fits a phone-width card.
      From 480px of the table's own width it is the same table, but text cells
-     wrap at spaces with no min width, so a word never splits. Under 480px it
-     is a list, one labelled group per row: the first column as the title (it
-     wraps in full) with the first right-aligned column trailing it, then the other
-     columns as one muted meta line, each value after its column label.
-     Both are in the DOM; a container query shows one.
+     wrap at spaces with no min width, so a word never splits, and a short
+     column (longest value up to 12 characters, up to 16 from 560px) stays on
+     one line so the first column absorbs the wrapping. Under 480px it is a
+     list, one labelled group per row: the first column as the title (two
+     lines, then ellipsis; the full text is the group's name) with the first
+     right-aligned column trailing it, unless that column holds bare numbers,
+     which mean nothing without their label; then the other columns as one
+     muted meta line, each value after its column label. An empty first cell
+     reads a muted italic Untitled. Both are in the DOM; a container query
+     shows one.
 
      Editing is opt-in (`editable` plus a `bind`): a commit builds the FULL
      mutated rows array and fires `onchange(next)`, which NodeRenderer turns
@@ -211,7 +216,7 @@
         (numericCols.has(col.accessorKey) || (stack && col.align === "right")
             ? "tabular-nums whitespace-nowrap align-top"
             : stack
-              ? "whitespace-normal align-top [overflow-wrap:break-word]"
+              ? `align-top [overflow-wrap:break-word] ${shortCols.get(col.accessorKey) ?? "whitespace-normal"}`
               : "whitespace-normal align-top [overflow-wrap:anywhere] min-w-[8ch]");
 
     // Stacked list (layout="stack", read-only only): title, trailing value, labelled meta.
@@ -225,7 +230,24 @@
     );
     const isRight = (c: NormalizedColumn) =>
         c.align === "right" || (!c.align && numericCols.has(c.accessorKey));
-    const trailCol = $derived(columns.slice(1).find(isRight));
+    // Longest text per column, for the wide stack table's no-wrap short columns.
+    const shortCols = $derived.by(() => {
+        const out = new Map<string | undefined, string>();
+        if (!stack) return out;
+        for (const c of columns.slice(1)) {
+            const n = Math.max(0, ...tableData.map((r) => shown(r?.[c.accessorKey]).length));
+            if (n <= 12) out.set(c.accessorKey, "whitespace-nowrap");
+            else if (n <= 16) out.set(c.accessorKey, "whitespace-normal @min-[560px]:whitespace-nowrap");
+        }
+        return out;
+    });
+    const BARE = /^[+\-−]?[\d.,\s]+$/;
+    const bare = (c: NormalizedColumn) =>
+        tableData.every((r) => {
+            const t = shown(r?.[c.accessorKey]).trim();
+            return t === "" || BARE.test(t);
+        });
+    const trailCol = $derived(columns.slice(1).find((c) => isRight(c) && !bare(c)));
     const metaCols = $derived(columns.slice(1).filter((c) => c !== trailCol));
     const shown = (v: unknown) => (v === null || v === undefined ? "" : asText(v));
 
@@ -533,6 +555,8 @@
                                         >
                                             {cellValue}
                                         </a>
+                                    {:else if stack && ci === 0 && cellValue === ""}
+                                        <span class="italic text-ripple-muted-foreground">Untitled</span>
                                     {:else}
                                         {cellValue}
                                     {/if}
@@ -564,11 +588,15 @@
                     .filter((m) => m.value !== "")}
                 <li
                     role="group"
-                    aria-label={title || undefined}
+                    aria-label={title || "Untitled"}
                     class="border-b border-ripple-border py-2.5 first:pt-0 last:border-b-0 last:pb-0"
                 >
                     <div class="flex items-baseline justify-between gap-3">
-                        <span class="min-w-0 text-body-emph [overflow-wrap:break-word]">{title}</span>
+                        {#if title}
+                            <span aria-hidden="true" class="line-clamp-2 min-w-0 text-body-emph [overflow-wrap:break-word]" {title}>{title}</span>
+                        {:else}
+                            <span aria-hidden="true" class="min-w-0 text-body italic text-ripple-muted-foreground">Untitled</span>
+                        {/if}
                         {#if trail}
                             <span class="shrink-0 whitespace-nowrap text-body-emph tabular-nums"
                                 ><span class="sr-only">{trailCol?.header} </span>{trail}</span

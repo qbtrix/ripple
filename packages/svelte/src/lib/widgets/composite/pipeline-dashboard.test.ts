@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import {
 	amount,
 	cellText,
+	suffixCase,
 	funnelStages,
 	moreLabel,
 	pctLabel,
@@ -52,6 +53,8 @@ describe('readQuota', () => {
 		expect(q.target).toBeUndefined();
 		expect(q.pctText).toBeUndefined();
 		expect(q.foot).toBeUndefined();
+		// no target drawn, so the label must not call the amount a target
+		expect(q.label).toBe('Progress');
 	});
 	it('missing target and plain counts', () => {
 		expect(readQuota({ current: 14 })!.target).toBeUndefined();
@@ -90,7 +93,8 @@ describe('readLeaders', () => {
 		);
 		expect(r.map((x) => x.rank)).toEqual([1, 2, 3, 4, 5]);
 		expect(r[0].value).toBe('$420K');
-		expect(r[2]).toMatchObject({ name: '', delta: '-$12k', dir: 'down' });
+		expect(r[1].value).toBe('$380K');
+		expect(r[2]).toMatchObject({ name: '', delta: '-$12K', dir: 'down' });
 		expect(r[3].value).toBeUndefined();
 		expect(new Set(r.map((x) => x.key)).size).toBe(5);
 	});
@@ -130,6 +134,8 @@ describe('deals', () => {
 		expect(cellText({ id: 3 })).toBe('');
 		expect(cellText('**Tidewater** renewal')).toBe('Tidewater renewal');
 		expect(cellText(48000)).toBe(48000);
+		expect(cellText('$12k')).toBe('$12K');
+		expect(suffixCase('2m ago')).toBe('2m ago');
 	});
 	it('spec 05: missing keys stay empty, empty rows drop, untitled rows say so', () => {
 		const d = readDeals({
@@ -138,9 +144,16 @@ describe('deals', () => {
 		});
 		expect(d.rows).toEqual([
 			{ name: 'Fernhill Robotics pilot', amount: '', stage: 'Proposal' },
-			{ name: 'Untitled', amount: '$12k', stage: 'Qualified' }
+			{ name: '', amount: '$12K', stage: 'Qualified' }
 		]);
 		expect(d.columns[1].align).toBe('right');
+	});
+	it('spec 05: a number in a money column reads as money, a count only groups', () => {
+		const columns = [{ key: 'name' }, { key: 'amount', align: 'right' }, { key: 'days', align: 'right' }, { key: 'n' }];
+		const rows = [{ name: 'A', amount: 48000, days: 1200, n: 5 }, { name: 'B', amount: '$12k', days: 3, n: 6 }];
+		expect(readDeals({ columns, rows }, { code: 'USD' }).rows[0]).toEqual({ name: 'A', amount: '$48K', days: '1,200', n: 5 });
+		const plainCur = readDeals({ columns, rows }).rows;
+		expect(plainCur[0]).toEqual({ name: 'A', amount: '$48K', days: '1,200', n: 5 });
 	});
 	it('empty deals have no rows', () => {
 		expect(readDeals({ columns: [], rows: [] }).rows).toEqual([]);

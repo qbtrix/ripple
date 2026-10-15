@@ -9,7 +9,9 @@
 // a percent without a usable target. Ranks follow `position` only when every
 // leader has one. Conversion rates read fractions (0.225) and "28.6%"
 // strings; a row without a number drops. Deal cells become display text
-// (numbers stay numbers so Table still right-aligns them) and empty rows drop.
+// (numbers stay numbers so Table still right-aligns them, except in a column
+// set to align right, where they read as grouped or money text) and empty rows
+// drop. Amount text such as "$420k" takes money()'s upper-case suffix ("$420K").
 import { safeArray, uniqueKeys } from '$lib/utils/safe-props.js';
 import { finite, money, num, plain } from '../data-kit/format.js';
 import { parseValue } from '../data/funnel-math.js';
@@ -45,6 +47,9 @@ export function fmtAmount(n: number, cur: Currency, compact: boolean): string {
 	return `${cur.prefix ?? ''}${num(n, { compact, digits: compact ? 1 : 0 })}`;
 }
 
+/** "$420k" / "+$40k" → "$420K" / "+$40K", matching money()'s compact suffix; other text is unchanged. */
+export const suffixCase = (s: string) => s.replace(/^([+\-−]?[$€£¥₹]\s?[\d.,]+)([kmb])$/i, (_, n: string, k: string) => n + k.toUpperCase());
+
 /** Whole percent, except 99.5 to just under 100 reads 99 (never 100 before the target). */
 export function pctLabel(p: number): string {
 	if (p >= 99.5 && p < 100) return '99%';
@@ -73,7 +78,7 @@ export function readQuota(raw: unknown): QuotaView | undefined {
 	const c = readCurrency(q.currency);
 	const compact = Math.max(cur, goal ?? 0) >= COMPACT_FROM;
 	const f = (n: number) => fmtAmount(n, c, compact);
-	const base = { label: plain(q.label) || 'Target', period: plain(q.period), current: f(cur) };
+	const base = { label: plain(q.label) || (goal ? 'Target' : 'Progress'), period: plain(q.period), current: f(cur) };
 	if (!goal) return base;
 	const pct = (cur / goal) * 100;
 	const met = cur >= goal;
@@ -104,9 +109,9 @@ export function readLeaders(items: unknown, cur: Currency = {}): Leader[] {
 	return order.map(({ r, p }, i) => {
 		const v = r.value;
 		const n = typeof v === 'number' ? amount(v) : undefined;
-		const text = typeof v === 'string' ? plain(v) : '';
+		const text = typeof v === 'string' ? suffixCase(plain(v)) : '';
 		const value = n !== undefined ? fmtAmount(n, cur, n >= COMPACT_FROM) : text || undefined;
-		const delta = plain(r.delta);
+		const delta = suffixCase(plain(r.delta));
 		const avatar = plain(r.avatar);
 		return {
 			key: keys[i],
@@ -178,7 +183,7 @@ export function cellText(v: unknown): string | number {
 		}
 		return '';
 	}
-	return plain(v);
+	return suffixCase(plain(v));
 }
 
 export interface DealColumn {
@@ -187,8 +192,13 @@ export interface DealColumn {
 	align?: 'left' | 'right' | 'center';
 }
 
-/** Columns (from `columns`, else the first row's keys) and display rows; empty rows drop. */
-export function readDeals(deals: unknown): { title: string; columns: DealColumn[]; rows: Record<string, string | number>[] } {
+/**
+ * Columns (from `columns`, else the first row's keys) and display rows; empty
+ * rows drop. A number in a right-aligned column becomes text: money when the
+ * column's other cells carry a currency symbol (in the dashboard's currency,
+ * else that symbol), grouped digits otherwise. An empty first cell stays empty; Table marks it Untitled.
+ */
+export function readDeals(deals: unknown, cur: Currency = {}): { title: string; columns: DealColumn[]; rows: Record<string, string | number>[] } {
 	const d = deals && typeof deals === 'object' ? (deals as Record<string, unknown>) : {};
 	const raw = safeArray<unknown>(d.rows).filter((x): x is Record<string, unknown> => !!x && typeof x === 'object' && !Array.isArray(x));
 	let columns: DealColumn[] = safeArray<unknown>(d.columns)
@@ -206,8 +216,15 @@ export function readDeals(deals: unknown): { title: string; columns: DealColumn[
 	const rows = raw
 		.map((r) => Object.fromEntries(columns.map((c) => [c.key, cellText(r[c.key])])))
 		.filter((r) => Object.values(r).some((v) => v !== ''));
-	const first = columns[0]?.key;
-	if (first) for (const r of rows) if (r[first] === '') r[first] = 'Untitled';
+	for (const c of columns) {
+		if (c.align !== 'right') continue;
+		const sym = rows.map((r) => r[c.key]).find((v): v is string => typeof v === 'string' && /[$€£¥₹]/.test(v))?.match(/[$€£¥₹]/)?.[0];
+		const cc = !sym ? undefined : cur.code || cur.prefix ? cur : readCurrency(sym);
+		for (const r of rows) {
+			const n = r[c.key];
+			if (typeof n === 'number') r[c.key] = cc ? fmtAmount(n, cc, n >= COMPACT_FROM) : num(n);
+		}
+	}
 	return { title: plain(d.title), columns, rows };
 }
 
