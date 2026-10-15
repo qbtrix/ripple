@@ -257,3 +257,16 @@ export function cleanPlace(v: unknown, fallback: string): CleanPlace | undefined
 	const name = plain(v.name) || (address ? fallback : '');
 	return { name, address, at: point(v), listed: Boolean(name || address) };
 }
+
+export interface CleanTracking {
+	carrier: string;
+	number: string;
+	url: string;
+}
+
+/** Carrier and number as text (a model may send numbers); no number, no tracking. */
+export function cleanTracking(v: unknown): CleanTracking | undefined {
+	if (!isRecord(v)) return undefined;
+	const number = asText(v.number).trim();
+	return number ? { carrier: plain(v.carrier), number, url: asText(v.url).trim() } : undefined;
+}
