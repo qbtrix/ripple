@@ -25,7 +25,7 @@ const leaflet = vi.hoisted(() => {
 	const L = {
 		map: () => {
 			maps();
-			return { fitBounds, setView, on() {}, remove() {}, panTo() {} };
+			return { fitBounds, setView, on() {}, remove() {}, panTo() {}, getSize: () => ({ x: 0, y: 0 }), latLngToContainerPoint: () => ({ x: 0, y: 0 }) };
 		},
 		tileLayer: stub,
 		layerGroup: () => {
@@ -167,7 +167,9 @@ describe('order-status bad news', () => {
 		expect(container.querySelector('.rorder-title')?.textContent).toBe('Delivery attempt');
 		expect(container.querySelector('[data-status="bad"]')?.textContent).toContain('Failed');
 		expect(container.querySelector('.rorder-step-desc')?.textContent).toBe('No one was available to sign.');
-		expect(container.querySelector('.rorder-when')?.textContent).toContain('Next step');
+		// The value already says "Next", so the label word steps aside.
+		expect(container.querySelector('.rorder-when')?.textContent?.trim()).toBe('Next attempt tomorrow');
+		expect(container.querySelector('.rorder-when-label')).toBeNull();
 		expect(container.querySelectorAll('.rorder-step-line[data-line="dotted"]')).toHaveLength(1);
 		expect(container.textContent).not.toMatch(/paused/i);
 	});
@@ -229,7 +231,7 @@ describe('order-status updates and actions', () => {
 });
 
 describe('order-status map framing', () => {
-	it('fits the whole trip with 32px padding at mount and refits only when origin or destination move', async () => {
+	it('fits the whole trip clear of the map chrome at mount and refits only when origin or destination move', async () => {
 		vi.stubGlobal('requestAnimationFrame', () => 1);
 		vi.stubGlobal('cancelAnimationFrame', () => {});
 		leaflet.fitBounds.mockClear();
@@ -244,7 +246,7 @@ describe('order-status map framing', () => {
 				[9.9, 20],
 				[10.2, 20.4]
 			],
-			{ padding: [32, 32] }
+			{ paddingTopLeft: [44, 58], paddingBottomRight: [28, 32] }
 		);
 		expect(leaflet.setView).not.toHaveBeenCalled();
 
@@ -260,7 +262,7 @@ describe('order-status map framing', () => {
 				[9.9, 20],
 				[10.5, 20.6]
 			],
-			{ padding: [32, 32] }
+			{ paddingTopLeft: [44, 58], paddingBottomRight: [28, 32] }
 		);
 	});
 });

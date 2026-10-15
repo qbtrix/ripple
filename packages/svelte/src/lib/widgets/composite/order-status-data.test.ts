@@ -85,6 +85,8 @@ describe('progress', () => {
 		expect(p).toMatchObject({ active: 2, bad: 'failed', showRail: true, finished: false });
 		expect(headline(undefined, p)).toBe('Delivery attempt');
 		expect(etaLabel(p)).toBe('Next step');
+		expect(etaLabel(p, 'Next attempt tomorrow, 9 AM to 1 PM')).toBe('');
+		expect(etaLabel(p, 'Tomorrow, 9 AM')).toBe('Next step');
 	});
 
 	it('marks the current custom step failed when status is failed and no step is', () => {

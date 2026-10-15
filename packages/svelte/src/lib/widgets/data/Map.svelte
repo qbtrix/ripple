@@ -4,7 +4,14 @@
   polygons (geofences), live trackers (moving markers with optional trails),
   and popups.
 
-  `bounds` fits at mount and refits only when its value changes.
+  `bounds` fits at mount and refits only when its value changes. Padding is a
+  number or { topLeft, bottomRight } pixel pairs, so a caller can keep the trip
+  clear of the zoom buttons and the attribution bar.
+
+  Pin and tracker labels are chips capped at 160px. After every draw, fit,
+  pan, zoom and finished tracker glide, each chip takes the side of its pin
+  (below, right, left, above) that keeps it in the frame and off the controls,
+  the other chips and the drawn paths (pickSide in map-labels.ts).
 
   Trackers glide: each position update starts a linear requestAnimationFrame
   tween from the marker's current spot to the new one, lasting as long as the
@@ -47,6 +54,7 @@
   import { sanitizeHtml } from '$lib/utils/sanitize-html.js';
   import { onMount, getContext } from 'svelte';
   import { cn } from '$lib/utils.js';
+  import { labelRect, pickSide, type Rect, type Seg } from './map-labels.js';
   import type { EventHandler, EventHandlerOrArray } from '@ripple-ui/core';
   import type { EventDispatcher } from '@ripple-ui/core';
   import type { StateManager } from '$lib/core/state-manager.svelte.js';
@@ -108,7 +116,7 @@
     maxZoom?: number;
     bounds?: [LatLngIn, LatLngIn];
     /** Pixel padding around `bounds` when fitting. Default 0. */
-    boundsPadding?: number;
+    boundsPadding?: number | { topLeft: [number, number]; bottomRight: [number, number] };
     tiles?: TilePreset;
     tileUrl?: string;
     tileAttribution?: string;
@@ -179,6 +187,7 @@
   let trackerLayer: any = null;
   let trackerTrailLayer: any = null;
   let trackerMarkers = new Map<string, any>();
+  let pinMarkers: any[] = [];
   let trackerTrails = new Map<string, any>();
   // Per-tracker tween state. A plain Map, not $state: drawTrackers runs inside
   // an $effect and must not subscribe to it.
@@ -244,7 +253,7 @@
       ? `<span class="rmap-pin-icon" data-icon="${escapeHtml(String(opts.icon))}" style="${escapeHtml(safeStyle(`background:${color};`))}"></span>`
       : `<span class="rmap-pin-dot" style="${escapeHtml(safeStyle(`background:${color};`))}"></span>`;
     const labelHtml = opts.label
-      ? `<span class="rmap-pin-label">${escapeHtml(opts.label)}</span>`
+      ? `<span class="rmap-label rmap-pin-label" title="${escapeHtml(opts.label)}">${escapeHtml(opts.label)}</span>`
       : '';
     return L.divIcon({
       className: 'rmap-pin',
@@ -283,6 +292,7 @@
       const p = Math.min(1, (Date.now() - now) / duration);
       m.setLatLng([from[0] + (to[0] - from[0]) * p, from[1] + (to[1] - from[1]) * p]);
       mo.raf = p < 1 ? requestAnimationFrame(step) : 0;
+      if (p >= 1) placeLabels();
     };
     mo.raf = requestAnimationFrame(step);
   }
@@ -294,7 +304,7 @@
       <div class="rmap-tracker-wrap" style="${escapeHtml(safeStyle(`--rmap-tracker-color:${color}; --rmap-tracker-rot:${Number(heading) || 0}deg;`))}">
         <div class="rmap-tracker-pulse"></div>
         <div class="rmap-tracker-arrow"></div>
-        ${t.label ? `<span class="rmap-tracker-label">${escapeHtml(t.label)}</span>` : ''}
+        ${t.label ? `<span class="rmap-label rmap-tracker-label" title="${escapeHtml(t.label)}">${escapeHtml(t.label)}</span>` : ''}
       </div>
     `;
     return L.divIcon({
@@ -364,6 +374,7 @@
       trackerTrailLayer = L.layerGroup().addTo(map);
       trackerLayer = L.layerGroup().addTo(map);
 
+      map.on('moveend zoomend', placeLabels);
       if (onmapclick) {
         map.on('click', (e: any) => onmapclick(e.latlng.lat, e.latlng.lng));
       }
@@ -378,6 +389,7 @@
         map.remove();
         mapInstance = null;
         markerLayer = pathLayer = polygonLayer = trackerLayer = trackerTrailLayer = null;
+        pinMarkers = [];
         trackerMarkers.clear();
         trackerTrails.clear();
       };
@@ -394,7 +406,44 @@
   let fittedKey = '';
   function fitTo(b: [LatLng, LatLng]) {
     fittedKey = JSON.stringify(b);
-    mapInstance?.fitBounds(b, { padding: [boundsPadding, boundsPadding] });
+    const pad = boundsPadding;
+    mapInstance?.fitBounds(
+      b,
+      typeof pad === 'number' ? { padding: [pad, pad] } : { paddingTopLeft: pad.topLeft, paddingBottomRight: pad.bottomRight }
+    );
+  }
+
+  // Put each label chip on the side of its pin with room (see map-labels.ts).
+  // Placed chips block the ones after them.
+  function placeLabels() {
+    if (!mapInstance || !mapEl) return;
+    const size = mapInstance.getSize();
+    const box = mapEl.getBoundingClientRect();
+    const blocked: Rect[] = [...mapEl.querySelectorAll('.leaflet-control')].map((el) => {
+      const r = el.getBoundingClientRect();
+      return { x: r.left - box.left, y: r.top - box.top, w: r.width, h: r.height };
+    });
+    const px = (q: LatLng) => mapInstance.latLngToContainerPoint(q);
+    const segs: Seg[] = [];
+    for (const p of paths) {
+      for (let i = 1; i < p.points.length; i++) {
+        const a = px(p.points[i - 1]);
+        const b = px(p.points[i]);
+        segs.push([a.x, a.y, b.x, b.y]);
+      }
+    }
+    for (const m of [...pinMarkers, ...trackerMarkers.values()]) {
+      const label = m.getElement?.()?.querySelector('.rmap-label') as HTMLElement | null | undefined;
+      if (!label) continue;
+      const { lat, lng } = m.getLatLng();
+      const at = px([lat, lng]);
+      const gap = parseFloat(getComputedStyle(label).getPropertyValue('--rmap-label-gap')) || 11;
+      const w = label.offsetWidth;
+      const h = label.offsetHeight;
+      const side = pickSide(at.x, at.y, w, h, gap, { w: size.x, h: size.y }, blocked, segs);
+      label.dataset.side = side;
+      blocked.push(labelRect(side, at.x, at.y, w, h, gap));
+    }
   }
   $effect(() => {
     const b = bounds; // read first: mapInstance is not reactive
@@ -422,6 +471,7 @@
   function drawMarkers() {
     if (!LRef || !markerLayer) return;
     markerLayer.clearLayers();
+    pinMarkers = [];
     for (const m of markers) {
       const lm = LRef.marker([m.lat, m.lng], { icon: makeDivIcon(LRef, { color: m.color, icon: m.icon, label: m.label }) });
       if (m.popup) lm.bindPopup(escapeHtml(String(m.popup)));
@@ -430,7 +480,9 @@
         if (!dispatched) onmarkerclick?.(m.id!);
       });
       markerLayer.addLayer(lm);
+      pinMarkers.push(lm);
     }
+    placeLabels();
   }
 
   function drawPaths() {
@@ -448,6 +500,7 @@
       if (p.label) line.bindTooltip(escapeHtml(String(p.label)), { sticky: true });
       pathLayer.addLayer(line);
     }
+    placeLabels();
   }
 
   function drawPolygons() {
@@ -532,6 +585,7 @@
         }
       }
     }
+    placeLabels();
   }
 </script>
 
@@ -556,7 +610,7 @@
   /* Dark theme: darken the tiles only. */
   :global(.dark) .rmap :global(.leaflet-tile-pane),
   :global([data-theme='dark']) .rmap :global(.leaflet-tile-pane) {
-    filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9);
+    filter: invert(1) hue-rotate(180deg) saturate(0.25) brightness(0.9) contrast(0.9);
   }
 
   /* Leaflet chrome on tokens; these out-specify leaflet.css's own colours. */
@@ -600,11 +654,13 @@
     background: transparent !important;
     border: 0 !important;
   }
+  /* The pin's centre is the marker's point; the label hangs off it. */
   :global(.rmap-pin-wrap) {
     position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
     pointer-events: auto;
   }
   :global(.rmap-pin-dot) {
@@ -622,17 +678,48 @@
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
     display: inline-block;
   }
-  :global(.rmap-pin-label) {
-    margin-top: 4px;
+  /* Label chips: below the pin by default; placeLabels sets data-side. */
+  :global(.rmap-label) {
+    --rmap-label-gap: 11px;
+    position: absolute;
+    top: calc(50% + var(--rmap-label-gap));
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
     padding: 1px 6px;
     background: var(--ripple-surface);
     color: var(--ripple-surface-foreground);
     font-size: 11px;
     font-weight: 500;
+    line-height: 16px;
     border-radius: 4px;
     border: 1px solid var(--ripple-border);
     white-space: nowrap;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  }
+  :global(.rmap-pin-icon + .rmap-label) {
+    --rmap-label-gap: 17px;
+  }
+  :global(.rmap-tracker-label) {
+    --rmap-label-gap: 14px;
+  }
+  :global(.rmap-label[data-side='above']) {
+    top: auto;
+    bottom: calc(50% + var(--rmap-label-gap));
+  }
+  :global(.rmap-label[data-side='right']),
+  :global(.rmap-label[data-side='left']) {
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  :global(.rmap-label[data-side='right']) {
+    left: calc(50% + var(--rmap-label-gap));
+  }
+  :global(.rmap-label[data-side='left']) {
+    left: auto;
+    right: calc(50% + var(--rmap-label-gap));
   }
 
   /* Trackers: pulsing arrow. Movement is a rAF tween in script; a CSS
@@ -667,19 +754,6 @@
     border-bottom: 16px solid var(--rmap-tracker-color);
     transform: rotate(var(--rmap-tracker-rot));
     filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.4));
-  }
-  :global(.rmap-tracker-label) {
-    position: absolute;
-    bottom: -22px;
-    padding: 1px 6px;
-    background: var(--ripple-surface);
-    color: var(--ripple-surface-foreground);
-    font-size: 11px;
-    font-weight: 500;
-    border-radius: 4px;
-    border: 1px solid var(--ripple-border);
-    white-space: nowrap;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
   }
   @keyframes rmap-pulse {
     0% { transform: scale(0.5); opacity: 0.5; }

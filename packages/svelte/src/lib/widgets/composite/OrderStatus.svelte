@@ -16,9 +16,11 @@
 
   Map: composes `map` with the host's default tiles (no preset of its own),
   route and destination in the accent, origin neutral, the courier in the
-  accent unless the host gives `tracker.color`. It frames the whole trip with
-  32px padding at mount and refits only when origin or destination move; a
-  single point is centre plus street zoom. The route is latched: an empty
+  accent unless the host gives `tracker.color`; on the pickup pipeline the
+  origin is where the customer goes, so it reads "Pickup at" in the accent. It
+  frames the whole trip at mount, padded clear of the zoom buttons (top left)
+  and the attribution (bottom right), and refits only when origin or
+  destination move; a single point is centre plus street zoom. The route is latched: an empty
   `route` (a tracker API's final state) keeps the last one drawn, and a null
   `tracker` drops the courier marker. The map block never depends on step
   state, so a polling host never remounts it.
@@ -168,7 +170,7 @@
   const head = $derived(headline(title, p));
   const order = $derived(asText(orderId).trim());
   const etaText = $derived(plain(eta));
-  const whenLabel = $derived(etaLabel(p));
+  const whenLabel = $derived(etaLabel(p, etaText));
   const track = $derived(cleanTracking(tracking));
 
   // Rail --------------------------------------------------------------------
@@ -180,6 +182,8 @@
 
   // Places and map -------------------------------------------------------------
   const from = $derived(cleanPlace(origin, 'Origin'));
+  // On the pickup pipeline the origin is the customer's destination.
+  const pickup = $derived(p.pipeline === 'pickup');
   const to = $derived(cleanPlace(destination, 'Destination'));
   const courier = $derived(point(tracker));
   const routePts = $derived(
@@ -193,7 +197,7 @@
 
   const mapMarkers = $derived.by(() => {
     const m: { id: string; lat: number; lng: number; label: string; color: string }[] = [];
-    if (from?.at) m.push({ id: 'origin', lat: from.at[0], lng: from.at[1], label: from.name || 'Origin', color: 'var(--ripple-muted-foreground)' });
+    if (from?.at) m.push({ id: 'origin', lat: from.at[0], lng: from.at[1], label: from.name || 'Origin', color: pickup ? 'var(--ripple-accent)' : 'var(--ripple-muted-foreground)' });
     if (to?.at) m.push({ id: 'destination', lat: to.at[0], lng: to.at[1], label: to.name || 'Destination', color: 'var(--ripple-accent)' });
     return m;
   });
@@ -252,6 +256,8 @@
     });
   });
 
+  // Clear of the 28px zoom stack (top left) and the attribution bar (bottom right).
+  const MAP_PAD = { topLeft: [44, 58] as LatLng, bottomRight: [28, 32] as LatLng };
   const mapCenter = $derived<LatLng>(courier ?? to?.at ?? from?.at ?? tripRoute[0] ?? [0, 0]);
   const listed = $derived([from?.listed && from, to?.listed && to].some(Boolean));
 
@@ -298,7 +304,7 @@
     </div>
     {#if etaText}
       <p class="rorder-when">
-        <span class="rorder-when-label text-callout">{whenLabel}</span>
+        {#if whenLabel}<span class="rorder-when-label text-callout">{whenLabel}</span>{/if}
         <span class="rorder-when-value text-body-emph">{etaText}</span>
       </p>
     {/if}
@@ -306,7 +312,7 @@
       <div class="rorder-tracking">
         <span class="rorder-tracking-label text-caption-1">Tracking</span>
         <span class="rorder-tracking-line text-callout">
-          {#if track.carrier}<span class="rorder-carrier">{track.carrier}</span><span class="rorder-sep" aria-hidden="true">·</span>{/if}
+          {#if track.carrier}<span class="rorder-carrier">{track.carrier}</span>{/if}
           {#if track.url && safeUrl(track.url)}
             <a href={safeUrl(track.url)} target="_blank" rel="noopener noreferrer" class="rorder-tracking-num">
               {track.number}<ExternalLink size={12} strokeWidth={2} class="rorder-ext" aria-hidden="true" /><span class="sr-only"> (opens in a new tab)</span>
@@ -358,13 +364,13 @@
   {#if computedShowMap || listed}
     <div class={cn('rorder-mid', computedShowMap && listed && 'rorder-mid-split')}>
       {#if computedShowMap}
-        <div class="rorder-map" role="region" aria-label="Map of the delivery route">
+        <div class="rorder-map" role="region" aria-label={pickup ? 'Map of the pickup place' : 'Map of the delivery route'}>
           <Map
             tiles={mapTiles}
             center={mapCenter}
             zoom={14}
             bounds={tripBounds}
-            boundsPadding={32}
+            boundsPadding={MAP_PAD}
             height={mapHeight ?? 'var(--rorder-map-h)'}
             markers={mapMarkers}
             paths={mapPaths}
@@ -377,7 +383,7 @@
       {/if}
       {#if listed}
         <div class="rorder-places">
-          {#if from?.listed}{@render place(from, 'From', 'origin')}{/if}
+          {#if from?.listed}{@render place(from, pickup ? 'Pickup at' : 'From', pickup ? 'destination' : 'origin')}{/if}
           {#if to?.listed}{@render place(to, 'To', 'destination')}{/if}
         </div>
       {/if}
@@ -505,11 +511,34 @@
   .rorder-tracking-label {
     color: var(--ripple-muted-foreground);
   }
+  /* Carrier and number wrap as two flex items. The dot between them hangs
+     in the column gap off the item that meets the edge when they share a
+     line; once the number wraps, the dot falls past the clipped edge, so it
+     never dangles at a line end. The 4px padding keeps the focus ring. */
   .rorder-tracking-line {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: 14px;
+    margin-inline: -4px;
+    padding-inline: 4px;
+    overflow-x: clip;
+  }
+  .rorder-carrier,
+  .rorder-tracking-num {
+    position: relative;
+    min-width: 0;
     overflow-wrap: anywhere;
   }
   .rorder-tracking-num {
     font-variant-numeric: tabular-nums;
+  }
+  .rorder-carrier + .rorder-tracking-num::before {
+    content: '·' / '';
+    position: absolute;
+    right: 100%;
+    width: 14px;
+    text-align: center;
+    color: var(--ripple-muted-foreground);
   }
   a.rorder-tracking-num {
     color: var(--ripple-accent-text);
@@ -528,10 +557,6 @@
     display: inline;
     margin-left: 3px;
     vertical-align: -1px;
-  }
-  .rorder-sep {
-    margin: 0 0.35em;
-    color: var(--ripple-muted-foreground);
   }
 
   /* Rail -------------------------------------------------------------------- */
@@ -624,6 +649,11 @@
     max-width: 100%;
   }
   .rorder-step-label {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
     overflow-wrap: break-word;
     hyphens: auto;
     font-size: var(--text-caption-2);
@@ -929,6 +959,21 @@
       align-items: flex-end;
       text-align: right;
       padding-top: 2px;
+    }
+    /* Right-aligned: the dot hangs off the carrier's end instead. */
+    .rorder-tracking-line {
+      justify-content: flex-end;
+    }
+    .rorder-carrier + .rorder-tracking-num::before {
+      content: none;
+    }
+    .rorder-carrier:has(+ .rorder-tracking-num)::after {
+      content: '·' / '';
+      position: absolute;
+      left: 100%;
+      width: 14px;
+      text-align: center;
+      color: var(--ripple-muted-foreground);
     }
   }
 

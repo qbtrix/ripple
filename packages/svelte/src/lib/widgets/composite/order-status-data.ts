@@ -177,12 +177,21 @@ export function headline(title: unknown, p: Progress): string {
 	return p.steps[p.active]?.label ?? 'Order status';
 }
 
-/** The word before the ETA value. */
-export function etaLabel(p: Progress): string {
-	if (p.bad) return 'Next step';
-	if (p.finished) return p.steps[p.steps.length - 1]?.label ?? 'Delivered';
-	if (p.pipeline === 'pickup') return 'Pickup';
-	return 'Estimated arrival';
+const firstWord = (t: string) => t.trim().split(/\s+/)[0]?.toLowerCase() ?? '';
+
+/**
+ * The word before the ETA value, or '' when the value already opens with the
+ * label's first word ("Next attempt tomorrow" needs no "Next step").
+ */
+export function etaLabel(p: Progress, eta = ''): string {
+	const label = p.bad
+		? 'Next step'
+		: p.finished
+			? (p.steps[p.steps.length - 1]?.label ?? 'Delivered')
+			: p.pipeline === 'pickup'
+				? 'Pickup'
+				: 'Estimated arrival';
+	return eta && firstWord(eta) === firstWord(label) ? '' : label;
 }
 
 export interface CleanEvent {
