@@ -368,11 +368,7 @@
 							<li
 								class={[
 									'h-1 min-w-0.5 flex-1 basis-0 first:rounded-l-full last:rounded-r-full',
-									r === 'got'
-										? 'bg-ripple-success'
-										: r === 'missed'
-											? 'bg-ripple-error'
-											: k !== pos && 'bg-ripple-track'
+									r === 'got' ? 'bg-ripple-success' : r === 'missed' ? 'bg-ripple-error' : k === pos ? 'bg-ripple-accent' : 'bg-ripple-track'
 								]}
 								data-mark={r ?? (k === pos ? 'now' : 'todo')}
 								aria-current={k === pos ? 'step' : undefined}
@@ -415,7 +411,7 @@
 							<span class={['deck-inner', `deck-h-${height}`]} data-height={height}>
 								<span
 									class={[
-										'deck-face deck-front flex flex-col justify-center gap-3 rounded-ripple border border-ripple-border bg-(--deck-face) p-5',
+										'deck-face deck-front flex flex-col justify-center gap-3 rounded-ripple border border-ripple-border bg-ripple-card-face p-5',
 										card.front.length > 90 ? 'items-start text-left' : 'items-center text-center'
 									]}
 									aria-hidden={flipped}
@@ -435,7 +431,7 @@
 								</span>
 								<span
 									class={[
-										'deck-face deck-back flex flex-col justify-center gap-2 rounded-ripple border border-ripple-accent/40 bg-[color-mix(in_oklab,var(--ripple-accent)_8%,var(--deck-face))] p-5',
+										'deck-face deck-back flex flex-col justify-center gap-2 rounded-ripple border border-ripple-accent/40 bg-[color-mix(in_oklab,var(--ripple-accent)_8%,var(--ripple-card-face))] p-5',
 										card.back.length > 90 ? 'items-start text-left' : 'items-center text-center'
 									]}
 									aria-hidden={!flipped}
@@ -474,13 +470,11 @@
 </div>
 
 <style>
-	/* 2px gaps while every segment stays at least 6px wide, closing to 0 for long decks. */
+	/* Whole-pixel gaps: 2px while every segment stays at least 6px wide, else 0, so
+	   a long deck's todo segments abut into one track instead of ragged dashes. */
 	.rail {
-		gap: clamp(0px, calc((100% - var(--n) * 6px) / max(var(--n) - 1, 1)), 2px);
-	}
-	/* The current segment fills only its leading part, so a one-card rail never reads as done. */
-	.rail [data-mark='now'] {
-		background: linear-gradient(to right, var(--ripple-accent) max(6px, 40%), var(--ripple-track) 0);
+		gap: 2px;
+		gap: round(down, clamp(0px, calc((100% - var(--n) * 6px) / max(var(--n) - 1, 1)), 2px), 2px);
 	}
 	.keyhint {
 		display: none;
@@ -494,14 +488,9 @@
 		}
 	}
 
-	/* Sheets peek straight down below the card while more cards remain; never hit-tested. */
-	/* Card fill (faces and sheets): paper, lighter than the host card in both themes.
-	   --ripple-raised is only a chip lift: hosts paint the chat card lighter than
-	   --ripple-surface, so it reads recessed in light, and at full strength it is a
-	   mid grey in dark. Keyed off the ink, so a transparent host surface still works:
-	   white for dark ink, a step above a dark card for light ink. */
+	/* Sheets peek straight down below the card while more cards remain; never hit-tested.
+	   Faces and sheets share the --ripple-card-face paper (theme.css). */
 	.deck-stack {
-		--deck-face: oklch(from var(--ripple-surface-foreground) min(1, calc(1.2 - l * 0.9)) calc(c * 0.5) h);
 		position: relative;
 		isolation: isolate;
 		padding-bottom: 12px;
@@ -514,7 +503,7 @@
 		pointer-events: none;
 		border: 1px solid var(--ripple-border);
 		border-radius: var(--ripple-radius);
-		background: var(--deck-face);
+		background: var(--ripple-card-face);
 	}
 	.deck-stack::before {
 		inset: 12px 8px 6px;
