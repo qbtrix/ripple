@@ -14,7 +14,8 @@
     "check": "bun run --filter '*' check",
     "lint": "bun run --filter @ripple-ui/svelte lint",
     "test": "bun run --filter '*' test",
-    "verify": "bun run scripts/verify.mjs"
+    "verify": "bun run scripts/verify.mjs",
+    "pack:release": "node scripts/pack-release.mjs"
   },
   "devDependencies": {
     "typescript": "^5.9.3"

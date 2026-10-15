@@ -8,11 +8,10 @@
 # Invariants:
 # - Pack runs before publish, and the publish steps upload those exact
 #   tarballs, so npm and the release carry the same bytes.
-# - package.json in git stays workspace-shaped. The pack step rewrites it in
-#   the runner only: core loses its `source` export conditions (they point at
-#   src/, which is not shipped; the workspace build resolves core from source
-#   with them), and svelte's `@ripple-ui/core: file:../core` becomes
-#   `^<core version>`. Consumers of a ripple checkout rely on file:.
+# - package.json in git stays workspace-shaped. scripts/pack-release.mjs
+#   rewrites it only while packing (core drops its `source` export conditions,
+#   svelte's `@ripple-ui/core: file:../core` becomes `^<core version>`), then
+#   fails the run if a tarball still carries a file: dependency.
 # - Core publishes before svelte, which depends on it. A version already on
 #   npm is skipped, so a re-dispatch after a partial publish still reaches the
 #   release step.
@@ -60,29 +59,11 @@ jobs:
         run: bun run build
 
       - name: Pack tarballs
+        # Publish-shape rewrite, pack and tarball checks all live in the script
+        # (see its header); a manual publish runs the same file.
         run: |
           set -euo pipefail
-          mkdir -p release
-          # Publish-shape package.json, in this runner only (see the header).
-          node -e '
-            const fs = require("fs");
-            const read = (f) => JSON.parse(fs.readFileSync(f, "utf8"));
-            const write = (f, p) => fs.writeFileSync(f, JSON.stringify(p, null, 2) + "\n");
-            const core = read("packages/core/package.json");
-            const strip = (e) => {
-              if (e && typeof e === "object") { delete e.source; Object.values(e).forEach(strip); }
-            };
-            strip(core.exports);
-            if (JSON.stringify(core.exports).includes("\"source\"")) throw new Error("source condition left in core exports");
-            write("packages/core/package.json", core);
-            const svelte = read("packages/svelte/package.json");
-            if (!svelte.dependencies || !svelte.dependencies["@ripple-ui/core"]) throw new Error("no @ripple-ui/core dependency");
-            svelte.dependencies["@ripple-ui/core"] = "^" + core.version;
-            write("packages/svelte/package.json", svelte);
-          '
-          grep -n '"@ripple-ui/core"' packages/svelte/package.json
-          (cd packages/core && npm pack --pack-destination ../../release)
-          (cd packages/svelte && npm pack --pack-destination ../../release)
+          node scripts/pack-release.mjs release
           ls -la release
 
       - name: Publish @ripple-ui/core
