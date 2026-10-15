@@ -295,18 +295,18 @@
         <h2 class="rorder-title text-title-3 font-semibold text-pretty" title={head}>{head}</h2>
         {#if p.bad}<StatusPill status="bad" label={p.bad === 'cancelled' ? 'Cancelled' : 'Failed'} class="rorder-pill" />{/if}
       </div>
-      {#if etaText}
-        <p class="rorder-when">
-          <span class="rorder-when-label text-callout">{whenLabel}</span>
-          <span class="rorder-when-value text-body-emph">{etaText}</span>
-        </p>
-      {/if}
     </div>
+    {#if etaText}
+      <p class="rorder-when">
+        <span class="rorder-when-label text-callout">{whenLabel}</span>
+        <span class="rorder-when-value text-body-emph">{etaText}</span>
+      </p>
+    {/if}
     {#if track}
       <div class="rorder-tracking">
         <span class="rorder-tracking-label text-caption-1">Tracking</span>
         <span class="rorder-tracking-line text-callout">
-          {#if track.carrier}<span class="rorder-carrier">{track.carrier}</span><span class="rorder-sep" aria-hidden="true"> · </span>{/if}
+          {#if track.carrier}<span class="rorder-carrier">{track.carrier}</span><span class="rorder-sep" aria-hidden="true">·</span>{/if}
           {#if track.url && safeUrl(track.url)}
             <a href={safeUrl(track.url)} target="_blank" rel="noopener noreferrer" class="rorder-tracking-num">
               {track.number}<ExternalLink size={12} strokeWidth={2} class="rorder-ext" aria-hidden="true" /><span class="sr-only"> (opens in a new tab)</span>
@@ -356,7 +356,7 @@
   {/if}
 
   {#if computedShowMap || listed}
-    <div class={cn('rorder-mid', computedShowMap && 'rorder-mid-with-map')}>
+    <div class={cn('rorder-mid', computedShowMap && listed && 'rorder-mid-split')}>
       {#if computedShowMap}
         <div class="rorder-map" role="region" aria-label="Map of the delivery route">
           <Map
@@ -433,6 +433,8 @@
     width: 100%;
     min-width: 0;
     color: var(--ripple-surface-foreground);
+    font-size: var(--text-body);
+    line-height: var(--lh-body);
     --rorder-map-h: 180px;
   }
   .rorder p,
@@ -528,6 +530,7 @@
     vertical-align: -1px;
   }
   .rorder-sep {
+    margin: 0 0.35em;
     color: var(--ripple-muted-foreground);
   }
 
@@ -621,12 +624,8 @@
     max-width: 100%;
   }
   .rorder-step-label {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    overflow: hidden;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
+    hyphens: auto;
     font-size: var(--text-caption-2);
     line-height: 1.3;
     font-weight: 500;
@@ -914,10 +913,18 @@
     .rorder-header {
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(0, max-content);
+      grid-template-areas: 'head track' 'when when';
       column-gap: 24px;
       align-items: start;
     }
+    .rorder-head {
+      grid-area: head;
+    }
+    .rorder-when {
+      grid-area: when;
+    }
     .rorder-tracking {
+      grid-area: track;
       max-width: 17rem;
       align-items: flex-end;
       text-align: right;
@@ -935,13 +942,13 @@
     .rorder-map {
       --rorder-map-h: 240px;
     }
-    .rorder-mid-with-map {
+    .rorder-mid-split {
       display: grid;
       grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
       gap: 20px;
       align-items: start;
     }
-    .rorder-mid:not(.rorder-mid-with-map) .rorder-places {
+    .rorder-mid:not(.rorder-mid-split) .rorder-places {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 20px;

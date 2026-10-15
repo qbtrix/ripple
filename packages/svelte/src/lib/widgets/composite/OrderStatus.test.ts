@@ -200,7 +200,7 @@ describe('order-status updates and actions', () => {
 					{ label: '**Delivered** to the front desk', icon: 'rocket-ship-xyz' },
 					{ time: '08:00', label: '- Departed facility', icon: 'truck' },
 					{ time: 'Yesterday', label: '' }
-				]
+				] as { time: string; label: string; icon?: string }[]
 			}
 		});
 		const rows = [...container.querySelectorAll('.rorder-event')];
