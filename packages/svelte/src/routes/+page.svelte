@@ -104,8 +104,9 @@
 	const replayable = new Set(chatScenarios.map((s) => s.id));
 	const suggestions = LIVE
 		? groupedSuggestions([...liveChips, ...chatScenarios])
-		: groupedSuggestions([...answerPool, ...chatPrompts]).map((c) => (replayable.has(c.id) ? c : { ...c, handoff: true }))
-				.sort((a, b) => Number(!!a.handoff) - Number(!!b.handoff));
+		: groupedSuggestions([...answerPool, ...chatPrompts])
+				.map((c) => ({ ...c, handoff: !replayable.has(c.id) }))
+				.sort((a, b) => Number(a.handoff) - Number(b.handoff));
 
 	// Step 3 of "how it works": a small spec, rendered for real.
 	const demoSpec = {

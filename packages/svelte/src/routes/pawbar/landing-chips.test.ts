@@ -34,7 +34,7 @@ test('replay mode renders every live chip, the ones that replay here first', asy
 	const out = row.findIndex((b) => b.hasAttribute('aria-describedby'));
 	if (out >= 0) expect(row.slice(out).every((b) => b.hasAttribute('aria-describedby'))).toBe(true);
 	await fireEvent.click(toggle);
-	const shown = [...view.container.querySelectorAll('.chip-group')].map((g) => [
+	const shown: [string | null | undefined, string[]][] = [...view.container.querySelectorAll('.chip-group')].map((g) => [
 		g.querySelector('.chips')?.getAttribute('aria-label'),
 		[...g.querySelectorAll('button.chip')].map(chipTitle)
 	]);
