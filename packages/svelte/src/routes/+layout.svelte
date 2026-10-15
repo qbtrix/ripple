@@ -7,10 +7,10 @@
     where every item is an icon with an aria-label and a tooltip and the
     current one is PE's liquid-glass pill carrying its icon and label; on the
     right the docs search as a ⌘K chip, the GitHub, sound and theme icon buttons, and a
-    blue "Try Paw OS" pill in PlanBadge's paid style. The strip is PE's frosted
+    blue "Get early access" pill in PlanBadge's paid style. The strip is PE's frosted
     shade over the warm ground with its faint cool tint, mirrored in light.
-    Below 640px the nav sits between the mark and the tools, GitHub and Try Paw
-    OS leave the bar (the footer carries both), and on small phones a long
+    Below 640px the nav sits between the mark and the tools, GitHub and the
+    early-access pill leave the bar (the footer carries both), and on small phones a long
     active label (Design system) shows its short form so 375px never scrolls sideways.
     Below 400px every tab is icon-only, the active one included, so five tabs
     and the tools fit a 320px phone.
@@ -19,9 +19,10 @@
     fonts come from ./site.css. Theme: static/theme-init.js sets `dark` on
     <html> before paint; this reads and flips that class and remembers it.
     Sound: the speaker button flips $lib/sound's on/off flag (widget cues).
-    Labs and dev routes stay reachable by URL, unlinked. The bar says "Try Paw
-    OS" (the pill's accessible name carries "by PocketPaw"), and the footer
-    links "Paw OS by PocketPaw". It points the model-viewer library at the
+    Labs and dev routes stay reachable by URL, unlinked. The pill says "Get
+    early access" (its accessible name names Paw OS and the free credits), and
+    the footer links "Paw OS early access"; both open EARLY_ACCESS_URL, the
+    build's PUBLIC_PAWOS_URL with ?ref=ripple. It points the model-viewer library at the
     site's own /models/ so 3D cards load same-origin, and defaults maps to OSM
     tiles (the CSP also admits CARTO's, for specs that pick a carto preset).
 -->
@@ -41,7 +42,7 @@
 	import '$lib/styles.css';
 	import './site.css';
 	import Search from '$lib/site/docs/Search.svelte';
-	import { pawosBase } from './pawbar/session.svelte.js';
+	import { EARLY_ACCESS_URL } from './pawbar/session.svelte.js';
 	import { setModelAssetBase } from '$lib/widgets/media/model-asset-types.js';
 	import { setMapDefaultTiles } from '$lib/widgets/data/Map.svelte';
 
@@ -55,7 +56,6 @@
 	const GITHUB_URL = 'https://github.com/qbtrix/ripple-iui';
 	// The packages are not on npm yet; the footer points at the release tarballs.
 	const RELEASES_URL = 'https://github.com/qbtrix/ripple-iui/releases';
-	const PAWOS_TRY = `${pawosBase(import.meta.env.PUBLIC_PAWOS_URL ?? '')}/?ref=ripple`;
 	// `short` is the active pill's label on phones; null means icon only there.
 	const nav = [
 		{ href: '/', label: 'Chat', short: 'Chat', icon: MessageSquare },
@@ -150,7 +150,7 @@
 				>
 					{#if dark}<Sun size={14} strokeWidth={2} aria-hidden="true" />{:else}<Moon size={14} strokeWidth={2} aria-hidden="true" />{/if}
 				</button>
-				<a href={PAWOS_TRY} class="try wide" aria-label="Try Paw OS by PocketPaw">Try Paw OS</a>
+				<a href={EARLY_ACCESS_URL} class="try wide" aria-label="Get early access to Paw OS, free credits included">Get early access</a>
 			</div>
 		</div>
 	</header>
@@ -159,8 +159,8 @@
 
 	<footer class="foot">
 		<p>
-			<span>MIT</span><a href={RELEASES_URL}>Releases</a><a href={GITHUB_URL}>GitHub</a><a href="/playground">Playground</a><a href={PAWOS_TRY}
-				>Paw OS by PocketPaw</a
+			<span>MIT</span><a href={RELEASES_URL}>Releases</a><a href={GITHUB_URL}>GitHub</a><a href="/playground">Playground</a><a href={EARLY_ACCESS_URL}
+				>Paw OS early access</a
 			>
 		</p>
 	</footer>

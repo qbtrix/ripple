@@ -58,7 +58,7 @@ test('a chip with no recording hands its prompt to Paw OS; a recorded chip still
 	await fireEvent.click(view.getByRole('button', { name: 'Show all suggestions' }));
 
 	const table = view.getByRole('button', { name: 'Book a table step by step' });
-	expect(document.getElementById(table.getAttribute('aria-describedby')!)?.textContent).toBe('Opens in Paw OS');
+	expect(document.getElementById(table.getAttribute('aria-describedby')!)?.textContent).toBe('Opens in Paw OS, free early-access credits');
 	await fireEvent.click(table);
 	expect(open).toHaveBeenCalledOnce();
 	expect(open.mock.calls[0][0]).toBe(pawosHandoffUrl('Book a table for 4 on Saturday evening').url);

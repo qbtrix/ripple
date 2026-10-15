@@ -11,7 +11,7 @@ import { hideSpecText, parseSSE, segments, type SSEFrame } from './sse.js';
 import { cardChunks, findScenario, pickScenario, recordedEvents, recordedExchange } from './recorded.js';
 import { playScenarios } from './play-cards.js';
 import {
-	BYOK_URL,
+	EARLY_ACCESS_URL,
 	FLOW_MESSAGE_MAX,
 	HANDOFF_MAX,
 	PAWOS_URL,
@@ -372,7 +372,7 @@ describe('ChatSession', () => {
 	test('unavailable, error and interrupted end the turn with a calm notice', async () => {
 		const limit = new ChatSession(frames({ event: 'unavailable', data: { type: 'unavailable', reason: 'limit' } }));
 		await limit.send('x');
-		expect(lastTurn(limit).notice).toMatchObject({ kind: 'limit', link: { href: BYOK_URL } });
+		expect(lastTurn(limit).notice).toMatchObject({ kind: 'limit', link: { href: EARLY_ACCESS_URL } });
 		const busy = new ChatSession(frames({ event: 'unavailable', data: { type: 'unavailable', reason: 'temporary' } }));
 		await busy.send('x');
 		expect(lastTurn(busy).notice?.kind).toBe('busy');
@@ -712,6 +712,11 @@ describe('Paw OS handoff config', () => {
 		expect(pawosBase('http://os.example.test')).toBe(PAWOS_URL);
 		expect(pawosBase('javascript:alert(1)')).toBe(PAWOS_URL);
 		expect(pawosBase('')).toBe(PAWOS_URL);
+	});
+
+	test('the early-access link is the build-time Paw OS base with the ripple ref', () => {
+		expect(EARLY_ACCESS_URL).toBe(`${pawosBase(import.meta.env.PUBLIC_PAWOS_URL)}/?ref=ripple`);
+		expect(EARLY_ACCESS_URL).not.toMatch(/byok|key/i);
 	});
 
 	test('the prompt rides in the fragment, trimmed to HANDOFF_MAX', () => {
