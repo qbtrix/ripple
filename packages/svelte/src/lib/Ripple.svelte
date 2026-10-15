@@ -370,7 +370,12 @@
       if (streaming && streaming.done && streaming.error && streaming.current == null) {
         return 'stream-error';
       }
-      if (streaming && streaming.current == null && !streaming.done) return 'skeleton';
+      // Skeleton until something drawable arrives: a spec that streams `state`
+      // before `ui` would otherwise paint an empty container for a beat.
+      if (streaming && !streaming.done) {
+        const partial = streaming.current as { ui?: unknown; intent?: unknown } | null;
+        if (partial == null || (partial.ui == null && partial.intent == null)) return 'skeleton';
+      }
       if (spec.intent === 'dashboard') return 'dashboard';
       // Designed layouts dispatch through IntentRenderer.
       if (DESIGNED_INTENTS.has(spec.intent as string)) return 'intent';
