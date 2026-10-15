@@ -111,9 +111,9 @@
       </svg>
       <div class="g-centre">
         {#if g.hasValue}
-          <span class={cn('g-num', g.numberCompact && 'g-full')} style="--gl:{g.number.length}">{g.number}</span>
+          <span class={cn('g-num', g.numberCompact && 'g-full')} style:--gl={g.number.length}>{g.number}</span>
           {#if g.numberCompact}
-            <span class="g-num g-compact" style="--gl:{g.numberCompact.length}">{g.numberCompact}</span>
+            <span class="g-num g-compact" style:--gl={g.numberCompact.length}>{g.numberCompact}</span>
           {/if}
           {#if g.target}
             <span class="g-target text-ripple-muted-foreground">
