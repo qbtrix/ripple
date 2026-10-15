@@ -140,16 +140,6 @@
 		"h": 600
 	},
 	{
-		"id": "live-explainer",
-		"title": "How bicycle gears work",
-		"caption": "Explain how a bicycle's gears work. Show the drivetrain as a diagram where I can pick a part to see what it does, and let me change the chainring and cog teeth to see the gear ratio and how far one pedal turn takes me.",
-		"group": "Learn",
-		"tag": "Recorded",
-		"href": "/live?s=explainer",
-		"w": 800,
-		"h": 600
-	},
-	{
 		"id": "live-memory-match",
 		"title": "Memory match",
 		"caption": "Make me a memory match game pairing Spanish animal words with their emoji",
@@ -340,22 +330,22 @@
 		"h": 600
 	},
 	{
-		"id": "live-iso-bike",
-		"title": "Bicycle drivetrain",
-		"caption": "Show how a bike's chain drive works as a live drawing, with a cadence slider and how far one pedal turn takes you",
+		"id": "live-heart-pump",
+		"title": "How a heart pumps",
+		"caption": "How does the heart pump blood? Show me the two sides and the valves, and let me change the heart rate.",
 		"group": "Drawings",
 		"tag": "Hand-written",
-		"href": "/live?s=iso-bike",
+		"href": "/live?s=heart-pump",
 		"w": 800,
 		"h": 600
 	},
 	{
-		"id": "live-iso-heart",
-		"title": "The heart as two pumps",
-		"caption": "Draw the heart as two pumps I can watch beating, with a heart rate slider and labels on the chambers",
+		"id": "live-bike-gears",
+		"title": "How bike gears work",
+		"caption": "How do bike gears work? Show me the drivetrain and let me change the gear and my cadence.",
 		"group": "Drawings",
 		"tag": "Hand-written",
-		"href": "/live?s=iso-heart",
+		"href": "/live?s=bike-gears",
 		"w": 800,
 		"h": 600
 	},
@@ -416,16 +406,6 @@
 		"group": "Drawings",
 		"tag": "Hand-written",
 		"href": "/live?s=particle-collider",
-		"w": 800,
-		"h": 600
-	},
-	{
-		"id": "live-heart",
-		"title": "How a heart pumps blood",
-		"caption": "How does the heart pump blood? Draw an animated picture with numbered notes on the chambers and valves.",
-		"group": "Drawings",
-		"tag": "Hand-written",
-		"href": "/live?s=heart",
 		"w": 800,
 		"h": 600
 	},

@@ -9,10 +9,14 @@
 // A demo's widget is its id; a run's is the first demo widget its spec uses,
 // else its own id. A run that replaces a demo takes the demo's group, so
 // Drawings keeps its card, and every iso drawing (isoKeys) sits in Drawings.
-// OFF_GRID runs repeat a topic another card already shows; they keep their
-// landing chip and key but get no card. A business run (For business) is
-// always its own card in its own group. Pruned items still open: a pruned run by its key,
-// a pruned demo's key resolves to the run that replaced it (resolveKey). Thumbs
+// OFF_GRID keys repeat a topic another card already shows and get no card:
+// the heart and bike gears show as their hand-built figures (heart-pump,
+// bike-gears), so the older iso-scene cards (iso-heart, iso-bike), the recorded
+// gears explainer, the hand-written heart illustration and the illustration
+// demo (its thumb is that same heart) open by key only. A business run (For
+// business) is always its own card in its own group. Pruned items still open:
+// a pruned run or OFF_GRID demo by its key, any other pruned demo's key
+// resolves to the run that replaced it (resolveKey). Thumbs
 // are static/thumbs/<id>.webp for grid items only, at THUMB_W x THUMB_H.
 // gallery.test.ts holds all of this. Old /showcase URLs redirect here
 // (routes/showcase/[...path]).
@@ -100,8 +104,8 @@ const widgetOf = (s: (typeof liveRuns)[number]) => {
 const ISO_TYPE = /\\?"type\\?"\s*:\s*\\?"(figure|iso-scene|iso|isometric)\\?"/;
 export const isoKeys = new Set(liveRuns.filter((s) => ISO_TYPE.test(s.fixture.chunks.map((c) => c.text).join(''))).map((s) => s.id));
 
-/** Same topic as another card (heart, bike gears): still opens by key, no grid card. */
-const OFF_GRID = new Set(['heart-pump', 'bike-gears']);
+/** Same topic as a figure card (heart, bike gears): still opens by key, no grid card. */
+const OFF_GRID = new Set(['iso-heart', 'iso-bike', 'explainer', 'heart', demoKey('illustration')]);
 
 /** Every run as an item, pruned or not. */
 export const liveItems: GalleryItem[] = liveRuns.map((s) => {
@@ -126,7 +130,7 @@ const runFor = (widget: string) => shownRuns.find((r) => r.widget === widget);
 
 /** The grid: one card per widget type, by group, runs before demos within each. */
 export const galleryItems: GalleryItem[] = GROUPS.flatMap((g) =>
-	[...shownRuns, ...demoItems.filter((d) => !runFor(d.widget))].filter((i) => i.group === g)
+	[...shownRuns, ...demoItems.filter((d) => !OFF_GRID.has(d.key) && !runFor(d.widget))].filter((i) => i.group === g)
 );
 
 /** A pruned demo's key gives way to the run that replaced it; any other key is itself. */
