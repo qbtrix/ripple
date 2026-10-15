@@ -428,7 +428,8 @@ export function layout(
 			const items = nodes.filter((q) => depth[q.i] === r).toSorted((a, b) => a.y + a.h / 2 - (b.y + b.h / 2));
 			const hi = edge(r, 'x0')! - NEAR;
 			const lo = r ? edge(r - 1, 'x1')! + FAR : 0;
-			const blocks = stubs.filter((s) => depth[s.i] === r - 1).map((s) => s.box);
+			// ponytail: a hairline stub (under 4px) may sit under a chip; it shows nothing a reader could see.
+			const blocks = stubs.filter((s) => depth[s.i] === r - 1 && s.box.h >= 4).map((s) => s.box);
 			// A remainder stub of the rank before, beside the label, narrows its zone.
 			const from = (y: number, h: number) => Math.max(lo, ...blocks.filter((b) => b.y < y + h + 2 && y < b.y + b.h + 2).map((b) => b.x + b.w + 2));
 			const kind = new Map<number, Kind | null>();
