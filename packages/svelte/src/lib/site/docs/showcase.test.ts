@@ -3,7 +3,8 @@
 // NOT_ROOT) and passes the bound spec audit (schema, catalog, actions, props
 // and the rest; not futureDate, since gantt and calendar plan ahead), and the
 // widget page previews the showcase spec in place of the manifest example,
-// which a root showcase must not repeat.
+// which a root showcase must not repeat. The wave-4 samples' arithmetic
+// matches the verdict text they print.
 // Every asset URL is same-origin or on a host the site CSP allows, and every
 // local media file exists under static/. Rendering is covered by
 // widgets.test.ts, which renders every page's pageSpecs(...).example.
@@ -27,6 +28,12 @@ const ALLOWED_HOSTS = ['images.unsplash.com', 'i.pravatar.cc', 'example.com'];
 
 const staticFiles = new Set(Object.keys(import.meta.glob('/static/**/*.{jpg,mp4,mp3,m4a,svg,glb}', { query: '?url' })));
 const entry = (type: string) => manifestEntries.find((e) => e.type === type);
+// Typed views of the wave-4 samples whose arithmetic the verdict text quotes.
+type Cost = { cost?: number };
+type Trip = { state: { days: { stops: Cost[] }[] }; ui: { props: { budget: number; legs: Cost[] } } };
+type MealPlan = { ui: { props: { recipes: { id: string; protein_g: number }[]; days: { meals: { recipe: string }[] }[] } } };
+type Gauge = { ui: { props: { value: number; max: number } } };
+const costs = (xs: Cost[]) => xs.reduce((n, x) => n + (x.cost ?? 0), 0);
 const cases = Object.entries(SHOWCASE).map(([type, spec]) => ({ type, spec }));
 
 describe('widget showcase specs', () => {
@@ -77,6 +84,26 @@ describe('widget showcase specs', () => {
 				'sankey'
 			])
 		);
+	});
+
+	it('covers the wave-4 widgets', () => {
+		expect(Object.keys(SHOWCASE)).toEqual(
+			expect.arrayContaining(['itinerary', 'meal-plan', 'weather-forecast', 'bill-split', 'quiz', 'flashcard-deck'])
+		);
+	});
+
+	it('wave-4 sample numbers add up to what their verdicts say', () => {
+		const trip: Trip = JSON.parse(JSON.stringify(SHOWCASE.itinerary));
+		const spend = trip.state.days.reduce((n, d) => n + costs(d.stops), 0) + costs(trip.ui.props.legs);
+		expect(spend - trip.ui.props.budget).toBeCloseTo(120, -1); // "About €120 over budget"
+
+		const plan: MealPlan = JSON.parse(JSON.stringify(SHOWCASE['meal-plan']));
+		const protein = new Map(plan.ui.props.recipes.map((r) => [r.id, r.protein_g]));
+		const perDay = plan.ui.props.days.map((d) => d.meals.reduce((n, m) => n + (protein.get(m.recipe) ?? 0), 0));
+		expect(Math.round(perDay.reduce((a, b) => a + b, 0) / perDay.length / 10) * 10).toBe(150); // "About 150 g protein"
+
+		const gauge: Gauge = JSON.parse(JSON.stringify(SHOWCASE.gauge));
+		expect(gauge.ui.props.value).toBeLessThanOrEqual(gauge.ui.props.max);
 	});
 
 	it.each(cases)('$type is a manifest widget with a valid spec rooted at it', ({ type, spec }) => {
