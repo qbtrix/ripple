@@ -1,5 +1,9 @@
-// site/docs/showcase.ts — Richer, site-only preview specs for widgets whose
-// manifest `example` is too small to show them off. pageSpecs (widgets.ts)
+// site/docs/showcase.ts — Site-only preview specs for widgets whose manifest
+// `example` is too small to show them off, or points at media this site cannot
+// load (example.com placeholders and third-party hosts the CSP in
+// svelte.config.js blocks, links to pages the site lacks). Those use local
+// files under static/ (media/, photos, /models assets) or hosts the CSP
+// already allows. pageSpecs (widgets.ts)
 // previews one of these in place of the manifest example when the type has an
 // entry, so both /docs/widgets/<type> and /ds pick it up.
 //
@@ -168,6 +172,69 @@ export const SHOWCASE: Record<string, Record<string, unknown>> = {
 				{ id: 'download', label: 'Download PDF', icon: 'download', variant: 'outline' },
 				{ id: 'pay', label: 'Pay invoice', icon: 'credit-card' }
 			]
+		}
+	}),
+	// CSP-safe media: the manifest examples use example.com and other hosts the site blocks.
+	avatar: spec({ type: 'avatar', props: { src: 'https://i.pravatar.cc/96?img=47', alt: 'Jane Doe', fallback: 'JD' } }),
+	'avatar-group': spec({
+		type: 'avatar-group',
+		props: {
+			max: 3,
+			size: 'md',
+			users: [
+				{ src: 'https://i.pravatar.cc/96?img=32', alt: 'Alice' },
+				{ src: 'https://i.pravatar.cc/96?img=12', alt: 'Bob' },
+				{ fallback: 'CD', alt: 'Charlie' },
+				{ fallback: 'EF', alt: 'Eve' }
+			]
+		}
+	}),
+	image: spec({
+		type: 'image',
+		props: {
+			src: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=400&q=70',
+			alt: 'Scenic view',
+			width: 200,
+			height: 150,
+			fit: 'cover',
+			rounded: 'md'
+		}
+	}),
+	video: spec({ type: 'video', props: { src: '/media/clip.mp4', poster: '/media/poster.jpg', title: 'Demo clip' } }),
+	audio: spec({ type: 'audio', props: { src: '/media/track.mp3', title: 'Ambient loop', artist: 'Studio demo', showWaveform: true } }),
+	'model-viewer': spec({
+		type: 'model-viewer',
+		props: {
+			asset: 'astronaut',
+			alt: 'A 3D model of an astronaut',
+			cameraControls: true,
+			annotations: [
+				{ anchor: 'helmet', note: 'Holds air at a steady pressure.' },
+				{ anchor: 'chest-pack' }
+			]
+		}
+	}),
+	// The site's CSP has frame-src 'none', so a remote page cannot load here; an inline document stands in.
+	embed: spec({
+		type: 'embed',
+		props: {
+			mode: 'srcdoc',
+			title: 'Embedded video placeholder',
+			aspectRatio: '16 / 9',
+			srcdoc:
+				'<!doctype html><body style="margin:0;height:100vh;display:grid;place-items:center;background:#0b1d3a;color:#e8f0ff;font:15px system-ui,sans-serif;text-align:center"><div><div style="width:56px;height:56px;margin:0 auto 12px;border-radius:50%;background:#1877F2;display:grid;place-items:center;font-size:22px">&#9654;</div>This site blocks third-party frames,<br>so this inline document stands in for the video page.</div></body>'
+		}
+	}),
+	// Links to pages this site has, so the example never leads to a 404.
+	breadcrumb: spec({
+		type: 'breadcrumb',
+		props: {
+			items: [
+				{ label: 'Home', href: '/', icon: 'home' },
+				{ label: 'Widgets', href: '/docs/widgets' },
+				{ label: 'breadcrumb' }
+			],
+			separator: 'chevron'
 		}
 	})
 };

@@ -23,7 +23,7 @@
     OS" (the pill's accessible name carries "by PocketPaw"), and the footer
     links "Paw OS by PocketPaw". It points the model-viewer library at the
     site's own /models/ so 3D cards load same-origin, and defaults maps to OSM
-    tiles, the one tile host the CSP allows.
+    tiles (the CSP also admits CARTO's, for specs that pick a carto preset).
 -->
 <script lang="ts">
 	import { onMount } from 'svelte';
