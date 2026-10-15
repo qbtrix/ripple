@@ -64,7 +64,9 @@ bun run build
 bun run pack:release
 #   ok  @ripple-ui/core@0.6.0    .../release/ripple-ui-core-0.6.0.tgz    228 files, ~263 kB packed
 #   ok  @ripple-ui/svelte@0.8.0  .../release/ripple-ui-svelte-0.8.0.tgz  1812 files, ~1.6 MB packed
-git status --short   # package.json files unchanged
+git status --short   # package.json files unchanged; the build always bumps the
+                     # generatedAt stamp in packages/svelte/static/manifest.json,
+                     # git checkout that file to clear it
 
 # 3. Optional rehearsal, no upload.
 npm publish --dry-run --access public ./release/ripple-ui-core-0.6.0.tgz
