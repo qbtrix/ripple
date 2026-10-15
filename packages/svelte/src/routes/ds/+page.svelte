@@ -9,11 +9,14 @@
     its own. A live render mounts only once its card nears the viewport and
     sits in its own boundary, so 170 renders stay cheap and one bad example
     can't take the page down; search hides cards (`hidden`) instead of
-    unmounting them. The focused primitive pages (motion, button, card, ...)
-    live under /ds/<name> and are linked at the end.
+    unmounting them; until a card mounts, its preview shows a pulsing
+    placeholder so a fast scroll reads as loading. The focused primitive pages
+    (pages.ts) are linked before the atoms, and the table of contents jumps to
+    each atom category, each of which links back to the top.
 -->
 <script lang="ts">
 	import { Ripple } from '$lib/index.js';
+	import { DS_PAGES } from './pages.js';
 
 	let { data } = $props();
 
@@ -48,23 +51,6 @@
 	];
 	const SPACE = [4, 8, 12, 16, 24, 32, 48];
 
-	const PAGES = [
-		{ href: '/ds/button', title: 'Button', caption: 'Every variant, size and state.' },
-		{ href: '/ds/card', title: 'Card', caption: 'Card variants and composition.' },
-		{ href: '/ds/stat', title: 'Stat', caption: 'The metric display widget.' },
-		{ href: '/ds/checkbox-group', title: 'Checkbox group', caption: 'The gliding hover highlight.' },
-		{ href: '/ds/moving-indicator', title: 'Moving indicator', caption: 'One primitive behind segmented controls and lists.' },
-		{ href: '/ds/motion', title: 'Motion', caption: 'The node-level motion field and the animate action.' },
-		{ href: '/ds/premium', title: 'Effects', caption: 'Marquee, beams, shimmer, aurora, spotlight.' },
-		{ href: '/ds/marketing', title: 'Marketing blocks', caption: 'Navbar to footer, composed into one page.' },
-		{ href: '/ds/ai', title: 'Agent display', caption: 'Streamed text, tool calls, reasoning, approval gates.' },
-		{ href: '/ds/spec', title: 'Spec composition', caption: 'Cards, charts and stats from one JSON spec.' },
-		{ href: '/ds/data-kit', title: 'Data kit', caption: 'Status pills, stat chips, photo tiles, formatters.' },
-		{ href: '/ds/shell', title: 'Shell', caption: 'Sidebar rows, panel headers, key hints.' },
-		{ href: '/ds/feature', title: 'Feature page parts', caption: 'Page header, empty state, inline alerts.' },
-		{ href: '/ds/call', title: 'Call parts', caption: 'Control bar, tiles, dock and incoming call card.' },
-		{ href: '/ds/apps', title: 'App widgets', caption: 'Notes, music, weather, schedules, places, products, drawings.' }
-	];
 </script>
 
 <svelte:head>
@@ -76,13 +62,16 @@
 </svelte:head>
 
 <main class="ds">
-	<header class="head">
+	<header class="head" id="top">
 		<h1>Design system</h1>
 		<p class="lede">Tokens and every atom, rendered live from a small spec.</p>
 		<nav class="toc" aria-label="On this page">
 			<a href="#tokens">Tokens</a>
-			<a href="#atoms">Atoms</a>
 			<a href="#pages">Primitive pages</a>
+			<a href="#atoms">Atoms</a>
+		</nav>
+		<nav class="toc toc-cats" aria-label="Atom categories">
+			{#each data.categories as c (c.id)}<a href="#cat-{c.id}">{c.title}</a>{/each}
 		</nav>
 	</header>
 
@@ -143,6 +132,16 @@
 		</div>
 	</section>
 
+	<section id="pages" aria-labelledby="pages-title">
+		<h2 id="pages-title">Primitive pages</h2>
+		<p class="note">Focused pages for the primitives with more states than one example can show.</p>
+		<ul class="pages">
+			{#each DS_PAGES as p (p.slug)}
+				<li><a href="/ds/{p.slug}"><span class="page-title">{p.title}</span><span class="page-cap">{p.caption}</span></a></li>
+			{/each}
+		</ul>
+	</section>
+
 	<section id="atoms" aria-labelledby="atoms-title">
 		<div class="atoms-head">
 			<h2 id="atoms-title">Atoms</h2>
@@ -158,7 +157,10 @@
 		{#each data.categories as c (c.id)}
 			{@const list = inCategory(c.id)}
 			<section class="cat" aria-labelledby="cat-{c.id}" hidden={!list.some((a) => matches(a.type))}>
-				<h3 id="cat-{c.id}">{c.title} <span class="count">{list.length}</span></h3>
+				<div class="cat-head">
+					<h3 id="cat-{c.id}">{c.title} <span class="count">{list.length}</span></h3>
+					<a class="top-link" href="#top">Back to top</a>
+				</div>
 				<ul class="atoms">
 					{#each list as a (a.type)}
 						<li class="atom" hidden={!matches(a.type)} use:nearView={a.type}>
@@ -166,8 +168,10 @@
 								<a href="/docs/widgets/{a.type}"><code>{a.type}</code></a>
 								<p>{a.description}</p>
 							</div>
-							<div class="preview" data-pagefind-ignore="all">
-								{#if visible[a.type]}
+							<div class="preview" data-pagefind-ignore="all" aria-busy={!visible[a.type]}>
+								{#if !visible[a.type]}
+									<div class="skeleton" aria-hidden="true"><span></span><span></span><span></span></div>
+								{:else}
 									<svelte:boundary>
 										<Ripple spec={a.spec} />
 										{#snippet failed()}<p class="note">This example did not render.</p>{/snippet}
@@ -181,15 +185,6 @@
 		{/each}
 	</section>
 
-	<section id="pages" aria-labelledby="pages-title">
-		<h2 id="pages-title">Primitive pages</h2>
-		<p class="note">Focused pages for the primitives with more states than one example can show.</p>
-		<ul class="pages">
-			{#each PAGES as p (p.href)}
-				<li><a href={p.href}><span class="page-title">{p.title}</span><span class="page-cap">{p.caption}</span></a></li>
-			{/each}
-		</ul>
-	</section>
 </main>
 
 <style>
@@ -420,8 +415,50 @@
 		display: flex;
 		justify-content: flex-end;
 	}
-	.cat h3 {
-		margin-top: 32px;
+	.cat-head {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 12px;
+		margin: 32px 0 12px;
+	}
+	.cat-head h3 {
+		margin: 0;
+		scroll-margin-top: calc(var(--site-topbar, 56px) + 16px);
+	}
+	.top-link {
+		font-size: 13px;
+	}
+	.toc-cats {
+		margin-top: 8px;
+		font-size: 13px;
+	}
+	/* Until a card's render mounts: three soft bars, pulsing unless motion is reduced. */
+	.skeleton {
+		display: grid;
+		gap: 10px;
+	}
+	.skeleton span {
+		height: 14px;
+		border-radius: var(--radius-chip, 6px);
+		background: color-mix(in oklch, var(--site-ink-base) 8%, transparent);
+		animation: pulse 1.4s ease-in-out infinite;
+	}
+	.skeleton span:nth-child(2) {
+		width: 80%;
+	}
+	.skeleton span:nth-child(3) {
+		width: 55%;
+	}
+	@keyframes pulse {
+		50% {
+			opacity: 0.45;
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.skeleton span {
+			animation: none;
+		}
 	}
 	.count {
 		margin-left: 4px;

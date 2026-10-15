@@ -13,6 +13,7 @@ import { manifestEntries, type WidgetManifestEntry } from '../../manifest/index.
 import {
 	EMPTY_EXAMPLES,
 	exampleSpec,
+	firstSentence,
 	interactiveSpecs,
 	pageSpecs,
 	sourceUrl,
@@ -136,5 +137,19 @@ describe('widget reference builders', () => {
 		expect(sourceUrl('slider', files)).toMatch(/\/widgets\/input\/Slider\.svelte$/);
 		expect(sourceUrl('dup', files)).toMatch(/\/widgets$/);
 		expect(sourceUrl('todo-list', ['/src/lib/widgets/interactive/TodoList.svelte'])).toMatch(/TodoList\.svelte$/);
+	});
+});
+
+describe('firstSentence', () => {
+	it.each([
+		['Inline keyboard shortcut hint, e.g. ⌘K.', 'Inline keyboard shortcut hint, e.g. ⌘K.'],
+		['Render trusted rich HTML (e.g. TipTap StarterKit output) with prose styling. Authored inline.', 'Render trusted rich HTML (e.g. TipTap StarterKit output) with prose styling.'],
+		['Two-column pros vs. cons comparison with checkmark/X icons.', 'Two-column pros vs. cons comparison with checkmark/X icons.'],
+		['Grid of roles vs. permissions with toggle checkboxes. Stored as flat map.', 'Grid of roles vs. permissions with toggle checkboxes.'],
+		['That is, i.e. one thing. Then another.', 'That is, i.e. one thing.'],
+		['No full stop at all', 'No full stop at all'],
+		['Version 1.5 ships. Next.', 'Version 1.5 ships.']
+	])('%s', (text, want) => {
+		expect(firstSentence(text)).toBe(want);
 	});
 });

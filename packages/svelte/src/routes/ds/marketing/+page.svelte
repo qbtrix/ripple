@@ -1,24 +1,28 @@
 <!--
-  routes/ds/marketing/+page.svelte: the marketing widgets on /ds, composed
+  routes/ds/marketing/+page.svelte: all nine marketing widgets on /ds, composed
   in order into one landing page for a fictional solar-install studio
-  ("Lumen"): navbar, hero and cta, feature-grid, testimonial, logo-cloud,
-  newsletter, footer. The spec's `theme` (brand colours, heading font, logo)
-  shows the theme-applier writing CSS vars onto the ripple-root. Entrances and
-  the primary CTA carry motion.
+  ("Lumen"): navbar, marketing-hero, cta, feature-grid, testimonial,
+  logo-cloud, faq, newsletter, footer. The spec's `theme` (brand colours,
+  heading font, logo) shows the theme-applier writing CSS vars onto the
+  ripple-root. Full-width blocks sit in padded flex wrappers (a margin on a
+  w-full block pushes it past the frame). The hero entrance and the CTA carry
+  motion; newsletter signups land in an event log under the intro.
 -->
 <script lang="ts">
   import { Ripple } from '$lib/index.js';
   import type { RippleEvent } from '@ripple-ui/core';
 
-  let lastSubmit = $state('—');
+  import Showcase from '../Showcase.svelte';
+
+  // The newsletter widget emits the entered email on submit. With no `value`
+  // on the `emit` action, the event's payload is that email.
+  let signups = $state<string[]>([]);
   function handleEvent(event: RippleEvent) {
-    // The newsletter widget emits the entered email on submit. The `emit`
-    // action carries its value in `payload` (target → `name`).
-    if (event.type === 'emit' && event.name === 'subscribe') {
-      lastSubmit = String(event.payload ?? '(empty)');
-    }
-    console.log('RippleEvent:', event);
+    if (event.type === 'emit' && event.name === 'subscribe') signups = [...signups, String(event.payload ?? '')];
   }
+
+  // A padded, full-width wrapper for a block that should not touch the frame edge.
+  const padded = (node: Record<string, unknown>) => ({ type: 'flex', props: { direction: 'column' }, class: 'px-6 py-12', children: [node] });
 
   // A single landing-page spec. The `theme` block drives white-label: the
   // theme-applier emits --primary / --ring / --ripple-font-heading / --ripple-logo
@@ -41,7 +45,7 @@
       type: 'flex',
       props: { direction: 'column', gap: '0' },
       children: [
-        // 1 ── Navbar (sticky)
+        // 1 ── navbar (sticky)
         {
           type: 'navbar',
           props: {
@@ -57,40 +61,38 @@
           },
         },
 
-        // 2 ── Hero (existing `hero`) — entrance motion (fade + rise)
+        // 2 ── marketing-hero: entrance motion (fade + rise)
         {
-          type: 'hero',
+          type: 'marketing-hero',
           props: {
-            eyebrow: 'RESIDENTIAL SOLAR, DONE RIGHT',
+            eyebrow: 'Residential solar, done right',
             title: 'Power your home with the sun by next season',
             subtitle:
-              'Lumen designs, permits, and installs rooftop solar in weeks — not months. Flat pricing, a 25-year workmanship warranty, and a dedicated project lead from quote to switch-on.',
+              'Lumen designs, permits and installs rooftop solar in weeks, not months. Flat pricing, a 25-year workmanship warranty, and one project lead from quote to switch-on.',
+            cta: 'Get a free quote',
+            ctaHref: '#quote',
+            secondaryCta: 'See sample designs',
+            secondaryCtaHref: '#how',
             align: 'center',
           },
-          class: 'px-6 py-20',
           motion: { enter: { opacity: 0, y: 24 }, transition: { preset: 'snappy' } },
-          children: [
-            { type: 'button', props: { label: 'Get a free quote', size: 'lg' } },
-            { type: 'button', props: { label: 'See sample designs', variant: 'outline', size: 'lg' } },
-          ],
         },
 
-        // 3 ── CTA band (the new `cta`) — sits right under the hero as a conversion line
-        {
+        // 3 ── cta band, right under the hero as a conversion line
+        padded({
           type: 'cta',
           props: {
             headline: 'See your roof’s solar potential in 60 seconds',
-            subtext: 'Drop your address and we’ll estimate output, savings, and payback — no sales call required.',
+            subtext: 'Drop your address and we’ll estimate output, savings and payback, with no sales call.',
             button: 'Estimate my savings',
             href: '#quote',
             align: 'center',
           },
-          class: 'mx-6 my-12',
-          // Primary conversion element — the one place a hover lift is earned.
+          // The primary conversion element: the one place a hover lift is earned.
           motion: { hover: { y: -2, scale: 1.01 }, transition: { preset: 'snappy' } },
-        },
+        }),
 
-        // 4 ── Feature grid (the new `feature-grid`)
+        // 4 ── feature-grid
         {
           type: 'section',
           id: 'how',
@@ -106,7 +108,7 @@
                   { title: 'Permits handled', description: 'We file every permit and schedule the inspections so you don’t chase paperwork.', icon: 'file-check' },
                   { title: 'Tier-1 panels', description: 'High-efficiency monocrystalline panels with a 25-year output warranty.', icon: 'sun' },
                   { title: 'Real-time app', description: 'Track production, savings, and CO₂ offset from your phone.', icon: 'smartphone' },
-                  { title: 'Battery-ready', description: 'Add storage now or later — every install is wired for backup power.', icon: 'battery-charging' },
+                  { title: 'Battery-ready', description: 'Add storage now or later; every install is wired for backup power.', icon: 'battery-charging' },
                   { title: 'Dedicated lead', description: 'One named project manager from first quote to switch-on.', icon: 'user-check' },
                 ],
               },
@@ -114,7 +116,7 @@
           ],
         },
 
-        // 5 ── Testimonial (the new `testimonial`)
+        // 5 ── testimonial
         {
           type: 'section',
           id: 'reviews',
@@ -133,7 +135,7 @@
           ],
         },
 
-        // 6 ── Logo cloud (the new `logo-cloud`)
+        // 6 ── logo-cloud
         {
           type: 'logo-cloud',
           props: {
@@ -149,8 +151,21 @@
           class: 'px-6 py-12 border-t border-border',
         },
 
-        // 7 ── Newsletter (the new `newsletter`) — emits the email on submit
-        {
+        // 7 ── faq
+        padded({
+          type: 'faq',
+          props: {
+            title: 'Questions, answered',
+            items: [
+              { question: 'How long does an install take?', answer: 'Most roofs take one or two days on site, after about three weeks of design and permits.' },
+              { question: 'What if my roof needs work first?', answer: 'We inspect it on the first visit and quote any repairs before you sign anything.' },
+              { question: 'Can I add a battery later?', answer: 'Yes. Every install is wired for storage, so a battery is a half-day visit.' },
+            ],
+          },
+        }),
+
+        // 8 ── newsletter: emits the email on submit
+        padded({
           type: 'newsletter',
           props: {
             heading: 'Get the solar-savings playbook',
@@ -158,11 +173,10 @@
             placeholder: 'you@email.com',
             button: 'Send it to me',
           },
-          on_submit: { action: 'emit', target: 'subscribe', value: '{state.email}' },
-          class: 'mx-6 my-12',
-        },
+          on_submit: { action: 'emit', target: 'subscribe' },
+        }),
 
-        // 8 ── Footer (the new `footer`)
+        // 9 ── footer
         {
           type: 'footer',
           props: {
@@ -179,59 +193,33 @@
   };
 </script>
 
-<div class="showcase">
-  <header class="showcase-header">
-    <h1>Marketing pack: a full landing page</h1>
+<Showcase slug="marketing">
+  {#snippet intro()}
     <p>
-      All seven marketing widgets composed in order as one real landing page,
-      rendered from a single JSON spec. A <code>theme</code> is set on the spec
-      (brand color, heading font, logo) — the theme-applier emits CSS vars onto
-      the ripple-root, so the navbar CTA, hero buttons, and CTA band all pick up
-      the brand blue with no per-widget styling.
+      All nine marketing widgets (navbar, marketing-hero, cta, feature-grid, testimonial, logo-cloud, faq, newsletter
+      and footer) composed in order into one landing page, rendered from a single JSON spec. The spec's
+      <code>theme</code> block sets the brand colour, heading font and logo, so the navbar button, hero and CTA band
+      pick up the brand with no per-widget styling.
     </p>
-    <p class="last-event">Newsletter submit captured: <strong>{lastSubmit}</strong></p>
-  </header>
+  {/snippet}
 
-  <!-- The landing page renders edge-to-edge inside this framed surface. -->
+  <p class="event-log" aria-live="polite">
+    Newsletter signups: {signups.length ? signups.join(', ') : 'none yet. Try the form near the bottom of the page.'}
+  </p>
+
+  <!-- The landing page renders edge to edge inside this framed surface. -->
   <div class="landing-frame">
     <Ripple spec={landingSpec} onEvent={handleEvent} />
   </div>
-</div>
+</Showcase>
 
 <style>
-  .showcase {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 2rem 1.5rem 4rem;
-    color: var(--foreground);
-  }
-  .showcase-header {
-    margin-bottom: 1.5rem;
-  }
-  .showcase-header h1 {
-    font-size: 1.75rem;
-    font-weight: 700;
-    margin: 0 0 0.25rem;
-  }
-  .showcase-header p {
-    font-size: 0.875rem;
-    color: var(--muted-foreground);
-    margin: 0 0 0.5rem;
-    max-width: 70ch;
-  }
-  .showcase-header code {
-    background: color-mix(in srgb, var(--muted) 50%, transparent);
-    padding: 1px 5px;
-    border-radius: 4px;
-    font-size: 0.8rem;
-  }
-  .last-event {
-    font-size: 0.8rem;
-  }
   .landing-frame {
-    border: 1px solid var(--border);
-    border-radius: 12px;
+    margin-top: 16px;
+    border: 1px solid var(--site-line);
+    border-radius: var(--radius-card);
     overflow: hidden;
     background: var(--background);
+    color: var(--foreground);
   }
 </style>

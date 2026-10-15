@@ -1,10 +1,11 @@
 // routes/ds/+page.server.ts — Data for the /ds design system page, built at
 // prerender. Atoms: every manifest widget outside the `composite` category (the
 // gen UI widgets live in the /live gallery), in the docs' category order, with its
-// first sentence and the spec its docs page previews. Tokens: the colour
+// first sentence (abbreviations like e.g. and vs. don't end it) and the spec
+// its docs page previews. Tokens: the colour
 // declarations parsed out of ../site.css for both themes, so the swatches and
 // their values can't drift from the stylesheet.
-import { categoryTitle, orderedEntries, pageSpecs } from '$lib/site/docs/widgets.js';
+import { categoryTitle, firstSentence, orderedEntries, pageSpecs } from '$lib/site/docs/widgets.js';
 import siteCss from '../site.css?raw';
 
 /** Colour tokens the page shows, in reading order. */
@@ -51,7 +52,7 @@ export const load = () => {
 		.map((e) => ({
 			type: e.type,
 			category: e.category,
-			description: e.description.split(/(?<=\.)\s/)[0],
+			description: firstSentence(e.description),
 			spec: pageSpecs(e).example
 		}));
 	const categories = [...new Set(atoms.map((a) => a.category))].map((id) => ({ id, title: categoryTitle(id) }));
