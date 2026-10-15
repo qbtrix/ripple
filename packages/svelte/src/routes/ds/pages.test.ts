@@ -6,7 +6,7 @@
 import { describe, expect, it } from 'vitest';
 import { DS_PAGES, dsPage } from './pages.js';
 
-const sources = import.meta.glob('./*/+page.svelte', { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
+const sources = import.meta.glob<string>('./*/+page.svelte', { query: '?raw', import: 'default', eager: true });
 const slugOf = (path: string) => path.split('/')[1];
 const routes = Object.keys(sources).map(slugOf);
 

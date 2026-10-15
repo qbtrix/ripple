@@ -300,7 +300,8 @@ export const SHOWCASE: Record<string, Record<string, unknown>> = {
 	// ── Media ───────────────────────────────────────────────────────────
 	video: spec({ type: 'video', props: { src: '/media/gradient.mp4', poster: '/media/gradient-poster.jpg', title: 'Gradient loop' } }),
 	audio: spec({ type: 'audio', props: { src: '/media/chord.m4a', title: 'C major chord', artist: 'Ripple demo', showWaveform: true } }),
-	// The page CSP blocks third-party frames, so the embed shows an inline document.
+	// The page CSP blocks third-party frames, so the embed shows an inline document. It paints
+	// its own dark ground: the frame cannot see the page's theme class.
 	embed: spec({
 		type: 'embed',
 		props: {
@@ -308,10 +309,10 @@ export const SHOWCASE: Record<string, Record<string, unknown>> = {
 			title: 'Embedded status page',
 			height: 180,
 			srcdoc:
-				'<!doctype html><html><body style="margin:0;font:14px/1.5 system-ui,sans-serif;background:#f6f8fb;color:#1c2430;display:grid;place-items:center;height:100vh">' +
+				'<!doctype html><html><body style="margin:0;font:14px/1.5 system-ui,sans-serif;background:#0f1b2d;color:#e8eef7;display:grid;place-items:center;height:100vh">' +
 				'<div style="text-align:center"><div style="font-weight:600;font-size:16px">Harbor API status</div>' +
 				'<div style="margin-top:6px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#16a34a;margin-right:6px"></span>All systems normal</div>' +
-				'<div style="margin-top:4px;color:#5b6676;font-size:12px">A sandboxed document inside an embed widget</div></div></body></html>'
+				'<div style="margin-top:4px;color:#9fb0c6;font-size:12px">A sandboxed document inside an embed widget</div></div></body></html>'
 		}
 	}),
 	'model-viewer': spec({
