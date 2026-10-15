@@ -15,14 +15,20 @@
     place wraps to two lines, hour times and freeform day labels to one, each
     then ellipsized with the full text in a `title`.
   - Nothing scrolls sideways: the hourly band fits the card width by folding
-    hours into buckets (bucketHours), never by scrolling.
+    hours into buckets (bucketHours), never by scrolling. A column is
+    labelled at its bucket's worst hour (full span in its `title`), and the
+    first column past each midnight carries the weekday above its time.
   - Bar position and colour come from the source unit, so toggling °C/°F
     moves nothing. Colour means temperature: each bar end is its own
-    temperature's spot on one cool-to-warm ramp built from the info and
-    warning tokens in thirds (blue, teal, a neutral mild, amber), never green.
+    temperature's spot on one cool-to-warm ramp mixed in oklch from the info
+    and warning tokens in thirds (blue, teal, yellow, amber), with a little
+    ink mixed in so the fill stands off the track in both themes.
   - Days are rows below 560px, for 1-2 days and for 8-14 days; 3-7 days at
     560px and up stand side by side with vertical bars. Same markup,
-    container queries only. Row 1 always reads "Today".
+    container queries only. Row 1 always reads "Today". The low and high
+    columns are as wide as the widest value, the same on every row, so the
+    numbers line up and the bar gets the rest. ISO days show a short date
+    under the weekday when weekdays would repeat.
 -->
 <script lang="ts">
 	import { safeStyle } from '@ripple-ui/core';
@@ -76,7 +82,8 @@
 	// unmeasured (SSR, first paint, jsdom) it assumes a phone-width card.
 	let bandW = $state(0);
 	const fit = $derived(bandW ? Math.min(12, Math.max(1, Math.floor(bandW / 48))) : 6);
-	const cols = $derived(bucketHours(hours, fit));
+	const cols = $derived(bucketHours(hours, fit, dayRows.map((d) => d.day)));
+	const anyCue = $derived(cols.some((h) => h.cue));
 	const anyHourRain = $derived(cols.some((h) => (h.rain ?? 0) >= 10));
 
 	let sel = $state(-1);
@@ -93,6 +100,9 @@
 		};
 	}
 	const nowDot = $derived(range && nowR?.temp !== undefined ? `--at:${at(nowR.temp, range)}%` : '');
+	// Low/high column widths: the widest shown value, in digit widths, on every row.
+	const widest = (pick: (d: (typeof dayRows)[number]) => number | undefined) => Math.max(2, ...dayRows.map((d) => t(pick(d)).length));
+	const numCols = $derived(`--wf-lo:${widest((d) => d.low)}ch;--wf-hi:${widest((d) => d.high)}ch`);
 	const hasConditions = $derived(!!nowR && (nowR.feelsLike !== undefined || nowR.humidity !== undefined || !!nowR.wind));
 
 	const focusRing = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ripple-ring';
@@ -142,7 +152,8 @@
 				<ul class="grid" style={safeStyle(`grid-template-columns:repeat(${cols.length},minmax(0,1fr))`)} aria-label="Hourly forecast">
 					{#each cols as h, i (i)}
 						<li class="flex min-w-0 flex-col items-center gap-1 py-1 text-center">
-							<span class="w-full truncate text-caption-1 text-ripple-muted-foreground" title={h.time}>{h.time || '–'}</span>
+							{#if anyCue}<span class="h-3.5 text-caption-2 font-semibold" data-slot="day-cue">{h.cue ?? ''}</span>{/if}
+							<span class="w-full truncate text-caption-1 text-ripple-muted-foreground" title={h.span ?? h.time}>{h.time || '–'}</span>
 							<WeatherIcon kind={h.kind} size={26} />
 							<span class="text-callout font-medium tabular-nums">{t(h.temp)}</span>
 							{#if anyHourRain}<span class="wf-rain h-3.5 text-caption-2 tabular-nums">{h.rain !== undefined && h.rain >= 10 ? `${h.rain}%` : ''}</span>{/if}
@@ -158,6 +169,7 @@
 					class="wf-days"
 					data-many={dayRows.length >= 3 && dayRows.length <= 7 ? 'true' : 'false'}
 					data-rain={anyDayRain ? 'true' : 'false'}
+					style={safeStyle(numCols)}
 					role="group"
 					aria-label="{dayRows.length}-day forecast"
 					data-slot="days"
@@ -168,10 +180,10 @@
 							type="button"
 							class={['wf-day rounded-ripple text-left transition-colors hover:bg-ripple-muted', focusRing, sel === i && 'bg-ripple-muted']}
 							aria-pressed={sel === i}
-							aria-label="{i === 0 ? `Today, ${d.day}` : d.day}: {d.label}, high {t(d.high)}, low {t(d.low)}{d.rain !== undefined ? `, ${d.rain}% chance of rain` : ''}"
+							aria-label="{i === 0 ? `Today, ${d.full}` : d.full}: {d.label}, high {t(d.high)}, low {t(d.low)}{d.rain !== undefined ? `, ${d.rain}% chance of rain` : ''}"
 							onclick={() => (sel = sel === i ? -1 : i)}
 						>
-							<span class="wf-name truncate text-callout font-medium" title={d.day}>{i === 0 ? 'Today' : d.day}</span>
+							<span class="wf-name min-w-0"><span class="block truncate text-callout font-medium" title={d.full}>{i === 0 ? 'Today' : d.day}</span>{#if d.date}<span class="block text-caption-2 text-ripple-muted-foreground tabular-nums">{d.date}</span>{/if}</span>
 							<span class="wf-icon">
 								<WeatherIcon kind={d.kind} size={28} />
 								{#if anyDayRain}<span class="wf-rain wf-pct text-caption-2 font-medium tabular-nums">{d.rain !== undefined && d.rain >= 10 ? `${d.rain}%` : ''}</span>{/if}
@@ -187,7 +199,7 @@
 				</div>
 				{#if selDay}
 					<div class="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-ripple bg-ripple-muted px-3 py-2 text-footnote" data-slot="day-detail" aria-live="polite">
-						<span class="max-w-full truncate font-semibold" title={selDay.day}>{selDay.day}</span>
+						<span class="max-w-full truncate font-semibold" title={selDay.full}>{selDay.full}</span>
 						<span>{selDay.label}</span>
 						<span class="tabular-nums">{t(selDay.low)} to {t(selDay.high)}</span>
 						{#if selDay.rain !== undefined}<span class="flex items-center gap-1 tabular-nums"><Droplets size={13} aria-hidden="true" />{selDay.rain}% rain</span>{/if}
@@ -204,9 +216,10 @@
 <style>
 	.wf {
 		gap: 0.875rem;
-		/* Ramp stops between the info (cold) and warning (warm) tokens. */
+		/* Ramp stops between the info (cold) and warning (warm) tokens, in oklch
+		   so the hue runs the short way (blue, teal, yellow) at full chroma. */
 		--wf-cool: color-mix(in oklch, var(--ripple-info) 70%, var(--ripple-warning));
-		--wf-mild: color-mix(in oklab, var(--ripple-info) 60%, var(--ripple-warning));
+		--wf-mild: color-mix(in oklch, var(--ripple-info) 18%, var(--ripple-warning));
 	}
 	.wf-temp {
 		font-size: 3.5rem;
@@ -238,7 +251,7 @@
 	}
 	.wf-day {
 		display: grid;
-		grid-template-columns: minmax(2.75rem, 3rem) 2rem 2.5rem minmax(0, 1fr) 2.5rem;
+		grid-template-columns: minmax(2.75rem, 3rem) 2rem var(--wf-lo, 2.5rem) minmax(0, 1fr) var(--wf-hi, 2.5rem);
 		align-items: center;
 		position: relative;
 		gap: 0.375rem;
@@ -274,11 +287,11 @@
 		border-radius: 999px;
 		background: var(--ripple-track);
 	}
-	/* --p is 0..100% along the ramp; each third mixes one pair of stops in oklab,
-	   so the path runs blue, teal, neutral, amber and never crosses green. */
+	/* --p is 0..100% along the ramp; each third mixes one pair of stops in oklch
+	   (blue, teal, yellow, amber), then 14% ink so the fill clears the track. */
 	.wf-fill {
-		--c0: color-mix(in oklab, var(--ripple-warning) clamp(0%, var(--p0) * 3 - 200%, 100%), color-mix(in oklab, var(--wf-mild) clamp(0%, var(--p0) * 3 - 100%, 100%), color-mix(in oklab, var(--wf-cool) clamp(0%, var(--p0) * 3, 100%), var(--ripple-info))));
-		--c1: color-mix(in oklab, var(--ripple-warning) clamp(0%, var(--p1) * 3 - 200%, 100%), color-mix(in oklab, var(--wf-mild) clamp(0%, var(--p1) * 3 - 100%, 100%), color-mix(in oklab, var(--wf-cool) clamp(0%, var(--p1) * 3, 100%), var(--ripple-info))));
+		--c0: color-mix(in oklab, var(--ripple-surface-foreground) 14%, color-mix(in oklch, var(--ripple-warning) clamp(0%, var(--p0) * 3 - 200%, 100%), color-mix(in oklch, var(--wf-mild) clamp(0%, var(--p0) * 3 - 100%, 100%), color-mix(in oklch, var(--wf-cool) clamp(0%, var(--p0) * 3, 100%), var(--ripple-info)))));
+		--c1: color-mix(in oklab, var(--ripple-surface-foreground) 14%, color-mix(in oklch, var(--ripple-warning) clamp(0%, var(--p1) * 3 - 200%, 100%), color-mix(in oklch, var(--wf-mild) clamp(0%, var(--p1) * 3 - 100%, 100%), color-mix(in oklch, var(--wf-cool) clamp(0%, var(--p1) * 3, 100%), var(--ripple-info)))));
 		position: absolute;
 		inset-block: 0;
 		left: var(--lo, 0%);

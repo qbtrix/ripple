@@ -62,7 +62,11 @@ describe('weather-forecast: messy fields', () => {
 
 	it('reads percentages, weekday names, empty days and swapped ranges', () => {
 		expect(rows.map((r) => r.rain)).toEqual([78, undefined, 100, 0, undefined]);
-		expect(rows.map((r) => r.day)).toEqual(['Wed', 'Fri', 'Day 3', 'Saturday 17 October (long weekend)', 'Sun']);
+		expect(rows.map((r) => r.day)).toEqual(['Wed', 'Fri', 'Day 3', 'Sat 17 Oct (long weekend)', 'Sun']);
+		expect(rows[3].full).toBe('Saturday 17 October (long weekend)');
+		expect(rows.map((r) => r.date)).toEqual([undefined, undefined, undefined, undefined, undefined]);
+		const fortnight = readDays(Array.from({ length: 14 }, (_, i) => ({ day: `2026-10-${15 + i}` })));
+		expect(fortnight[8]).toMatchObject({ day: 'Fri', date: '23 Oct' });
 		expect(rows[0]).toMatchObject({ low: 13, high: 16 });
 		expect(rows[2]).toMatchObject({ kind: 'cloudy', label: 'Cloudy', low: 11, high: undefined });
 		expect(rows[4].sunrise).toBe('07:40 AM local time');
@@ -99,10 +103,18 @@ describe('weather-forecast: hourly buckets', () => {
 	it('folds hours into at most `fit` buckets, keeping the worst sky and the wettest chance', () => {
 		const six = bucketHours(hrs, 6);
 		expect(six).toHaveLength(6);
-		expect(six[1]).toEqual({ time: '08:00', temp: hrs[8].temp, kind: 'thunder', rain: 70 });
+		expect(six[1]).toEqual({ time: '13:00', temp: 80, kind: 'thunder', rain: 70, span: '08:00 to 15:00' });
+		expect(six[0]).toMatchObject({ time: '00:00', span: '00:00 to 07:00' });
 		expect(six[0].rain).toBeUndefined();
 		expect(bucketHours(hrs, 12)).toHaveLength(12);
 		expect(bucketHours(hrs, 0)).toHaveLength(1);
+	});
+
+	it('cues the weekday on the first column past midnight', () => {
+		expect(bucketHours(hrs, 6, ['Thu', 'Fri']).map((h) => h.cue)).toEqual([undefined, undefined, undefined, 'Fri', undefined, undefined]);
+		expect(bucketHours(hrs, 6)[3].cue).toBe('Day 2');
+		const pm = bucketHours([{ time: 'Now', kind: 'sunny' }, { time: '11 PM', kind: 'sunny' }, { time: '1 AM', kind: 'sunny' }], 6, ['Thu', 'Sat 17 Oct']);
+		expect(pm.map((h) => h.cue)).toEqual([undefined, undefined, 'Day 2']);
 	});
 });
 
