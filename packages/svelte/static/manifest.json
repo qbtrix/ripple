@@ -1,7 +1,7 @@
 {
   "schema": "ripple.manifest/v1",
   "version": "0.8.0",
-  "generatedAt": "2026-10-14T17:18:56.770Z",
+  "generatedAt": "2026-10-15T05:00:13.342Z",
   "spec": {
     "uiField": "ui",
     "stateField": "state",
@@ -10066,7 +10066,7 @@
         "title": {
           "type": "string",
           "required": false,
-          "description": "Heading. Defaults to \"Tracking your order\" / \"Delivered\" / \"Order paused\" based on status."
+          "description": "Heading. Defaults to the current step."
         },
         "orderId": {
           "type": "string",
@@ -10126,12 +10126,12 @@
         "mapHeight": {
           "type": "string | number",
           "required": false,
-          "description": "Map height. Default \"320px\"."
+          "description": "Map height."
         },
         "mapTiles": {
           "type": "\"osm\" | \"carto-voyager\" | \"carto-light\" | \"carto-dark\" | \"osm-hot\" | \"custom\"",
           "required": false,
-          "description": "Map tile preset. Default \"carto-voyager\"."
+          "description": "Map tile preset."
         },
         "followTracker": {
           "type": "boolean",
@@ -10156,9 +10156,9 @@
           "status": "out-for-delivery",
           "eta": "Today, 4 – 6 PM",
           "tracking": {
-            "carrier": "UPS",
-            "number": "1Z999AA10123456784",
-            "url": "https://www.ups.com/track?tracknum=1Z999AA10123456784"
+            "carrier": "Parcelwise",
+            "number": "PW4471092318840017",
+            "url": "https://track.example.com/?n=PW4471092318840017"
           },
           "origin": {
             "name": "Acme Warehouse",
