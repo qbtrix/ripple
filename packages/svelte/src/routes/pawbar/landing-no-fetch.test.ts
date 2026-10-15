@@ -23,12 +23,12 @@ test('a chip tap and a typed prompt never call fetch without the opt-in flag', a
 	const send = () => view.getByRole('button', { name: 'Send' });
 
 	// The prerendered bill splitter exchange is already there.
-	expect(view.getAllByText('Replaying a recorded answer that matches.')).toHaveLength(1);
+	expect(view.getByText('A recorded answer, replayed. Change something in the card.')).toBeTruthy();
 
 	// The panel starts collapsed; savings sits past the first row.
 	await fireEvent.click(view.getByRole('button', { name: 'Show all suggestions' }));
 	await fireEvent.click(view.getByRole('button', { name: 'Watch savings grow' }));
-	await waitFor(() => expect(view.getAllByText('Replaying a recorded answer that matches.')).toHaveLength(2));
+	await waitFor(() => expect(view.getAllByText('Replaying a recorded answer that matches.')).toHaveLength(1));
 	await waitFor(() => expect(view.queryByRole('button', { name: 'Stop' })).toBeNull());
 
 	await fireEvent.input(view.getByLabelText('Type a request to continue in Paw OS'), { target: { value: 'something no recording covers' } });

@@ -1,7 +1,8 @@
 // routes/pawbar/landing-chips.test.ts — Replay mode (no PUBLIC_PAWBAR_LIVE, as in vitest) shows every chip.
-// The expanded panel lists the same groups and chips, in the same order, as
-// live mode, store chips included. A chip with a recorded or hand-written
-// answer replays it here; any other chip opens Paw OS with its prompt, the
+// The expanded panel lists every live chip, store chips included, in their
+// groups; the chips that replay here sort first (so the collapsed row leads
+// with them and groups with none come last). A chip with a recorded or
+// hand-written answer replays it; any other opens Paw OS with its prompt, the
 // same handoff a typed message takes, and is described as "Opens in Paw OS".
 
 import { fireEvent, render } from '@testing-library/svelte';
@@ -22,22 +23,32 @@ afterEach(() => vi.restoreAllMocks());
 const chipTitle = (b: Element) =>
 	[...b.childNodes].filter((n) => n.nodeType === Node.TEXT_NODE).map((n) => n.textContent).join('').trim();
 
-test('replay mode renders every live chip, in the same groups and order', async () => {
+test('replay mode renders every live chip, the ones that replay here first', async () => {
 	const view = render(Landing, { props });
 	const toggle = view.getByRole('button', { name: 'Show all suggestions' });
 	expect(toggle.getAttribute('aria-expanded')).toBe('false');
+	// The collapsed row opens on chips that replay on the page; handoffs follow.
+	const row = [...view.container.querySelectorAll('#ripple-suggestions button.chip')];
+	expect(row.length).toBeGreaterThan(0);
+	expect(row[0].hasAttribute('aria-describedby')).toBe(false);
+	const out = row.findIndex((b) => b.hasAttribute('aria-describedby'));
+	if (out >= 0) expect(row.slice(out).every((b) => b.hasAttribute('aria-describedby'))).toBe(true);
 	await fireEvent.click(toggle);
 	const shown = [...view.container.querySelectorAll('.chip-group')].map((g) => [
 		g.querySelector('.chips')?.getAttribute('aria-label'),
 		[...g.querySelectorAll('button.chip')].map(chipTitle)
 	]);
+	const local = new Set(answerPool.filter((s) => !s.needsStore).map((s) => s.id));
+	const all = groupedSuggestions([...answerPool, ...chatPrompts]);
 	const expected: [string, string[]][] = [];
-	for (const c of groupedSuggestions([...answerPool, ...chatPrompts])) {
-		const last = expected.at(-1);
-		if (last?.[0] === c.group) last[1].push(c.title);
+	for (const c of [...all.filter((c) => local.has(c.id)), ...all.filter((c) => !local.has(c.id))]) {
+		const at = expected.find(([g]) => g === c.group);
+		if (at) at[1].push(c.title);
 		else expected.push([c.group, [c.title]]);
 	}
 	expect(shown).toEqual(expected);
+	// Groups with no chip that replays here (Browse & discover leads live) come last.
+	expect(shown.at(-1)?.[1].every((t) => !all.some((c) => c.title === t && local.has(c.id)))).toBe(true);
 	for (const t of ['Order a burger', 'Book a table', 'Help me pick a laptop', 'Plan a trip with me']) expect(shown.flatMap(([, ts]) => ts)).toContain(t);
 });
 
@@ -59,6 +70,6 @@ test('a chip with no recording hands its prompt to Paw OS; a recorded chip still
 	const savings = view.getByRole('button', { name: 'Watch savings grow' });
 	expect(savings.hasAttribute('aria-describedby')).toBe(false);
 	await fireEvent.click(savings);
-	await waitFor(() => expect(view.getAllByText('Replaying a recorded answer that matches.')).toHaveLength(2));
+	await waitFor(() => expect(view.getAllByText('Replaying a recorded answer that matches.')).toHaveLength(1));
 	expect(open).toHaveBeenCalledOnce();
 });
