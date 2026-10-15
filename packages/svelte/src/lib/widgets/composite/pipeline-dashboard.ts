@@ -11,7 +11,8 @@
 // strings; a row without a number drops. Deal cells become display text
 // (numbers stay numbers so Table still right-aligns them, except in a column
 // set to align right, where they read as grouped or money text) and empty rows
-// drop. Amount text such as "$420k" takes money()'s upper-case suffix ("$420K").
+// drop. Money text in leaders and deals reads like the quota: "$420k" takes
+// money()'s upper-case suffix ("$420K") and "¥812,400,000" compacts ("¥812.4M").
 import { safeArray, uniqueKeys } from '$lib/utils/safe-props.js';
 import { finite, money, num, plain } from '../data-kit/format.js';
 import { parseValue } from '../data/funnel-math.js';
@@ -49,6 +50,13 @@ export function fmtAmount(n: number, cur: Currency, compact: boolean): string {
 
 /** "$420k" / "+$40k" → "$420K" / "+$40K", matching money()'s compact suffix; other text is unchanged. */
 export const suffixCase = (s: string) => s.replace(/^([+\-−]?[$€£¥₹]\s?[\d.,]+)([kmb])$/i, (_, n: string, k: string) => n + k.toUpperCase());
+
+/** Money text the way the quota prints it: "¥812,400,000" → "¥812.4M" from 10,000 up, "$420k" → "$420K"; other text is unchanged. */
+export function moneyText(s: string): string {
+	const m = /^([+\-−]?)([$€£¥₹])\s?(\d{1,3}(?:,\d{3})+|\d+)(\.\d+)?$/.exec(s);
+	const n = m ? Number(m[3].replaceAll(',', '') + (m[4] ?? '')) : NaN;
+	return m && n >= COMPACT_FROM ? m[1] + money(n, SYMBOLS[m[2]], { compact: true }) : suffixCase(s);
+}
 
 /** Whole percent, except 99.5 to just under 100 reads 99 (never 100 before the target). */
 export function pctLabel(p: number): string {
@@ -109,9 +117,9 @@ export function readLeaders(items: unknown, cur: Currency = {}): Leader[] {
 	return order.map(({ r, p }, i) => {
 		const v = r.value;
 		const n = typeof v === 'number' ? amount(v) : undefined;
-		const text = typeof v === 'string' ? suffixCase(plain(v)) : '';
+		const text = typeof v === 'string' ? moneyText(plain(v)) : '';
 		const value = n !== undefined ? fmtAmount(n, cur, n >= COMPACT_FROM) : text || undefined;
-		const delta = suffixCase(plain(r.delta));
+		const delta = moneyText(plain(r.delta));
 		const avatar = plain(r.avatar);
 		return {
 			key: keys[i],
@@ -183,7 +191,7 @@ export function cellText(v: unknown): string | number {
 		}
 		return '';
 	}
-	return suffixCase(plain(v));
+	return moneyText(plain(v));
 }
 
 export interface DealColumn {
@@ -246,8 +254,5 @@ export function readTicker(ticker: unknown): Event[] {
 	return rows.map((t, i) => ({ ...t, key: keys[i] }));
 }
 
-/** "Show 5 more" for a short rest, "Show all 18" for a long one. */
-export function moreLabel(total: number, cap: number, noun = 'more'): string {
-	const rest = total - cap;
-	return rest <= cap ? `Show ${rest} ${noun}` : `Show all ${total}`;
-}
+/** "Show 5 more" / "Show 16 earlier": always the hidden count, never "Show all". */
+export const moreLabel = (total: number, cap: number, noun = 'more') => `Show ${total - cap} ${noun}`;

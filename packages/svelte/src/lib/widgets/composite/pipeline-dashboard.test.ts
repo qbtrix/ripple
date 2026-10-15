@@ -101,6 +101,7 @@ describe('readLeaders', () => {
 	it('handles junk', () => {
 		expect(readLeaders(undefined)).toEqual([]);
 		expect(readLeaders([null, 3, { name: 'X', value: 6 }])[0].value).toBe('6');
+		expect(readLeaders([{ name: 'M', value: '¥812,400,000', delta: '+¥96,000,000' }])[0]).toMatchObject({ value: '¥812.4M', delta: '+¥96M', dir: 'up' });
 	});
 });
 
@@ -136,6 +137,9 @@ describe('deals', () => {
 		expect(cellText(48000)).toBe(48000);
 		expect(cellText('$12k')).toBe('$12K');
 		expect(suffixCase('2m ago')).toBe('2m ago');
+		expect(cellText('¥1,240,000,000')).toBe('¥1.2B');
+		expect(cellText('$9,500')).toBe('$9,500');
+		expect(cellText('Q3 $1,000,000 deal')).toBe('Q3 $1,000,000 deal');
 	});
 	it('spec 05: missing keys stay empty, empty rows drop, untitled rows say so', () => {
 		const d = readDeals({
@@ -169,7 +173,8 @@ describe('ticker and caps', () => {
 	});
 	it('show-more labels', () => {
 		expect(moreLabel(10, 5)).toBe('Show 5 more');
-		expect(moreLabel(18, 5)).toBe('Show all 18');
+		expect(moreLabel(18, 5)).toBe('Show 13 more');
+		expect(moreLabel(20, 4, 'earlier')).toBe('Show 16 earlier');
 		expect(moreLabel(8, 4, 'earlier')).toBe('Show 4 earlier');
 	});
 });

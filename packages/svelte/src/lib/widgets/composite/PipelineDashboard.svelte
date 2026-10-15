@@ -11,10 +11,10 @@
   funnel), leaderboard, deals, recent activity. A section with no data renders
   nothing; with no data at all one muted line says so.
 
-  Leaderboard: at 480px and up the sublabel sits on the name line and wraps
-  under the name when both cannot fit, so it never squeezes the name. The
-  delta stacks under the value at every width, as plain muted signed text
-  (no arrow, no pill), so two money figures never sit side by side.
+  Leaderboard: under 480px the sublabel sits under the name and the delta
+  under the value. At 480px and up every row is one 36px line: the sublabel
+  follows the name and truncates first, and the delta sits left of the value
+  on its baseline. The delta is plain muted signed text (no arrow, no pill).
 
   Never put `text-body` and a `text-ripple-*` colour through one cn() call:
   tailwind-merge reads both as colours and drops the size.
@@ -24,10 +24,11 @@
   past target carry colour. No pace judgement: the widget has no pace data.
 
   Layout follows the root's own width (container query at 480px): the period
-  moves beside the title, leaderboard sublabels move onto the name line,
+  moves beside the title, leaderboard rows go to one line,
   activity times move into a right column, and the deals
   table replaces its stacked rows (Table layout="stack"). Lists cap at 5 reps,
-  6 deals and 4 events behind a Show more button; nothing scrolls inside.
+  6 deals and 4 events behind a "Show N more" (activity: "Show N earlier")
+  button; nothing scrolls inside.
   The root forwards `id` and data-ripple-node for the visual editor.
 -->
 <script lang="ts">
@@ -194,7 +195,7 @@
 					{@render label(plain(board?.title) || 'Leaderboard', leaders.length)}
 					<ol class="m-0 flex list-none flex-col p-0">
 						{#each cut(leaders, 'leaders') as l (l.key)}
-							<li aria-label={leaderText(l)} class="grid min-h-11 grid-cols-[1.5rem_1.75rem_minmax(0,1fr)_auto] items-center gap-x-3 py-1.5 @min-[480px]:min-h-9 {row}">
+							<li aria-label={leaderText(l)} class="grid min-h-11 grid-cols-[1.5rem_1.75rem_minmax(0,1fr)_auto] items-center gap-x-3 py-1.5 @min-[480px]:min-h-9 @min-[480px]:py-1 {row}">
 								<span aria-hidden="true" class="justify-self-center tabular-nums" data-slot="rank">
 									{#if l.rank <= 3}
 										<span class="inline-flex size-5 items-center justify-center rounded-full bg-ripple-track text-footnote font-semibold">{l.rank}</span>
@@ -203,11 +204,11 @@
 									{/if}
 								</span>
 								<span aria-hidden="true" class="contents"><Avatar src={safeUrl(l.avatar, { kind: 'resource' })} alt={l.name} class="size-7 text-[11px]" /></span>
-								<span aria-hidden="true" class="flex min-w-0 flex-col @min-[480px]:flex-row @min-[480px]:flex-wrap @min-[480px]:items-baseline @min-[480px]:gap-x-2">
+								<span aria-hidden="true" class="flex min-w-0 flex-col @min-[480px]:flex-row @min-[480px]:items-baseline @min-[480px]:gap-x-2">
 									<span class="min-w-0 truncate text-body {l.name ? '' : 'pr-1 italic text-ripple-muted-foreground'}" title={l.name || undefined}>{l.name || 'Unnamed'}</span>
-									{#if l.sublabel}<span class="min-w-0 text-callout text-ripple-muted-foreground [overflow-wrap:break-word] @min-[480px]:truncate" title={l.sublabel}>{l.sublabel}</span>{/if}
+									{#if l.sublabel}<span class="min-w-0 text-callout text-ripple-muted-foreground [overflow-wrap:break-word] @min-[480px]:shrink-[999] @min-[480px]:truncate" title={l.sublabel}>{l.sublabel}</span>{/if}
 								</span>
-								<span aria-hidden="true" class="flex flex-col items-end gap-0.5">
+								<span aria-hidden="true" class="flex flex-col items-end gap-0.5 @min-[480px]:flex-row-reverse @min-[480px]:items-baseline @min-[480px]:gap-2">
 									{#if l.value}<span class="whitespace-nowrap text-body font-medium tabular-nums">{l.value}</span>{:else}<span class="text-callout text-ripple-muted-foreground">n/a</span>{/if}
 									{#if l.delta}<Delta text={l.delta} dir={l.dir} sentiment="neutral" arrow={false} class="bg-transparent px-0 py-0" />{/if}
 								</span>
