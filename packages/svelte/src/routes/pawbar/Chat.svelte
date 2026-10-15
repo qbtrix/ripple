@@ -4,53 +4,47 @@
     in reach while a long card is read, and the suggestion panel above it.
     Suggestions: collapsed, one sideways row (round-robin, the first chip of
     each group, up to ROW) over a round toggle (aria-expanded); expanded, a
-    grid with an uppercase label per group over pill chips (chip-icons.ts icon,
-    title, "step by step" on steps chips, an arrow on handoff chips), floating
-    over the bottom of the log and scrolling inside itself past 55vh. Escape or
-    a chip tap folds it, returning focus inside it to the toggle. With
-    `foldChips` (the landing), the visitor's first turn (not a seeded one)
-    removes the row and moves the toggle left of the composer, giving the log
-    that height; the toggle still opens the panel over the log.
+    grid of labelled groups of pill chips (chip-icons.ts icon, "step by step"
+    on steps chips, an arrow on handoff chips) floating over the log, scrolling
+    inside itself past 55vh. Escape or a chip tap folds it, focus inside it
+    going to the toggle. With `foldChips` (the landing), the visitor's first
+    turn (not a seeded one) removes the row and puts the toggle left of the
+    composer, giving the log that height.
     Sending: a chip runs here (session.send); typed text goes to Paw OS
     (session.handoff, opened from the send gesture) unless `typedLocal` keeps it
-    on the Paw Bar (mock and dev only), and the hint under the composer says so.
-    A `handoff` chip takes the typed-text path and says "Opens in Paw OS" (one
-    hidden note shared through aria-describedby).
+    on the Paw Bar (mock and dev only), as the hint under the composer says. A
+    `handoff` chip takes the typed path and says "Opens in Paw OS" (one hidden
+    note shared through aria-describedby).
     Look: Paw OS. ChatPill's glass composer (send turns into stop while a turn
     streams), the visitor's message a blue-tint bubble, cards on --site-card
-    with a hairline, typing dots and a shimmer label while waiting, shimmer
-    bars while a card streams. Assistant text is markdown-lite (paragraphs,
-    **bold**, `code`) from Svelte nodes, never {@html}, and never a card's raw
-    spec (hideSpecText; "Card hidden." when no card shows).
+    with a hairline, typing dots and a shimmer label while waiting, shimmer bars
+    while a card streams. Assistant text is markdown-lite (paragraphs, **bold**,
+    `code`) from Svelte nodes, never {@html}, and never a card's raw spec
+    (hideSpecText; "Card hidden." when no card shows).
     Cards: <Ripple streaming> while it arrives, remounted as <Ripple spec> on
-    final. A map card's OSM tiles take TrackCard's dark filter; a spec rooted
-    in a `card` widget gets a bare frame. Host events go to session.hostEvent
+    final. A map card's OSM tiles take TrackCard's dark filter; a spec rooted in
+    a `card` widget gets a bare frame. Host events go to session.hostEvent
     (inert until final): checkout progress or failure is the card's note, an
-    opened checkout a PayCard under it (keyed by session), a booking a
-    BookingReceipt; an order resumed from sessionStorage shows its PayCard
-    above the log. A finished flow goes to session.flowComplete. A notice that
-    offers a replay gets a button for session.replayRecorded. Once a final card
-    has mounted, an idle callback posts its pure and page audit once
-    (session.auditCard on the card's box; the final Ripple's onRenderError
-    feeds Card.renderErrors for errorBoxes);
-    pagehide or a hidden tab re-posts it with time on screen (reportSeen).
-    Spec peek: the card's JSON, pretty-printed, following its newest line while
-    streaming and its start once final; open only on the first card the visitor
-    triggers per browser session. Clipped, never its own scroll container: 8
-    lines under 1024px, beside the card at its height from 1024px; Expand shows
-    it all. Turns there at mount (the prerendered exchange) neither animate in
-    nor open a peek. Scrolling: the log (with the optional `top` snippet, the
-    hero) is the chat's own scroll container; nothing calls scrollIntoView. It
-    follows new content only while the visitor is at the bottom; the visitor's
-    own message always jumps there; scrolled up, growth shows a "New" pill; a
-    resize keeps a reader at the bottom. At mount, and until the first turn,
-    it stays at its top. The dock holds the panel, the composer with `more` to
-    its right, and a foot row (`foot`, then the hint, the textarea's description when narrow).
-    The log is role="log", aria-busy while streaming; one polite region says
-    "Building" and "Done" per turn. DOM ids are positional, never Card.id
-    (prerender and hydration can differ). Reduced motion: CSS, the label stays
-    on "Thinking". Playground props (off on the landing): `chips` (cards as
-    chips into its preview), `onspec` (an Open button); exports `ask`, `focus`.
+    opened checkout a PayCard under it, a booking a BookingReceipt; an order
+    resumed from sessionStorage shows its PayCard above the log. A finished flow
+    goes to session.flowComplete; a notice that offers a replay gets a button
+    for session.replayRecorded. Once a final card has mounted, an idle callback
+    posts its audit once (session.auditCard; onRenderError feeds
+    Card.renderErrors); pagehide or a hidden tab re-posts it with time on screen.
+    Spec peek: the card's JSON, following its newest line while streaming and
+    its start once final; open only on the first card the visitor triggers per
+    browser session. Clipped, never its own scroll container: 8 lines under
+    1024px, beside the card from 1024px; Expand shows it all. Turns there at
+    mount (the prerendered exchange) neither animate in nor open a peek.
+    Scrolling: the log (with the optional `top` snippet, the hero) is the chat's
+    own scroll container; nothing calls scrollIntoView. It follows new content
+    only while the visitor is at the bottom; their own message always jumps
+    there; scrolled up, growth shows a "New" pill. Until the first turn it stays
+    at its top. The dock: the panel, the composer with `more` to its right, a
+    foot row (`foot`, then the hint). The log is role="log", aria-busy while
+    streaming; one polite region says "Building" and "Done" per turn. DOM ids
+    are positional, never Card.id. Playground props: `chips`, `onspec`; exports
+    `ask`, `focus`.
 -->
 <script lang="ts">
 	import { tick, untrack, type Snippet } from 'svelte';
