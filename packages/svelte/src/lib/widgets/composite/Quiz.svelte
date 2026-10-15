@@ -25,6 +25,8 @@
     Math.random, so the server and the client deal the same order.
   - Choice tiles wrap real radios with right and wrong states, so every state
     also has an icon and a word. Losing choices go muted in ink, never opacity.
+    Tiles fill with an ink wash, not the card colour, so dark lifts them.
+  - Once answered, the countdown stops in muted ink, never empties.
   - A photo that is refused or fails to load is replaced by one note line.
 -->
 <script lang="ts">
@@ -157,6 +159,7 @@
 	let deadline = 0;
 	const waitingToStart = $derived(secs !== undefined && !armed && !!q && !revealed);
 	const ticking = $derived(secs !== undefined && armed && !!q && !revealed);
+	const timed = $derived(secs !== undefined && !waitingToStart);
 	const secsLeft = $derived(Math.max(0, Math.ceil(leftMs / 1000)));
 	const C = 2 * Math.PI * 16;
 	const frac = $derived(secs ? Math.min(Math.max(leftMs / (secs * 1000), 0), 1) : 1);
@@ -376,8 +379,10 @@
 									</span>
 								</span>
 							{/if}
-							{#if secs !== undefined && !waitingToStart}
-								<div class="relative grid size-11 shrink-0 place-items-center text-ripple-surface-foreground" data-slot="countdown">
+							{#if timed}
+								<!-- 36px ring pulled into the 24px row, so a timed row keeps the untimed rhythm. Once answered the clock
+								     stops in muted ink: the seconds that were left, or a clock glyph when none were. -->
+								<div class={['relative -my-1.5 grid size-9 shrink-0 place-items-center', revealed ? 'text-ripple-muted-foreground' : 'text-ripple-surface-foreground']} data-slot="countdown">
 									<svg class="absolute inset-0 size-full -rotate-90" viewBox="0 0 36 36" aria-hidden="true">
 										<circle cx="18" cy="18" r="16" fill="none" stroke-width="2.5" class="stroke-ripple-track" />
 										<circle
@@ -388,17 +393,17 @@
 											stroke-width="3"
 											stroke-linecap="round"
 											stroke-dasharray={C}
-											stroke-dashoffset={C * (1 - (revealed ? 0 : frac))}
-											class={[secsLeft <= 3 && !revealed ? 'stroke-ripple-warning' : 'stroke-ripple-accent', 'transition-[stroke-dashoffset] duration-200 ease-linear motion-reduce:transition-none']}
+											stroke-dashoffset={C * (1 - frac)}
+											class={[revealed ? 'stroke-ripple-muted-foreground' : secsLeft <= 3 ? 'stroke-ripple-warning' : 'stroke-ripple-accent', 'transition-[stroke-dashoffset] duration-200 ease-linear motion-reduce:transition-none']}
 										/>
 									</svg>
-									<span role="timer" aria-label="{revealed ? 0 : secsLeft} seconds left" class="relative text-callout font-semibold tabular-nums">
-										{revealed ? '·' : secsLeft}
+									<span role="timer" aria-label="{secsLeft} seconds left" class="relative grid place-items-center text-footnote font-semibold tabular-nums">
+										{#if revealed && !secsLeft}<Clock size={14} strokeWidth={2} aria-hidden="true" />{:else}{secsLeft}{/if}
 									</span>
 								</div>
 							{/if}
 						</div>
-						<ol class="flex gap-0.5" aria-label="Progress" data-slot="rail">
+						<ol class={['flex gap-0.5', timed && 'mt-1.5']} aria-label="Progress" data-slot="rail">
 							{#each list as item, k (item.key)}
 								{@const a = k < answers.length ? answers[k] : undefined}
 								{@const mark = a === undefined ? (k === at ? 'now' : 'todo') : a === item.answer ? 'right' : 'wrong'}
@@ -456,8 +461,8 @@
 														: isWrongPick
 															? 'border-ripple-error bg-ripple-error/12'
 															: revealed
-																? 'border-ripple-border bg-ripple-surface text-ripple-muted-foreground'
-																: 'cursor-pointer border-ripple-control-border bg-ripple-surface hover:border-ripple-accent hover:bg-ripple-accent/6 has-[:focus-visible]:border-ripple-accent has-[:focus-visible]:bg-ripple-accent/6'
+																? 'border-ripple-border bg-ripple-surface-foreground/4 text-ripple-muted-foreground'
+																: 'cursor-pointer border-ripple-control-border bg-ripple-surface-foreground/4 hover:border-ripple-accent hover:bg-ripple-accent/6 has-[:focus-visible]:border-ripple-accent has-[:focus-visible]:bg-ripple-accent/6'
 												]}
 											>
 												<input
@@ -485,7 +490,7 @@
 												>
 													{#if isRight}<Check size={14} strokeWidth={3} />{:else if isWrongPick}<X size={14} strokeWidth={3} />{:else}{pos + 1}{/if}
 												</span>
-												<span class="flex min-w-0 flex-1 flex-col gap-0.5 @min-[480px]:flex-row @min-[480px]:items-center @min-[480px]:justify-between @min-[480px]:gap-3">
+												<span class={['flex min-w-0 flex-1 flex-col gap-0.5', cols === 1 && '@min-[480px]:flex-row @min-[480px]:items-center @min-[480px]:justify-between @min-[480px]:gap-3']}>
 													<span class="min-w-0 text-body-emph text-pretty">{q.choices[ci]}</span>
 													{#if isRight}
 														<span class="shrink-0 text-footnote font-medium text-ripple-success-text">{picked === ci ? 'Your pick, correct' : 'Correct answer'}</span>
