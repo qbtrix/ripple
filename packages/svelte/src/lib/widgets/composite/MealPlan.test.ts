@@ -252,6 +252,16 @@ describe('meal-plan: the week', () => {
 		expect((screen.getByRole('combobox', { name: 'Swap Mon Dinner' }) as HTMLSelectElement).disabled).toBe(false);
 	});
 
+	it('summarises a closed day in slot order and marks a ref not in recipes', () => {
+		const days: PlanDay[] = [
+			{ day: 'Mon', meals: [{ slot: 'breakfast', recipe: 'oats' }] },
+			{ day: 'Tue', meals: [{ slot: 'brunch', recipe: 'leftover-pizza' }, { slot: 'dinner', recipe: 'chili' }, { slot: 'breakfast', recipe: 'oats' }] }
+		];
+		const { container } = render(MealPlan, { props: { people: 2, recipes: recipes(), days } });
+		const summary = container.querySelector('[data-day="Tue"] [data-slot="summary"]')!;
+		expect(summary.textContent).toBe('Protein oats · Turkey chili · Leftover pizza (not in recipes)');
+	});
+
 	it('shows a day pill only when the day misses, and the averages against the goal word', () => {
 		const { container } = render(MealPlan, { props: { people: 2, goal: { protein_g: 80, kcal: 2000 }, recipes: recipes(), days: week() } });
 		// Mon 81 g meets 80; Tue 83 g meets it too: no day pill at all.

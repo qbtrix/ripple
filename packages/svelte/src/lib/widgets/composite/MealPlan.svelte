@@ -8,14 +8,18 @@
   Layout (one DOM, CSS-only): under 540px container width, and at any width
   with more than four slots, each day is a disclosure row (label, a pill only
   when the day misses, totals, then a full-width meter against the goal so the
-  goal tick sits at one x on every row, then the meal names clamped to two
-  lines); the first day starts open, one open at a time, and a one-day plan is
-  simply open. At 540px and up with four slots or fewer the same rows are a
-  days-by-slots grid with every day shown and a three-line day cell; there
-  the swap control is pinned top-right and a float spacer keeps it beside the
-  name's first line only, so the second line gets the full cell width. Every meal row ends in the same swap control (a native
-  select, disabled with a title when the slot has no alternative). Tapping a
-  meal opens its Recipe inline under the day, scaled to `people`.
+  goal tick sits at one x on every row, then the meal names in slot order,
+  clamped to three lines); the first day starts open, one open at a time, and a
+  one-day plan is simply open. At 540px and up with four slots or fewer the
+  same rows are a days-by-slots grid with every day shown: the day cell is the
+  label (two lines at most), a pill only on a miss, grams and kcal (labelled once in the header
+  row), then the meter. Each meal box shrink-wraps its name, so a one-line name
+  carries its swap control right beside it; a wrapping name fills the cell with
+  the control pinned top-right, a float spacer (icon plus 8px) keeping it clear
+  of the first line, and a 16px column gap keeping it off the next column.
+  Every meal row ends in the same swap control (a native select, disabled with
+  a title when the slot has no alternative). Tapping a meal opens its Recipe
+  inline under the day, scaled to `people`.
 
   Invariants:
   - `people` is the one bound field (bind contract `people` / `onpeoplechange`).
@@ -276,8 +280,8 @@
 			{#if view.length}
 				<div style:--slots={slots.length || 1} data-slot="week-grid">
 					{#if grid}
-						<div class="hidden gap-x-1 border-b border-ripple-border pb-1.5 @min-[540px]:grid @min-[540px]:grid-cols-[6.75rem_repeat(var(--slots),minmax(0,1fr))]" aria-hidden="true">
-							<span></span>
+						<div class="hidden gap-x-4 border-b border-ripple-border pb-1.5 @min-[540px]:grid @min-[540px]:grid-cols-[6rem_repeat(var(--slots),minmax(0,1fr))]" aria-hidden="true">
+							<span class="truncate px-0.5 text-footnote text-ripple-muted-foreground">{[view.some((d) => d.protein !== undefined) && 'Protein', view.some((d) => d.kcal !== undefined) && 'kcal'].filter(Boolean).join(' · ')}</span>
 							{#each slots as s (s)}
 								{@const SlotIcon = kindIcon(MEAL_ICONS, s)}
 								<span class="flex min-w-0 items-center gap-1.5 px-0.5 text-footnote text-ripple-muted-foreground">
@@ -292,7 +296,7 @@
 							{@const cells = slots.map((s) => d.meals.filter((m) => m.slot === s))}
 							{@const sums = totals(d)}
 							<li
-								class={['flex flex-col py-2.5', grid && '@min-[540px]:grid @min-[540px]:grid-cols-[6.75rem_repeat(var(--slots),minmax(0,1fr))] @min-[540px]:items-start @min-[540px]:gap-x-1 @min-[540px]:py-2']}
+								class={['flex flex-col py-2.5', grid && '@min-[540px]:grid @min-[540px]:grid-cols-[6rem_repeat(var(--slots),minmax(0,1fr))] @min-[540px]:items-start @min-[540px]:gap-x-4 @min-[540px]:py-2']}
 								in:rise={{ index: di }}
 								data-day={d.label}
 							>
@@ -313,8 +317,8 @@
 										{#if !d.meals.length}
 											<span class="text-footnote text-ripple-muted-foreground">Nothing planned</span>
 										{:else if !open}
-											{@const names = d.meals.map((m) => m.name)}
-											<span class="line-clamp-2 text-footnote text-ripple-muted-foreground" title={names.join(' · ')} data-slot="summary">{summary(names)}</span>
+											{@const names = cells.flat().map((m) => (m.recipe ? m.name : `${m.name} (not in recipes)`))}
+											<span class="line-clamp-3 text-footnote text-ripple-muted-foreground" title={names.join(' · ')} data-slot="summary">{summary(names)}</span>
 										{/if}
 									</span>
 									{#if d.meals.length && !single}
@@ -328,12 +332,12 @@
 								</svelte:element>
 								{#if grid}
 									<div class="hidden min-w-0 flex-col gap-1 py-1 pr-1 @min-[540px]:flex">
-										<span class="flex min-w-0 items-center gap-1">
-											<span class="min-w-0 flex-1 truncate text-callout font-medium" title={d.label}>{d.label}</span>
-											{@render miss(d)}
-										</span>
+										<span class="line-clamp-2 text-callout break-words font-medium" title={d.label}>{d.label}</span>
+										{#if d.check && d.check.status !== 'good'}<span class="flex">{@render miss(d)}</span>{/if}
 										{#if d.protein !== undefined || d.kcal !== undefined}
-											<span class="truncate text-footnote text-ripple-muted-foreground tabular-nums">{[d.protein !== undefined && `${num(g0(d.protein))} g`, d.kcal !== undefined && `${num(g0(d.kcal))} kcal`].filter(Boolean).join(' · ')}</span>
+											<span class="truncate text-footnote text-ripple-muted-foreground tabular-nums"
+												>{#if d.protein !== undefined}{num(g0(d.protein))} g<span class="sr-only"> protein</span>{/if}{#if d.protein !== undefined && d.kcal !== undefined}{' · '}{/if}{#if d.kcal !== undefined}{num(g0(d.kcal))} kcal{/if}</span
+											>
 										{/if}
 										{#if d.ratio !== undefined}<span class="flex">{@render meter(d)}</span>{/if}
 									</div>
@@ -353,7 +357,7 @@
 												<div
 													class={[
 														'flex min-w-0 items-center gap-1 rounded-md transition-colors @min-[540px]:gap-0.5 duration-150 motion-reduce:transition-none',
-														grid && '@min-[540px]:relative @min-[540px]:block',
+														grid && '@min-[540px]:relative @min-[540px]:block @min-[540px]:w-fit @min-[540px]:max-w-full',
 														isOpen ? 'bg-ripple-accent/8 ring-1 ring-ripple-accent' : m.recipe && 'hover:bg-ripple-muted'
 													]}
 													data-meal={m.recipe?.ref}
@@ -369,7 +373,7 @@
 														>
 															{@render slotCol(SlotIcon, m.slot)}
 															<span class="flex min-w-0 flex-1 flex-col">
-																<span class="line-clamp-2 text-callout font-medium break-words" title={m.name}>{#if grid}<span class="hidden h-3 w-5 @min-[540px]:float-right @min-[540px]:block" aria-hidden="true"></span>{/if}{m.name}</span>
+																<span class={['line-clamp-2 text-callout font-medium break-words', grid && '@min-[540px]:line-clamp-3']} title={m.name}>{#if grid}<span class="hidden h-3 w-8 @min-[540px]:float-right @min-[540px]:block" aria-hidden="true"></span>{/if}{m.name}</span>
 																{#if m.recipe.kcal !== undefined || m.recipe.protein !== undefined}
 																	<span class={['text-footnote text-ripple-muted-foreground tabular-nums', grid && '@min-[540px]:hidden']}>
 																		{[m.recipe.protein !== undefined && `${num(m.recipe.protein)} g protein`, m.recipe.kcal !== undefined && `${num(m.recipe.kcal)} kcal`].filter(Boolean).join(' · ')}
@@ -381,7 +385,7 @@
 														<span class={['flex min-w-0 flex-1 items-start gap-2 px-1.5 py-1.5', grid && '@min-[540px]:pr-0 @min-[540px]:pl-0.5']}>
 															{@render slotCol(SlotIcon, m.slot)}
 															<span class="flex min-w-0 flex-1 flex-col">
-																<span class="line-clamp-2 text-callout break-words text-ripple-muted-foreground" title={m.name}>{#if grid}<span class="hidden h-3 w-5 @min-[540px]:float-right @min-[540px]:block" aria-hidden="true"></span>{/if}{m.name}</span>
+																<span class={['line-clamp-2 text-callout break-words text-ripple-muted-foreground', grid && '@min-[540px]:line-clamp-3']} title={m.name}>{#if grid}<span class="hidden h-3 w-8 @min-[540px]:float-right @min-[540px]:block" aria-hidden="true"></span>{/if}{m.name}</span>
 																<span class="text-footnote text-ripple-muted-foreground">Not in recipes</span>
 															</span>
 														</span>
