@@ -1,8 +1,9 @@
-// widgets/composite/FlashcardDeck.test.ts — the flashcard-deck data widget:
-// registry and bind-contract wiring, score written back to state, on_complete
-// reaching the host, streamed parity (with shuffle on), junk props, and the
-// deck's own logic (flip, marks, the score screen, practise-missed re-deal,
-// restart, hints, the seeded shuffle).
+// widgets/composite/FlashcardDeck.test.ts: the flashcard-deck data widget.
+// Registry and bind-contract wiring, score written back to state, on_complete
+// reaching the host, streamed parity (with shuffle on), junk and skipped rows,
+// and the deck's own loop: reveal first then grade (click and keys, focus
+// handoff), the score screen, practise-missed re-deal, restart, hints, the
+// seeded shuffle, the deck height tier, the one-line rail and the sheets.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
 import Ripple from '$lib/Ripple.svelte';
@@ -23,6 +24,11 @@ const spanish = (): DeckCard[] => [
 	{ id: 'agua', front: 'Water', back: 'Agua' }
 ];
 const btn = (name: string | RegExp) => screen.getByRole('button', { name });
+/** Reveal, then grade: the marks only exist once the answer is showing. */
+const grade = async (name: 'Got it' | 'Missed it') => {
+	await fireEvent.click(btn('Show answer'));
+	await fireEvent.click(btn(name));
+};
 const slot = (c: HTMLElement, s: string) => c.querySelector(`[data-slot="${s}"]`)?.textContent?.replace(/\s+/g, ' ').trim();
 
 describe('flashcard-deck: registry and bind contract', () => {
@@ -57,11 +63,11 @@ describe('flashcard-deck: through Ripple', () => {
 				onEvent
 			}
 		});
-		await fireEvent.click(btn('Got it'));
+		await grade('Got it');
 		expect(onStateChange).toHaveBeenLastCalledWith('score', 1, expect.anything());
-		await fireEvent.click(btn('Missed it'));
+		await grade('Missed it');
 		expect(onStateChange).toHaveBeenCalledTimes(1);
-		await fireEvent.click(btn('Got it'));
+		await grade('Got it');
 		expect(onStateChange).toHaveBeenLastCalledWith('score', 2, expect.anything());
 
 		await vi.waitFor(() => expect(onEvent).toHaveBeenCalledWith(expect.objectContaining({ type: 'emit' })));
@@ -131,7 +137,7 @@ describe('flashcard-deck: the deck', () => {
 		expect(slot(container, 'front')).toBe('Thank you');
 		expect(slot(container, 'position')).toBe('2 / 3');
 		expect([...container.querySelectorAll('[data-mark]')].map((d) => d.getAttribute('data-mark'))).toEqual(['missed', 'now', 'todo']);
-		expect(slot(container, 'tally')).toBe('0 got it · 1 missed · 2 left');
+		expect(container.querySelector('[data-slot="tally"]')).toBeNull();
 	});
 
 	it('scores the pass, re-deals only the missed cards, and restarts', async () => {
@@ -140,9 +146,10 @@ describe('flashcard-deck: the deck', () => {
 		const { container } = render(FlashcardDeck, {
 			props: { cards: spanish(), onscorechange: (s: number) => scores.push(s), oncomplete: (r: unknown) => done.push(r) }
 		});
-		await fireEvent.click(btn('Got it'));
-		await fireEvent.click(btn('Missed it'));
-		await fireEvent.click(btn('Missed it'));
+		expect(container.querySelector('[data-slot="meta"]')).toBeNull();
+		await grade('Got it');
+		await grade('Missed it');
+		await grade('Missed it');
 
 		expect(slot(container, 'total')).toBe('1 / 3');
 		expect(done).toEqual([{ score: 1, total: 3 }]);
@@ -153,10 +160,10 @@ describe('flashcard-deck: the deck', () => {
 
 		await fireEvent.click(btn('Practise missed (2)'));
 		expect(slot(container, 'position')).toBe('1 / 2');
-		expect(slot(container, 'meta')).toBe('3 cards · practising 2 missed');
+		expect(slot(container, 'meta')).toBe('Practising 2 missed');
 		expect(slot(container, 'front')).toBe('Thank you');
-		await fireEvent.click(btn('Got it'));
-		await fireEvent.click(btn('Got it'));
+		await grade('Got it');
+		await grade('Got it');
 
 		expect(slot(container, 'total')).toBe('3 / 3');
 		expect(screen.getByText('This round: 2 of 2')).toBeTruthy();
@@ -168,16 +175,16 @@ describe('flashcard-deck: the deck', () => {
 		await fireEvent.click(btn('Restart'));
 		expect(scores.at(-1)).toBe(0);
 		expect(slot(container, 'position')).toBe('1 / 3');
-		expect(slot(container, 'meta')).toBe('3 cards');
+		expect(container.querySelector('[data-slot="meta"]')).toBeNull();
 	});
 
 	it('shows a hint on request and hides it on the next card', async () => {
 		const { container } = render(FlashcardDeck, { props: { cards: spanish() } });
 		expect(screen.queryByRole('button', { name: 'Show hint' })).toBeNull();
-		await fireEvent.click(btn('Got it'));
+		await grade('Got it');
 		await fireEvent.click(btn('Show hint'));
 		expect(slot(container, 'hint')).toBe('Starts with G');
-		await fireEvent.click(btn('Got it'));
+		await grade('Got it');
 		expect(container.querySelector('[data-slot="hint"]')).toBeNull();
 	});
 
@@ -195,5 +202,136 @@ describe('flashcard-deck: the deck', () => {
 		cleanup();
 		const second = render(FlashcardDeck, { props: { cards, shuffle: true } });
 		expect(slot(second.container, 'front')).toBe(front1);
+	});
+});
+
+describe('flashcard-deck: reveal first, then grade', () => {
+	it('has no marks before the reveal, and flipping back hides them again', async () => {
+		const { container } = render(FlashcardDeck, { props: { cards: spanish() } });
+		expect(screen.queryByRole('button', { name: 'Got it' })).toBeNull();
+		expect(screen.queryByRole('button', { name: 'Missed it' })).toBeNull();
+		await fireEvent.click(btn('Show answer'));
+		expect(container.querySelector('[data-flipped]')!.getAttribute('data-flipped')).toBe('true');
+		expect(btn('Got it')).toBeTruthy();
+		expect(screen.queryByRole('button', { name: 'Show answer' })).toBeNull();
+		await fireEvent.click(container.querySelector('[data-flipped]')!);
+		expect(screen.queryByRole('button', { name: 'Got it' })).toBeNull();
+		expect(btn('Show answer')).toBeTruthy();
+	});
+
+	it('moves focus to Got it after revealing from Show answer, then back to Show answer after a mark', async () => {
+		render(FlashcardDeck, { props: { cards: spanish() } });
+		const show = btn('Show answer');
+		show.focus();
+		await fireEvent.click(show);
+		await vi.waitFor(() => expect(document.activeElement?.textContent).toContain('Got it'));
+		await fireEvent.click(document.activeElement!);
+		await vi.waitFor(() => expect(document.activeElement?.textContent).toContain('Show answer'));
+		expect(document.activeElement).not.toBe(document.body);
+	});
+
+	it('grades by arrow keys and digits only after the reveal; Space and Enter never grade', async () => {
+		const scores: number[] = [];
+		const { container } = render(FlashcardDeck, { props: { cards: spanish(), onscorechange: (s: number) => scores.push(s) } });
+		const card = () => container.querySelector<HTMLElement>('[data-flipped]')!;
+		await fireEvent.keyDown(card(), { key: 'ArrowRight' });
+		expect(slot(container, 'position')).toBe('1 / 3');
+		await fireEvent.click(card());
+		await fireEvent.keyDown(card(), { key: ' ' });
+		await fireEvent.keyDown(card(), { key: 'Enter' });
+		expect(slot(container, 'position')).toBe('1 / 3');
+		await fireEvent.keyDown(card(), { key: 'ArrowRight' });
+		expect(scores).toEqual([1]);
+		expect(slot(container, 'position')).toBe('2 / 3');
+		await fireEvent.keyDown(card(), { key: 'h' });
+		expect(slot(container, 'hint')).toBe('Starts with G');
+		await fireEvent.click(card());
+		await fireEvent.keyDown(card(), { key: 'ArrowLeft' });
+		expect([...container.querySelectorAll('[data-mark]')].map((d) => d.getAttribute('data-mark'))).toEqual(['got', 'missed', 'now']);
+		await fireEvent.click(card());
+		await fireEvent.keyDown(card(), { key: '2' });
+		expect(slot(container, 'total')).toBe('2 / 3');
+	});
+
+	it('announces the answer on reveal', async () => {
+		const { container } = render(FlashcardDeck, { props: { cards: spanish() } });
+		await fireEvent.click(btn('Show answer'));
+		expect(container.querySelector('[aria-live]')!.textContent).toBe('Answer: Hola');
+	});
+});
+
+const tierOf = (cards: unknown[]) => {
+	const { container } = render(FlashcardDeck, { props: { cards: cards as never } });
+	const h = container.querySelector('[data-height]')!.getAttribute('data-height');
+	cleanup();
+	return h;
+};
+
+describe('flashcard-deck: layout rules', () => {
+	it('sets one card height tier for the whole deck from its longest face', () => {
+		expect(tierOf([{ front: 'Fe', back: 'Iron' }])).toBe('sm');
+		expect(tierOf([{ front: 'Fe', back: 'Iron' }, { front: 'Au', back: 'x'.repeat(100) }])).toBe('md');
+		expect(tierOf([{ front: 'Fe', back: 'Iron' }, { front: 'Au', back: 'x'.repeat(200) }])).toBe('lg');
+		// The hint counts with the front: it opens inside the same face.
+		expect(tierOf([{ front: 'Water', back: 'Agua', hint: 'y'.repeat(40) }])).toBe('md');
+	});
+
+	it('draws a 40-card rail on one line, with the current segment marked', () => {
+		const cards = Array.from({ length: 40 }, (_, i) => ({ front: `Card ${i}`, back: `${i}` }));
+		const { container } = render(FlashcardDeck, { props: { cards } });
+		const rail = container.querySelector<HTMLElement>('[data-slot="dots"]')!;
+		expect(rail.classList.contains('flex-nowrap')).toBe(true);
+		expect(rail.querySelectorAll('li')).toHaveLength(40);
+		expect(rail.querySelector('[aria-current="step"]')!.getAttribute('data-mark')).toBe('now');
+	});
+
+	it('peeks two sheets while cards remain and none on the last card', async () => {
+		const { container } = render(FlashcardDeck, { props: { cards: spanish() } });
+		const sheets = () => container.querySelector('[data-sheets]')!.getAttribute('data-sheets');
+		expect(sheets()).toBe('2');
+		await grade('Got it');
+		expect(sheets()).toBe('1');
+		await grade('Got it');
+		expect(sheets()).toBe('0');
+	});
+
+	it('shows six cards to practise, then the rest on request', async () => {
+		const cards = Array.from({ length: 9 }, (_, i) => ({ front: `Card ${i}`, back: `${i}` }));
+		const { container } = render(FlashcardDeck, { props: { cards } });
+		for (let i = 0; i < 9; i++) await grade('Missed it');
+		expect(container.querySelectorAll('[data-slot="missed"] li')).toHaveLength(6);
+		await fireEvent.click(btn('Show 3 more'));
+		expect(container.querySelectorAll('[data-slot="missed"] li')).toHaveLength(9);
+	});
+});
+
+describe('flashcard-deck: messy rows', () => {
+	it('skips rows without a usable front, says so on the first card, and warns once', async () => {
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+		const { container } = render(FlashcardDeck, {
+			props: {
+				cards: [
+					null,
+					'Hola',
+					{ front: { x: 1 }, back: 'Object front' },
+					{ front: '   ' },
+					{ front: 42, back: 'The answer' },
+					{ front: 'Enzyme', back: 7, hint: 3, category: { name: 'Organelles' } }
+				] as never
+			}
+		});
+		expect(slot(container, 'position')).toBe('1 / 2 · 4 skipped');
+		expect(slot(container, 'front')).toBe('42');
+		expect(container.textContent).not.toContain('{"x":1}');
+		expect(container.textContent).not.toContain('[object Object]');
+		expect(warn.mock.calls.filter(([m]) => String(m).includes('skipped 4 of 6'))).toHaveLength(1);
+
+		await grade('Got it');
+		expect(slot(container, 'position')).toBe('2 / 2');
+		expect(slot(container, 'front')).toBe('Enzyme');
+		expect(screen.queryByRole('button', { name: 'Show hint' })).toBeNull();
+		expect(container.textContent).not.toContain('Organelles');
+		await fireEvent.click(btn('Show answer'));
+		expect(slot(container, 'back')).toBe('7');
 	});
 });
