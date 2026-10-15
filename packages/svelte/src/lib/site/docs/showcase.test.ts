@@ -2,7 +2,7 @@
 // manifest widget, every spec's root is that widget and passes the bound
 // spec audit (schema, catalog, actions, props and the rest; not futureDate,
 // since gantt and calendar plan ahead), and the widget page previews the showcase spec in place of
-// the manifest example. Rendering is covered by widgets.test.ts, which renders
+// the manifest example, which it must not repeat. Rendering is covered by widgets.test.ts, which renders
 // every page's pageSpecs(...).example.
 import { describe, expect, it } from 'vitest';
 import { manifestEntries } from '../../manifest/index.js';
@@ -15,7 +15,7 @@ const entry = (type: string) => manifestEntries.find((e) => e.type === type);
 const cases = Object.entries(SHOWCASE).map(([type, spec]) => ({ type, spec }));
 
 describe('widget showcase specs', () => {
-	it('covers at least the wave-1 and wave-2 polished widgets', () => {
+	it('covers at least the wave-1 to wave-3 polished widgets', () => {
 		expect(Object.keys(SHOWCASE)).toEqual(
 			expect.arrayContaining([
 				'gantt',
@@ -29,7 +29,13 @@ describe('widget showcase specs', () => {
 				'funnel',
 				'kanban',
 				'menu-order',
-				'saved-views'
+				'saved-views',
+				'gauge',
+				'order-status',
+				'org-chart',
+				'pipeline-dashboard',
+				'sankey',
+				'sources-bar'
 			])
 		);
 	});
@@ -38,6 +44,7 @@ describe('widget showcase specs', () => {
 		expect(entry(type), `${type} is not in the manifest`).toBeDefined();
 		expect(spec.version).toBe('1.0');
 		expect(spec.ui).toMatchObject({ type });
+		expect(spec.ui, `${type} repeats the manifest example`).not.toEqual(entry(type)?.example);
 		const reports = specAudit(spec, { widgetTypes: getWidgetTypes(), widgets: manifestEntries });
 		expect(reports.filter((r) => r.count || r.warnings?.length)).toEqual([]);
 		expect(reports.map((r) => r.check)).toContain('props');
