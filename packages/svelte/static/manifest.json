@@ -1,7 +1,7 @@
 {
   "schema": "ripple.manifest/v1",
   "version": "0.8.0",
-  "generatedAt": "2026-10-15T09:56:53.261Z",
+  "generatedAt": "2026-10-15T13:51:26.580Z",
   "spec": {
     "uiField": "ui",
     "stateField": "state",
@@ -7521,7 +7521,7 @@
       "type": "bill-split",
       "category": "composite",
       "staticSafe": true,
-      "description": "Split a bill with tip: subtotal, tip_percent, people with optional extras (drinks). Widget does the cents-exact maths, cards, totals; visitor edits everything. Bind value.",
+      "description": "Split a bill with tip: subtotal, tip_percent, people with optional extras (drinks). Widget does the cents-exact maths, rows, totals; visitor edits everything. Bind value.",
       "props": {
         "title": {
           "type": "string",
