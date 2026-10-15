@@ -82,6 +82,9 @@ export function plain(v: unknown): string {
 	return asText(v)
 		.replace(/\*\*([^*\s](?:[^*]*[^*\s])?)\*\*/g, '$1')
 		.replace(/__([^_\s](?:[^_]*[^_\s])?)__/g, '$1')
+		// Single *x* and _x_ emphasis, only at word edges: 2*3*4 and snake_case_names stay.
+		.replace(/(^|[^\w*])\*([^*\s](?:[^*]*[^*\s])?)\*(?![\w*])/g, '$1$2')
+		.replace(/(^|[^\w_])_([^_\s](?:[^_]*[^_\s])?)_(?![\w_])/g, '$1$2')
 		.replace(/^[ \t]*- +/gm, '')
 		.trim();
 }

@@ -313,8 +313,8 @@ describe('tokyo-trip (itinerary)', () => {
 		expect(slot(container, 'spend')).toContain('99,780');
 		expect(container.querySelector('[data-slot="spend"]')!.getAttribute('data-status')).toBe('good');
 
-		await fireEvent.click(ui.getByRole('checkbox', { name: 'Airport train into the city' }));
-		await waitFor(() => expect(ui.getByRole('checkbox', { name: 'Airport train into the city' }).getAttribute('aria-checked')).toBe('true'));
+		await fireEvent.click(ui.getByRole('checkbox', { name: /^Airport train into the city/ }));
+		await waitFor(() => expect(ui.getByRole('checkbox', { name: /^Airport train into the city/ }).getAttribute('aria-checked')).toBe('true'));
 		const ticked = lastWrite(onStateChange, 'days') as { stops: { title: string; done?: boolean }[] }[];
 		expect(ticked[0].stops.find((s) => s.title === 'Airport train into the city')?.done).toBe(true);
 
