@@ -3,14 +3,18 @@
 //
 // Props are model output: `value` may be "60%", "1,200", "lots" or missing,
 // `max` may be 0 or "250", `height` may be "200px", `color` may be hostile.
-// A percent scale (max 100 or 1) prints a percent with two rounding guards
-// (100% only when value >= max, never 0% for a positive value); any other max
-// prints the real value and a target line ("of 10,000"), plus the overshoot in
-// words when over. Negatives print a true minus sign. A value that does not
-// parse reads "No value", never NaN.
+// Every share the gauge prints goes through percentText: up to one decimal
+// ("72.8%", "75%"), 100% only when value >= max, never 0% for a positive value.
+// A percent scale (max 100 or 1, no currency or unit) prints that share; any
+// other gauge prints the real value and a target line ("of 10,000"), plus the
+// overshoot when over, and a wide-layout meta line with the share and what is
+// left to go. `currency` (ISO 4217, through money) or `unit` (a plain suffix)
+// is applied to every amount: value, target, over, to go and the spoken text.
+// Negatives print a true minus sign. A value that does not parse reads
+// "No value", never NaN.
 // Full and compact strings are both returned; the component's container
 // query picks one, so nothing clips.
-import { finite, num, plain } from '../data-kit/format.js';
+import { finite, money, num, plain } from '../data-kit/format.js';
 import { safeThemeColor } from '$lib/utils/safe-color.js';
 
 /** Drawn dial height over its diameter for the 240 degree arc (viewBox 100 x 78). */
@@ -29,6 +33,8 @@ export interface GaugeInput {
 	title?: unknown;
 	color?: unknown;
 	height?: unknown;
+	currency?: unknown;
+	unit?: unknown;
 }
 
 export interface GaugeView {
@@ -47,7 +53,7 @@ export interface GaugeView {
 	targetCompact: string;
 	/** "· 30 over", dropped on narrow dials. */
 	over: string;
-	/** Wide-layout line stating the scale in words ("42% of 10,000"). */
+	/** Wide-layout line: the share and what is left ("42.3% · 5,772 to go"), or "150% of 120" when over. */
 	meta: string;
 	title: string;
 	label: string;
@@ -64,13 +70,29 @@ export function parseNum(v: unknown): number | undefined {
 	return finite(v);
 }
 
-/** Integer percent with the guards: 100 only at or over max, never 0 for a positive value. */
+/** The one share rule: up to one decimal, 100 only at or over max, never 0 for a positive value. */
 export function percentText(value: number, max: number): string {
-	const pct = (value / max) * 100;
-	let r = Math.round(pct) || 0;
-	if (value < max && r >= 100) r = 99;
-	if (value > 0 && r <= 0) return '<1%';
-	return `${minus(num(r))}%`;
+	let r = Math.round((value / max) * 1000) / 10 || 0;
+	if (value < max && r >= 100) r = 99.9;
+	if (value > 0 && r <= 0) return '<0.1%';
+	return `${minus(num(r, { digits: 1 }))}%`;
+}
+
+/** Full and compact amount formatters for a currency code or a unit suffix. */
+function amounts(currency: unknown, unit: unknown) {
+	const code = plain(currency);
+	const u = plain(unit);
+	const suffix = u && u !== '%' ? ` ${u}` : '';
+	if (code) {
+		return {
+			full: (n: number) => minus(money(n, code, { whole: true })),
+			compact: (n: number) => minus(money(n, code, { compact: true }))
+		};
+	}
+	return {
+		full: (n: number) => minus(num(n)) + suffix,
+		compact: (n: number) => minus(num(n, { compact: true })) + suffix
+	};
 }
 
 export function gaugeView(p: GaugeInput): GaugeView {
@@ -79,7 +101,9 @@ export function gaugeView(p: GaugeInput): GaugeView {
 	const max = m !== undefined && m > 0 ? m : 100;
 	const hasValue = v !== undefined;
 	const value = v ?? 0;
-	const mode = max === 100 || max === 1 ? 'percent' : 'value';
+	const fmt = amounts(p.currency, p.unit);
+	const scaled = plain(p.currency) !== '' || (plain(p.unit) !== '' && plain(p.unit) !== '%');
+	const mode = !scaled && (max === 100 || max === 1) ? 'percent' : 'value';
 	const fraction = hasValue ? Math.min(1, Math.max(0, value / max)) : 0;
 
 	const title = plain(p.title);
@@ -95,18 +119,19 @@ export function gaugeView(p: GaugeInput): GaugeView {
 	let spoken = 'No value';
 	if (hasValue && mode === 'percent') {
 		number = percentText(value, max);
-		spoken = number.replace('<1%', 'less than 1 percent').replace('%', ' percent');
+		spoken = number.replace('<', 'less than ').replace('%', ' percent');
 	} else if (hasValue) {
-		const full = num(value);
-		const compact = minus(num(value, { compact: true }));
-		number = full.length > FULL_MAX_CHARS ? compact : minus(full);
+		const full = fmt.full(value);
+		const compact = fmt.compact(value);
+		number = full.length > FULL_MAX_CHARS ? compact : full;
 		numberCompact = compact !== number ? compact : '';
-		target = `of ${num(max)}`;
-		const tc = `of ${num(max, { compact: true })}`;
+		target = `of ${fmt.full(max)}`;
+		const tc = `of ${fmt.compact(max)}`;
 		targetCompact = tc !== target ? tc : '';
-		const extra = value > max ? num(value - max) : '';
+		const extra = value > max ? fmt.full(value - max) : '';
 		over = extra ? `· ${extra} over` : '';
-		meta = `${percentText(value, max)} ${target}`;
+		const pct = percentText(value, max);
+		meta = value < max ? `${pct} · ${fmt.full(max - value)} to go` : `${pct} ${target}`;
 		spoken = `${full} ${target}${extra ? `, ${extra} over` : ''}`;
 	}
 
