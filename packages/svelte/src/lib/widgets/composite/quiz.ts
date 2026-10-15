@@ -1,7 +1,7 @@
 // widgets/composite/quiz.ts — the rules behind the `quiz` widget, kept out of
 // the component so they test without a DOM: cleaning the model's questions
 // (a bad one is skipped, never a crash), normalising the bound value, scoring,
-// the streak and the verdict band.
+// the streak, the verdict band and how many columns the choices take.
 //
 // Invariants:
 // - `answers[i]` is the ORIGINAL choice index the visitor picked for the i-th
@@ -130,4 +130,15 @@ export function bandOf(score: number, total: number): Band {
 export function clampSeconds(v: unknown): number | undefined {
 	const n = finite(v);
 	return n === undefined || n <= 0 ? undefined : Math.min(Math.max(Math.round(n), SECONDS.min), SECONDS.max);
+}
+
+/** Longest choice, in characters, that still pairs in two columns. */
+export const PAIR_MAX_CHARS = 28;
+
+/**
+ * Columns for a question's choices at wide card widths: two only for exactly
+ * 2 or 4 short choices (no orphan tile, no tall tile beside a short one).
+ */
+export function choiceColumns(choices: readonly string[]): 1 | 2 {
+	return (choices.length === 2 || choices.length === 4) && choices.every((c) => c.length <= PAIR_MAX_CHARS) ? 2 : 1;
 }
