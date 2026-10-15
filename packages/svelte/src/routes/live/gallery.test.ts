@@ -1,9 +1,9 @@
 // routes/live/gallery.test.ts — Holds the gallery registry to its rules and the
 // files it points at: one card per widget type (a run wins over a demo), every
-// pruned demo key opens the run that replaced it, iso drawings are found for
-// the Anatomy credit, every demo has its component
-// in ./demos, every grid id a committed thumb and nothing else in
-// static/thumbs, thumbs.json lists the grid in order (run `bun run thumbs`
+// pruned demo key opens the run that replaced it, the heart and bike gears
+// show once as their figures (the weaker same-topic cards open by key only),
+// iso drawings are found for the Anatomy credit, every demo has its component
+// in ./demos, every grid id a committed thumb and nothing else in static/thumbs, thumbs.json lists the grid in order (run `bun run thumbs`
 // after a change), and every old /showcase URL redirects to what it showed.
 // Files are listed with Vite globs.
 import { expect, test } from 'vitest';
@@ -65,11 +65,20 @@ test('every live item is one run', () => {
 	for (const i of liveItems) expect(itemByKey(i.key)).toBe(i);
 });
 
-test('the drawings that lost their landing chip are gallery-only runs that still open', () => {
+test('the drawings that lost their landing chip are app runs that still open', () => {
 	for (const key of ['explainer', 'heart']) {
 		expect(appScenarios.map((s) => s.id), key).toContain(key);
 		expect([...scenarios, ...playScenarios].map((s) => s.id), key).not.toContain(key);
 		expect(itemByKey(key)?.kind, key).toBe('run');
+	}
+});
+
+test('the heart and bike gears show once, as their hand-built figures in Drawings', () => {
+	for (const key of ['heart-pump', 'bike-gears']) expect(galleryItems.find((i) => i.key === key)?.group, key).toBe('Drawings');
+	// The weaker same-topic cards keep their keys but get no card.
+	for (const key of ['iso-heart', 'iso-bike', 'explainer', 'heart', 'demo-illustration']) {
+		expect(galleryItems.some((i) => i.key === key), key).toBe(false);
+		expect(itemByKey(key)?.key, key).toBe(key);
 	}
 });
 
@@ -90,6 +99,7 @@ test('old /showcase URLs redirect to /live, its items, or /ds', () => {
 
 test('the Anatomy credit finds the figure and iso-scene runs, and only those', () => {
 	expect(isoKeys).toContain('heart-pump');
+	expect(isoKeys).toContain('bike-gears');
 	expect(isoKeys).toContain('iso-bike');
 	expect(isoKeys.has('bill-splitter')).toBe(false);
 });
