@@ -27,6 +27,14 @@ describe('themeToCssVars', () => {
     const vars = themeToCssVars({ colors: { primary: '#1d4ed8', background: '#fff' } });
     expect(vars['--primary']).toBe('#1d4ed8');
     expect(vars['--background']).toBe('#fff');
+    expect(vars['--ripple-accent']).toBe('#1d4ed8');
+  });
+  it('sets the --ripple-* ink aliases, so a dark theme on a light host keeps its own text colour', () => {
+    const vars = themeToCssVars({ colors: { card: '#141210', 'card-foreground': '#EDEAE3', 'muted-foreground': '#8E877C' } });
+    expect(vars['--ripple-surface']).toBe('#141210');
+    expect(vars['--ripple-surface-foreground']).toBe('#EDEAE3');
+    expect(vars['--ripple-muted-foreground']).toBe('#8E877C');
+    expect(themeToCssVars({ colors: { 'chart-1': '#000' } })).toEqual({ '--chart-1': '#000' });
   });
   it('maps radius to --radius', () => {
     expect(themeToCssVars({ radius: '0.75rem' })['--radius']).toBe('0.75rem');

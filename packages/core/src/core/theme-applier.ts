@@ -6,9 +6,28 @@
 //   Ripple parsed theme before but never applied it; this closes that gap.
 //   Architecture follows Skeleton v3 (MIT) — CSS custom properties, not a
 //   compiled stylesheet. Pure; SSR-safe (no DOM access).
+//   A color also sets its --ripple-* alias (RIPPLE_ALIAS, the same pairs
+//   brand-applier uses): theme.css declares those aliases on :root, where they
+//   resolve against the HOST's tokens, so without this a themed card keeps
+//   the host's ink (dark text on a dark theme over a light site).
 // @created 2026-05-30 — RFC 12 theme-applier.
 
 import type { ThemeOverrides } from '../schema/ui-spec.js';
+
+/** shadcn color token -> the --ripple-* alias theme.css derives from it on :root. */
+const RIPPLE_ALIAS: Record<string, string> = {
+  card: '--ripple-surface',
+  'card-foreground': '--ripple-surface-foreground',
+  popover: '--ripple-popover',
+  'popover-foreground': '--ripple-popover-foreground',
+  muted: '--ripple-muted',
+  'muted-foreground': '--ripple-muted-foreground',
+  primary: '--ripple-accent',
+  'primary-foreground': '--ripple-accent-foreground',
+  border: '--ripple-border',
+  ring: '--ripple-ring',
+  destructive: '--ripple-error'
+};
 
 /** spec.theme -> { '--token': value } map. Empty when nothing to apply. */
 export function themeToCssVars(theme: ThemeOverrides | undefined): Record<string, string> {
@@ -18,7 +37,9 @@ export function themeToCssVars(theme: ThemeOverrides | undefined): Record<string
   // Colors map 1:1 to the shadcn token names the widgets already consume.
   if (theme.colors) {
     for (const [token, value] of Object.entries(theme.colors)) {
-      if (typeof value === 'string' && value) vars[`--${token}`] = value;
+      if (typeof value !== 'string' || !value) continue;
+      vars[`--${token}`] = value;
+      if (RIPPLE_ALIAS[token]) vars[RIPPLE_ALIAS[token]] = value;
     }
   }
   if (theme.radius) vars['--radius'] = theme.radius;
