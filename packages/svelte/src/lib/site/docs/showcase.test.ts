@@ -5,7 +5,6 @@
 // the manifest example. Rendering is covered by widgets.test.ts, which renders
 // every page's pageSpecs(...).example. Media in a showcase spec is a local
 // file that exists under static/ or sits on a host the site CSP admits.
-import { existsSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { manifestEntries } from '../../manifest/index.js';
 import { getWidgetTypes } from '../../widgets/index.js';
@@ -13,6 +12,7 @@ import { specAudit } from '@ripple-ui/core';
 import { SHOWCASE } from './showcase.js';
 import { exampleSpec, pageSpecs } from './widgets.js';
 
+const staticFiles = new Set(Object.keys(import.meta.glob('/static/**/*.{jpg,mp4,mp3,svg,glb}', { query: '?url' })));
 const entry = (type: string) => manifestEntries.find((e) => e.type === type);
 const cases = Object.entries(SHOWCASE).map(([type, spec]) => ({ type, spec }));
 
@@ -39,7 +39,7 @@ describe('widget showcase specs', () => {
 		for (const pair of urls) {
 			const url = pair.slice(pair.indexOf(':') + 2, -1);
 			if (url.startsWith('/')) {
-				if (/\.[a-z0-9]+$/.test(url)) expect(existsSync(`static${url}`), url).toBe(true);
+				if (/\.[a-z0-9]+$/.test(url)) expect(staticFiles.has(`/static${url}`), url).toBe(true);
 			} else expect(allowed.some((h) => url.startsWith(h)), url).toBe(true);
 		}
 	});
