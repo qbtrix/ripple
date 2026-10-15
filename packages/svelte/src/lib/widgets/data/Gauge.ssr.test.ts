@@ -13,6 +13,7 @@ describe('gauge SSR', () => {
 		expect(body).toContain('data-ripple-node="g1"');
 		expect(body).toContain('4,228');
 		expect(body).toContain('of 10,000');
+		expect(body).toContain('--gl: 5');
 		expect(body.match(/<path/g)).toHaveLength(3); // cut, track, value
 		expect(body).toMatch(/mask="url\(#gauge-cut-/);
 	});
