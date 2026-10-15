@@ -23,20 +23,21 @@
 // pair each (control offset = curveness x rank gap), floored at 1px; nodes at
 // 2px (narrow bars at 6px long).
 //
-// labels: name over `value · percent` (one unit: whole or left to the
-// readout; never the value without its percent), else name over value over
-// percent, else one line; a name keeps at least 6 characters, its ellipsis
-// included. Wide: every label sits just before its own bar, right-aligned, so
-// a column gap holds one rank's labels (rank 0 gets a gutter sized to its
-// labels). A rank packs its labels by node centre; a label pushed off its
-// bar's middle first collapses the smallest multi-line label near it to one
-// line (figure kept), then hides the smallest unprotected one (protected:
-// starts, the largest end, over 15% of the total). Narrow: under its own bar,
-// from the bar's left edge, inside its slot of the row (never under another
-// bar); else hidden, the node still focusable. Remainder figures (`35 stop
-// here`, narrow `35 stop`) sit at the stub's free end or just under or over it
-// (narrow: after the name, on its line), only beside a shown name and never on
-// a leader; else the readout carries them.
+// labels: name over figure, the figure always on one line: `value · percent`,
+// else the value, else the value compact; then the same on one line (`Cloud
+// 140K`). A name keeps at least 6 characters, its ellipsis included; a name is
+// never drawn without its figure, and the figure alone is the last resort of a
+// protected label (a start, the largest end, over 15% of the total). Wide:
+// every label sits just before its own bar, right-aligned, so a column gap
+// holds one rank's labels (rank 0 gets a gutter sized to its labels). A rank
+// packs its labels by node centre; a label pushed off its bar's middle first
+// collapses the smallest two-line label near it to one line, then hides the
+// smallest unprotected one. Narrow: under its own bar, covering the bar's left
+// edge, inside its slot of the row; protected labels go first and keep room
+// for the neighbours still to come. Remainder figures (`35 stop here`, `35 stop`,
+// `35`) are protected too: beside the stub's free end, else under, over or on
+// it; when no spot is clear, the zone's labels narrow, collapse or hide around
+// the spot that costs them least.
 import { sankey, sankeyLeft } from 'd3-sankey';
 import { finite, num, plain } from '../data-kit/format.js';
 
@@ -172,7 +173,11 @@ export function sanitize(rawNodes: unknown, rawLinks: unknown): Graph {
 	});
 	return {
 		nodes,
-		links: links.map((l) => ({ s: remap.get(l.s)!, t: remap.get(l.t)!, value: l.value })),
+		links: links.map((l) => ({
+			s: remap.get(l.s)!,
+			t: remap.get(l.t)!,
+			value: l.value
+		})),
 		dropped,
 		unlinked: names.slice(0, listed).filter((_, i) => !used.has(i))
 	};
@@ -203,7 +208,16 @@ export function stats(g: Graph): Stats {
 	const ends = g.nodes.flatMap((_, i) => (out[i] === 0 ? [{ i, value: inn[i] }] : rem[i] ? [{ i, value: rem[i] }] : []));
 	let largestEnd = -1;
 	for (let i = 0; i < g.nodes.length; i++) if (out[i] === 0 && (largestEnd < 0 || inn[i] > inn[largestEnd])) largestEnd = i;
-	return { inn, out, value: inn.map((v, i) => Math.max(v, out[i])), rem, total, starts, ends, largestEnd };
+	return {
+		inn,
+		out,
+		value: inn.map((v, i) => Math.max(v, out[i])),
+		rem,
+		total,
+		starts,
+		ends,
+		largestEnd
+	};
 }
 
 /** Figures on the plot: compact at 10,000 and up, grouped below. */
@@ -276,14 +290,23 @@ export type Label = Rect & {
 	key: string;
 	kind: 'node' | 'stub';
 	i: number;
-	/** 0 hidden, 1 one line, 2 name over figure, 3 name over value over percent. */
-	lines: 0 | 1 | 2 | 3;
+	/** 0 hidden, 1 one line, 2 name over figure. */
+	lines: 0 | 1 | 2;
 	align: 'start' | 'end';
+	/** The name as drawn ('' when a protected label keeps only its figure), or the remainder text. */
 	text: string;
-	/** The figure as drawn, always whole (`85 · 71%`), or '' when it is left to the readout. */
+	/** The figure as drawn: `85 · 71%`, else `85`, else compact; never empty on a shown node label. */
 	fig: string;
 };
-export type Layout = { vertical: boolean; W: number; H: number; nodes: LNode[]; links: LLink[]; stubs: LStub[]; labels: Label[] };
+export type Layout = {
+	vertical: boolean;
+	W: number;
+	H: number;
+	nodes: LNode[];
+	links: LLink[];
+	stubs: LStub[];
+	labels: Label[];
+};
 export type Measure = (text: string, bold?: boolean) => number;
 /** Text width at the callout size before (or without) a real measure: SSR and jsdom. */
 export const guess: Measure = (t, bold) => t.length * (bold ? 6.9 : 6.5);
@@ -294,38 +317,78 @@ export function nodeFigure(st: Stats, i: number): string {
 	return st.inn[i] === 0 ? fmt(v) : `${fmt(v)} · ${pct(v, st.total)}`;
 }
 
-type Kind = 'two' | 'three' | 'one' | 'name' | 'short';
-type Form = { lines: 1 | 2 | 3; h: number; w: number; fig: string };
+/** Label forms, best first: two lines (name over figure), then one line; the
+ * figure loses its percent, then goes compact, before a label wraps or hides.
+ * `fig` (the figure alone) is the last rung, for protected labels only. */
+const LADDER = ['two', 'val', 'cval', 'one', 'oneV', 'oneC'] as const;
+type Kind = (typeof LADDER)[number] | 'fig';
+type Form = {
+	lines: 1 | 2;
+	h: number;
+	w: number;
+	need: number;
+	fig: string;
+	named: boolean;
+};
+const HIDDEN = 20;
+const cost = (k: Kind | null) => (k === null ? HIDDEN : k === 'fig' ? LADDER.length : LADDER.indexOf(k));
+type Placed = { i: number; k: Kind; r: Rect; f: Form; align: Label['align'] };
+type Pass = { out: Placed[]; score: number };
 
 export function layout(
 	g: Graph,
 	st: Stats,
-	o: { width: number; maxH: number; vertical: boolean; curve: number; measure?: Measure }
+	o: {
+		width: number;
+		maxH: number;
+		vertical: boolean;
+		curve: number;
+		measure?: Measure;
+	}
 ): Layout {
 	const W = Math.max(1, o.width);
-	const m = o.measure ?? guess;
+	const memo = new Map<string, number>();
+	const raw = o.measure ?? guess;
+	const m: Measure = (t, bold) => {
+		const k = `${bold ? 1 : 0}${t}`;
+		let w = memo.get(k);
+		if (w === undefined) memo.set(k, (w = raw(t, bold)));
+		return w;
+	};
 	const n = g.nodes.length;
 	const vertical = o.vertical;
 	if (!n) return { vertical, W, H: 0, nodes: [], links: [], stubs: [], labels: [] };
 
+	const protect = (i: number) => st.inn[i] === 0 || i === st.largestEnd || st.value[i] > 0.15 * st.total;
+	const ladder = (i: number): Kind[] => (protect(i) ? [...LADDER, 'fig'] : [...LADDER]);
+	const figOf = (i: number, kind: Kind) => {
+		const v = st.value[i];
+		const p = st.inn[i] ? pct(v, st.total) : '';
+		if (kind === 'two' || kind === 'one') return p ? `${fmt(v)} · ${p}` : fmt(v);
+		return kind === 'val' || kind === 'oneV' ? fmt(v) : num(v, { compact: true });
+	};
+	const linesOf = (kind: Kind): 1 | 2 => (kind === 'two' || kind === 'val' || kind === 'cval' ? 2 : 1);
 	// A node label in one form at a width, or null when it does not fit. The
-	// figure is one unit: whole or not at all. The name keeps NAME_MIN characters
-	// (the ellipsis is one of them).
+	// figure stays on one line; a shown name keeps NAME_MIN characters (the
+	// ellipsis is one of them).
 	const form = (i: number, kind: Kind, avail: number): Form | null => {
 		const name = g.nodes[i].name;
-		const fig = nodeFigure(st, i);
-		const [v, p] = fig.split(' · ');
+		const fig = figOf(i, kind);
+		const fw = m(fig);
 		const nm = m(name, true);
 		const least = name.length > NAME_MIN ? m(`${name.slice(0, NAME_MIN - 1)}…`, true) : nm;
-		const f = (lines: Form['lines'], need: number, w: number, keep = true): Form | null => {
-			need = Math.max(MIN_LABEL, need + 2 * PAD_X);
-			return avail < need ? null : { lines, h: lines * LINE + 2 * PAD_Y, w: Math.min(w + 2 * PAD_X, avail), fig: keep ? fig : '' };
+		const lines = linesOf(kind);
+		const [need, w] = kind === 'fig' ? [fw, fw] : lines === 2 ? [Math.max(least, fw), Math.max(nm, fw)] : [least + 4 + fw, nm + 4 + fw];
+		const least2 = Math.max(MIN_LABEL, need + 2 * PAD_X);
+		if (avail < least2) return null;
+		return {
+			lines,
+			h: lines * LINE + 2 * PAD_Y,
+			w: Math.min(w + 2 * PAD_X, avail),
+			need: least2,
+			fig,
+			named: kind !== 'fig'
 		};
-		if (kind === 'two') return f(2, Math.max(least, m(fig)), Math.max(nm, m(fig)));
-		if (kind === 'three') return p ? f(3, Math.max(least, m(v), m(p)), Math.max(nm, m(v), m(p))) : null;
-		if (kind === 'one') return f(1, least + 4 + m(fig), nm + 4 + m(fig));
-		// A protected label, wide, would rather lose name than vanish.
-		return f(1, kind === 'name' ? least : 0, nm, false);
 	};
 
 	// Ranks: longest path from a start node (what sankeyLeft places by).
@@ -362,7 +425,10 @@ export function layout(
 		.extent([
 			[gutter, 0],
 			[span, cross]
-		])({ nodes: g.nodes.map(() => ({})), links: g.links.map((l) => ({ source: l.s, target: l.t, value: l.value })) });
+		])({
+		nodes: g.nodes.map(() => ({})),
+		links: g.links.map((l) => ({ source: l.s, target: l.t, value: l.value }))
+	});
 
 	// Flow coordinates (u along, v across) to screen.
 	const P = (u: number, v: number) => (vertical ? `${r2(v)},${r2(u)}` : `${r2(u)},${r2(v)}`);
@@ -397,163 +463,302 @@ export function layout(
 		const mid = (top + bot) / 2;
 		const t = (bot - top) / 6;
 		const e = d.x1 + stubLen;
-		return [{ i, d: `M${P(d.x1, top)}L${P(e, mid - t)}L${P(e, mid + t)}L${P(d.x1, bot)}Z`, box: box(d.x1, e, top, bot) }];
+		return [
+			{
+				i,
+				d: `M${P(d.x1, top)}L${P(e, mid - t)}L${P(e, mid + t)}L${P(d.x1, bot)}Z`,
+				box: box(d.x1, e, top, bot)
+			}
+		];
 	});
 
-	const protect = (i: number) => st.inn[i] === 0 || i === st.largestEnd || st.value[i] > 0.15 * st.total;
-	const labels: Label[] = g.nodes.map((nd, i) => ({ key: `n${i}`, kind: 'node', i, x: 0, y: 0, w: 0, h: 0, lines: 0, align: 'start', text: nd.name, fig: '' }));
-	const tips: Label[] = [];
-	const put = (lb: Label, r: Rect, f: { lines: Label['lines']; fig: string }, align: Label['align']) => Object.assign(lb, r, f, { align });
-	const shown = () => [...labels, ...tips].filter((l) => l.lines);
+	const labels: Label[] = g.nodes.map((nd, i) => ({
+		key: `n${i}`,
+		kind: 'node',
+		i,
+		x: 0,
+		y: 0,
+		w: 0,
+		h: 0,
+		lines: 0,
+		align: 'start',
+		text: nd.name,
+		fig: ''
+	}));
+	const tips: Label[] = stubs.map((s) => ({
+		key: `s${s.i}`,
+		kind: 'stub',
+		i: s.i,
+		x: 0,
+		y: 0,
+		w: 0,
+		h: H1,
+		lines: 0,
+		align: 'start',
+		text: '',
+		fig: fmt(st.rem[s.i])
+	}));
 	const clear = (r: Rect, among: Rect[]) =>
 		among.every((p) => r.x + r.w <= p.x - 2 || p.x + p.w <= r.x - 2 || r.y + r.h <= p.y - 2 || p.y + p.h <= r.y - 2);
 	const edge = (d: number, side: 'x0' | 'x1') => res.nodes.find((q) => q.depth === d)?.[side];
-	const stubLabel = (i: number): Label => {
-		const lb: Label = { key: `s${i}`, kind: 'stub', i, x: 0, y: 0, w: 0, h: H1, lines: 0, align: 'start', text: '', fig: fmt(st.rem[i]) };
-		tips.push(lb);
-		return lb;
-	};
 	const stopTexts = (i: number) => {
 		const f = fmt(st.rem[i]);
-		return W >= WIDE_MIN ? [`${f} stop here`, `${f} stop`] : [`${f} stop`];
+		return vertical ? [`${f} stop`, f] : [`${f} stop here`, `${f} stop`, f];
 	};
+	// Remainder figures are protected: each takes the first spot clear of bars,
+	// other figures and labels; failing that, the spot that costs the labels of
+	// its zone least (they narrow, collapse or hide around it). `spots` lists a
+	// stub's candidate chips in preference order; `pass` lays the zone's labels
+	// out around a set of chips.
+	const placeStubs = (zone: LStub[], pass: (chips: Rect[]) => Pass, spots: (s: LStub, w: number) => Rect[], others: Rect[]) => {
+		const chips: Rect[] = [];
+		let best = pass(chips);
+		for (const s of zone) {
+			let pick: { r: Rect; text: string; res: Pass } | null = null;
+			const near = others.filter((_, k) => nodes[k].i !== s.i);
+			found: for (const text of stopTexts(s.i))
+				for (const r of spots(s, m(text) + 2 * PAD_X)) {
+					if (!clear(r, near) || !clear(r, chips)) continue;
+					if (
+						clear(
+							r,
+							best.out.map((p) => p.r)
+						)
+					) {
+						pick = { r, text, res: best };
+						break found;
+					}
+					const res = pass([...chips, r]);
+					if (!pick || res.score < pick.res.score) pick = { r, text, res };
+				}
+			if (!pick) continue;
+			chips.push(pick.r);
+			best = pick.res;
+			Object.assign(tips[stubs.indexOf(s)], pick.r, {
+				lines: 1,
+				text: pick.text,
+				align: 'start'
+			});
+		}
+		for (const p of best.out)
+			Object.assign(labels[p.i], p.r, {
+				lines: p.f.lines,
+				fig: p.f.fig,
+				align: p.align,
+				text: p.f.named ? g.nodes[p.i].name : ''
+			});
+	};
+	// Half a rung for each name cut short, so a figure prefers a spot that leaves names whole.
+	const clipped = (out: Placed[]) => out.filter((p) => p.f.w < form(p.i, p.k, Infinity)!.w - 0.5).length / 2;
+	// Bars of every node, 4px out, so a figure never reads as a neighbour's.
+	const bars = nodes.map((q) => ({
+		x: q.x - 4,
+		y: q.y - 4,
+		w: q.w + 8,
+		h: q.h + 8
+	}));
 
 	if (!vertical) {
 		// Wide: rank r's labels sit in the zone just before its bars (rank 0: the
 		// gutter), right-aligned NEAR its bar and FAR from the bars before it, so
-		// each column gap holds one rank's labels. A rank packs its labels top to
-		// bottom by node centre; one pushed off its own bar collapses its cluster's
-		// smallest multi-line label to one line, then hides the smallest unprotected.
+		// each column gap holds one rank's labels, and the remainder figures of
+		// rank r - 1. A rank packs its labels top to bottom by node centre; one
+		// pushed off its own bar collapses its cluster's smallest two-line label to
+		// one line, then hides the smallest unprotected one.
 		for (let r = 0; r < R; r++) {
 			const items = nodes.filter((q) => depth[q.i] === r).toSorted((a, b) => a.y + a.h / 2 - (b.y + b.h / 2));
 			const hi = edge(r, 'x0')! - NEAR;
 			const lo = r ? edge(r - 1, 'x1')! + FAR : 0;
 			// ponytail: a hairline stub (under 4px) may sit under a chip; it shows nothing a reader could see.
-			const blocks = stubs.filter((s) => depth[s.i] === r - 1 && s.box.h >= 4).map((s) => s.box);
-			// A remainder stub of the rank before, beside the label, narrows its zone.
-			const from = (y: number, h: number) => Math.max(lo, ...blocks.filter((b) => b.y < y + h + 2 && y < b.y + b.h + 2).map((b) => b.x + b.w + 2));
-			const kind = new Map<number, Kind | null>();
-			const ladder = (i: number, ks: Kind[], avail: number) => ks.find((k) => form(i, k, avail)) ?? null;
-			const last = (i: number): Kind[] => (protect(i) ? ['name', 'short'] : ['name']);
-			for (const q of items) kind.set(q.i, ladder(q.i, ['two', 'three', ...last(q.i)], hi - lo));
-			for (let guard = 0; guard < 8 * items.length + 8; guard++) {
-				const vis = items.filter((q) => kind.get(q.i));
-				const fs = vis.map((q) => form(q.i, kind.get(q.i)!, hi - lo)!);
-				const ys = pack(
-					vis.map((q) => q.y + q.h / 2),
-					fs.map((f) => f.h),
-					H
-				);
-				const narrowed = vis.findIndex((q, k) => !form(q.i, kind.get(q.i)!, hi - from(ys[k], fs[k].h)));
-				if (narrowed >= 0) {
-					const q = vis[narrowed];
-					const k = kind.get(q.i)!;
-					const avail = hi - from(ys[narrowed], fs[narrowed].h);
-					const seq: Kind[] = k === 'one' ? ['one', ...last(q.i)] : ['two', 'three', ...last(q.i)];
-					kind.set(q.i, ladder(q.i, seq.slice(seq.indexOf(k) + 1), avail));
-					continue;
-				}
-				// A label must span its own bar's middle, or it reads as a neighbour's.
-				const off = vis.findIndex((q, k) => ys[k] > q.y + q.h / 2 + 1 || ys[k] + fs[k].h < q.y + q.h / 2 - 1 || ys[k] < 0);
-				if (off >= 0) {
-					let a = off;
-					let b = off;
-					while (a > 0 && ys[a] - ys[a - 1] - fs[a - 1].h < GAP + 0.5) a--;
-					while (b < vis.length - 1 && ys[b + 1] - ys[b] - fs[b].h < GAP + 0.5) b++;
-					const cl = vis.slice(a, b + 1).toSorted((p, q) => st.value[p.i] - st.value[q.i] || p.i - q.i);
-					// A collapse keeps the figure; a label only loses it to width.
-					const one = (i: number) => ladder(i, ['one'], hi - lo);
-					const tall = cl.find((q) => form(q.i, kind.get(q.i)!, hi - lo)!.lines > 1 && one(q.i));
-					if (tall) {
-						kind.set(tall.i, one(tall.i));
+			const stubBoxes = stubs.filter((s) => depth[s.i] === r - 1 && s.box.h >= 4).map((s) => s.box);
+			const pass = (chips: Rect[]): Pass => {
+				const blocks = [...stubBoxes, ...chips];
+				// A stub or remainder figure of the rank before, beside the label, narrows its zone.
+				const from = (y: number, h: number) =>
+					Math.max(lo, ...blocks.filter((b) => b.y < y + h + 2 && y < b.y + b.h + 2).map((b) => b.x + b.w + 2));
+				const kind = new Map<number, Kind | null>();
+				const pick = (i: number, ks: Kind[], avail: number) => ks.find((k) => form(i, k, avail)) ?? null;
+				for (const q of items) kind.set(q.i, pick(q.i, ladder(q.i), hi - lo));
+				for (let guard = 0; guard < 8 * items.length + 8; guard++) {
+					const vis = items.filter((q) => kind.get(q.i));
+					const fs = vis.map((q) => form(q.i, kind.get(q.i)!, hi - lo)!);
+					const ys = pack(
+						vis.map((q) => q.y + q.h / 2),
+						fs.map((f) => f.h),
+						H
+					);
+					const narrowed = vis.findIndex((q, k) => !form(q.i, kind.get(q.i)!, hi - from(ys[k], fs[k].h)));
+					if (narrowed >= 0) {
+						const q = vis[narrowed];
+						const seq = ladder(q.i);
+						kind.set(q.i, pick(q.i, seq.slice(seq.indexOf(kind.get(q.i)!) + 1), hi - from(ys[narrowed], fs[narrowed].h)));
 						continue;
 					}
-					// Past the plot's height even a protected label goes, but never a start.
-					const drop = cl.find((q) => !protect(q.i)) ?? (ys[0] < 0 ? cl.find((q) => st.inn[q.i] > 0) : undefined);
-					if (drop) {
-						kind.set(drop.i, null);
-						continue;
+					// A label must span its own bar's middle, or it reads as a neighbour's.
+					const off = vis.findIndex((q, k) => ys[k] > q.y + q.h / 2 + 1 || ys[k] + fs[k].h < q.y + q.h / 2 - 1 || ys[k] < 0);
+					if (off >= 0) {
+						let a = off;
+						let b = off;
+						while (a > 0 && ys[a] - ys[a - 1] - fs[a - 1].h < GAP + 0.5) a--;
+						while (b < vis.length - 1 && ys[b + 1] - ys[b] - fs[b].h < GAP + 0.5) b++;
+						const cl = vis.slice(a, b + 1).toSorted((p, q) => st.value[p.i] - st.value[q.i] || p.i - q.i);
+						// A collapse keeps a figure: one line, name and figure.
+						const one = (i: number) => pick(i, ['one', 'oneV', 'oneC'], hi - lo);
+						const tall = cl.find((q) => form(q.i, kind.get(q.i)!, hi - lo)!.lines > 1 && one(q.i));
+						if (tall) {
+							kind.set(tall.i, one(tall.i));
+							continue;
+						}
+						// Past the plot's height even a protected label goes, but never a start.
+						const drop = cl.find((q) => !protect(q.i)) ?? (ys[0] < 0 ? cl.find((q) => st.inn[q.i] > 0) : undefined);
+						if (drop) {
+							kind.set(drop.i, null);
+							continue;
+						}
 					}
+					const out = vis.map((q, k): Placed => {
+						const f = form(q.i, kind.get(q.i)!, hi - from(ys[k], fs[k].h))!;
+						return {
+							i: q.i,
+							k: kind.get(q.i)!,
+							r: { x: hi - f.w, y: ys[k], w: f.w, h: f.h },
+							f,
+							align: 'end'
+						};
+					});
+					return {
+						out,
+						score: items.reduce((a, q) => a + cost(kind.get(q.i) ?? null), 0) + clipped(out)
+					};
 				}
-				vis.forEach((q, k) => {
-					const f = form(q.i, kind.get(q.i)!, hi - from(ys[k], fs[k].h))!;
-					put(labels[q.i], { x: hi - f.w, y: ys[k], w: f.w, h: f.h }, f, 'end');
+				return { out: [], score: items.length * HIDDEN };
+			};
+			// Remainder figures: at the stub's free end, else just under or over the
+			// stub, else on the stub itself; never past this rank's bars.
+			const spots = (s: LStub, w: number): Rect[] => {
+				const b = s.box;
+				const bound = hi;
+				const at = (x: number, y: number) => ({
+					x,
+					y: Math.min(H - H1, Math.max(0, y)),
+					w,
+					h: H1
 				});
-				break;
-			}
-		}
-		// Remainder figures at the stub's free end, else just under or over the
-		// stub, else left to the readout.
-		for (const s of stubs) {
-			const lb = stubLabel(s.i);
-			if (!labels[s.i].lines) continue;
-			const b = s.box;
-			const bound = (edge(depth[s.i] + 1, 'x0') ?? W) - NEAR;
-			// Clear of every other bar by 6px, so the figure never reads as a neighbour's.
-			const others = nodes.filter((q) => q.i !== s.i).map((q) => ({ x: q.x - 4, y: q.y - 4, w: q.w + 8, h: q.h + 8 }));
-			found: for (const text of stopTexts(s.i)) {
-				const w = m(text) + 2 * PAD_X;
-				const spots = [
-					...nudges(b.h / 2 + 8).map((dy) => ({ x: b.x + b.w + 4, y: b.y + b.h / 2 - H1 / 2 + dy })),
-					{ x: b.x + 2, y: b.y + b.h + 2 },
-					{ x: b.x + 2, y: b.y - H1 - 2 }
-				];
-				for (const { x, y } of spots) {
-					const r = { x, y: Math.min(H - H1, Math.max(0, y)), w, h: H1 };
-					if (x + w > bound || !clear(r, shown()) || !clear(r, others)) continue;
-					put(lb, r, { lines: 1, fig: lb.fig }, 'start');
-					lb.text = text;
-					break found;
-				}
-			}
+				return [
+					...nudges(b.h / 2 + 8).map((dy) => at(b.x + b.w + 4, b.y + b.h / 2 - H1 / 2 + dy)),
+					at(b.x + 2, b.y + b.h + 2),
+					at(b.x + 2, b.y - H1 - 2),
+					at(b.x + 2, b.y + b.h / 2 - H1 / 2)
+				].filter((r) => r.x + r.w <= bound);
+			};
+			placeStubs(
+				stubs.filter((s) => depth[s.i] === r - 1),
+				pass,
+				spots,
+				bars
+			);
 		}
 	} else {
 		// Narrow: each label under its own bar, inside its slot of the row (from the
 		// previous bar's end to the next bar's start, so never under a neighbour),
-		// from the bar's left edge, or ending at the slot's end when that is short.
-		// Two lines, else value and percent on their own lines when the row is tall
-		// enough, else the name alone; else hidden, the node still focusable.
+		// covering the bar's left edge, shifted left only when it must. A row
+		// places protected labels first, then by size, each between the labels and
+		// remainder figures already placed beside it and short of the least room
+		// its neighbours still to come need; a label that fits no form is hidden,
+		// the node still focusable.
 		const rows = new Map<number, LNode[]>();
 		for (const q of nodes) rows.set(depth[q.i], [...(rows.get(depth[q.i]) ?? []), q]);
-		for (const [k, row] of rows) rows.set(k, row.toSorted((a, b) => a.x - b.x));
+		for (const [k, row] of rows)
+			rows.set(
+				k,
+				row.toSorted((a, b) => a.x - b.x)
+			);
 		const slot = (q: LNode) => {
 			const row = rows.get(depth[q.i])!;
 			const k = row.indexOf(q);
 			return [k > 0 ? row[k - 1].x + row[k - 1].w + 4 : 0, k < row.length - 1 ? row[k + 1].x - 4 : W];
 		};
 		const limit = (q: LNode) => (depth[q.i] < R - 1 ? edge(depth[q.i] + 1, 'x0')! : H) - 2;
-		// Left to right in a row, so a label shifted left never meets its neighbour's.
-		for (const q of nodes.toSorted((a, b) => a.y - b.y || a.x - b.x)) {
-			const [from, hi] = slot(q);
-			const prev = labels.filter((lb) => lb.lines && nodes[lb.i].y === q.y).reduce((e, lb) => Math.max(e, lb.x + lb.w + 4), 0);
-			const lo = Math.max(from, prev);
-			const y = q.y + q.h + 4;
-			for (const kind of ['two', 'three', 'name'] as const) {
-				const f = form(q.i, kind, hi - lo);
-				if (!f || y + f.h > limit(q)) continue;
-				const x = Math.max(lo, Math.min(q.x, hi - f.w));
-				put(labels[q.i], { x, y, w: f.w, h: f.h }, f, q.x - x > f.w / 2 ? 'end' : 'start');
-				break;
-			}
-		}
-		// Remainder figures after the name on the label's first line, just left of
-		// the stub where there is room, never past the slot; else the readout.
-		for (const s of stubs) {
-			const lb = stubLabel(s.i);
-			const own = labels[s.i];
-			if (!own.lines) continue;
-			const end = slot(nodes[s.i])[1];
-			const after = own.x + own.w + 4;
-			found: for (const text of stopTexts(s.i)) {
-				const w = m(text) + 2 * PAD_X;
-				for (const x of [s.box.x - 4 - w, s.box.x + s.box.w + 4, after]) {
-					const r = { x, y: own.y, w, h: H1 };
-					if (x < after || x + w > end || !clear(r, shown())) continue;
-					put(lb, r, { lines: 1, fig: lb.fig }, 'start');
-					lb.text = text;
-					break found;
+		// The least room a label needs: its smallest named form when its slot holds
+		// one, else (protected only) its figure alone when that fits, else none.
+		const least = (q: LNode) => {
+			const [a, b] = slot(q);
+			const named = Math.min(...(['cval', 'oneC'] as const).map((k) => form(q.i, k, b - a)?.need ?? Infinity));
+			return named < Infinity ? named : protect(q.i) ? (form(q.i, 'fig', b - a)?.need ?? 0) : 0;
+		};
+		// Where a label still to come can start: its slot, past the labels placed on its left.
+		const startOf = (p: LNode, out: Placed[]) =>
+			Math.max(slot(p)[0], ...out.filter((d) => nodes[d.i].x < p.x).map((d) => d.r.x + d.r.w + 4));
+		for (const row of rows.values()) {
+			const order = row.toSorted((a, b) => Number(protect(b.i)) - Number(protect(a.i)) || st.value[b.i] - st.value[a.i] || a.x - b.x);
+			const pass = (chips: Rect[]): Pass => {
+				const out: Placed[] = [];
+				let score = 0;
+				for (const q of order) {
+					const [from, to] = slot(q);
+					const y = q.y + q.h + 4;
+					let got: Placed | null = null;
+					let k: Kind | null = null;
+					for (const kind of ladder(q.i)) {
+						const h = linesOf(kind) * LINE + 2 * PAD_Y;
+						if (y + h > limit(q)) continue;
+						const near = (r: Rect) => r.y < y + h + 2 && y < r.y + r.h + 2;
+						const obs = [...out.map((p) => ({ r: p.r, at: nodes[p.i].x })), ...chips.map((r) => ({ r, at: r.x + r.w / 2 }))].filter((p) =>
+							near(p.r)
+						);
+						// Neighbours still to come keep the least room they need.
+						const owed = order.slice(order.indexOf(q) + 1).filter((p) => least(p) > 0);
+						const lo = Math.max(
+							from,
+							...obs.filter((p) => p.at < q.x).map((p) => p.r.x + p.r.w + 4),
+							// A neighbour on the left yields only up to this label's own bar.
+							...owed.filter((p) => p.x < q.x).map((p) => Math.min(q.x, Math.max(p.x + 4, startOf(p, out) + least(p)) + 4))
+						);
+						const hi = Math.min(
+							to,
+							...obs.filter((p) => p.at >= q.x).map((p) => p.r.x - 4),
+							...owed.filter((p) => p.x > q.x).map((p) => Math.min(p.x, slot(p)[1] - least(p)) - 4)
+						);
+						if (lo > q.x || hi < q.x + 4) continue;
+						// From the bar's own left edge when the form fits there, so the room
+						// before the bar stays with the neighbour; else shifted left in the slot.
+						const f = form(q.i, kind, hi - q.x) ?? form(q.i, kind, hi - lo);
+						if (!f) continue;
+						const x = Math.max(lo, Math.min(q.x, hi - f.w));
+						got = {
+							i: q.i,
+							k: kind,
+							r: { x, y, w: f.w, h: f.h },
+							f,
+							align: q.x - x > f.w / 2 ? 'end' : 'start'
+						};
+						k = kind;
+						break;
+					}
+					score += cost(k);
+					if (got) out.push(got);
 				}
-			}
+				return { out, score: score + clipped(out) };
+			};
+			// Remainder figures: beside the stub on the label line, else under the
+			// stub's tapered end (stepping down while the row has room), else on the
+			// stub itself; never past the plot or into the next row.
+			const spots = (s: LStub, w: number): Rect[] => {
+				const b = s.box;
+				const q = nodes[s.i];
+				const lim = limit(q);
+				const mid = Math.min(W - w, Math.max(0, b.x + b.w / 2 - w / 2));
+				const out: Rect[] = [{ x: b.x + b.w + 4, y: q.y + q.h + 4, w, h: H1 }];
+				for (let y = b.y + b.h + 2; y + H1 <= lim; y += 4) out.push({ x: mid, y, w, h: H1 });
+				out.push({ x: mid, y: b.y + b.h / 2 - H1 / 2, w, h: H1 });
+				return out.filter((r) => r.x >= 0 && r.x + r.w <= W && r.y >= 0 && r.y + r.h <= lim);
+			};
+			placeStubs(
+				stubs.filter((s) => row.some((q) => q.i === s.i)),
+				pass,
+				spots,
+				bars
+			);
 		}
 	}
 	return { vertical, W, H, nodes, links, stubs, labels: [...labels, ...tips] };

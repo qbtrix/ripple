@@ -7,8 +7,9 @@
   Anatomy: optional title (text-headline, two lines then an ellipsis, full
   text in `title`), a muted summary line (`120 from Landing · most end at
   Active (70, 58%)`), the plot, a readout and, only when something was not
-  drawn, a footnote; under 480px those three lines may wrap to two. No inner frame: the card is
-  the only one.
+  drawn, a footnote. Summary and readout are one line with an ellipsis (full
+  text in `title`); under 480px the footnote may wrap to two. No inner frame:
+  the card is the only one.
 
   Layout follows the measured plot width: 480px and up runs left to right,
   each label just before its own bar; under 480px, or with `orient: "vertical"`, ranks are rows top to bottom with
@@ -20,7 +21,8 @@
   Colour, one hue from tokens only: nodes are solid --ripple-accent; bands are
   the accent at BAND% over the card (more in dark, under .dark or
   data-theme="dark"), LIT% when focused, the rest dimmed to DIM; the remainder
-  stub ("35 stop here") is --ripple-track with a muted figure at its free end.
+  stub ("35 stop here") is --ripple-track with a muted figure on a chip beside
+  or under it.
   Labels are HTML on a surface chip, so ink always comes from tokens and the
   theme flips live.
   status-text.test.ts measures the band and node pairs on both themes.
@@ -256,14 +258,10 @@
 							onfocus={enter({ node: nd.i })}
 							onblur={() => (active = null)}
 						>
-							<span class="sk-name" aria-hidden="true" title={g.nodes[nd.i].name}>{g.nodes[nd.i].name}</span>
-							{#if lb.lines === 3}
-								{#each lb.fig.split(' · ') as part, k (k)}
-									<span class="sk-fig" aria-hidden="true">{part}</span>
-								{/each}
-							{:else if lb.fig}
-								<span class="sk-fig" aria-hidden="true">{lb.fig}</span>
+							{#if lb.text}
+								<span class="sk-name" aria-hidden="true" title={g.nodes[nd.i].name}>{lb.text}</span>
 							{/if}
+							<span class="sk-fig" aria-hidden="true">{lb.fig}</span>
 						</button>
 					{:else}
 						<button
@@ -360,10 +358,8 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 	}
-	/* A phone card gets two lines for the answer instead of losing its end. */
+	/* A phone card gives the footnote two lines; summary and readout stay one, full text in `title`. */
 	@container (max-width: 479px) {
-		.sk-summary,
-		.sk-readout,
 		.sk-note {
 			white-space: normal;
 			display: -webkit-box;

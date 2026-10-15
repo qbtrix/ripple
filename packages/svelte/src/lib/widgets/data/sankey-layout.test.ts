@@ -15,13 +15,19 @@ import {
 	parseHeight,
 	parseCurve,
 	guess,
+	fmt,
+	H1,
 	type Graph,
 	type Measure
 } from './sankey-layout.js';
 
+import { num } from '../data-kit/format.js';
 import { n, SPEC01, SPEC02, SPEC03, SPEC04, SPEC05, SPEC06 } from './__fixtures__/sankey-specs.js';
 
-const SPEC07 = { nodes: [], links: [{ source: 'Trial', target: 'Paid', value: 37 }] };
+const SPEC07 = {
+	nodes: [],
+	links: [{ source: 'Trial', target: 'Paid', value: 37 }]
+};
 
 const prep = (s: { nodes: unknown; links: unknown }) => {
 	const g = sanitize(s.nodes, s.links);
@@ -92,7 +98,12 @@ describe('spec 04: messy data degrades visibly', () => {
 	});
 	test('layout never throws and nothing reads NaN or undefined', () => {
 		for (const width of [328, 680]) {
-			const l = layout(g, st, { width, maxH: parseHeight('tall'), vertical: width < 480, curve: parseCurve(3) });
+			const l = layout(g, st, {
+				width,
+				maxH: parseHeight('tall'),
+				vertical: width < 480,
+				curve: parseCurve(3)
+			});
 			const text = JSON.stringify(l);
 			expect(text).not.toMatch(/NaN|undefined|null/);
 		}
@@ -111,11 +122,14 @@ describe('sanitize', () => {
 		expect(g.dropped.loop).toBe(1);
 	});
 	test('index endpoints read the raw array; a numeric name wins over an index', () => {
-		const g = sanitize([{ name: '' }, 'B', '0'], [
-			{ source: 1, target: 2, value: 5 },
-			{ source: 0, target: 'C', value: 4 },
-			{ source: 7, target: 'B', value: 1 }
-		]);
+		const g = sanitize(
+			[{ name: '' }, 'B', '0'],
+			[
+				{ source: 1, target: 2, value: 5 },
+				{ source: 0, target: 'C', value: 4 },
+				{ source: 7, target: 'B', value: 1 }
+			]
+		);
 		expect(names(g)).toEqual(['B', '0', 'C']);
 		expect(flow(g, 'B', '0')).toBe(5);
 		expect(flow(g, '0', 'C')).toBe(4);
@@ -126,7 +140,12 @@ describe('sanitize', () => {
 		expect(names(g)).toEqual(['Start', 'End']);
 	});
 	test('empty input draws nothing and never throws', () => {
-		for (const [nodes, links] of [[undefined, undefined], ['x', 5], [[], []], [n('Lone'), []]]) {
+		for (const [nodes, links] of [
+			[undefined, undefined],
+			['x', 5],
+			[[], []],
+			[n('Lone'), []]
+		]) {
 			const g = sanitize(nodes, links);
 			const st = stats(g);
 			expect(g.links).toEqual([]);
@@ -153,13 +172,29 @@ describe('props', () => {
 	});
 	test('curveness 0 draws straight bands, 1 full S-curves', () => {
 		const { g, st } = prep(SPEC01);
-		const straight = layout(g, st, { width: 680, maxH: 320, vertical: false, curve: 0 }).links[0].d;
+		const straight = layout(g, st, {
+			width: 680,
+			maxH: 320,
+			vertical: false,
+			curve: 0
+		}).links[0].d;
 		// Control points sit on the end points: the first cubic starts where it begins.
 		const [m0, c0] = straight.match(/M([\d.,]+)C([\d.,]+)/)!.slice(1);
 		expect(c0).toBe(m0);
-		const s = layout(g, st, { width: 680, maxH: 320, vertical: false, curve: 1 }).links[1].d;
-		const [mx] = s.match(/M([\d.]+)/)!.slice(1).map(Number);
-		const [cx] = s.match(/C([\d.]+)/)!.slice(1).map(Number);
+		const s = layout(g, st, {
+			width: 680,
+			maxH: 320,
+			vertical: false,
+			curve: 1
+		}).links[1].d;
+		const [mx] = s
+			.match(/M([\d.]+)/)!
+			.slice(1)
+			.map(Number);
+		const [cx] = s
+			.match(/C([\d.]+)/)!
+			.slice(1)
+			.map(Number);
 		expect(cx).toBeGreaterThan(mx + 100);
 	});
 });
@@ -171,12 +206,18 @@ const shown = (l: ReturnType<typeof layout>) => l.labels.filter((x) => x.lines >
 describe('layout', () => {
 	const noOverlap = (l: ReturnType<typeof layout>) => {
 		const s = shown(l);
-		for (let a = 0; a < s.length; a++) for (let b = a + 1; b < s.length; b++) expect(overlaps(s[a], s[b]), `${s[a].key} ${s[b].key}`).toBe(false);
+		for (let a = 0; a < s.length; a++)
+			for (let b = a + 1; b < s.length; b++) expect(overlaps(s[a], s[b]), `${s[a].key} ${s[b].key}`).toBe(false);
 	};
 
 	test('spec 01 wide: every node and both remainders labelled, inside the plot', () => {
 		const { g, st } = prep(SPEC01);
-		const l = layout(g, st, { width: 680, maxH: 320, vertical: false, curve: 0.5 });
+		const l = layout(g, st, {
+			width: 680,
+			maxH: 320,
+			vertical: false,
+			curve: 0.5
+		});
 		expect(l.H).toBe(160);
 		expect(shown(l).filter((x) => x.kind === 'node')).toHaveLength(4);
 		expect(l.labels.filter((x) => x.kind === 'stub').map((x) => x.text)).toEqual(['35 stop here', '70 stop here']);
@@ -185,7 +226,12 @@ describe('layout', () => {
 	});
 	test('spec 01 narrow: rows top to bottom, labels under their bars', () => {
 		const { g, st } = prep(SPEC01);
-		const l = layout(g, st, { width: 328, maxH: 320, vertical: true, curve: 0.5 });
+		const l = layout(g, st, {
+			width: 328,
+			maxH: 320,
+			vertical: true,
+			curve: 0.5
+		});
 		const ys = l.nodes.map((x) => x.y);
 		expect(ys).toEqual(ys.toSorted((a, b) => a - b));
 		expect(ys[1] - ys[0]).toBe(72);
@@ -195,25 +241,45 @@ describe('layout', () => {
 	});
 	test('spec 02 wide fits 320 without overlap; start nodes stay', () => {
 		const { g, st } = prep(SPEC02);
-		const l = layout(g, st, { width: 680, maxH: 320, vertical: false, curve: 0.5 });
+		const l = layout(g, st, {
+			width: 680,
+			maxH: 320,
+			vertical: false,
+			curve: 0.5
+		});
 		expect(l.H).toBeLessThanOrEqual(320);
 		noOverlap(l);
 		for (const i of st.starts) expect(l.labels.find((x) => x.key === `n${i}`)!.lines).toBeGreaterThan(0);
 	});
 	test('spec 02 narrow: no overlap; the roomy sources keep their labels', () => {
 		const { g, st } = prep(SPEC02);
-		const l = layout(g, st, { width: 328, maxH: 320, vertical: true, curve: 0.5 });
+		const l = layout(g, st, {
+			width: 328,
+			maxH: 320,
+			vertical: true,
+			curve: 0.5
+		});
 		noOverlap(l);
 		for (const name of ['Email', 'Chat', 'Triage', 'Resolved']) expect(l.labels.find((x) => x.text === name)!.lines, name).toBe(2);
 	});
 	test('spec 06: 160px wide; narrow pitch floors at 56px; 1px bands and 2px nodes', () => {
 		const { g, st } = prep(SPEC06);
-		const wide = layout(g, st, { width: 680, maxH: 200, vertical: false, curve: 1 });
+		const wide = layout(g, st, {
+			width: 680,
+			maxH: 200,
+			vertical: false,
+			curve: 1
+		});
 		expect(wide.H).toBe(160);
 		noOverlap(wide);
 		const dropped = wide.nodes[names(g).indexOf('Dropped')];
 		expect(dropped.h).toBe(2);
-		const narrow = layout(g, st, { width: 328, maxH: 200, vertical: true, curve: 1 });
+		const narrow = layout(g, st, {
+			width: 328,
+			maxH: 200,
+			vertical: true,
+			curve: 1
+		});
 		const rows = [...new Set(narrow.nodes.map((x) => x.y))].toSorted((a, b) => a - b);
 		expect(rows).toHaveLength(8);
 		expect(rows[1] - rows[0]).toBe(56);
@@ -224,8 +290,16 @@ describe('layout', () => {
 		for (const x of narrow.nodes) expect(x.w >= 6 && x.x >= 0 && x.x + x.w <= 328.01).toBe(true);
 	});
 	test('a one-letter start still gets a gutter wide enough for its label', () => {
-		const { g, st } = prep({ nodes: [], links: [{ source: 'a', target: 'b', value: 1 }] });
-		const l = layout(g, st, { width: 640, maxH: 320, vertical: false, curve: 0.5 });
+		const { g, st } = prep({
+			nodes: [],
+			links: [{ source: 'a', target: 'b', value: 1 }]
+		});
+		const l = layout(g, st, {
+			width: 640,
+			maxH: 320,
+			vertical: false,
+			curve: 0.5
+		});
 		expect(l.labels.filter((x) => x.kind === 'node').map((x) => x.fig)).toEqual(['1', '1 · 100%']);
 	});
 	test('spec 07: implicit nodes, a short plot', () => {
@@ -248,7 +322,17 @@ const WIDE = [591, 680];
 type Spec = { nodes: unknown; links: unknown };
 const run = (s: Spec, width: number, measure: Measure, o: { vertical?: boolean; maxH?: number } = {}) => {
 	const { g, st } = prep(s);
-	return { g, st, l: layout(g, st, { width, maxH: o.maxH ?? 320, vertical: !!o.vertical || width < 480, curve: 0.5, measure }) };
+	return {
+		g,
+		st,
+		l: layout(g, st, {
+			width,
+			maxH: o.maxH ?? 320,
+			vertical: !!o.vertical || width < 480,
+			curve: 0.5,
+			measure
+		})
+	};
 };
 const ALL: [string, Spec, { vertical?: boolean; maxH?: number }][] = [
 	['01', SPEC01, {}],
@@ -270,35 +354,63 @@ describe('label placement', () => {
 			for (const width of [...NARROW, ...WIDE]) {
 				const { l } = run(SPEC01, width, measure);
 				const tips = l.labels.filter((x) => x.kind === 'stub');
-				expect(tips.map((x) => x.lines), `${width}`).toEqual([1, 1]);
+				expect(
+					tips.map((x) => x.lines),
+					`${width}`
+				).toEqual([1, 1]);
 				for (const x of tips) expect(x.text, `${width}`).toMatch(width >= 480 ? / stop here$/ : / stop$/);
 			}
 		});
-		test('a remainder figure sits at its own stub (wide) or after its own name (narrow), only beside a shown name', () => {
+		test('a remainder figure sits at its own stub: beside its free end, or under, over or on it', () => {
 			for (const [name, spec, o] of ALL)
 				for (const width of [...NARROW, ...WIDE]) {
 					const { l } = run(spec, width, measure, o);
 					for (const s of l.stubs) {
 						const tip = l.labels.find((x) => x.key === `s${s.i}`)!;
 						if (!tip.lines) continue;
-						const own = l.labels.find((x) => x.key === `n${s.i}`)!;
 						const at = `${name} at ${width}: stub ${s.i}`;
-						expect(own.lines, at).toBeGreaterThan(0);
+						const bar = l.nodes[s.i];
 						if (l.vertical) {
-							expect(tip.y, at).toBe(own.y);
-							expect(tip.x, at).toBeGreaterThanOrEqual(own.x + own.w);
+							// Beside the stub, or across its middle (never on the band beside it).
+							const cx = s.box.x + s.box.w / 2;
+							expect(tip.x >= s.box.x + s.box.w || (tip.x <= cx && cx <= tip.x + tip.w), at).toBe(true);
+							expect(tip.y, at).toBeGreaterThanOrEqual(bar.y + bar.h - H1);
 						} else {
-							// Beside the stub's free end, or just under or over the stub.
 							expect(tip.x >= s.box.x && tip.x <= s.box.x + s.box.w + 4.01, at).toBe(true);
 							expect(tip.y <= s.box.y + s.box.h + 2.01 && s.box.y - 2.01 <= tip.y + tip.h, at).toBe(true);
 						}
 					}
 				}
 		});
+		test('remainder figures are protected: every stub shows its figure at a 720 card', () => {
+			const want: [string, Spec, { vertical?: boolean; maxH?: number }, string[]][] = [
+				['01', SPEC01, {}, ['35', '70']],
+				['03', SPEC03, {}, ['55K', '91K']],
+				['04', SPEC04, {}, ['240']],
+				['05', SPEC05, { vertical: true, maxH: 360 }, ['105', '6']],
+				['06', SPEC06, { maxH: 200 }, ['997', '1,000']]
+			];
+			for (const [name, spec, o, figs] of want)
+				for (const width of CONTENT) {
+					const { l } = run(spec, width, measure, o);
+					const tips = l.labels.filter((x) => x.kind === 'stub');
+					for (const x of tips) expect(x.lines, `${name} at ${width}: ${x.key}`).toBe(1);
+					for (const f of figs)
+						expect(
+							tips.map((x) => x.fig),
+							`${name} at ${width}`
+						).toContain(f);
+					for (const x of tips) expect(x.text.startsWith(x.fig), `${name} at ${width}`).toBe(true);
+				}
+		});
 		test('nothing overlaps; wide, protected labels (starts, the largest end, over 15%) are never hidden', () => {
 			for (const [name, spec, o] of ALL)
 				for (const width of [...NARROW, ...WIDE]) {
 					const { st, l } = run(spec, width, measure, o);
+					// Narrow, a start keeps its label whenever its own slot can hold a figure.
+					for (const i of st.starts)
+						if (!l.vertical || name === '01' || name === '03')
+							expect(l.labels.find((x) => x.key === `n${i}`)!.lines, `${name} at ${width}: start n${i}`).toBeGreaterThan(0);
 					if (!l.vertical) {
 						const kept = l.nodes.map((q) => q.i).filter((i) => st.inn[i] === 0 || i === st.largestEnd || st.value[i] > 0.15 * st.total);
 						for (const i of kept) expect(l.labels.find((x) => x.key === `n${i}`)!.lines, `${name} at ${width}: n${i}`).toBeGreaterThan(0);
@@ -310,7 +422,10 @@ describe('label placement', () => {
 		});
 		test('spec 05: Offer and Hired are labelled at both widths', () => {
 			for (const width of [328, 680]) {
-				const { g, l } = run(SPEC05, width, measure, { vertical: true, maxH: 360 });
+				const { g, l } = run(SPEC05, width, measure, {
+					vertical: true,
+					maxH: 360
+				});
 				for (const name of ['Offer', 'Hired']) {
 					const i = names(g).indexOf(name);
 					expect(l.labels.find((x) => x.key === `n${i}`)!.lines, `${name} at ${width}`).toBeGreaterThan(0);
@@ -328,7 +443,8 @@ describe('label placement', () => {
 						const mid = bar.y + bar.h / 2;
 						expect(a.y <= mid + 1 && mid - 1 <= a.y + a.h, `${name} at ${width}: ${a.key} spans its bar's middle`).toBe(true);
 						for (const b of s)
-							if (l.nodes[b.i].x !== bar.x) expect(a.x < b.x + b.w && b.x < a.x + a.w, `${name} at ${width}: ${a.key} ${b.key}`).toBe(false);
+							if (l.nodes[b.i].x !== bar.x)
+								expect(a.x < b.x + b.w && b.x < a.x + a.w, `${name} at ${width}: ${a.key} ${b.key}`).toBe(false);
 					}
 				}
 		});
@@ -341,17 +457,25 @@ describe('label placement', () => {
 						const at = `${name} at ${width}: ${a.key}`;
 						expect(a.y, at).toBeGreaterThan(bar.y);
 						expect(a.x <= bar.x + 0.01 && bar.x < a.x + a.w, at).toBe(true);
-						for (const q of l.nodes) if (q !== bar && q.y === bar.y) expect(a.x < q.x + q.w && q.x < a.x + a.w, `${at} under n${q.i}`).toBe(false);
+						for (const q of l.nodes)
+							if (q !== bar && q.y === bar.y) expect(a.x < q.x + q.w && q.x < a.x + a.w, `${at} under n${q.i}`).toBe(false);
 					}
 				}
 		});
-		test('a figure is whole or left to the readout; specs 03 and 06 wide keep every percent', () => {
+		test('every shown node label carries its figure on one line; spec 03 wide keeps every percent', () => {
 			for (const [name, spec, o] of ALL)
 				for (const width of [...NARROW, ...WIDE]) {
 					const { st, l } = run(spec, width, measure, o);
-					for (const a of nodeLabels(l)) expect(['', nodeFigure(st, a.i)], `${name} at ${width}: ${a.key}`).toContain(a.fig);
+					for (const a of nodeLabels(l)) {
+						const v = st.value[a.i];
+						expect([nodeFigure(st, a.i), fmt(v), num(v, { compact: true })], `${name} at ${width}: ${a.key}`).toContain(a.fig);
+						expect(a.lines, `${name} at ${width}: ${a.key}`).toBeLessThanOrEqual(2);
+						// A name is never drawn without its figure; the figure alone is a protected label's last resort.
+						if (!a.text)
+							expect(st.inn[a.i] === 0 || a.i === st.largestEnd || v > 0.15 * st.total, `${name} at ${width}: ${a.key}`).toBe(true);
+					}
 				}
-			for (const [name, spec, o] of [ALL[2], ALL[5]])
+			for (const [name, spec, o] of [ALL[2]])
 				for (const width of CONTENT) {
 					const { st, l } = run(spec, width, measure, o);
 					for (const a of nodeLabels(l).filter((x) => st.inn[x.i])) expect(a.fig, `${name} at ${width}: ${a.key}`).toMatch(/ · (<1|\d+)%$/);
@@ -362,8 +486,9 @@ describe('label placement', () => {
 				const { l } = run(SPEC04, width, measure);
 				const w = l.labels.find((x) => x.text === 'Wishlist')!;
 				expect(w.lines, `${width}`).toBeGreaterThanOrEqual(2);
-				expect(w.fig).toBe('120 · 5%');
-				expect(w.w - 12, `${width}: the full name fits`).toBeGreaterThanOrEqual(measure('Wishlist', true) - 0.01);
+				expect(['120 · 5%', '120']).toContain(w.fig);
+				// Search's remainder figure (protected) may cut the name, never below its 6-character floor.
+				expect(w.w - 12, `${width}: the name keeps its floor`).toBeGreaterThanOrEqual(measure('Wishl…', true) - 0.01);
 			}
 		});
 	});
