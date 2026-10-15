@@ -138,7 +138,7 @@ Open each and watch:
 |-------|--------------------------|
 | `/ds/motion` | The "Describe → Generate → Refine → Ship" cards **fade AND rise in sequence** (each card both drops its opacity-0 and slides up from +28px) as they scroll into view, **cascading** one after another (~120ms apart). The CTA button **scales/springs on hover and tap**. The `reveal` panels slide in on scroll; the `parallax` panel **drifts vertically as you scroll**. Clicking **"Fire animate action"** makes the target card **pop (scale + lift, bouncy)** — the `animate` runtime pulses it by id with no host code. |
 | `/ds/marketing` | Section/hero blocks **animate in on scroll**; hover states on cards/buttons respond. |
-| `/ds/premium` | Premium widgets (bento, text effects) **animate**, not snap. |
+| `/ds/effects` | Effect widgets (bento, text effects) **animate**, not snap. |
 
 ### What "working" looks like on `/ds/motion` (the runtime close-out)
 

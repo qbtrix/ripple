@@ -207,6 +207,8 @@
 			background: var(--code-bg);
 			font: 0.875em var(--font-mono);
 			font-variant-ligatures: none;
+			/* A long URL breaks instead of running past a phone's edge. */
+			overflow-wrap: anywhere;
 		}
 		> .code-block {
 			position: relative;
@@ -254,6 +256,7 @@
 		}
 		.diagram-canvas {
 			overflow-x: auto;
+			background: var(--scroll-hint);
 			padding: 16px;
 			border: 1px solid var(--site-line);
 			border-radius: var(--radius-card);
@@ -281,6 +284,7 @@
 			display: block;
 			max-width: none;
 			overflow-x: auto;
+			background: var(--scroll-hint);
 			border-collapse: collapse;
 			margin: 20px 0;
 			font-size: 15px;
@@ -307,10 +311,16 @@
 			animation: none;
 		}
 	}
-	/* Small text stays readable: past 70% of natural size the figure scrolls. */
+	/* Small text stays readable: past 70% of natural size the figure scrolls,
+	   and the scroll hint shows there is more. On phones the Copy button gets
+	   its own strip above the code instead of covering the first line. */
 	@media (max-width: 640px) {
 		.prose :global(.diagram-canvas svg) {
 			min-width: var(--diagram-min);
+		}
+		.prose :global(.code-block pre) {
+			padding-top: 40px;
+			padding-right: 18px;
 		}
 	}
 

@@ -1,7 +1,24 @@
+<!--
+  routes/ds/button/+page.svelte: the Button widget on /ds, rendered as a Svelte
+  component: every variant and size, leading and trailing icons, a loading
+  state you can trigger, disabled, full width, the link variant and a dialog
+  style footer inside a Card.
+-->
 <script lang="ts">
   import Button from '$lib/widgets/input/Button.svelte';
   import Card from '$lib/widgets/layout/Card.svelte';
   import { Plus, ArrowRight, Trash2, Check, Settings } from '@lucide/svelte';
+  import Showcase from '../Showcase.svelte';
+
+  const nav = [
+    { href: '#variants', label: 'Variants' },
+    { href: '#sizes', label: 'Sizes' },
+    { href: '#icons', label: 'Icons' },
+    { href: '#loading', label: 'Loading' },
+    { href: '#disabled', label: 'Disabled' },
+    { href: '#full-width', label: 'Full width and link' },
+    { href: '#in-card', label: 'In a card' }
+  ];
 
   let isLoading = $state<boolean>(false);
 
@@ -13,27 +30,17 @@
   }
 </script>
 
-<div class="showcase">
-  <header class="showcase-header">
-    <h1>Button</h1>
+<Showcase slug="button" {nav}>
+  {#snippet intro()}
     <p>
-      All variants, sizes, icon slots, loading state, and in-Card composition for the rebuilt
-      <code>Button</code> widget.
+      The <code>button</code> widget runs an action when pressed. Pick a <code>variant</code> for its weight on the
+      page and a <code>size</code>; add leading or trailing icons, a loading state while work runs, or
+      <code>disabled</code> while it can't act.
     </p>
-    <nav class="showcase-nav">
-      <a href="#variants">Variants</a>
-      <a href="#sizes">Sizes</a>
-      <a href="#icons">Icons</a>
-      <a href="#loading">Loading</a>
-      <a href="#disabled">Disabled</a>
-      <a href="#full-width">Full-width & link</a>
-      <a href="#in-card">In a Card</a>
-    </nav>
-  </header>
+  {/snippet}
 
-  <!-- Variants ─────────────────────────────────────────────────── -->
   <section id="variants" class="showcase-section">
-    <h2 class="showcase-section-title">Variants (md size)</h2>
+    <h2 class="showcase-section-title">Variants</h2>
     <div class="showcase-item">
       <div class="showcase-item-demo">
         <div class="flex flex-wrap items-center gap-3">
@@ -48,7 +55,6 @@
     </div>
   </section>
 
-  <!-- Sizes ────────────────────────────────────────────────────── -->
   <section id="sizes" class="showcase-section">
     <h2 class="showcase-section-title">Sizes</h2>
     <div class="showcase-item">
@@ -62,15 +68,14 @@
           </Button>
         </div>
         <p class="mt-2 text-xs text-muted-foreground">
-          sm · md · lg · icon (icon-only, aria-label required)
+          sm, md, lg and icon (icon only, so give it an aria-label)
         </p>
       </div>
     </div>
   </section>
 
-  <!-- Leading / trailing icons ─────────────────────────────────── -->
   <section id="icons" class="showcase-section">
-    <h2 class="showcase-section-title">Leading / trailing icons</h2>
+    <h2 class="showcase-section-title">Leading and trailing icons</h2>
     <div class="showcase-item">
       <div class="showcase-item-demo">
         <div class="flex flex-wrap items-center gap-3">
@@ -99,11 +104,10 @@
     </div>
   </section>
 
-  <!-- Loading ──────────────────────────────────────────────────── -->
   <section id="loading" class="showcase-section">
-    <h2 class="showcase-section-title">Loading (interactive)</h2>
+    <h2 class="showcase-section-title">Loading</h2>
     <div class="showcase-item">
-      <h3 class="showcase-item-title">Click to trigger 1.5 s spinner</h3>
+      <h3 class="showcase-item-title">Press it: the spinner runs for 1.5 seconds</h3>
       <div class="showcase-item-demo">
         <div class="flex items-center gap-4">
           <Button
@@ -112,16 +116,15 @@
             onclick={handleLoadingClick}
           />
           <span class="text-xs text-muted-foreground">
-            {isLoading ? 'Saving…' : 'Idle — click the button'}
+            {isLoading ? 'Saving…' : 'Idle. Press the button.'}
           </span>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Disabled — all variants ──────────────────────────────────── -->
   <section id="disabled" class="showcase-section">
-    <h2 class="showcase-section-title">Disabled — all variants</h2>
+    <h2 class="showcase-section-title">Disabled, every variant</h2>
     <div class="showcase-item">
       <div class="showcase-item-demo">
         <div class="flex flex-wrap items-center gap-3">
@@ -136,12 +139,11 @@
     </div>
   </section>
 
-  <!-- Full-width + link ────────────────────────────────────────── -->
   <section id="full-width" class="showcase-section">
-    <h2 class="showcase-section-title">Full-width &amp; link</h2>
-    <div class="grid-2x2">
+    <h2 class="showcase-section-title">Full width and link</h2>
+    <div class="grid-2">
       <div class="showcase-item">
-        <h3 class="showcase-item-title">Full-width (class="w-full")</h3>
+        <h3 class="showcase-item-title">Full width (class="w-full")</h3>
         <div class="showcase-item-demo">
           <Button class="w-full" label="Get started" variant="default">
             {#snippet trailing()}<ArrowRight size={16} />{/snippet}
@@ -163,14 +165,13 @@
     </div>
   </section>
 
-  <!-- In a Card ───────────────────────────────────────────────── -->
   <section id="in-card" class="showcase-section">
-    <h2 class="showcase-section-title">In a Card</h2>
+    <h2 class="showcase-section-title">In a card</h2>
     <div class="showcase-item">
-      <h3 class="showcase-item-title">Dialog-style footer with Cancel + Create</h3>
+      <h3 class="showcase-item-title">A dialog style footer: Cancel and Create</h3>
       <div class="showcase-item-demo">
         <div class="max-w-sm">
-          <Card title="Create pocket" description="Name it and choose a template">
+          <Card title="Create project" description="Name it and choose a template">
             <div class="flex justify-end gap-2">
               <Button variant="ghost" label="Cancel" />
               <Button variant="default" label="Create">
@@ -182,4 +183,4 @@
       </div>
     </div>
   </section>
-</div>
+</Showcase>

@@ -1,7 +1,7 @@
 ---
 title: Coding agents
 description: Install the Ripple skill so Claude Code, Codex or OpenCode write a card, render it, audit their own screenshots and fix it before you see it.
-order: 12
+order: 6
 ---
 
 The Ripple skill teaches a coding agent to write Ripple specs the way a careful person would: pick the right widget, fill it with real data, then look at the result and fix what is wrong. It lives in the repo at [`skills/ripple`](https://github.com/qbtrix/ripple-iui/tree/main/skills/ripple) and installs with the [skills CLI](https://github.com/vercel-labs/skills).

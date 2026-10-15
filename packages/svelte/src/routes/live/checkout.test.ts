@@ -90,7 +90,7 @@ describe('checkout()', () => {
 			throw new TypeError('Failed to fetch');
 		});
 		const r = await checkout(body, { storeUrl: STORE, pageOrigin: PAGE, fetch });
-		expect(r).toMatchObject({ ok: false, error: { message: expect.stringMatching(/reach the store/) } });
+		expect(r).toMatchObject({ ok: false, error: { message: expect.stringMatching(/^The demo store isn't answering.*Nothing was charged\.$/) } });
 	});
 });
 

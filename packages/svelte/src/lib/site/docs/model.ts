@@ -1,6 +1,7 @@
 // site/docs/model.ts — Browser-safe constants and the "Copy for your model"
 // text. Kept apart from content.ts, whose import.meta.glob would otherwise ship
-// every page's markdown in the client bundle.
+// every page's markdown in the client bundle. SITE_URL is the one place the
+// public host is written: docs markdown reaches it through {{SITE_URL}}.
 
 export const SITE_URL = 'https://ripple.pocketpaw.xyz';
 export const SLIM_MANIFEST_URL = 'https://github.com/qbtrix/ripple-iui/releases/latest/download/manifest.slim.json';

@@ -4,13 +4,15 @@
     controls, the render frame and the model output pane (pretty-printed as it
     streams, JsonLines). Mounting it plays the run through streamSpec into
     <Ripple>; with reduced motion it shows the finished card at once (the
-    thumbnail capture relies on that, and marks the frame data-thumb). A card's
+    thumbnail capture relies on that, and marks the frame data-thumb). At
+    desktop width the render pane grows with its card (min-height, no inner
+    scroll) and the JSON pane's pre is out of flow so it scrolls on its own. A card's
     host events land in onHostEvent: the order demo's checkout `api` event goes
     to checkout.ts and the test store (PUBLIC_STORE_URL), and the returned
     payment link shows as the PayCard the landing chat uses, so the page never
     navigates away. A business run has a brand (brands.ts): the host's skin,
-    applied to <Ripple brand> and painted on the render pane, with a switch
-    back to Ripple's default look; its fixture's context (what the model
+    applied to <Ripple brand> and painted on the render pane, with a labelled
+    Look switch back to Ripple's default look; its fixture's context (what the model
     already knew) opens under the prompt. Local tokens are prefixed (--live-*)
     so the widgets in the frame keep their own --accent and --radius.
 -->
@@ -138,10 +140,11 @@
 		</div>
 		<div class="controls">
 			<span class="status" aria-live="polite">
-				{streaming ? `streaming ${typed.length} / ${total} bytes` : 'done, try it'}
+				{streaming ? `Streaming ${typed.length} / ${total} bytes` : 'Done. Try it'}
 			</span>
 			{#if BRANDS[scenario.id]}
-				<div class="segmented" role="group" aria-label="Look">
+				<span class="look" id="look-label">Look</span>
+				<div class="segmented" role="group" aria-labelledby="look-label">
 					<button type="button" aria-pressed={branded} onclick={() => (branded = true)}>{BRANDS[scenario.id].name}</button>
 					<button type="button" aria-pressed={!branded} onclick={() => (branded = false)}>Default</button>
 				</div>
@@ -202,6 +205,8 @@
 		--ink-soft: var(--site-soft);
 		--line: var(--site-line);
 		--live-radius: var(--radius-card);
+		/* The site's sans, captured here: a brand rewrites --font-sans inside .render. */
+		--live-font: var(--font-sans);
 		border: 1px solid var(--line);
 		border-radius: var(--live-radius);
 		background: var(--panel);
@@ -264,6 +269,12 @@
 		gap: 12px;
 		margin-left: auto;
 	}
+	.look {
+		margin-right: -4px;
+		font-size: 13px;
+		font-weight: 600;
+		color: var(--ink-soft);
+	}
 	.status {
 		font-size: 13px;
 		color: var(--ink-soft);
@@ -304,13 +315,16 @@
 		outline-offset: -2px;
 	}
 
+	/* The render pane grows with its card, so a run's primary action is never
+	   behind an inner scroll; the JSON pane scrolls on its own beside it. */
 	.panes {
 		display: grid;
 		grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
 		grid-template-areas: 'json render';
-		height: 640px;
+		min-height: 640px;
 	}
 	.label {
+		font-family: var(--live-font);
 		font-size: 13px;
 		font-weight: 600;
 		color: var(--ink-soft);
@@ -321,9 +335,15 @@
 		display: flex;
 		flex-direction: column;
 		gap: 12px;
-		padding: 16px;
+		padding: 0 16px 16px;
 		min-width: 0;
-		overflow: auto;
+	}
+	/* Same 44px row as the JSON pane's summary, so the two labels line up. */
+	.render > .label {
+		display: flex;
+		align-items: center;
+		min-height: 44px;
+		margin-bottom: -12px;
 	}
 	/* A business run's brand paints its own ground behind the card. */
 	.render.branded {
@@ -369,6 +389,7 @@
 	}
 	.json {
 		grid-area: json;
+		position: relative;
 		display: flex;
 		flex-direction: column;
 		min-height: 0;
@@ -396,10 +417,12 @@
 	.json[open] {
 		overflow: hidden;
 	}
+	/* Out of flow, so a long spec never stretches the row. */
 	.json pre {
+		position: absolute;
+		inset: 44px 0 0;
 		margin: 0;
 		padding: 4px 16px 16px;
-		height: calc(640px - 48px);
 		overflow: auto;
 		font-size: 12.5px;
 		line-height: 1.55;
@@ -412,14 +435,12 @@
 			grid-template-areas: 'render' 'json';
 			height: auto;
 		}
-		.render {
-			overflow: visible;
-		}
 		.json {
 			border-right: 0;
 			border-top: 1px solid var(--line);
 		}
 		.json pre {
+			position: static;
 			height: 260px;
 		}
 		.controls {

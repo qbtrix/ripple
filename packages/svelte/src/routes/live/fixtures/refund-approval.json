@@ -352,35 +352,7 @@
   },
   {
    "t": 2831,
-   "text": "\",\"props\":{\"text\":\""
-  },
-  {
-   "t": 2872,
-   "text": "Policy: shipping {"
-  },
-  {
-   "t": 2904,
-   "text": "state.shipping} plus"
-  },
-  {
-   "t": 2954,
-   "text": " {"
-  },
-  {
-   "t": 2963,
-   "text": "state.creditPercent}"
-  },
-  {
-   "t": 3012,
-   "text": "% of {"
-  },
-  {
-   "t": 3059,
-   "text": "state.itemTotal}"
-  },
-  {
-   "t": 3076,
-   "text": " item total.\",\"size\":\"s"
+   "text": "\",\"props\":{\"text\":\"Policy: ${state.shipping} shipping plus {state.creditPercent}% of the ${state.itemTotal} item total.\",\"size\":\"s"
   },
   {
    "t": 3109,

@@ -1,21 +1,36 @@
 // showcase.test.ts — The site-only showcase previews: every key is a real
-// manifest widget, every spec's root is that widget and passes the bound
-// spec audit (schema, catalog, actions, props and the rest; not futureDate,
-// since gantt and calendar plan ahead), and the widget page previews the showcase spec in place of
-// the manifest example, which it must not repeat. Rendering is covered by widgets.test.ts, which renders
-// every page's pageSpecs(...).example.
+// manifest widget, every spec contains that widget (the root unless listed in
+// NOT_ROOT) and passes the bound spec audit (schema, catalog, actions, props
+// and the rest; not futureDate, since gantt and calendar plan ahead), and the
+// widget page previews the showcase spec in place of the manifest example,
+// which a root showcase must not repeat.
+// Every asset URL is same-origin or on a host the site CSP allows, and every
+// local media file exists under static/. Rendering is covered by
+// widgets.test.ts, which renders every page's pageSpecs(...).example.
 import { describe, expect, it } from 'vitest';
 import { manifestEntries } from '../../manifest/index.js';
 import { getWidgetTypes } from '../../widgets/index.js';
 import { specAudit } from '@ripple-ui/core';
 import { SHOWCASE } from './showcase.js';
 import { exampleSpec, pageSpecs } from './widgets.js';
+import { findNode } from './props.js';
 
+/** Showcases whose widget is not the root, and why. */
+const NOT_ROOT: Record<string, string> = { toast: 'needs a button that fires the toast action' };
+/**
+ * Props a showcase may set that the manifest entry does not document. Split reads its panes from
+ * `start` and `end` only (its manifest example's children never reach them), and documenting them
+ * would grow the manifest the chat prompt carries.
+ */
+const UNDOCUMENTED: Record<string, string[]> = { split: ['start', 'end'] };
+const ALLOWED_HOSTS = ['images.unsplash.com', 'i.pravatar.cc', 'example.com'];
+
+const staticFiles = new Set(Object.keys(import.meta.glob('/static/**/*.{jpg,mp4,mp3,m4a,svg,glb}', { query: '?url' })));
 const entry = (type: string) => manifestEntries.find((e) => e.type === type);
 const cases = Object.entries(SHOWCASE).map(([type, spec]) => ({ type, spec }));
 
 describe('widget showcase specs', () => {
-	it('covers at least the wave-1 to wave-3 polished widgets', () => {
+	it('covers the wave-1 to wave-3 and preview-polish widgets', () => {
 		expect(Object.keys(SHOWCASE)).toEqual(
 			expect.arrayContaining([
 				'gantt',
@@ -30,12 +45,36 @@ describe('widget showcase specs', () => {
 				'kanban',
 				'menu-order',
 				'saved-views',
+				'image',
+				'avatar',
+				'avatar-group',
+				'parallax',
+				'marquee',
+				'quote',
+				'soul-status',
+				'breadcrumb',
+				'split',
+				'code-editor',
+				'toast',
+				'map',
+				'video',
+				'audio',
+				'embed',
+				'model-viewer',
+				'location-picker',
+				'citation',
+				'company-header',
+				'ticker',
+				'news-card',
+				'source-card',
+				'sources-bar',
+				'discover-card',
+				'logo-cloud',
 				'gauge',
 				'order-status',
 				'org-chart',
 				'pipeline-dashboard',
-				'sankey',
-				'sources-bar'
+				'sankey'
 			])
 		);
 	});
@@ -43,11 +82,35 @@ describe('widget showcase specs', () => {
 	it.each(cases)('$type is a manifest widget with a valid spec rooted at it', ({ type, spec }) => {
 		expect(entry(type), `${type} is not in the manifest`).toBeDefined();
 		expect(spec.version).toBe('1.0');
-		expect(spec.ui).toMatchObject({ type });
-		expect(spec.ui, `${type} repeats the manifest example`).not.toEqual(entry(type)?.example);
+		if (NOT_ROOT[type]) expect(findNode(spec, type)).not.toBeNull();
+		else {
+			expect(spec.ui).toMatchObject({ type });
+			expect(spec.ui, `${type} repeats the manifest example`).not.toEqual(entry(type)?.example);
+		}
 		const reports = specAudit(spec, { widgetTypes: getWidgetTypes(), widgets: manifestEntries });
-		expect(reports.filter((r) => r.count || r.warnings?.length)).toEqual([]);
+		const allowed = UNDOCUMENTED[type] ?? [];
+		const problems = reports
+			.map((r) => ({ ...r, warnings: r.warnings?.filter((w) => !allowed.some((name) => w.path.endsWith(`/props/${name}`))) }))
+			.filter((r) => r.count || r.warnings?.length);
+		expect(problems).toEqual([]);
 		expect(reports.map((r) => r.check)).toContain('props');
+	});
+
+	it.each(cases)('$type loads assets only from the site or a CSP-allowed host', ({ spec }) => {
+		const urls = JSON.stringify(spec).match(/https?:\/\/[^"'\s)]+/g) ?? [];
+		for (const url of urls) expect(ALLOWED_HOSTS, url).toContain(new URL(url).hostname);
+	});
+
+	it('loads media only from static/ or hosts the site CSP allows', () => {
+		const allowed = ['https://i.pravatar.cc/', 'https://images.unsplash.com/'];
+		const urls = JSON.stringify(SHOWCASE).match(/"(?:src|poster|href)":"[^"]*"/g) ?? [];
+		expect(urls.length).toBeGreaterThan(5);
+		for (const pair of urls) {
+			const url = pair.slice(pair.indexOf(':') + 2, -1);
+			if (url.startsWith('/')) {
+				if (/\.[a-z0-9]+$/.test(url)) expect(staticFiles.has(`/static${url}`), url).toBe(true);
+			} else expect(allowed.some((h) => url.startsWith(h)), url).toBe(true);
+		}
 	});
 
 	it('the page previews the showcase spec, not the manifest example', () => {

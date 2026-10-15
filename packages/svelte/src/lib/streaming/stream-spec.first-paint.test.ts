@@ -3,6 +3,8 @@
 // the first frame does not wait out the state block; this guards the renderer
 // half of that contract: a node reading `{state.x}` mounts with the state still
 // missing (no throw, no error box) and picks the value up when state lands.
+// A spec that streams `state` first shows the skeleton, not an empty frame,
+// until `ui` arrives.
 
 import { render } from '@testing-library/svelte';
 import { describe, expect, it, vi } from 'vitest';
@@ -35,5 +37,20 @@ describe('streamed first paint', () => {
 		await vi.waitFor(() => expect(store.done).toBe(true));
 		await vi.waitFor(() => expect(container.textContent).toContain('hello hi'));
 		expect(store.error).toBeNull();
+	});
+
+	it('shows the skeleton while only state has arrived, then the ui', async () => {
+		const { stream, push } = openStream();
+		const store = streamSpec(stream, { throttleMs: 0 });
+		const { container } = render(Ripple, { props: { streaming: store, skeleton: 'card' } });
+
+		push.enqueue('{"version":"1.0","state":{"x":"hi"},');
+		await vi.waitFor(() => expect((store.current as { state?: unknown } | null)?.state).toEqual({ x: 'hi' }));
+		expect(container.querySelector('.rskeleton')).not.toBeNull();
+
+		push.enqueue('"ui":{"type":"text","props":{"text":"hello {state.x}"}}}');
+		push.close();
+		await vi.waitFor(() => expect(container.textContent).toContain('hello hi'));
+		expect(container.querySelector('.rskeleton')).toBeNull();
 	});
 });

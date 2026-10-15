@@ -147,7 +147,8 @@ export async function checkout(body: unknown, deps: CheckoutDeps): Promise<{ ok:
 			body: JSON.stringify(parsed.request)
 		});
 	} catch {
-		return fail("Can't reach the store right now. Check your connection and try again.");
+		// Usually the demo store being down, not the visitor's network: say so plainly.
+		return fail("The demo store isn't answering right now, so checkout can't open. Nothing was charged.");
 	}
 	const data = (await res.json().catch(() => null)) as Record<string, unknown> | null;
 	if (res.status === 429) {

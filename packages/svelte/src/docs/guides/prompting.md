@@ -1,7 +1,7 @@
 ---
 title: Prompting a model with the manifest
 description: Give a model the widget catalog, ask it for a spec, and check what comes back.
-order: 5
+order: 1
 ---
 
 A model writes good specs when it sees three things: the spec format, the widgets it may use, and an instruction to return JSON and nothing else. The manifest covers the first two.

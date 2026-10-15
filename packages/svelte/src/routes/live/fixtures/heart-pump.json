@@ -1,6 +1,6 @@
 {
  "id": "heart-pump",
- "title": "The heart as a pump",
+ "title": "How a heart pumps",
  "prompt": "How does the heart pump blood? Show me the two sides and the valves, and let me change the heart rate.",
  "model": "hand-written",
  "recordedAt": "2026-10-12T12:00:00.000Z",

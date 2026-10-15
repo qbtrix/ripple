@@ -1,7 +1,7 @@
 ---
-title: Data widgets
-description: The app-like widgets a model fills with data (notes, music, weather, schedules, places, products, posters, maps) and what changed in the older ones.
-order: 9
+title: App widgets
+description: The app-like widgets a model fills with data (notes, music, weather, schedules, places, products, posters, maps) and the data rules of a few others.
+order: 10
 ---
 
 These widgets each stand for a small app. The model writes the data, the widget does the layout, the controls and the motion. Every example below is live: it is the same JSON a model would stream.
@@ -208,9 +208,9 @@ Props a model fills: `title`, `kind`, `items` (`title`, `by`, `year`, `minutes`,
 }
 ```
 
-## map in chat cards
+## map
 
-`map` now fits inside a chat card. Tiles are OpenStreetMap based and need no key. The widget is forgiving about points: `center` takes `[lat, lng]` or `{ "lat": ..., "lng": ... }`, and so does every marker and path point. For a single line, `route` takes a bare point list, so a model does not have to build a `paths` entry.
+A map that fits inside a chat card. Tiles are OpenStreetMap based and need no key. The widget is forgiving about points: `center` takes `[lat, lng]` or `{ "lat": ..., "lng": ... }`, and so does every marker and path point. For a single line, `route` takes a bare point list, so a model does not have to build a `paths` entry.
 
 ```ripple
 {
@@ -232,7 +232,9 @@ Props a model fills: `title`, `kind`, `items` (`title`, `by`, `year`, `minutes`,
 }
 ```
 
-## Changes to older widgets
+## Data rules in other widgets
+
+How a few other widgets read the data a model writes:
 
 - **model-viewer** takes `asset`, an id from the built-in library of 31 models (for example `plane`, `heart`, `skeleton`, `t-rex`), and `annotations` that pin numbered labels to the model's named points by `anchor`. See [Drawings](/docs/guides/drawings).
 - **interval-workout** shows an animated figure for each exercise. The figure is matched from the exercise `name`; set `figure` (an id like `cat-cow`) to pick one yourself.
@@ -241,6 +243,8 @@ Props a model fills: `title`, `kind`, `items` (`title`, `by`, `year`, `minutes`,
 - **stat** rounds plain numbers by size: whole from 100, one decimal from 10, two below that. Set `decimals` to pin the digits.
 - **table** wraps long text cells and keeps number columns on one line, aligned right.
 - **invoice-layout** reads a summary row's `amount` or `total` as its `value`, takes `amount` for a line's total, formats a three-letter `currency` like `"USD"` as money, and shows a dash instead of `NaN` when a number is missing.
+
+The stat rounding, live: `8971.429` shows as a whole number, and `decimals: 1` pins the second one to one digit.
 
 ```ripple
 {

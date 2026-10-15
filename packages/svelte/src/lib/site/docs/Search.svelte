@@ -111,7 +111,11 @@
 		/>
 		<div id="search-results" class="results" aria-live="polite">
 			{#if status === 'unavailable'}
-				<p class="note">Search runs on the built site. Run <code>bun run build:site</code> and preview it.</p>
+				{#if import.meta.env.DEV}
+					<p class="note">Search runs on the built site. Run <code>bun run build:site</code> and preview it.</p>
+				{:else}
+					<p class="note">Search is unavailable right now.</p>
+				{/if}
 			{:else if query.trim() && hits.length === 0 && status === 'idle'}
 				<p class="note">Nothing in the docs matches "{query}".</p>
 			{:else}

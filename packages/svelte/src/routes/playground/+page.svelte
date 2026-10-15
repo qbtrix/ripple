@@ -4,7 +4,7 @@
     then edit the JSON and watch the UI follow. The chat is the landing's
     (pawbar/Chat.svelte, ChatSession, the recorded answer pool minus the store
     demo, the card policy). Default build: every answer is a recording replayed
-    locally on its original timing, typed text included, and the page says so;
+    locally at 1.5 times its recorded pace, typed text included, and the page says so;
     no model is called and nothing is fetched. PUBLIC_PAWBAR_LIVE=1 (with the
     endpoint, widget id and site key) switches to the Paw Bar API with the
     recordings as the fallback; typed text then follows the landing's rule
@@ -14,7 +14,9 @@
     grips; 1024 to 1279, chat | preview over JSON; under 1024 one column
     where the card renders inline in the chat and its JSON opens as a bottom
     sheet (a native <dialog>). The chat fills the screen under the site bar
-    and scrolls itself; the welcome sits in its `top` snippet. From 1024 every
+    and scrolls itself; the welcome sits in its `top` snippet (two prompts
+    under 1024, so its actions stay above the composer). The column title is
+    the page's h1, as the welcome goes after the first turn. From 1024 every
     card is a chip in the thread and the chip picks which version the panes
     show (versions.svelte.ts).
     The visitor's own spec is one version (OWN): a ?spec= / ?s= link
@@ -61,7 +63,7 @@
 	const EXAMPLE = JSON.stringify(
 		{
 			version: '1.0',
-			state: { username: '' },
+			state: { username: 'there' },
 			ui: {
 				type: 'flex',
 				props: { direction: 'column', gap: '16px' },
@@ -91,7 +93,7 @@
 	const pool = answerPool.filter((s) => !s.needsStore);
 	const intro = (message: string) =>
 		findScenario(message, pool)
-			? 'This is a recorded answer to a request like yours, played back on its original timing.'
+			? 'This is a recorded answer to a request like yours, played back a little faster than it was recorded.'
 			: 'Nothing recorded matches that yet, so this plays the recorded bill splitter.';
 	const recorded =
 		(fixed?: string): Transport =>
@@ -133,8 +135,7 @@
 	const total = $derived.by(() => {
 		const s = !LIVE || shown instanceof ReplayVersion ? scenarioOf(shown) : undefined;
 		if (!s) return null;
-		const chunks = shown instanceof ReplayVersion ? s.fixture.chunks : cardChunks(s.fixture);
-		return byteLength(chunks.map((c) => c.text).join(''));
+		return byteLength(cardChunks(s.fixture).map((c) => c.text).join(''));
 	});
 
 	function stopReplay() {
@@ -148,10 +149,10 @@
 		replaying?.abort.abort();
 		const abort = new AbortController();
 		const s = scenarioOf(v);
-		// A recording replays its whole spec on its own timing; anything else in even slices.
+		// A recording replays the chunks the chat streamed (same size and lines); anything else in even slices.
 		const text = JSON.stringify(v.spec);
 		const chunks = s
-			? s.fixture.chunks
+			? cardChunks(s.fixture)
 			: Array.from({ length: Math.ceil(text.length / 64) }, (_, i) => ({ t: i * 30, text: text.slice(i * 64, i * 64 + 64) }));
 		const fixture = { id: v.id, title: v.title, prompt: '', model: '', recordedAt: '', chunks };
 		replaying = { of: v.id, version: new ReplayVersion(v, replay(fixture, { speed: 1.5, signal: abort.signal }), abort.signal), abort };
@@ -252,7 +253,7 @@
 	}
 
 	const chatGrip = grip(() => chatW ?? (three.current ? 400 : 360), (n) => (chatW = n), () => 300, () => 560, 'x', 1);
-	const jsonGrip = grip(() => jsonW, (n) => (jsonW = n), () => 320, () => Math.max(320, (work?.clientWidth ?? 1200) - 480), 'x', -1);
+	const jsonGrip = grip(() => Math.min(jsonW, Math.max(320, (work?.clientWidth ?? 1200) - 480)), (n) => (jsonW = n), () => 320, () => Math.max(320, (work?.clientWidth ?? 1200) - 480), 'x', -1);
 	const splitGrip = grip(
 		() => jsonH ?? Math.round((work?.clientHeight ?? 600) * 0.4),
 		(n) => (jsonH = n),
@@ -324,13 +325,13 @@
 		{/if}
 		{#if !session.turns.length}
 			<div class="welcome">
-				<h1>Ask for a tool. Watch it build.</h1>
+				<h2>Ask for a tool. Watch it build.</h2>
 				<p>
 					The answer is a Ripple spec, and the UI renders while the JSON is still arriving. Then edit the JSON and the UI follows. {LIVE
 						? 'Answers come from a live model.'
 						: 'Every answer here is a recorded model run, replayed in your browser; nothing is sent anywhere.'}
 				</p>
-				<ul class="prompts" aria-label="Recorded requests">
+				<ul class="prompts" aria-label="Recorded requests" data-all={morePrompts || undefined}>
 					{#each morePrompts ? pool : pool.slice(0, 3) as s (s.id)}
 						<li>
 							<button type="button" class="prompt" disabled={session.busy} onclick={() => chat?.ask(s.fixture.prompt)}>
@@ -361,7 +362,7 @@
 >
 	<section class="chat-col" aria-label="Chat">
 		<header class="col-head">
-			<span class="col-title">Playground</span>
+			<h1 class="col-title">Playground</h1>
 			<span class="mode">{LIVE ? 'Live model' : 'Recorded answers'}</span>
 			<button type="button" class="pane-tool hide-chat" title="Hide the chat (Ctrl+B)" onclick={() => (showChat = false)}>Hide</button>
 		</header>
@@ -473,6 +474,7 @@
 		min-height: 36px;
 	}
 	.col-title {
+		margin: 0;
 		font-size: 15px;
 		font-weight: 600;
 	}
@@ -485,7 +487,7 @@
 		flex-direction: column;
 		gap: 14px;
 	}
-	.welcome h1 {
+	.welcome h2 {
 		margin: 8px 0 6px;
 		font-size: 28px;
 		line-height: 1.15;
@@ -679,7 +681,8 @@
 		}
 		.pg[data-json] .work {
 			grid-template-rows: minmax(0, 1fr);
-			grid-template-columns: minmax(480px, 1fr) 0 var(--json-w);
+			/* The JSON never takes more than the preview's 480px leaves (1280 with the chat open: 400). */
+			grid-template-columns: minmax(480px, 1fr) 0 min(var(--json-w), calc(100% - 480px));
 		}
 		.pg[data-json] .json {
 			border-top: 0;
@@ -755,6 +758,12 @@
 		font: inherit;
 		font-weight: 600;
 		cursor: pointer;
+	}
+	/* Under 1024 two prompts, so the welcome's actions stay in view above the composer. */
+	@media (max-width: 1023px) {
+		.prompts:not([data-all]) li:nth-child(n + 3) {
+			display: none;
+		}
 	}
 	@media (max-width: 639px) {
 		.pg {

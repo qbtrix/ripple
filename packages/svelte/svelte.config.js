@@ -19,8 +19,9 @@ import { loadEnv } from 'vite';
 // viewer's textures (unpacked from same-origin /models GLBs). img-src allows the two image
 // hosts the gallery demos use (its news feed's favicon service stays blocked) and
 // the store's origin, which serves the menu photos in a menu-order card, and
-// OpenStreetMap's tile server, which the tracking card's `order-status` map
-// loads (its `osm` preset).
+// the key-free map tile hosts: OpenStreetMap's (the `osm` preset) and CARTO's
+// basemaps on their a-d subdomains (the `carto-*` presets, which map,
+// location-picker and order-status examples and cards ask for).
 // 'unsafe-hashes' plus one hash admits exactly the `this.__e=event` attribute
 // Svelte's SSR puts on <img> so hydration can replay a load event.
 // 'wasm-unsafe-eval' lets the docs search compile Pagefind's same-origin wasm;
@@ -68,7 +69,7 @@ const config = {
 				'default-src': ['self'],
 				'script-src': ['self', 'wasm-unsafe-eval', 'unsafe-hashes', 'sha256-7dQwUgLau1NFCCGjfn9FsYptB6ZtWxJin6VohGIu20I='],
 				'style-src': ['self', 'unsafe-inline'],
-				'img-src': ['self', 'data:', 'https://images.unsplash.com', 'https://i.pravatar.cc', 'https://tile.openstreetmap.org', ...(storeOrigin ? [storeOrigin] : [])],
+				'img-src': ['self', 'data:', 'https://images.unsplash.com', 'https://i.pravatar.cc', 'https://tile.openstreetmap.org', 'https://*.basemaps.cartocdn.com', ...(storeOrigin ? [storeOrigin] : [])],
 				'font-src': ['self'],
 				'connect-src': connectSrc,
 				'frame-src': ['none'],

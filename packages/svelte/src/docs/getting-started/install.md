@@ -4,44 +4,45 @@ description: Add @ripple-ui/svelte to a Svelte 5 app and point Tailwind v4 at it
 order: 1
 ---
 
-Ripple renders a JSON UI spec as a live Svelte 5 interface. It ships as one package, `@ripple-ui/svelte`. The engine underneath, `@ripple-ui/core`, comes with it as a dependency, so you don't install it separately.
+Ripple renders a JSON UI spec as a live Svelte 5 interface. You render with `@ripple-ui/svelte`. The engine underneath, `@ripple-ui/core`, is its dependency. Until both are on the npm registry, you point your package manager at the core tarball too, as "Add the package" shows.
 
 ## Set up with a coding agent
 
 If you work with Claude Code, Cursor, Codex or another coding agent, paste this prompt and it does the steps on this page and the next two, then checks its work:
 
 ```text
-Add Ripple to this project: a model writes a UI as a JSON spec, and the app renders it live while the JSON streams in.
-
-Read these first (agent-friendly markdown):
-- https://ripple.pocketpaw.xyz/llms.txt (index of every page)
-- https://ripple.pocketpaw.xyz/docs/getting-started/install.md
-- https://ripple.pocketpaw.xyz/docs/getting-started/stream-a-spec.md
-- https://ripple.pocketpaw.xyz/docs/guides/prompting.md
-
-Steps:
-1. Check the stack. The renderer needs Svelte 5 and Tailwind CSS v4. If this app is not Svelte 5, stop and tell me instead of adding Svelte (https://ripple.pocketpaw.xyz/docs/concepts/headless.md covers rendering elsewhere).
-2. Install @ripple-ui/svelte with the package manager this repo already uses.
-3. Styles: follow "Set up Tailwind" on the Install page. Choose styles.css or theme.css by whether the app already defines shadcn tokens, and write the @source path relative to the CSS file.
-4. Smoke test: render {"version":"1.0","ui":{"type":"text","props":{"text":"Ripple is installed."}}} on a page. If it shows unstyled, fix the @source path before going on.
-5. Streaming: add a server endpoint that streams the model's text and a page that passes the response body to streamSpec and renders <Ripple streaming={store}>, as on the Stream a spec page. Reuse the model SDK this repo already has; if there is none, ask me which provider to use. Keep API keys in server-side env vars.
-6. System prompt: build it on the server from a manifest, as on the Prompting page. Start with the slim manifest (https://github.com/qbtrix/ripple-iui/releases/latest/download/manifest.slim.json) or trim @ripple-ui/svelte/manifest.json to the widgets we need. The model must reply with one JSON object: no prose, no code fences.
-7. Validation: when a stream ends, check the spec with specIssues and formatSpecIssues from @ripple-ui/svelte. Send any issues back to the model and retry at most twice.
-
-Rules: use only widgets, props and actions from the manifest. Never edit node_modules. Keep the change small and follow this repo's conventions.
-
-Done when the smoke test renders styled, one request to the endpoint streams a UI that grows on screen, and the project's type check and tests pass. Then list the files you changed and anything you could not verify.
+{{SETUP_PROMPT}}
 ```
 
 The rest of this page is the same setup by hand.
 
 ## Add the package
 
+The packages are not on the npm registry yet, so install them from the [GitHub release](https://github.com/qbtrix/ripple-iui/releases/tag/v0.8.0). `@ripple-ui/svelte` depends on `@ripple-ui/core`, and a package manager would look for that on the registry, so point it at the release tarball too.
+
+With npm, install both in one command:
+
 ```bash
-bun add @ripple-ui/svelte
+npm install https://github.com/qbtrix/ripple-iui/releases/download/v0.8.0/ripple-ui-core-0.6.0.tgz https://github.com/qbtrix/ripple-iui/releases/download/v0.8.0/ripple-ui-svelte-0.8.0.tgz
 ```
 
-npm, pnpm and yarn work the same way. The only peer dependency is Svelte 5 (`^5.0.0`).
+With Bun, add an override for core to `package.json` first:
+
+```json
+{
+  "overrides": {
+    "@ripple-ui/core": "https://github.com/qbtrix/ripple-iui/releases/download/v0.8.0/ripple-ui-core-0.6.0.tgz"
+  }
+}
+```
+
+Then add the Svelte package:
+
+```bash
+bun add https://github.com/qbtrix/ripple-iui/releases/download/v0.8.0/ripple-ui-svelte-0.8.0.tgz
+```
+
+The only peer dependency is Svelte 5 (`^5.0.0`).
 
 ## Set up Tailwind
 
