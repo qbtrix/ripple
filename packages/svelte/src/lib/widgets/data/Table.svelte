@@ -20,8 +20,11 @@
      with the first right-aligned column trailing it, unless that column holds
      bare numbers (a day count, a score), which mean nothing without their
      label and so stay in the meta line beside it; then the other columns as one
-     muted meta line, each value after its column label, each pair (with its
-     leading separator) wrapping as one unit, so no line ends in a dot. An empty first cell
+     muted meta line, each value after its column label, each pair wrapping as
+     one unit. Every later pair carries a leading dot in a 1em gutter that the
+     line's clipped negative margin hides at the start of each line, so no
+     line starts or ends with a dot. The wide table uses the card's type
+     scale: body cells, muted caption headers. An empty first cell
      reads a muted italic Untitled. Both are in the DOM; a container query
      shows one.
 
@@ -448,7 +451,7 @@
         </div>
     {/if}
 
-    <div class={cn("rounded-md", variantClasses, stack && "hidden @min-[480px]:block [&_td]:py-1.5 [&_th]:h-8 [&_td:first-child]:pl-0 [&_th:first-child]:pl-0 [&_td:last-child]:pr-0 [&_th:last-child]:pr-0")}>
+    <div class={cn("rounded-md", variantClasses, stack && "hidden @min-[480px]:block [&_td]:py-1.5 [&_td]:text-[length:var(--text-body)] [&_td]:leading-(--lh-body) [&_th]:h-8 [&_th]:text-[length:var(--text-caption-1)] [&_th]:leading-(--lh-caption) [&_th]:font-normal [&_th]:text-ripple-muted-foreground [&_td:first-child]:pl-0 [&_th:first-child]:pl-0 [&_td:last-child]:pr-0 [&_th:last-child]:pr-0")}>
         <Table.Root>
             <Table.Header>
                 <Table.Row>
@@ -606,8 +609,8 @@
                         {/if}
                     </div>
                     {#if meta.length}
-                        <p class="mt-0.5 text-callout [overflow-wrap:break-word]" data-slot="table-stack-meta">
-                            {#each meta as m, mi}{#if mi > 0}{' '}{/if}<span class="inline-block">{#if mi > 0}<span class="text-ripple-muted-foreground" aria-hidden="true">·&nbsp;</span>{/if}<span class="text-ripple-muted-foreground">{m.label}</span>&nbsp;{m.value}</span>{/each}
+                        <p class="mt-0.5 overflow-hidden text-callout" data-slot="table-stack-meta">
+                            <span class="-ml-[1em] flex flex-wrap">{#each meta as m, mi}{#if mi > 0}{' '}{/if}<span class="relative min-w-0 pl-[1em] [overflow-wrap:break-word]">{#if mi > 0}<span class="absolute left-[0.3em] text-ripple-muted-foreground" aria-hidden="true">{"· "}</span>{/if}<span class="text-ripple-muted-foreground">{m.label}</span>&nbsp;{m.value}</span>{/each}</span>
                         </p>
                     {/if}
                 </li>

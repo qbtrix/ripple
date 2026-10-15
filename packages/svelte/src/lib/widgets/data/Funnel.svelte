@@ -210,6 +210,9 @@
 		font-variant-numeric: tabular-nums;
 		overflow-wrap: break-word;
 	}
+	.fn-summary {
+		text-wrap: pretty;
+	}
 	.fn-empty {
 		display: flex;
 		align-items: center;

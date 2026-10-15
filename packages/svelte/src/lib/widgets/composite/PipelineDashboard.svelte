@@ -28,13 +28,14 @@
   activity times move into a right column, and the deals
   table replaces its stacked rows (Table layout="stack"). Lists cap at 5 reps,
   6 deals and 4 events behind a "Show N more" (activity: "Show N earlier")
-  button; nothing scrolls inside.
+  button (body ink, a chevron that turns when open); nothing scrolls inside.
   The root forwards `id` and data-ripple-node for the visual editor.
 -->
 <script lang="ts">
 	import { safeStyle, safeUrl } from '@ripple-ui/core';
 	import Check from '@lucide/svelte/icons/check';
 	import ArrowRight from '@lucide/svelte/icons/arrow-right';
+	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import { cn } from '$lib/utils.js';
 	import Icon, { iconExists } from '$lib/widgets/display/Icon.svelte';
 	import Avatar from '$lib/widgets/display/Avatar.svelte';
@@ -114,9 +115,10 @@
 			type="button"
 			aria-expanded={open[key]}
 			onclick={() => (open[key] = !open[key])}
-			class="-mx-1.5 -my-1 inline-flex min-h-8 items-center self-start rounded-md px-1.5 text-callout font-medium text-ripple-muted-foreground transition-colors hover:bg-ripple-track hover:text-ripple-surface-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ripple-ring active:bg-ripple-border"
+			class="group -mx-1.5 -my-1 inline-flex min-h-8 items-center gap-1 self-start rounded-md px-1.5 text-callout font-medium text-ripple-surface-foreground transition-colors hover:bg-ripple-track focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ripple-ring active:bg-ripple-border"
 		>
 			{open[key] ? 'Show fewer' : moreLabel(total, CAP[key], noun)}
+			<ChevronDown size={14} aria-hidden="true" class="shrink-0 text-ripple-muted-foreground transition-transform duration-200 ease-(--ripple-ease-out) group-aria-expanded:rotate-180 motion-reduce:transition-none" />
 		</button>
 	{/if}
 {/snippet}
@@ -196,7 +198,7 @@
 					<ol class="m-0 flex list-none flex-col p-0">
 						{#each cut(leaders, 'leaders') as l (l.key)}
 							<li aria-label={leaderText(l)} class="grid min-h-11 grid-cols-[1.5rem_1.75rem_minmax(0,1fr)_auto] items-center gap-x-3 py-1.5 @min-[480px]:min-h-9 @min-[480px]:py-1 {row}">
-								<span aria-hidden="true" class="justify-self-center tabular-nums" data-slot="rank">
+								<span aria-hidden="true" class="flex items-center justify-center self-center tabular-nums" data-slot="rank">
 									{#if l.rank <= 3}
 										<span class="inline-flex size-5 items-center justify-center rounded-full bg-ripple-track text-footnote font-semibold">{l.rank}</span>
 									{:else}
