@@ -163,6 +163,6 @@ describe('ticker and caps', () => {
 
 it('manifest example equals spec 01 (no em dashes)', () => {
 	const ex = JSON.stringify(pipelineDashboardEntry.example);
-	expect(ex).not.toContain('—');
+	expect(ex).not.toContain('\u2014');
 	expect(pipelineDashboardEntry.example!.props!.quota).toMatchObject({ period: 'Q2, 28 days remaining' });
 });

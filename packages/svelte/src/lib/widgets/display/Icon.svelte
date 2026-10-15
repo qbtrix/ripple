@@ -6,7 +6,7 @@
   import * as iconMap from '@lucide/svelte';
   import { asText } from '$lib/widgets/text-coerce';
 
-  // `name` is string-typed but a binding can deliver a non-string — coerce
+  // `name` is string-typed but a binding can deliver a non-string: coerce
   // before .split so the icon lookup never crashes the canvas.
   function pascalCase(slug: unknown): string {
     return asText(slug)
