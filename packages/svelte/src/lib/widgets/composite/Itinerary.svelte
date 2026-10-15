@@ -592,8 +592,8 @@
 														</button>
 													</div>
 													<div class={['min-w-0', k < d.stops.length - 1 ? 'pb-3' : 'pb-1']}>
-														<p class="py-1 text-pretty [overflow-wrap:anywhere]">
-															<span class={['text-body-emph', s.done && 'text-ripple-muted-foreground line-through']}>{s.title}</span>
+														<p class="py-1 text-body-emph text-pretty [overflow-wrap:anywhere]">
+															<span class={[s.done && 'text-ripple-muted-foreground line-through']}>{s.title}</span>
 															{#if isNext}<span class="ml-1.5 text-caption-1 font-semibold whitespace-nowrap text-ripple-accent-text">Next</span>{/if}
 														</p>
 														{#if segs.length}
