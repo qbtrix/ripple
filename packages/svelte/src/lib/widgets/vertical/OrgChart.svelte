@@ -14,9 +14,10 @@
   person's path from the root is the only accent: stubs, a bar overlay from the
   parent's centre to the child's, and the spine rows above it (`.oc-trail`).
 
-  List rows are 44px; managers end with a direct-report count and a chevron
-  (expansion is internal UI state, never written to the bound value). Indent
-  stops after LIST_INDENT_CAP levels and deeper rows say who they report to.
+  List rows are 44px; managers end with a direct-report count (the number
+  alone under 400px) and a chevron. Expansion is internal UI state, never
+  written to the bound value. Indent stops after LIST_INDENT_CAP levels and
+  deeper rows say who they report to.
 
   Selection only when wired: with `onchange` (NodeRenderer passes it for
   `bind` or `on_change`) each person with an id is a button with aria-pressed
@@ -35,7 +36,7 @@
 </script>
 
 <script lang="ts">
-  import { safeStyle } from '@ripple-ui/core';
+  import { safeStyle, safeUrl } from '@ripple-ui/core';
   import { prefersReducedMotion } from 'svelte/motion';
   import { quintOut } from 'svelte/easing';
   import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
@@ -131,7 +132,7 @@
 {#snippet avatar(p: Person, size: string)}
   <span class="contents" aria-hidden="true">
     <Avatar
-      src={p.avatar}
+      src={safeUrl(p.avatar, { kind: 'resource' })}
       alt={p.unnamed ? '' : p.name}
       class={cn(size, 'shrink-0 [&_[data-slot=avatar-fallback]]:text-[11px]')}
     />
@@ -214,7 +215,7 @@
         <div class="oc-pick" title={fullText(p)}>{@render body()}</div>
       {/if}
       {#if p.children.length}
-        <span class="oc-count text-callout tabular-nums" aria-hidden="true">{p.children.length} direct</span>
+        <span class="oc-count text-callout tabular-nums" aria-hidden="true">{p.children.length}<span class="oc-word">{' direct'}</span></span>
         <button
           type="button"
           class="oc-disc"
@@ -461,6 +462,12 @@
     flex: none;
     padding-left: 4px;
     color: var(--ripple-muted-foreground);
+  }
+  /* Under 400px the count is the number alone: deep rows keep their names. */
+  @container (max-width: 399px) {
+    .oc-word {
+      display: none;
+    }
   }
   .oc-disc {
     display: grid;
