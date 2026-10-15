@@ -205,9 +205,11 @@
 		}
 	}
 
-	// Tip chips: equal cells, one row up to 4 (never wider than a quarter when wide);
-	// 5 or 6 take 3 columns when narrow, one row when wide.
-	const CHIP_COLS = ['grid-cols-1', 'grid-cols-1 @min-[480px]:grid-cols-4', 'grid-cols-2 @min-[480px]:grid-cols-4', 'grid-cols-3 @min-[480px]:grid-cols-4', 'grid-cols-4', 'grid-cols-3 @min-[480px]:grid-cols-5', 'grid-cols-3 @min-[480px]:grid-cols-6'];
+	// Tip chips: equal cells, one row up to 4; 5 or 6 take 3 columns when narrow, one row when wide.
+	const CHIP_COLS = ['grid-cols-1', 'grid-cols-1', 'grid-cols-2', 'grid-cols-3', 'grid-cols-4', 'grid-cols-3 @min-[480px]:grid-cols-5', 'grid-cols-3 @min-[480px]:grid-cols-6'];
+	// Up to 4 chips, the custom field joins their row at wide as a fifth cell; 5 or 6
+	// chips leave no room, so it stays in the label row and the bill label matches its height.
+	const inRow = $derived(options.length <= 4);
 
 	const focusRing = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ripple-ring';
 	const label = 'text-footnote text-ripple-muted-foreground';
@@ -230,7 +232,7 @@
 
 			<div class="grid gap-3 @min-[480px]:grid-cols-[minmax(0,10rem)_minmax(0,1fr)] @min-[480px]:gap-5" data-slot="inputs">
 				<div class="flex items-center justify-between gap-3 @min-[480px]:flex-col @min-[480px]:items-stretch @min-[480px]:justify-start @min-[480px]:gap-1">
-					<label for="{uid}-subtotal" class={[label, 'flex @min-[480px]:min-h-8 @min-[480px]:items-center']}>Bill before tip</label>
+					<label for="{uid}-subtotal" class={[label, 'flex', !inRow && '@min-[480px]:min-h-8 @min-[480px]:items-center']}>Bill before tip</label>
 					<div class={[box, 'w-36 @min-[480px]:h-11 @min-[480px]:w-full @min-[480px]:text-headline']}>
 						<span class="text-ripple-muted-foreground" aria-hidden="true">{symbol}</span>
 						<input
@@ -246,27 +248,11 @@
 						/>
 					</div>
 				</div>
-				<div class="flex min-w-0 flex-col gap-1">
-					<div class="flex min-h-8 items-center justify-between gap-3">
-						<span id="{uid}-tip" class={label}>Tip</span>
-						<div class={[box, 'w-20']}>
-							<input
-								id="{uid}-tip-custom"
-								type="number"
-								inputmode="decimal"
-								min="0"
-								max="100"
-								step="0.5"
-								value={fieldText('tip', tipText(shown.tip_percent))}
-								aria-label="Custom tip percent"
-								class={[field, 'text-right']}
-								oninput={(e) => onDraft('tip', e)}
-								onchange={(e) => onCommit('tip', e)}
-							/>
-							<span class="text-ripple-muted-foreground" aria-hidden="true">%</span>
-						</div>
-					</div>
-					<div class={['grid gap-1.5', CHIP_COLS[options.length]]} role="group" aria-labelledby="{uid}-tip">
+				<!-- Narrow: label left, custom field right of it, chips below. Wide with up to 4
+				     chips: the chips wrapper dissolves (contents) so chips and the custom field share one row. -->
+				<div class={['grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1', inRow && '@min-[480px]:grid-cols-5 @min-[480px]:gap-x-1.5']} role="group" aria-labelledby="{uid}-tip">
+					<span id="{uid}-tip" class={[label, inRow && '@min-[480px]:col-span-full']}>Tip</span>
+					<div class={['col-span-2 grid gap-1.5', CHIP_COLS[options.length], inRow && '@min-[480px]:contents']}>
 						{#each options as t (t)}
 							{@const on = shown.tip_percent === t}
 							<button
@@ -284,6 +270,22 @@
 								></button
 							>
 						{/each}
+					</div>
+					<div class={[box, 'col-start-2 row-start-1 w-20', inRow && '@min-[480px]:col-start-auto @min-[480px]:row-start-auto @min-[480px]:h-11 @min-[480px]:w-auto']}>
+						<input
+							id="{uid}-tip-custom"
+							type="number"
+							inputmode="decimal"
+							min="0"
+							max="100"
+							step="0.5"
+							value={fieldText('tip', tipText(shown.tip_percent))}
+							aria-label="Custom tip percent"
+							class={[field, 'text-right']}
+							oninput={(e) => onDraft('tip', e)}
+							onchange={(e) => onCommit('tip', e)}
+						/>
+						<span class="text-ripple-muted-foreground" aria-hidden="true">%</span>
 					</div>
 				</div>
 			</div>
@@ -311,16 +313,16 @@
 								title={s.name}
 								maxlength="40"
 								class={[
-									'h-7 max-w-full min-w-16 truncate rounded-sm [field-sizing:content] border-b border-ripple-control-border bg-transparent text-body-emph outline-none hover:border-ripple-surface-foreground',
+									'h-7 max-w-full min-w-[2ch] truncate rounded-none [field-sizing:content] focus-visible:rounded-sm border-b border-ripple-control-border bg-transparent text-body-emph outline-none hover:border-ripple-surface-foreground',
 									focusRing
 								]}
 								onchange={(e) => rename(s.id, e)}
 							/>
 						</div>
 
-						<div class="col-start-1 row-start-2 flex min-w-0 items-center gap-2 @min-[480px]:col-start-2 @min-[480px]:row-span-2 @min-[480px]:row-start-1">
+						<div class="col-start-1 row-start-2 flex min-w-0 items-center gap-2 @min-[480px]:col-start-2 @min-[480px]:justify-end @min-[480px]:row-span-2 @min-[480px]:row-start-1">
 							{#if !quiet}
-								<label for="{uid}-extras-{i}" class={[label, 'max-w-24 truncate']} title={extrasWord}>{extrasWord}</label>
+								<label for="{uid}-extras-{i}" class={[label, 'max-w-24 truncate', i > 0 && '@min-[480px]:hidden']} title={extrasWord}>{extrasWord}</label>
 							{/if}
 							<div
 								class={[
