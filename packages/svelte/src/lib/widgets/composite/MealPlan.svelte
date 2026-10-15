@@ -6,17 +6,17 @@
   `goal` (value / goal, the goal word), and the week as day rows.
 
   Layout (one DOM, CSS-only): under 540px container width, and at any width
-  with more than four slots, each day is a disclosure row (label, a pill only
-  when the day misses, totals, then a full-width meter against the goal so the
-  goal tick sits at one x on every row, then the meal names in slot order,
-  clamped to three lines); the first day starts open, one open at a time, and a
-  one-day plan is simply open. At 540px and up with four slots or fewer the
-  same rows are a days-by-slots grid with every day shown: the day cell is the
-  label (two lines at most), a pill only on a miss, grams and kcal (labelled once in the header
-  row), then the meter. Each meal box shrink-wraps its name, so a one-line name
-  carries its swap control right beside it; a wrapping name fills the cell with
-  the control pinned top-right, a float spacer (icon plus 8px) keeping it clear
-  of the first line, and a 16px column gap keeping it off the next column.
+  with more than four slots, each day is a disclosure row (label wrapping to
+  two lines, a pill only when the day misses, totals, then a full-width meter
+  against the goal so the goal tick sits at one x on every row, then the meal
+  names in slot order, clamped to three lines); the first day starts open, one
+  open at a time, and a one-day plan is simply open. At 540px and up with four
+  slots or fewer the same rows are a days-by-slots grid with every day shown:
+  the day cell is the label with the miss pill beside it (wrapping under a
+  long label), grams and kcal (labelled once in the header row), then the
+  meter. Each meal is a name track plus the swap box, so the box pins to the
+  cell's right edge in every row; grid names clamp at three lines (four
+  columns leave about 110px for a name).
   Every meal row ends in the same swap control (a native select, disabled with
   a title when the slot has no alternative). Tapping a meal opens its Recipe
   inline under the day, scaled to `people`.
@@ -32,8 +32,8 @@
     shopping amounts in jsdom, where Tailwind does not apply.
   - Everything derives from props (rules in recipe.ts). Nutrition is per
     serving, so day totals are per person; quantities scale by people / serves.
-  - Status colour appears only in pills; meters, ticks and the switch use the
-    one accent.
+  - Status colour appears only in pills; meters, ticks and the open-meal ring
+    use the one accent. The switch keeps the house Segmented look.
 -->
 <script lang="ts">
 	import { safeStyle } from '@ripple-ui/core';
@@ -209,9 +209,7 @@
 
 	const g0 = (v: number | undefined) => (v === undefined ? undefined : Math.round(v));
 	const people$ = (n: number) => (n === 1 ? '1 person' : `${n} people`);
-	const totals = (d: (typeof view)[number]) =>
-		[d.protein !== undefined && `${num(g0(d.protein))} g protein`, d.kcal !== undefined && `${num(g0(d.kcal))} kcal`].filter(Boolean) as string[];
-	// Collapsed summary: the separator stays on the name before it (never starts a
+		// Collapsed summary: the separator stays on the name before it (never starts a
 	// line) and a hyphenated name does not split at its hyphen.
 	const summary = (names: string[]) => names.map((n) => n.replaceAll('-', '\u2011')).join('\u00a0· ');
 	const focusRing = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ripple-ring';
@@ -226,6 +224,13 @@
 			<span class="absolute -inset-y-0.5 w-px bg-ripple-muted-foreground" style:left="{100 / SCALE}%"></span>
 		</span>
 	{/if}
+{/snippet}
+
+<!-- Day grams and kcal. The narrow header says "protein" only from 540px (room); the grid labels it once in its header row. -->
+{#snippet figures(d: (typeof view)[number], cls: string, word: boolean)}
+	<span class={[cls, 'text-footnote text-ripple-muted-foreground tabular-nums']} data-slot="day-totals"
+		>{#if d.protein !== undefined}{num(g0(d.protein))} g<span class={['sr-only', word && '@min-[540px]:not-sr-only']}>{' protein'}</span>{/if}{#if d.protein !== undefined && d.kcal !== undefined}{' · '}{/if}{#if d.kcal !== undefined}{num(g0(d.kcal))} kcal{/if}</span
+	>
 {/snippet}
 
 {#snippet miss(d: (typeof view)[number])}
@@ -280,7 +285,7 @@
 			{#if view.length}
 				<div style:--slots={slots.length || 1} data-slot="week-grid">
 					{#if grid}
-						<div class="hidden gap-x-4 border-b border-ripple-border pb-1.5 @min-[540px]:grid @min-[540px]:grid-cols-[6rem_repeat(var(--slots),minmax(0,1fr))]" aria-hidden="true">
+						<div class="hidden gap-x-3 border-b border-ripple-border pb-1.5 @min-[540px]:grid @min-[540px]:grid-cols-[6.5rem_repeat(var(--slots),minmax(0,1fr))]" aria-hidden="true">
 							<span class="truncate px-0.5 text-footnote text-ripple-muted-foreground">{[view.some((d) => d.protein !== undefined) && 'Protein', view.some((d) => d.kcal !== undefined) && 'kcal'].filter(Boolean).join(' · ')}</span>
 							{#each slots as s (s)}
 								{@const SlotIcon = kindIcon(MEAL_ICONS, s)}
@@ -294,9 +299,8 @@
 						{#each view as d, di (d.key)}
 							{@const open = single || openDay === d.di}
 							{@const cells = slots.map((s) => d.meals.filter((m) => m.slot === s))}
-							{@const sums = totals(d)}
-							<li
-								class={['flex flex-col py-2.5', grid && '@min-[540px]:grid @min-[540px]:grid-cols-[6rem_repeat(var(--slots),minmax(0,1fr))] @min-[540px]:items-start @min-[540px]:gap-x-4 @min-[540px]:py-2']}
+														<li
+								class={['flex flex-col py-2.5', grid && '@min-[540px]:grid @min-[540px]:grid-cols-[6.5rem_repeat(var(--slots),minmax(0,1fr))] @min-[540px]:items-start @min-[540px]:gap-x-3 @min-[540px]:py-2']}
 								in:rise={{ index: di }}
 								data-day={d.label}
 							>
@@ -309,9 +313,9 @@
 									<span class="flex min-w-0 flex-1 flex-col gap-1">
 										<!-- Pill sits on the header line so every row's meter runs the full width with the goal tick at one x. -->
 										<span class="flex min-w-0 items-center gap-2">
-											<span class="min-w-0 flex-1 truncate text-callout font-medium" title={d.label}>{d.label}</span>
+											<span class="line-clamp-2 min-w-0 flex-1 text-callout font-medium break-words" title={d.label}>{d.label}</span>
 											{@render miss(d)}
-											{#if sums.length}<span class="shrink-0 text-footnote text-ripple-muted-foreground tabular-nums" data-slot="day-totals">{sums.join(' · ')}</span>{/if}
+											{#if d.protein !== undefined || d.kcal !== undefined}{@render figures(d, 'shrink-0', true)}{/if}
 										</span>
 										{#if d.ratio !== undefined}<span class="flex">{@render meter(d)}</span>{/if}
 										{#if !d.meals.length}
@@ -332,12 +336,12 @@
 								</svelte:element>
 								{#if grid}
 									<div class="hidden min-w-0 flex-col gap-1 py-1 pr-1 @min-[540px]:flex">
-										<span class="line-clamp-2 text-callout break-words font-medium" title={d.label}>{d.label}</span>
-										{#if d.check && d.check.status !== 'good'}<span class="flex">{@render miss(d)}</span>{/if}
+										<span class="flex flex-wrap items-center gap-x-1 gap-y-1">
+											<span class="line-clamp-2 min-w-0 text-callout break-words font-medium" title={d.label}>{d.label}</span>
+											{@render miss(d)}
+										</span>
 										{#if d.protein !== undefined || d.kcal !== undefined}
-											<span class="truncate text-footnote text-ripple-muted-foreground tabular-nums"
-												>{#if d.protein !== undefined}{num(g0(d.protein))} g<span class="sr-only"> protein</span>{/if}{#if d.protein !== undefined && d.kcal !== undefined}{' · '}{/if}{#if d.kcal !== undefined}{num(g0(d.kcal))} kcal{/if}</span
-											>
+											{@render figures(d, 'truncate', false)}
 										{/if}
 										{#if d.ratio !== undefined}<span class="flex">{@render meter(d)}</span>{/if}
 									</div>
@@ -357,7 +361,7 @@
 												<div
 													class={[
 														'flex min-w-0 items-center gap-1 rounded-md transition-colors @min-[540px]:gap-0.5 duration-150 motion-reduce:transition-none',
-														grid && '@min-[540px]:relative @min-[540px]:block @min-[540px]:w-fit @min-[540px]:max-w-full',
+														grid && '@min-[540px]:items-start',
 														isOpen ? 'bg-ripple-accent/8 ring-1 ring-ripple-accent' : m.recipe && 'hover:bg-ripple-muted'
 													]}
 													data-meal={m.recipe?.ref}
@@ -373,7 +377,7 @@
 														>
 															{@render slotCol(SlotIcon, m.slot)}
 															<span class="flex min-w-0 flex-1 flex-col">
-																<span class={['line-clamp-2 text-callout font-medium break-words', grid && '@min-[540px]:line-clamp-3']} title={m.name}>{#if grid}<span class="hidden h-3 w-8 @min-[540px]:float-right @min-[540px]:block" aria-hidden="true"></span>{/if}{m.name}</span>
+																<span class={['line-clamp-2 text-callout font-medium break-words', grid && '@min-[540px]:line-clamp-3']} title={m.name}>{m.name}</span>
 																{#if m.recipe.kcal !== undefined || m.recipe.protein !== undefined}
 																	<span class={['text-footnote text-ripple-muted-foreground tabular-nums', grid && '@min-[540px]:hidden']}>
 																		{[m.recipe.protein !== undefined && `${num(m.recipe.protein)} g protein`, m.recipe.kcal !== undefined && `${num(m.recipe.kcal)} kcal`].filter(Boolean).join(' · ')}
@@ -385,15 +389,14 @@
 														<span class={['flex min-w-0 flex-1 items-start gap-2 px-1.5 py-1.5', grid && '@min-[540px]:pr-0 @min-[540px]:pl-0.5']}>
 															{@render slotCol(SlotIcon, m.slot)}
 															<span class="flex min-w-0 flex-1 flex-col">
-																<span class={['line-clamp-2 text-callout break-words text-ripple-muted-foreground', grid && '@min-[540px]:line-clamp-3']} title={m.name}>{#if grid}<span class="hidden h-3 w-8 @min-[540px]:float-right @min-[540px]:block" aria-hidden="true"></span>{/if}{m.name}</span>
+																<span class={['line-clamp-2 text-callout break-words text-ripple-muted-foreground', grid && '@min-[540px]:line-clamp-3']} title={m.name}>{m.name}</span>
 																<span class="text-footnote text-ripple-muted-foreground">Not in recipes</span>
 															</span>
 														</span>
 													{/if}
 													<label
 														class={[
-															grid && '@min-[540px]:absolute @min-[540px]:top-0.5 @min-[540px]:right-0 @min-[540px]:size-6',
-															'relative grid size-7 shrink-0 place-items-center rounded-md text-ripple-muted-foreground transition-colors focus-within:outline-2 focus-within:outline-ripple-ring motion-reduce:transition-none',
+																							'relative grid size-7 shrink-0 place-items-center rounded-md text-ripple-muted-foreground transition-colors focus-within:outline-2 focus-within:outline-ripple-ring motion-reduce:transition-none',
 															m.opts.length > 1 ? 'hover:bg-ripple-muted hover:text-ripple-surface-foreground' : 'opacity-40'
 														]}
 														title={m.opts.length > 1 ? 'Swap this meal' : m.recipe ? `No other ${m.slot} recipes` : 'Not in recipes'}
