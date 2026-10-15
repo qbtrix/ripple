@@ -2,7 +2,7 @@
 // registry and aliases, condition words to icon kinds (unknown is cloudy),
 // messy model fields (spec 04 of the polish brief), the colour ramp, hourly
 // thinning, the unit toggle converting every number without moving a bar,
-// picking a day for its details, and streamed parity with field-less days.
+// picking a day for its details, the minus sign, and streamed parity with field-less days.
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
 import { expectStreamParity } from '$lib/streaming/__fixtures__/stream-parity.js';
@@ -100,10 +100,10 @@ describe('weather-forecast: hourly buckets', () => {
 		expect(bucketHours(hrs.slice(0, 5), 6)).toEqual(hrs.slice(0, 5));
 	});
 
-	it('folds hours into at most `fit` buckets, keeping the worst sky and the wettest chance', () => {
+	it('folds hours into at most `fit` buckets, keeping the first hour, the worst sky and the wettest chance', () => {
 		const six = bucketHours(hrs, 6);
 		expect(six).toHaveLength(6);
-		expect(six[1]).toEqual({ time: '13:00', temp: 80, kind: 'thunder', rain: 70, span: '08:00 to 15:00' });
+		expect(six[1]).toEqual({ time: '08:00', temp: 83, kind: 'thunder', rain: 70, span: '08:00 to 15:00' });
 		expect(six[0]).toMatchObject({ time: '00:00', span: '00:00 to 07:00' });
 		expect(six[0].rain).toBeUndefined();
 		expect(bucketHours(hrs, 12)).toHaveLength(12);
@@ -127,6 +127,11 @@ describe('weather-forecast: behaviour', () => {
 		expect(screen.getByRole('button', { name: /Tue: Light showers, high 64°, low 57°/ })).toBeTruthy();
 		await fireEvent.click(screen.getByRole('button', { name: '°C' }));
 		expect(container.querySelector('[data-slot="now-temp"]')?.textContent).toBe('20°');
+	});
+
+	it('writes below-zero temperatures with a minus sign, not a hyphen', () => {
+		const { container } = render(WeatherForecast, { props: { now: { temp: -27.4, condition: 'snow' } } });
+		expect(container.querySelector('[data-slot="now-temp"]')?.textContent).toBe('\u221227°');
 	});
 
 	it('keeps bar positions and colours when the unit toggles, keeps the now dot on the track, and dots a flat day', async () => {

@@ -16,13 +16,14 @@
     then ellipsized with the full text in a `title`.
   - Nothing scrolls sideways: the hourly band fits the card width by folding
     hours into buckets (bucketHours), never by scrolling. A column is
-    labelled at its bucket's worst hour (full span in its `title`), and the
+    labelled at its bucket's first hour (full span in its `title`), and the
     first column past each midnight carries the weekday above its time.
   - Bar position and colour come from the source unit, so toggling °C/°F
     moves nothing. Colour means temperature: each bar end is its own
     temperature's spot on one cool-to-warm ramp mixed in oklch from the info
-    and warning tokens in thirds (blue, teal, yellow, amber), with a little
-    ink mixed in so the fill stands off the track in both themes.
+    and warning tokens in thirds (blue, teal, yellow, amber); only the warm
+    stop is darkened (lightness, not chroma) so mild weeks stay clean.
+  - Negative temperatures use the minus sign (U+2212), not a hyphen.
   - Days are rows below 560px, for 1-2 days and for 8-14 days; 3-7 days at
     560px and up stand side by side with vertical bars. Same markup,
     container queries only. Row 1 always reads "Today". The low and high
@@ -66,7 +67,11 @@
 	const src = $derived(toUnit(unit));
 	let picked = $state<Unit | null>(null);
 	const shown = $derived(picked ?? src);
-	const t = (v: number | undefined) => (v === undefined ? '–' : `${convert(v, src, shown)}°`);
+	const t = (v: number | undefined) => {
+		if (v === undefined) return '–';
+		const n = convert(v, src, shown);
+		return `${n < 0 ? '\u2212' : ''}${Math.abs(n)}°`;
+	};
 
 	const where = $derived(plain(place).trim());
 	const noteText = $derived(plain(note).trim());
@@ -220,6 +225,8 @@
 		   so the hue runs the short way (blue, teal, yellow) at full chroma. */
 		--wf-cool: color-mix(in oklch, var(--ripple-info) 70%, var(--ripple-warning));
 		--wf-mild: color-mix(in oklch, var(--ripple-info) 18%, var(--ripple-warning));
+		/* The warm end, a touch darker at full chroma, so it never washes out. */
+		--wf-warm: oklch(from var(--ripple-warning) calc(l - 0.06) c h);
 	}
 	.wf-temp {
 		font-size: 3.5rem;
@@ -288,10 +295,10 @@
 		background: var(--ripple-track);
 	}
 	/* --p is 0..100% along the ramp; each third mixes one pair of stops in oklch
-	   (blue, teal, yellow, amber), then 14% ink so the fill clears the track. */
+	   (blue, teal, yellow, amber). */
 	.wf-fill {
-		--c0: color-mix(in oklab, var(--ripple-surface-foreground) 14%, color-mix(in oklch, var(--ripple-warning) clamp(0%, var(--p0) * 3 - 200%, 100%), color-mix(in oklch, var(--wf-mild) clamp(0%, var(--p0) * 3 - 100%, 100%), color-mix(in oklch, var(--wf-cool) clamp(0%, var(--p0) * 3, 100%), var(--ripple-info)))));
-		--c1: color-mix(in oklab, var(--ripple-surface-foreground) 14%, color-mix(in oklch, var(--ripple-warning) clamp(0%, var(--p1) * 3 - 200%, 100%), color-mix(in oklch, var(--wf-mild) clamp(0%, var(--p1) * 3 - 100%, 100%), color-mix(in oklch, var(--wf-cool) clamp(0%, var(--p1) * 3, 100%), var(--ripple-info)))));
+		--c0: color-mix(in oklch, var(--wf-warm) clamp(0%, var(--p0) * 3 - 200%, 100%), color-mix(in oklch, var(--wf-mild) clamp(0%, var(--p0) * 3 - 100%, 100%), color-mix(in oklch, var(--wf-cool) clamp(0%, var(--p0) * 3, 100%), var(--ripple-info))));
+		--c1: color-mix(in oklch, var(--wf-warm) clamp(0%, var(--p1) * 3 - 200%, 100%), color-mix(in oklch, var(--wf-mild) clamp(0%, var(--p1) * 3 - 100%, 100%), color-mix(in oklch, var(--wf-cool) clamp(0%, var(--p1) * 3, 100%), var(--ripple-info))));
 		position: absolute;
 		inset-block: 0;
 		left: var(--lo, 0%);

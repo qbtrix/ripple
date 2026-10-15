@@ -7,8 +7,9 @@
 // (stretched to hold the current temperature) places each range bar, `ramp`
 // maps a temperature to its spot on the cool-to-warm bar colour, and
 // `bucketHours` thins a long hourly list to the columns that fit, keeping the
-// worst sky and the wettest chance of each bucket, labelled at the worst hour
-// and cued with the weekday when the hours roll past midnight.
+// worst sky and the wettest chance of each bucket, labelled at its first hour
+// so the axis keeps an even cadence, and cued with the weekday when the hours
+// roll past midnight.
 //
 // Invariants:
 // - Every reader survives `{}`, missing fields and junk; lists are capped
@@ -223,10 +224,10 @@ function clock(s: string): number | undefined {
 
 /**
  * At most `fit` columns: every k-th hour with the skipped hours folded in.
- * A bucket shows its most severe hour (the first one when none is worse),
- * with that hour's time and temperature, and the highest rain chance, so a
- * lone storm hour is never thinned away or shown at the wrong time; `span`
- * holds the bucket's full range. When clock times run backwards the hours
+ * A bucket reads as its first hour (time and temperature, so the axis steps
+ * evenly) with the most severe sky and the highest rain chance in it, so a
+ * lone storm hour is never thinned away; `span` holds the bucket's full
+ * range. When clock times run backwards the hours
  * have passed midnight: the first column of each new day gets a `cue`, its
  * weekday from `dayNames` (row n of the days), or "Day n".
  */
@@ -248,9 +249,9 @@ export function bucketHours(hours: Hour[], fit: number, dayNames: string[] = [])
 		const b = hours.slice(i, i + k);
 		const w = b.reduce((w, h, j) => (SEVERITY.indexOf(h.kind) < SEVERITY.indexOf(b[w].kind) ? j : w), 0);
 		const rains = b.map((h) => h.rain).filter((r): r is number => r !== undefined);
-		const d = dayOf[i + w];
+		const d = dayOf[i];
 		const name = dayNames[d];
-		const col: Hour = { time: b[w].time, temp: b[w].temp, kind: b[w].kind, rain: rains.length ? Math.max(...rains) : undefined };
+		const col: Hour = { time: b[0].time, temp: b[0].temp, kind: b[w].kind, rain: rains.length ? Math.max(...rains) : undefined };
 		if (b.length > 1) col.span = `${b[0].time || '–'} to ${b[b.length - 1].time || '–'}`;
 		if (d > shownDay) col.cue = name && /^[A-Z][a-z]{2}$/.test(name) ? name : `Day ${d + 1}`;
 		shownDay = d;
