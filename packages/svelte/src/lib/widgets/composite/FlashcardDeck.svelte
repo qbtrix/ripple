@@ -274,14 +274,16 @@
 	const neutralBtn = [btnBase, 'border border-ripple-border bg-ripple-surface hover:bg-ripple-muted', focusRing];
 	const primaryBtn = [btnBase, 'bg-ripple-accent text-ripple-accent-foreground hover:opacity-90', focusRing];
 	const kbd = 'keyhint ml-1 rounded px-1 text-caption-1 font-normal tabular-nums opacity-70';
+	/* On the accent fill a faded hint drops under 4.5:1, so it sits on a darker accent chip at full ink. */
+	const kbdOnAccent = 'keyhint ml-1 rounded bg-[color-mix(in_oklab,var(--ripple-accent)_72%,black)] px-1.5 text-caption-1 font-normal tabular-nums';
 	const textWrap = 'whitespace-pre-line [overflow-wrap:anywhere]';
 </script>
 
 <div {id} bind:this={root} class={['@container text-ripple-surface-foreground', className]} style={rootStyle} data-widget="flashcard-deck">
-	<div class="flex flex-col gap-3 @min-[480px]:gap-4">
+	<div class="mx-auto flex w-full max-w-[560px] flex-col gap-3 @min-[480px]:gap-4">
 		{#if heading || sub || practise}
 			<header class="flex min-w-0 flex-col gap-0.5">
-				{#if heading}<h2 class="text-title-3 font-semibold text-pretty [overflow-wrap:anywhere]">{heading}</h2>{/if}
+				{#if heading}<h2 class="line-clamp-2 text-title-3 font-semibold text-pretty [overflow-wrap:anywhere]" title={heading}>{heading}</h2>{/if}
 				{#if sub}<p class="text-callout text-ripple-muted-foreground text-pretty">{sub}</p>{/if}
 				{#if practise}
 					<p class="text-callout text-ripple-muted-foreground tabular-nums" data-slot="meta">Practising {order.length} missed</p>
@@ -358,7 +360,7 @@
 				</div>
 			</section>
 		{:else if card}
-			<div class="mx-auto flex w-full flex-col gap-3 @min-[480px]:max-w-[560px] @min-[480px]:gap-4">
+			<div class="flex flex-col gap-3 @min-[480px]:gap-4">
 				<div class="flex h-7 items-center gap-3">
 					<ol class="rail flex min-w-0 flex-1 flex-nowrap" style:--n={order.length} aria-label="Progress" data-slot="dots">
 						{#each order as _, k (k)}
@@ -370,9 +372,7 @@
 										? 'bg-ripple-success'
 										: r === 'missed'
 											? 'bg-ripple-error'
-											: k === pos
-												? 'bg-ripple-accent'
-												: 'bg-ripple-track'
+											: k !== pos && 'bg-ripple-track'
 								]}
 								data-mark={r ?? (k === pos ? 'now' : 'todo')}
 								aria-current={k === pos ? 'step' : undefined}
@@ -422,8 +422,8 @@
 								>
 									{#if card.category}
 										<span
-											class="max-w-full text-caption-1 font-medium tracking-[0.04em] text-balance text-ripple-muted-foreground uppercase [overflow-wrap:anywhere]"
-											>{card.category}</span
+											class="block max-w-full truncate text-caption-1 font-medium tracking-[0.04em] text-ripple-muted-foreground uppercase"
+											title={card.category}>{card.category}</span
 										>
 									{/if}
 									<span class={[tier(card.front), textWrap]} data-slot="front">{card.front}</span>
@@ -455,7 +455,7 @@
 				<div class="grid h-11 grid-cols-2 gap-2">
 					{#if !flipped}
 						<button type="button" bind:this={showBtn} class={[primaryBtn, 'col-span-2']} onclick={() => reveal()}>
-							Show answer<kbd class={kbd} aria-hidden="true">Space</kbd>
+							Show answer<kbd class={kbdOnAccent} aria-hidden="true">Space</kbd>
 						</button>
 					{:else}
 						<button type="button" class={neutralBtn} onclick={() => mark('missed')}>
@@ -478,6 +478,10 @@
 	.rail {
 		gap: clamp(0px, calc((100% - var(--n) * 6px) / max(var(--n) - 1, 1)), 2px);
 	}
+	/* The current segment fills only its leading part, so a one-card rail never reads as done. */
+	.rail [data-mark='now'] {
+		background: linear-gradient(to right, var(--ripple-accent) max(6px, 40%), var(--ripple-track) 0);
+	}
 	.keyhint {
 		display: none;
 		font-family: inherit;
@@ -491,10 +495,13 @@
 	}
 
 	/* Sheets peek straight down below the card while more cards remain; never hit-tested. */
-	/* Card fill: halfway to --ripple-raised. The full token is a chip fill; as a
-	   280px surface in dark it is a mid grey that muted text cannot read on. */
+	/* Card fill (faces and sheets): paper, lighter than the host card in both themes.
+	   --ripple-raised is only a chip lift: hosts paint the chat card lighter than
+	   --ripple-surface, so it reads recessed in light, and at full strength it is a
+	   mid grey in dark. Keyed off the ink, so a transparent host surface still works:
+	   white for dark ink, a step above a dark card for light ink. */
 	.deck-stack {
-		--deck-face: color-mix(in oklab, var(--ripple-raised) 45%, var(--ripple-surface));
+		--deck-face: oklch(from var(--ripple-surface-foreground) min(1, calc(1.2 - l * 0.9)) calc(c * 0.5) h);
 		position: relative;
 		isolation: isolate;
 		padding-bottom: 12px;
