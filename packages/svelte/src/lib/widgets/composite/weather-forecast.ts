@@ -148,11 +148,21 @@ export function readHours(v: unknown): Hour[] {
 		});
 }
 
-/** The week's lowest low and highest high (and the current temperature), for the range bars. */
+/**
+ * The week's lowest low and highest high, for the range bars. A current
+ * temperature at or past either end stretches the scale a little beyond it
+ * (at least 1 degree), so the now dot sits on the track, never off its end.
+ */
 export function span(days: Day[], now?: number): [number, number] | undefined {
-	const ts = [now, ...days.flatMap((d) => [d.low, d.high])].filter((t): t is number => t !== undefined);
-	if (!ts.length) return undefined;
-	return [Math.min(...ts), Math.max(...ts)];
+	const ts = days.flatMap((d) => [d.low, d.high]).filter((t): t is number => t !== undefined);
+	if (!ts.length) return now === undefined ? undefined : [now, now];
+	let lo = Math.min(...ts);
+	let hi = Math.max(...ts);
+	if (now === undefined) return [lo, hi];
+	const pad = Math.max(1, (Math.max(hi, now) - Math.min(lo, now)) * 0.04);
+	if (now <= lo) lo = now - pad;
+	if (now >= hi) hi = now + pad;
+	return [lo, hi];
 }
 
 /** Where `t` sits in the span, 0 to 100. */
@@ -162,9 +172,10 @@ export function at(t: number, [lo, hi]: [number, number]): number {
 
 // The bar colour ramp: COLD_C and below is the cool end (the info hue), WARM_C
 // and above the warm end (the warning hue), so the same temperature is the
-// same colour on every row, in both units.
-export const COLD_C = -5;
-export const WARM_C = 26;
+// same colour on every row, in both units. The CSS splits it in thirds,
+// blue to teal to a neutral mild to amber, so no stretch of it reads green.
+export const COLD_C = 0;
+export const WARM_C = 25;
 
 /** Where a temperature in °C sits on the colour ramp, 0 (cool) to 100 (warm). */
 export function ramp(tempC: number): number {
@@ -195,12 +206,13 @@ export function bucketHours(hours: Hour[], fit: number): Hour[] {
 	return out;
 }
 
-/** One line on the days ahead: which days are wet, or that it stays dry. */
+/** One line on the days ahead: which days are wet, or that it stays dry. Day 1 reads "today", as its row does. */
 export function outlook(days: Day[]): string {
 	if (!days.length) return '';
 	const wet = days.filter((d) => (d.rain ?? 0) >= 50 || ['rain', 'heavy-rain', 'thunder', 'snow'].includes(d.kind));
 	if (!wet.length) return days.length > 1 ? `Dry for the next ${days.length} days.` : 'Dry.';
-	const names = wet.slice(0, 3).map((d) => d.day);
-	const more = wet.length > 3 ? ` and ${wet.length - 3} more` : '';
-	return `${wet.some((d) => d.kind === 'snow') ? 'Snow or rain' : 'Rain'} likely on ${names.join(', ')}${more}.`;
+	const names = wet.slice(0, 3).map((d) => (d === days[0] ? 'today' : d.day));
+	if (wet.length > 3) names.push(`${wet.length - 3} more`);
+	const on = names[0] === 'today' ? '' : 'on ';
+	return `${wet.some((d) => d.kind === 'snow') ? 'Snow or rain' : 'Rain'} likely ${on}${new Intl.ListFormat('en-GB').format(names)}.`;
 }

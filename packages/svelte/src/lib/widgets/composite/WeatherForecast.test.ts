@@ -44,6 +44,8 @@ describe('weather-forecast: data', () => {
 		expect(at(12, [12, 23])).toBe(0);
 		expect(at(23, [12, 23])).toBe(100);
 		expect(outlook(rows)).toBe('Rain likely on Tue.');
+		expect(outlook(readDays([days[1], days[0]]))).toBe('Rain likely today.');
+		expect(outlook(readDays([days[1], days[0], days[1]]))).toBe('Rain likely today and Tue.');
 		expect(readDays([{ high: 5, low: 9 }])[0]).toMatchObject({ high: 9, low: 5, kind: 'cloudy' });
 		expect(readDays(Array.from({ length: 20 }, () => ({})))).toHaveLength(14);
 	});
@@ -70,8 +72,9 @@ describe('weather-forecast: messy fields', () => {
 
 	it('stretches the span to hold the current temperature', () => {
 		expect(span(rows)).toEqual([11, 20]);
-		expect(span(rows, 9)).toEqual([9, 20]);
-		expect(at(9, span(rows, 9)!)).toBe(0);
+		expect(span(rows, 9)).toEqual([8, 20]);
+		expect(at(9, span(rows, 9)!)).toBeGreaterThan(0);
+		expect(span(rows, 15)).toEqual([11, 20]);
 	});
 
 	it('maps temperature to the colour ramp, clamped at both ends', () => {
@@ -114,14 +117,17 @@ describe('weather-forecast: behaviour', () => {
 		expect(container.querySelector('[data-slot="now-temp"]')?.textContent).toBe('20°');
 	});
 
-	it('keeps bar positions and colours when the unit toggles, and dots a flat day', async () => {
+	it('keeps bar positions and colours when the unit toggles, keeps the now dot on the track, and dots a flat day', async () => {
 		const { container } = render(WeatherForecast, {
 			props: { place: 'Lisbon', now: { temp: 9, condition: 'rain' }, days: [...days, { day: 'Thu', high: 15, low: 15 }] }
 		});
 		const styles = () => [...container.querySelectorAll('.wf-track')].map((e) => e.getAttribute('style'));
 		const before = styles();
 		expect(before[0]).toContain('--p0');
-		expect(container.querySelector('.wf-now')?.getAttribute('style')).toMatch(/--at:\s*0%/);
+		// now (9) is colder than the week: the scale pads past it, so the dot sits on the track.
+		const nowAt = Number(/--at:\s*([\d.]+)%/.exec(container.querySelector('.wf-now')?.getAttribute('style') ?? '')?.[1]);
+		expect(nowAt).toBeGreaterThan(0);
+		expect(nowAt).toBeLessThan(10);
 		expect(container.querySelectorAll('.wf-track')[3].getAttribute('data-dot')).toBe('true');
 		await fireEvent.click(screen.getByRole('button', { name: '°F' }));
 		expect(styles()).toEqual(before);

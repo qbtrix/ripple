@@ -12,13 +12,14 @@
   - One frame, the host card's: no border or surface of its own.
   - Icons come from WeatherIcon's trusted constants by kind; an unknown
     condition draws cloudy. Model text is only ever rendered as text. The
-    place and hour times wrap; a freeform day label ellipsizes with the full
-    text in a `title`.
+    place wraps to two lines, hour times and freeform day labels to one, each
+    then ellipsized with the full text in a `title`.
   - Nothing scrolls sideways: the hourly band fits the card width by folding
     hours into buckets (bucketHours), never by scrolling.
   - Bar position and colour come from the source unit, so toggling °C/°F
     moves nothing. Colour means temperature: each bar end is its own
-    temperature's spot on one cool-to-warm ramp (info to warning tokens).
+    temperature's spot on one cool-to-warm ramp built from the info and
+    warning tokens in thirds (blue, teal, a neutral mild, amber), never green.
   - Days are rows below 560px, for 1-2 days and for 8-14 days; 3-7 days at
     560px and up stand side by side with vertical bars. Same markup,
     container queries only. Row 1 always reads "Today".
@@ -101,7 +102,7 @@
 	<section class="wf flex flex-col" aria-label={where ? `Weather for ${where}` : 'Weather forecast'}>
 		<header class="flex items-start gap-3">
 			<div class="min-w-0 flex-1">
-				{#if where}<h2 class="text-title-3 font-semibold text-pretty break-words" data-slot="place">{where}</h2>{/if}
+				{#if where}<h2 class="line-clamp-2 text-title-3 font-semibold break-words" title={where} data-slot="place">{where}</h2>{/if}
 				{#if noteText}<p class="text-caption-1 text-ripple-muted-foreground" data-slot="note">{noteText}</p>{/if}
 			</div>
 			<div class="flex shrink-0 rounded-full bg-ripple-muted p-0.5" role="group" aria-label="Temperature unit">
@@ -141,7 +142,7 @@
 				<ul class="grid" style={safeStyle(`grid-template-columns:repeat(${cols.length},minmax(0,1fr))`)} aria-label="Hourly forecast">
 					{#each cols as h, i (i)}
 						<li class="flex min-w-0 flex-col items-center gap-1 py-1 text-center">
-							<span class="w-full text-caption-1 text-balance break-words text-ripple-muted-foreground">{h.time || '–'}</span>
+							<span class="w-full truncate text-caption-1 text-ripple-muted-foreground" title={h.time}>{h.time || '–'}</span>
 							<WeatherIcon kind={h.kind} size={26} />
 							<span class="text-callout font-medium tabular-nums">{t(h.temp)}</span>
 							{#if anyHourRain}<span class="wf-rain h-3.5 text-caption-2 tabular-nums">{h.rain !== undefined && h.rain >= 10 ? `${h.rain}%` : ''}</span>{/if}
@@ -203,6 +204,9 @@
 <style>
 	.wf {
 		gap: 0.875rem;
+		/* Ramp stops between the info (cold) and warning (warm) tokens. */
+		--wf-cool: color-mix(in oklch, var(--ripple-info) 70%, var(--ripple-warning));
+		--wf-mild: color-mix(in oklab, var(--ripple-info) 60%, var(--ripple-warning));
 	}
 	.wf-temp {
 		font-size: 3.5rem;
@@ -234,10 +238,10 @@
 	}
 	.wf-day {
 		display: grid;
-		grid-template-columns: minmax(2.75rem, 3.5rem) 2rem 2.75rem minmax(0, 1fr) 2.75rem;
+		grid-template-columns: minmax(2.75rem, 3rem) 2rem 2.5rem minmax(0, 1fr) 2.5rem;
 		align-items: center;
 		position: relative;
-		gap: 0.5rem;
+		gap: 0.375rem;
 		min-height: 2.75rem;
 		padding: 0.1875rem 0.375rem;
 	}
@@ -270,9 +274,11 @@
 		border-radius: 999px;
 		background: var(--ripple-track);
 	}
+	/* --p is 0..100% along the ramp; each third mixes one pair of stops in oklab,
+	   so the path runs blue, teal, neutral, amber and never crosses green. */
 	.wf-fill {
-		--c0: color-mix(in oklch, var(--ripple-warning) var(--p0), var(--ripple-info));
-		--c1: color-mix(in oklch, var(--ripple-warning) var(--p1), var(--ripple-info));
+		--c0: color-mix(in oklab, var(--ripple-warning) clamp(0%, var(--p0) * 3 - 200%, 100%), color-mix(in oklab, var(--wf-mild) clamp(0%, var(--p0) * 3 - 100%, 100%), color-mix(in oklab, var(--wf-cool) clamp(0%, var(--p0) * 3, 100%), var(--ripple-info))));
+		--c1: color-mix(in oklab, var(--ripple-warning) clamp(0%, var(--p1) * 3 - 200%, 100%), color-mix(in oklab, var(--wf-mild) clamp(0%, var(--p1) * 3 - 100%, 100%), color-mix(in oklab, var(--wf-cool) clamp(0%, var(--p1) * 3, 100%), var(--ripple-info))));
 		position: absolute;
 		inset-block: 0;
 		left: var(--lo, 0%);
@@ -282,9 +288,12 @@
 	}
 	/* Low equals high, or one side only: a dot at that temperature. */
 	[data-dot='true'] .wf-fill {
+		inset-block: auto;
+		top: 50%;
 		right: auto;
-		width: 0.375rem;
-		transform: translateX(-50%);
+		width: 0.5rem;
+		height: 0.5rem;
+		transform: translate(-50%, -50%);
 	}
 	.wf-now {
 		position: absolute;
@@ -361,9 +370,11 @@
 		}
 		[data-many='true'] [data-dot='true'] .wf-fill {
 			top: auto;
-			width: auto;
-			height: 0.375rem;
-			transform: translateY(50%);
+			left: 50%;
+			right: auto;
+			width: 0.5rem;
+			height: 0.5rem;
+			transform: translate(-50%, 50%);
 		}
 		[data-many='true'] .wf-now {
 			top: auto;
