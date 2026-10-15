@@ -281,7 +281,7 @@
 	<div class="flex flex-col gap-3 @min-[480px]:gap-4">
 		{#if heading || sub || practise}
 			<header class="flex min-w-0 flex-col gap-0.5">
-				{#if heading}<h2 class="line-clamp-2 text-title-3 font-semibold text-pretty" title={heading}>{heading}</h2>{/if}
+				{#if heading}<h2 class="text-title-3 font-semibold text-pretty [overflow-wrap:anywhere]">{heading}</h2>{/if}
 				{#if sub}<p class="text-callout text-ripple-muted-foreground text-pretty">{sub}</p>{/if}
 				{#if practise}
 					<p class="text-callout text-ripple-muted-foreground tabular-nums" data-slot="meta">Practising {order.length} missed</p>
@@ -415,15 +415,15 @@
 							<span class={['deck-inner', `deck-h-${height}`]} data-height={height}>
 								<span
 									class={[
-										'deck-face deck-front flex flex-col justify-center gap-3 rounded-ripple border border-ripple-border bg-ripple-raised p-5',
+										'deck-face deck-front flex flex-col justify-center gap-3 rounded-ripple border border-ripple-border bg-(--deck-face) p-5',
 										card.front.length > 90 ? 'items-start text-left' : 'items-center text-center'
 									]}
 									aria-hidden={flipped}
 								>
 									{#if card.category}
 										<span
-											class="max-w-full truncate text-caption-1 font-medium tracking-[0.04em] text-ripple-muted-foreground uppercase"
-											title={card.category}>{card.category}</span
+											class="max-w-full text-caption-1 font-medium tracking-[0.04em] text-balance text-ripple-muted-foreground uppercase [overflow-wrap:anywhere]"
+											>{card.category}</span
 										>
 									{/if}
 									<span class={[tier(card.front), textWrap]} data-slot="front">{card.front}</span>
@@ -435,7 +435,7 @@
 								</span>
 								<span
 									class={[
-										'deck-face deck-back flex flex-col justify-center gap-2 rounded-ripple border border-ripple-accent/40 bg-[color-mix(in_oklab,var(--ripple-accent)_8%,var(--ripple-raised))] p-5',
+										'deck-face deck-back flex flex-col justify-center gap-2 rounded-ripple border border-ripple-accent/40 bg-[color-mix(in_oklab,var(--ripple-accent)_8%,var(--deck-face))] p-5',
 										card.back.length > 90 ? 'items-start text-left' : 'items-center text-center'
 									]}
 									aria-hidden={!flipped}
@@ -491,7 +491,10 @@
 	}
 
 	/* Sheets peek straight down below the card while more cards remain; never hit-tested. */
+	/* Card fill: halfway to --ripple-raised. The full token is a chip fill; as a
+	   280px surface in dark it is a mid grey that muted text cannot read on. */
 	.deck-stack {
+		--deck-face: color-mix(in oklab, var(--ripple-raised) 45%, var(--ripple-surface));
 		position: relative;
 		isolation: isolate;
 		padding-bottom: 12px;
@@ -504,7 +507,7 @@
 		pointer-events: none;
 		border: 1px solid var(--ripple-border);
 		border-radius: var(--ripple-radius);
-		background: var(--ripple-raised);
+		background: var(--deck-face);
 	}
 	.deck-stack::before {
 		inset: 12px 8px 6px;

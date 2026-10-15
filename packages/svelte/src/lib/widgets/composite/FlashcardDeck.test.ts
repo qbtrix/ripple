@@ -1,8 +1,9 @@
-// widgets/composite/FlashcardDeck.test.ts — the flashcard-deck data widget:
-// registry and bind-contract wiring, score written back to state, on_complete
-// reaching the host, streamed parity (with shuffle on), junk props, and the
-// deck's own logic (flip, marks, the score screen, practise-missed re-deal,
-// restart, hints, the seeded shuffle).
+// widgets/composite/FlashcardDeck.test.ts: the flashcard-deck data widget.
+// Registry and bind-contract wiring, score written back to state, on_complete
+// reaching the host, streamed parity (with shuffle on), junk and skipped rows,
+// and the deck's own loop: reveal first then grade (click and keys, focus
+// handoff), the score screen, practise-missed re-deal, restart, hints, the
+// seeded shuffle, the deck height tier, the one-line rail and the sheets.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
 import Ripple from '$lib/Ripple.svelte';
@@ -259,14 +260,15 @@ describe('flashcard-deck: reveal first, then grade', () => {
 	});
 });
 
+const tierOf = (cards: unknown[]) => {
+	const { container } = render(FlashcardDeck, { props: { cards: cards as never } });
+	const h = container.querySelector('[data-height]')!.getAttribute('data-height');
+	cleanup();
+	return h;
+};
+
 describe('flashcard-deck: layout rules', () => {
 	it('sets one card height tier for the whole deck from its longest face', () => {
-		const tierOf = (cards: unknown[]) => {
-			const { container } = render(FlashcardDeck, { props: { cards: cards as never } });
-			const h = container.querySelector('[data-height]')!.getAttribute('data-height');
-			cleanup();
-			return h;
-		};
 		expect(tierOf([{ front: 'Fe', back: 'Iron' }])).toBe('sm');
 		expect(tierOf([{ front: 'Fe', back: 'Iron' }, { front: 'Au', back: 'x'.repeat(100) }])).toBe('md');
 		expect(tierOf([{ front: 'Fe', back: 'Iron' }, { front: 'Au', back: 'x'.repeat(200) }])).toBe('lg');
