@@ -12,16 +12,20 @@
   nothing; with no data at all one muted line says so.
 
   Leaderboard: at 480px and up the sublabel sits on the name line and wraps
-  under the name when both cannot fit, so it never squeezes the name.
-  Deltas are plain muted text with an arrow, no pill.
+  under the name when both cannot fit, so it never squeezes the name. The
+  delta stacks under the value at every width, as plain muted signed text
+  (no arrow, no pill), so two money figures never sit side by side.
+
+  Never put `text-body` and a `text-ripple-*` colour through one cn() call:
+  tailwind-merge reads both as colours and drops the size.
 
   Colour: one accent. Only the quota fill, the funnel's own bars and worst
   step, the lowest conversion rate (accent ink) and the success line at or
   past target carry colour. No pace judgement: the widget has no pace data.
 
   Layout follows the root's own width (container query at 480px): the period
-  moves beside the title, leaderboard sublabels and deltas move onto the
-  name and value line, activity times move into a right column, and the deals
+  moves beside the title, leaderboard sublabels move onto the name line,
+  activity times move into a right column, and the deals
   table replaces its stacked rows (Table layout="stack"). Lists cap at 5 reps,
   6 deals and 4 events behind a Show more button; nothing scrolls inside.
   The root forwards `id` and data-ripple-node for the visual editor.
@@ -131,7 +135,7 @@
 		<div class="flex min-w-0 flex-col gap-4 {heading || sub || per ? 'border-t border-ripple-border pt-4' : ''}">
 			{#if q}
 				<section class={sec} data-slot="quota">
-					<h4 class="m-0 text-caption-1 font-semibold tracking-[0.04em] text-ripple-muted-foreground [overflow-wrap:break-word]">
+					<h4 class="m-0 text-caption-1 font-semibold tracking-[0.04em] text-pretty text-ripple-muted-foreground [overflow-wrap:break-word]">
 						<span class="uppercase">{q.label}</span>{#if q.period}<span class="font-normal tracking-normal">{' · '}{q.period}</span>{/if}
 					</h4>
 					<div class="flex items-baseline justify-between gap-3">
@@ -178,7 +182,7 @@
 								<span class="min-w-0 text-body [overflow-wrap:break-word]">
 									{#if r.from && r.to}{r.from}<ArrowRight size={12} class="mx-1 inline-block align-[-1px] text-ripple-muted-foreground" aria-hidden="true" /><span class="sr-only">{' to '}</span>{r.to}{:else if r.from}From {r.from}{:else}To {r.to}{/if}
 								</span>
-								<span class={cn('shrink-0 text-body font-medium tabular-nums', r.lowest && 'text-ripple-accent-text')}>{r.text}</span>
+								<span class="shrink-0 text-body font-medium tabular-nums {r.lowest ? 'text-ripple-accent-text' : ''}">{r.text}</span>
 							</li>
 						{/each}
 					</ul>
@@ -200,12 +204,12 @@
 								</span>
 								<span aria-hidden="true" class="contents"><Avatar src={safeUrl(l.avatar, { kind: 'resource' })} alt={l.name} class="size-7 text-[11px]" /></span>
 								<span aria-hidden="true" class="flex min-w-0 flex-col @min-[480px]:flex-row @min-[480px]:flex-wrap @min-[480px]:items-baseline @min-[480px]:gap-x-2">
-									<span class={cn('min-w-0 truncate text-body', !l.name && 'pr-1 italic text-ripple-muted-foreground')} title={l.name || undefined}>{l.name || 'Unnamed'}</span>
+									<span class="min-w-0 truncate text-body {l.name ? '' : 'pr-1 italic text-ripple-muted-foreground'}" title={l.name || undefined}>{l.name || 'Unnamed'}</span>
 									{#if l.sublabel}<span class="min-w-0 text-callout text-ripple-muted-foreground [overflow-wrap:break-word] @min-[480px]:truncate" title={l.sublabel}>{l.sublabel}</span>{/if}
 								</span>
-								<span aria-hidden="true" class="flex flex-col items-end gap-0.5 @min-[480px]:flex-row-reverse @min-[480px]:items-center @min-[480px]:gap-2">
+								<span aria-hidden="true" class="flex flex-col items-end gap-0.5">
 									{#if l.value}<span class="whitespace-nowrap text-body font-medium tabular-nums">{l.value}</span>{:else}<span class="text-callout text-ripple-muted-foreground">n/a</span>{/if}
-									{#if l.delta}<Delta text={l.delta} dir={l.dir} sentiment="neutral" class="bg-transparent px-0 py-0" />{/if}
+									{#if l.delta}<Delta text={l.delta} dir={l.dir} sentiment="neutral" arrow={false} class="bg-transparent px-0 py-0" />{/if}
 								</span>
 							</li>
 						{/each}
@@ -235,7 +239,7 @@
 									<p class="m-0 text-body text-pretty [overflow-wrap:break-word]">{e.label}</p>
 									{#if e.actor || e.time}
 										<p class="m-0 text-callout text-ripple-muted-foreground">
-											{e.actor}{#if e.time}<span class="@min-[480px]:hidden">{e.actor ? ' · ' : ''}{e.time}</span>{/if}
+											{e.actor}{#if e.time}<span class="@min-[480px]:hidden">{e.actor ? ' · ' : ''}<span class="whitespace-nowrap">{e.time}</span></span>{/if}
 										</p>
 									{/if}
 								</div>

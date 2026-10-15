@@ -12,13 +12,16 @@
      no editable, sortable, searchable or pageSize) fits a phone-width card.
      From 480px of the table's own width it is the same table, but text cells
      wrap at spaces with no min width, so a word never splits, and a short
-     column (longest value up to 12 characters, up to 16 from 560px) stays on
-     one line so the first column absorbs the wrapping. Under 480px it is a
-     list, one labelled group per row: the first column as the title (two
-     lines, then ellipsis; the full text is the group's name) with the first
-     right-aligned column trailing it, unless that column holds bare numbers,
-     which mean nothing without their label; then the other columns as one
-     muted meta line, each value after its column label. An empty first cell
+     column (longest value up to 12 characters, up to 16 from 640px) stays on
+     one line so the first column absorbs the wrapping; the first column keeps
+     a 14ch floor so short columns give up width before the title does.
+     Under 480px it is a list, one labelled group per row: the first column as
+     the title (two lines, then ellipsis; the full text is the group's name)
+     with the first right-aligned column trailing it, unless that column holds
+     bare numbers (a day count, a score), which mean nothing without their
+     label and so stay in the meta line beside it; then the other columns as one
+     muted meta line, each value after its column label, each pair (with its
+     trailing separator) wrapping as one unit so breaks fall after a ` ·`. An empty first cell
      reads a muted italic Untitled. Both are in the DOM; a container query
      shows one.
 
@@ -216,7 +219,7 @@
         (numericCols.has(col.accessorKey) || (stack && col.align === "right")
             ? "tabular-nums whitespace-nowrap align-top"
             : stack
-              ? `align-top [overflow-wrap:break-word] ${shortCols.get(col.accessorKey) ?? "whitespace-normal"}`
+              ? `align-top [overflow-wrap:break-word] ${col === columns[0] ? "min-w-[14ch]" : ""} ${shortCols.get(col.accessorKey) ?? "whitespace-normal"}`
               : "whitespace-normal align-top [overflow-wrap:anywhere] min-w-[8ch]");
 
     // Stacked list (layout="stack", read-only only): title, trailing value, labelled meta.
@@ -237,7 +240,7 @@
         for (const c of columns.slice(1)) {
             const n = Math.max(0, ...tableData.map((r) => shown(r?.[c.accessorKey]).length));
             if (n <= 12) out.set(c.accessorKey, "whitespace-nowrap");
-            else if (n <= 16) out.set(c.accessorKey, "whitespace-normal @min-[560px]:whitespace-nowrap");
+            else if (n <= 16) out.set(c.accessorKey, "whitespace-normal @min-[640px]:whitespace-nowrap");
         }
         return out;
     });
@@ -605,7 +608,7 @@
                     </div>
                     {#if meta.length}
                         <p class="mt-0.5 text-callout [overflow-wrap:break-word]" data-slot="table-stack-meta">
-                            {#each meta as m, mi}{#if mi > 0}<span class="text-ripple-muted-foreground" aria-hidden="true">{' · '}</span>{/if}<span class="text-ripple-muted-foreground">{m.label}</span>&nbsp;{m.value}{/each}
+                            {#each meta as m, mi}{#if mi > 0}{' '}{/if}<span class="inline-block"><span class="text-ripple-muted-foreground">{m.label}</span>&nbsp;{m.value}{#if mi < meta.length - 1}<span class="text-ripple-muted-foreground" aria-hidden="true">{' ·'}</span>{/if}</span>{/each}
                         </p>
                     {/if}
                 </li>

@@ -150,8 +150,9 @@ export function capName(s: string): string {
 
 /**
  * The summary line: `10.5% of Leads reached Closed`, plus the worst step as a
- * separate `drop` clause (wide only, three or more stages):
- * `biggest drop: Proposal to Closed, 38% continued`. Fallbacks: under two
+ * separate `drop` sentence (three or more stages):
+ * `Biggest drop: Proposal to Closed (38% carried on)`. Stage names are never
+ * shortened here: the summary is prose and wraps. Fallbacks: under two
  * numbered stages none; all zero `Nothing recorded yet`; a rate above 100% (or
  * a zero first stage) `<n> stages · largest: <name>, <count>`.
  */
@@ -166,13 +167,13 @@ export function funnelSummary(rows: readonly FunnelRow[]): { text: string; drop?
 	const largest = numbered.reduce((a, b) => (b.value! > a.value! ? b : a));
 	const text =
 		overall <= 1
-			? `${formatRate(overall, true)} of ${capName(first.label)} reached ${capName(last.label)}`
-			: `${rows.length} stages · largest: ${capName(largest.label)}, ${count(largest.value)}`;
+			? `${formatRate(overall, true)} of ${first.label} reached ${last.label}`
+			: `${rows.length} stages · largest: ${largest.label}, ${count(largest.value)}`;
 	const worst = rows.length >= 3 ? rows.find((r) => r.worst) : undefined;
 	return worst
 		? {
 				text,
-				drop: `biggest drop: ${capName(worst.from!)} to ${capName(worst.label)}, ${formatRate(worst.rate!)} continued`
+				drop: `Biggest drop: ${worst.from} to ${worst.label} (${formatRate(worst.rate!)} carried on)`
 			}
 		: { text };
 }
