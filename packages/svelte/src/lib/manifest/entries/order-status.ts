@@ -6,7 +6,7 @@ export const orderStatusEntry: WidgetManifestEntry = {
   description:
     'Multi-step shipment status with stepper, ETA, tracking number, optional embedded live map, and an event timeline. Composes the `map` widget when geo data is supplied.',
   props: {
-    title: { type: 'string', required: false, description: 'Heading. Defaults to "Tracking your order" / "Delivered" / "Order paused" based on status.' },
+    title: { type: 'string', required: false, description: 'Heading. Defaults to the current step.' },
     orderId: { type: 'string', required: true, description: 'Order / shipment / job number shown in the eyebrow.' },
     status: { type: '"placed" | "confirmed" | "preparing" | "in-transit" | "out-for-delivery" | "delivered" | "ready-for-pickup" | "picked-up" | "failed" | "cancelled"', required: false, description: 'Default-pipeline status. Sets the active stepper position. "ready-for-pickup" and "picked-up" switch the default steps to the pickup pipeline (placed, confirmed, preparing, ready for pickup, picked up). When status is the last step it renders done with a check, not active.' },
     steps: { type: 'Array<{ id: string; label: string; description?: string; completedAt?: string; current?: boolean; failed?: boolean }>', required: false, description: 'Custom step list. Overrides the default placed→delivered pipeline.' },
@@ -18,8 +18,8 @@ export const orderStatusEntry: WidgetManifestEntry = {
     tracker: { type: '{ lat: number; lng: number; heading?: number; label?: string; color?: string }', required: false, description: 'Live courier position. Heading rotates the directional arrow. Each new position glides linearly from the old one over the time since the previous update (0.3s to 5s), so polling hosts get continuous motion; reduced motion jumps.' },
     route: { type: '[number, number][]', required: false, description: 'Polyline points for the route. If omitted but origin+destination are set, a dashed line connects them. An empty array after a route was sent keeps the last route drawn.' },
     showMap: { type: 'boolean', required: false, description: 'Force-show or hide the embedded map. Defaults to true when any geographic data is supplied.' },
-    mapHeight: { type: 'string | number', required: false, description: 'Map height. Default "320px".' },
-    mapTiles: { type: '"osm" | "carto-voyager" | "carto-light" | "carto-dark" | "osm-hot" | "custom"', required: false, description: 'Map tile preset. Default "carto-voyager".' },
+    mapHeight: { type: 'string | number', required: false, description: 'Map height.' },
+    mapTiles: { type: '"osm" | "carto-voyager" | "carto-light" | "carto-dark" | "osm-hot" | "custom"', required: false, description: 'Map tile preset.' },
     followTracker: { type: 'boolean', required: false, description: 'Auto-pan the map to follow the courier. Default false.' },
     events: { type: 'Array<{ time: string; label: string; location?: string; icon?: string }>', required: false, description: 'Activity timeline beneath the map.' },
     actions: { type: 'Array<{ id?: string; label: string; icon?: string; variant?: "default" | "outline" | "ghost"; actions?: EventAction | EventAction[] }>', required: false, description: 'Actions row at the bottom.' },
@@ -30,7 +30,7 @@ export const orderStatusEntry: WidgetManifestEntry = {
       orderId: 'AC-1042',
       status: 'out-for-delivery',
       eta: 'Today, 4 – 6 PM',
-      tracking: { carrier: 'UPS', number: '1Z999AA10123456784', url: 'https://www.ups.com/track?tracknum=1Z999AA10123456784' },
+      tracking: { carrier: 'Parcelwise', number: 'PW4471092318840017', url: 'https://track.example.com/?n=PW4471092318840017' },
       origin: { name: 'Acme Warehouse', address: 'Oakland, CA', lat: 37.79, lng: -122.41 },
       destination: { name: 'Customer', address: '500 Howard St, San Francisco, CA', lat: 37.7884, lng: -122.4 },
       tracker: { lat: 37.785, lng: -122.405, heading: 45, label: 'Driver' },
