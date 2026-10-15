@@ -112,7 +112,7 @@ export function nextId(ids: readonly string[], from = ids.length + 1): string {
 /** Tip chips: 0..100 only (the rest dropped, not clamped), deduped, ascending, at most 6. */
 export function toTipOptions(raw: unknown): number[] {
 	const list = Array.isArray(raw) ? raw.map(finite).filter((n): n is number => n !== undefined && n >= 0 && n <= MAX_TIP) : [];
-	const clean = [...new Set(list)].sort((a, b) => a - b).slice(0, 6);
+	const clean = [...new Set(list)].toSorted((a, b) => a - b).slice(0, 6);
 	return clean.length ? clean : DEFAULT_TIP_OPTIONS;
 }
 

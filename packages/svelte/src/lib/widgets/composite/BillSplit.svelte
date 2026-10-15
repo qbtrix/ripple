@@ -205,15 +205,16 @@
 		}
 	}
 
-	// Tip chips: equal cells, one row up to 4; 5 or 6 take 3 columns when narrow, one row when wide.
-	const CHIP_COLS = ['grid-cols-1', 'grid-cols-1', 'grid-cols-2', 'grid-cols-3', 'grid-cols-4', 'grid-cols-3 @min-[480px]:grid-cols-5', 'grid-cols-3 @min-[480px]:grid-cols-6'];
+	// Tip chips: equal cells, one row up to 4 (never wider than a quarter when wide);
+	// 5 or 6 take 3 columns when narrow, one row when wide.
+	const CHIP_COLS = ['grid-cols-1', 'grid-cols-1 @min-[480px]:grid-cols-4', 'grid-cols-2 @min-[480px]:grid-cols-4', 'grid-cols-3 @min-[480px]:grid-cols-4', 'grid-cols-4', 'grid-cols-3 @min-[480px]:grid-cols-5', 'grid-cols-3 @min-[480px]:grid-cols-6'];
 
 	const focusRing = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ripple-ring';
 	const label = 'text-footnote text-ripple-muted-foreground';
 	const box =
 		'flex h-8 min-w-0 items-center gap-1 rounded-md border border-ripple-control-border bg-ripple-input px-2 text-callout text-ripple-input-foreground transition-colors focus-within:outline-2 focus-within:outline-offset-1 focus-within:outline-ripple-ring motion-reduce:transition-none';
 	const field =
-		'w-full min-w-0 bg-transparent text-right tabular-nums outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none';
+		'w-full min-w-0 bg-transparent tabular-nums outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none';
 	const chip =
 		'flex h-8 min-w-0 flex-col items-center justify-center rounded-md border px-1 text-callout font-medium tabular-nums transition-colors @min-[480px]:h-11 motion-reduce:transition-none';
 	const action =
@@ -239,7 +240,7 @@
 							min="0"
 							step={1 / unit}
 							value={fieldText('subtotal', fixed(shown.subtotal))}
-							class={field}
+							class={[field, 'text-right']}
 							oninput={(e) => onDraft('subtotal', e)}
 							onchange={(e) => onCommit('subtotal', e)}
 						/>
@@ -258,7 +259,7 @@
 								step="0.5"
 								value={fieldText('tip', tipText(shown.tip_percent))}
 								aria-label="Custom tip percent"
-								class={field}
+								class={[field, 'text-right']}
 								oninput={(e) => onDraft('tip', e)}
 								onchange={(e) => onCommit('tip', e)}
 							/>
@@ -310,7 +311,7 @@
 								title={s.name}
 								maxlength="40"
 								class={[
-									'h-7 w-full min-w-0 truncate rounded-sm border-b border-ripple-control-border bg-transparent text-body-emph outline-none hover:border-ripple-surface-foreground',
+									'h-7 max-w-full min-w-16 truncate rounded-sm [field-sizing:content] border-b border-ripple-control-border bg-transparent text-body-emph outline-none hover:border-ripple-surface-foreground',
 									focusRing
 								]}
 								onchange={(e) => rename(s.id, e)}
@@ -324,7 +325,7 @@
 							<div
 								class={[
 									box,
-									'w-24 shrink-0',
+									'w-24 min-w-16 shrink-[4]',
 									quiet && 'w-28 border-transparent bg-transparent px-1 hover:bg-ripple-muted focus-within:border-ripple-control-border focus-within:bg-ripple-input'
 								]}
 							>
@@ -338,7 +339,7 @@
 									step={1 / unit}
 									placeholder={quiet ? `+ ${extrasWord}` : undefined}
 									value={fieldText(s.id, restText(s.id, s.extras))}
-									class={[field, quiet && 'text-left text-ellipsis placeholder:text-ripple-muted-foreground']}
+									class={[field, quiet ? 'text-ellipsis placeholder:text-ripple-muted-foreground' : 'text-right']}
 									oninput={(e) => onDraft(s.id, e)}
 									onchange={(e) => onCommit(s.id, e)}
 								/>
