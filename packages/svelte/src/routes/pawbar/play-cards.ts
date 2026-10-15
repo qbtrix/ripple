@@ -276,7 +276,7 @@ export const playScenarios: Scenario[] = [
 
 /** Live isometric drawings (iso-scene): gallery runs only, not landing chips. */
 export const isoScenarios: Scenario[] = [
-	handWritten('iso-bike', 'Bike drivetrain', 'Learning', 'Learn', "Show how a bike's chain drive works as a live drawing, with a cadence slider and how far one pedal turn takes you", isoCard('bike', bikeScene)),
+	handWritten('iso-bike', 'Bicycle drivetrain', 'Learning', 'Learn', "Show how a bike's chain drive works as a live drawing, with a cadence slider and how far one pedal turn takes you", isoCard('bike', bikeScene)),
 	handWritten('iso-heart', 'The heart as two pumps', 'Learning', 'Learn', 'Draw the heart as two pumps I can watch beating, with a heart rate slider and labels on the chambers', isoCard('heart', heartScene)),
 	handWritten('iso-engine', 'Inside a piston engine', 'Learning', 'Learn', 'Show me how a one-cylinder piston engine moves, with an engine speed slider', isoCard('engine', engineScene))
 ];

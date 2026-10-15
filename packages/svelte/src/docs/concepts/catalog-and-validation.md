@@ -12,7 +12,7 @@ A manifest is a JSON description of the catalog, built from the same declaration
 
 | Manifest | Where | What's in it |
 |---|---|---|
-| Full | `https://ripple.pocketpaw.xyz/manifest.json`, or `@ripple-ui/svelte/manifest.json` in your app | The spec envelope, every action with its fields, the motion grammar, and every widget with its props, events, node fields and an example |
+| Full | `{{SITE_URL}}/manifest.json`, or `@ripple-ui/svelte/manifest.json` in your app | The spec envelope, every action with its fields, the motion grammar, and every widget with its props, events, node fields and an example |
 | Slim | `https://github.com/qbtrix/ripple-iui/releases/latest/download/manifest.slim.json`, or `@ripple-ui/svelte/manifest.slim.json` | The spec envelope, the core actions (`set`, `toggle`, `push`, `remove`, `open`, `navigate`, `toast`, `emit`, `pin`, `unpin`) and five standard widgets (`text`, `heading`, `badge`, `button`, `flex`) |
 
 The full manifest is large. Send it to a model when you want the whole catalog available. The slim one is small enough for any prompt and is what the [slim headless runtime](/docs/concepts/headless#a-smaller-runtime) runs. To give a model a middle ground, build your own list from the full manifest's `widgets` array, keeping only the types your app needs. The [prompting guide](/docs/guides/prompting) shows how.

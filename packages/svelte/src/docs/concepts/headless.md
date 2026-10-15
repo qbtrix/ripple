@@ -8,8 +8,10 @@ order: 6
 
 Nothing in the package imports Svelte or touches `document`, so it runs in Node, a Worker, a test file, or under another UI framework. A build check enforces that.
 
+Core is not on the npm registry yet. Install it from the GitHub release tarball:
+
 ```bash
-npm install @ripple-ui/core
+npm install https://github.com/qbtrix/ripple-iui/releases/download/v0.8.0/ripple-ui-core-0.6.0.tgz
 ```
 
 If you already depend on `@ripple-ui/svelte`, core comes with it.

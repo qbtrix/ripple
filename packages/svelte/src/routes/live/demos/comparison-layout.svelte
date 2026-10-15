@@ -18,7 +18,7 @@
 		bind: 'pick',
 		props: {
 			title: 'Three laptops for a designer who travels',
-			subtitle: 'Picked from your brief: under 2 kg, all-day battery, room for Figma and light video.',
+			subtitle: 'Picked from your brief: under 2 kg, all-day battery, room for design apps and light video.',
 			verdict: { text: 'Aero 14 for battery and weight; Nimbus Pro 15 if you edit video.', status: 'good' },
 			currency: 'USD',
 			winner: {

@@ -6,7 +6,9 @@
 // shortcuts reach the composer and the session (/ and Esc), and that a
 // visitor's own JSON renders as they type in the CodeMirror editor (driven
 // through its EditorView, as jsdom cannot type into it) and a broken edit
-// keeps the last good render.
+// keeps the last good render. The page keeps one h1 after the welcome goes,
+// the example reads well before a name is typed, and Replay streams the same
+// bytes the chat did.
 
 import { fireEvent, render } from '@testing-library/svelte';
 import { EditorView } from '@codemirror/view';
@@ -67,6 +69,7 @@ test('Paste or edit a spec renders the JSON as it is typed and keeps the last go
 	const cm = EditorView.findFromDOM(box)!;
 	expect(cm.state.doc.toString()).toContain('Hello, Ripple!');
 	await waitFor(() => expect(view.getByRole('heading', { name: 'Hello, Ripple!' })).toBeTruthy());
+	expect(view.getByText('Hello, there!')).toBeTruthy();
 	const type = (text: string) => cm.dispatch({ changes: { from: 0, to: cm.state.doc.length, insert: text } });
 
 	type('{"ui":{"type":"heading","props":{"text":"Edited by hand","level":2}}}');
@@ -77,4 +80,27 @@ test('Paste or edit a spec renders the JSON as it is typed and keeps the last go
 	expect(box.getAttribute('aria-invalid')).toBe('true');
 	expect(view.getByRole('heading', { name: 'Edited by hand' })).toBeTruthy();
 	expect(fetchSpy).not.toHaveBeenCalled();
+});
+
+test('the page keeps its h1 after the first turn, and Replay keeps the size and line count', async () => {
+	vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('no network in this test'));
+	const view = render(Playground);
+	const h1 = () => view.getAllByRole('heading', { level: 1 }).map((h) => h.textContent);
+	expect(h1()).toEqual(['Playground']);
+
+	await fireEvent.click(view.getByRole('button', { name: /Split the bill/ }));
+	await waitFor(() => expect(view.queryByRole('button', { name: 'Stop' })).toBeNull());
+	expect(h1()).toEqual(['Playground']);
+
+	const meta = () => view.container.querySelector('.json .meta')?.textContent;
+	const valid = () => view.getByText(/^Valid, /).textContent;
+	await waitFor(() => expect(valid()).toMatch(/ B$/));
+	const before = [meta(), valid()];
+	expect(meta()).toMatch(/^\d+ B · \d+ lines$/);
+
+	const replay = view.getByRole('button', { name: 'Replay' });
+	await fireEvent.click(replay);
+	await waitFor(() => expect(replay.hasAttribute('disabled')).toBe(true));
+	await waitFor(() => expect(replay.hasAttribute('disabled')).toBe(false));
+	await waitFor(() => expect([meta(), valid()]).toEqual(before));
 });

@@ -56,7 +56,7 @@ Three things make it work:
 
 ## Handle events
 
-Buttons fire action chains through `on_click`. Actions like `set`, `toggle`, `push` and `remove` change state inside the render. Actions that need your app, such as `api`, `navigate`, `toast` and `emit`, arrive at the `onEvent` callback:
+Buttons fire action chains through `on_click`. Actions like `set`, `toggle`, `push` and `remove` change state inside the render. Actions that need your app, such as `api`, `navigate`, `toast` and `emit`, arrive at the `onEvent` callback. A `toast` is also shown by Ripple itself when the spec includes a `toast` widget:
 
 ```svelte
 <Ripple {spec} onEvent={(event) => console.log(event.type, event)} />

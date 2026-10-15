@@ -130,56 +130,6 @@
 		"h": 600
 	},
 	{
-		"id": "live-heart-pump",
-		"title": "The heart as a pump",
-		"caption": "How does the heart pump blood? Show me the two sides and the valves, and let me change the heart rate.",
-		"group": "Learn",
-		"tag": "Hand-written",
-		"href": "/live?s=heart-pump",
-		"w": 800,
-		"h": 600
-	},
-	{
-		"id": "live-bike-gears",
-		"title": "How bike gears work",
-		"caption": "How do bike gears work? Show me the drivetrain and let me change the gear and my cadence.",
-		"group": "Learn",
-		"tag": "Hand-written",
-		"href": "/live?s=bike-gears",
-		"w": 800,
-		"h": 600
-	},
-	{
-		"id": "live-iso-bike",
-		"title": "Bike drivetrain",
-		"caption": "Show how a bike's chain drive works as a live drawing, with a cadence slider and how far one pedal turn takes you",
-		"group": "Learn",
-		"tag": "Hand-written",
-		"href": "/live?s=iso-bike",
-		"w": 800,
-		"h": 600
-	},
-	{
-		"id": "live-iso-heart",
-		"title": "The heart as two pumps",
-		"caption": "Draw the heart as two pumps I can watch beating, with a heart rate slider and labels on the chambers",
-		"group": "Learn",
-		"tag": "Hand-written",
-		"href": "/live?s=iso-heart",
-		"w": 800,
-		"h": 600
-	},
-	{
-		"id": "live-iso-engine",
-		"title": "Inside a piston engine",
-		"caption": "Show me how a one-cylinder piston engine moves, with an engine speed slider",
-		"group": "Learn",
-		"tag": "Hand-written",
-		"href": "/live?s=iso-engine",
-		"w": 800,
-		"h": 600
-	},
-	{
 		"id": "live-ocean-docs",
 		"title": "Ocean documentaries",
 		"caption": "Recommend 6 ocean documentaries with ratings and running time (sample titles)",
@@ -190,58 +140,8 @@
 		"h": 600
 	},
 	{
-		"id": "live-rocket-engine",
-		"title": "Inside a rocket engine",
-		"caption": "How does a rocket engine work? Show me inside one and let me throttle it.",
-		"group": "Learn",
-		"tag": "Hand-written",
-		"href": "/live?s=rocket-engine",
-		"w": 800,
-		"h": 600
-	},
-	{
-		"id": "live-ion-thruster",
-		"title": "How a plasma thruster works",
-		"caption": "How does a plasma thruster work? Show me inside and let me change the grid voltage and the xenon flow.",
-		"group": "Learn",
-		"tag": "Hand-written",
-		"href": "/live?s=ion-thruster",
-		"w": 800,
-		"h": 600
-	},
-	{
-		"id": "live-tokamak",
-		"title": "How a fusion reactor works",
-		"caption": "How does a fusion reactor work? Show me a tokamak cut open and let me change the plasma current and the heating.",
-		"group": "Learn",
-		"tag": "Hand-written",
-		"href": "/live?s=tokamak",
-		"w": 800,
-		"h": 600
-	},
-	{
-		"id": "live-fission-reactor",
-		"title": "How a nuclear fission reactor works",
-		"caption": "How does a nuclear reactor make electricity? Show me the plant and let me move the control rods and the pump speed.",
-		"group": "Learn",
-		"tag": "Hand-written",
-		"href": "/live?s=fission-reactor",
-		"w": 800,
-		"h": 600
-	},
-	{
-		"id": "live-particle-collider",
-		"title": "How a particle collider works",
-		"caption": "How does a particle collider work? Show me the beams, the magnets and the detector, and let me change the beam energy.",
-		"group": "Learn",
-		"tag": "Hand-written",
-		"href": "/live?s=particle-collider",
-		"w": 800,
-		"h": 600
-	},
-	{
 		"id": "live-explainer",
-		"title": "Bike gears, explained",
+		"title": "How bicycle gears work",
 		"caption": "Explain how a bicycle's gears work. Show the drivetrain as a diagram where I can pick a part to see what it does, and let me change the chainring and cog teeth to see the gear ratio and how far one pedal turn takes me.",
 		"group": "Learn",
 		"tag": "Recorded",
@@ -440,8 +340,88 @@
 		"h": 600
 	},
 	{
+		"id": "live-iso-bike",
+		"title": "Bicycle drivetrain",
+		"caption": "Show how a bike's chain drive works as a live drawing, with a cadence slider and how far one pedal turn takes you",
+		"group": "Drawings",
+		"tag": "Hand-written",
+		"href": "/live?s=iso-bike",
+		"w": 800,
+		"h": 600
+	},
+	{
+		"id": "live-iso-heart",
+		"title": "The heart as two pumps",
+		"caption": "Draw the heart as two pumps I can watch beating, with a heart rate slider and labels on the chambers",
+		"group": "Drawings",
+		"tag": "Hand-written",
+		"href": "/live?s=iso-heart",
+		"w": 800,
+		"h": 600
+	},
+	{
+		"id": "live-iso-engine",
+		"title": "Inside a piston engine",
+		"caption": "Show me how a one-cylinder piston engine moves, with an engine speed slider",
+		"group": "Drawings",
+		"tag": "Hand-written",
+		"href": "/live?s=iso-engine",
+		"w": 800,
+		"h": 600
+	},
+	{
+		"id": "live-rocket-engine",
+		"title": "Inside a rocket engine",
+		"caption": "How does a rocket engine work? Show me inside one and let me throttle it.",
+		"group": "Drawings",
+		"tag": "Hand-written",
+		"href": "/live?s=rocket-engine",
+		"w": 800,
+		"h": 600
+	},
+	{
+		"id": "live-ion-thruster",
+		"title": "How a plasma thruster works",
+		"caption": "How does a plasma thruster work? Show me inside and let me change the grid voltage and the xenon flow.",
+		"group": "Drawings",
+		"tag": "Hand-written",
+		"href": "/live?s=ion-thruster",
+		"w": 800,
+		"h": 600
+	},
+	{
+		"id": "live-tokamak",
+		"title": "How a fusion reactor works",
+		"caption": "How does a fusion reactor work? Show me a tokamak cut open and let me change the plasma current and the heating.",
+		"group": "Drawings",
+		"tag": "Hand-written",
+		"href": "/live?s=tokamak",
+		"w": 800,
+		"h": 600
+	},
+	{
+		"id": "live-fission-reactor",
+		"title": "How a nuclear fission reactor works",
+		"caption": "How does a nuclear reactor make electricity? Show me the plant and let me move the control rods and the pump speed.",
+		"group": "Drawings",
+		"tag": "Hand-written",
+		"href": "/live?s=fission-reactor",
+		"w": 800,
+		"h": 600
+	},
+	{
+		"id": "live-particle-collider",
+		"title": "How a particle collider works",
+		"caption": "How does a particle collider work? Show me the beams, the magnets and the detector, and let me change the beam energy.",
+		"group": "Drawings",
+		"tag": "Hand-written",
+		"href": "/live?s=particle-collider",
+		"w": 800,
+		"h": 600
+	},
+	{
 		"id": "live-heart",
-		"title": "How a heart pumps",
+		"title": "How a heart pumps blood",
 		"caption": "How does the heart pump blood? Draw an animated picture with numbered notes on the chambers and valves.",
 		"group": "Drawings",
 		"tag": "Hand-written",

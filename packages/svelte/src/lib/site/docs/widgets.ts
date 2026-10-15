@@ -77,6 +77,31 @@ export function widgetPrevNext(type: string, list: WidgetManifestEntry[] = manif
 	return { prev: i > 0 ? sibs[i - 1].type : null, next: i >= 0 ? (sibs[i + 1]?.type ?? null) : null };
 }
 
+/**
+ * A description's first sentence: up to the first full stop followed by a space
+ * or the end, skipping the stops inside "e.g.", "i.e." and "vs.".
+ */
+export function firstSentence(text: string): string {
+	const m = /(?<!\be\.g|\bi\.e|\bvs)\.(?=\s|$)/.exec(text);
+	return m ? text.slice(0, m.index + 1) : text;
+}
+
+/**
+ * Site-only notes under a widget page's Example heading, for an example that
+ * hides something its description or props promise. The manifest stays as it is.
+ */
+export const PAGE_NOTES: Record<string, string> = {
+	workflow:
+		'The zoom controls appear only when the graph does not fit at full size, and the minimap only when `minimap` is on, the graph has 12 or more steps and the box is at least 560px wide. This example is small enough to show neither.'
+};
+
+/** Split manifest prose on `backtick` spans, so a page can show them as <code> (Svelte escapes each part). */
+export const codeSpans = (text: string): { text: string; code: boolean }[] =>
+	text
+		.split(/`([^`]+)`/)
+		.map((t, i) => ({ text: t, code: i % 2 === 1 }))
+		.filter((p) => p.text);
+
 /** The entry's `example` node wrapped in the smallest valid spec. */
 export const exampleSpec = (e: WidgetManifestEntry): Record<string, unknown> => ({ version: SPEC_VERSION, ui: e.example });
 

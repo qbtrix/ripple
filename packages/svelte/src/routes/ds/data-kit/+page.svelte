@@ -1,10 +1,11 @@
 <!--
-  routes/ds/data-kit/+page.svelte — dev preview of the internal data kit
-  (widgets/data-kit) for screenshots and visual QA: status pills, the verdict
-  line, stat chips, the section pairing rule at three container widths, photo
-  tiles and their fallbacks, the stage rail, the row motion, the formatters
-  and the kind icon maps. URL-only (not linked from the showcase index), like
-  ds/stat. Fictional data only: the site is public.
+  routes/ds/data-kit/+page.svelte: the data kit (widgets/data-kit) on /ds, the
+  Svelte parts the data widgets share: status pills, the verdict line, stat
+  chips, the section pairing rule at two container widths, photo tiles and
+  their fallbacks (including a refused javascript: URL, captioned as the
+  security demo it is), the stage rail, the row motion, the formatters and the
+  kind icon maps. Linked from the /ds hub. Fictional data only: the site is
+  public.
 -->
 <script lang="ts">
 	import type { LucideIcon } from '@lucide/svelte';
@@ -31,6 +32,7 @@
 		rise
 	} from '$lib/widgets/data-kit/index.js';
 	import type { Stat } from '$lib/widgets/data-kit/types.js';
+	import Showcase from '../Showcase.svelte';
 
 	const stats: Stat[] = [
 		{ label: 'Blood pressure', value: '138/86', unit: 'mmHg', status: 'warn', trend: { dir: 'down', text: 'improving', good: 'down' } },
@@ -69,7 +71,7 @@
 		["money(13.49, 'USD')", money(13.49, 'USD')],
 		["money(8, 'USD', { sign: true })", money(8, 'USD', { sign: true })],
 		["money(1299, 'EUR')", money(1299, 'EUR')],
-		["money(5, '$')  // junk code", money(5, '$')],
+		["money(5, '$')  // not an ISO currency code", money(5, '$')],
 		['money(NaN)', money(Number.NaN)],
 		["plain('**HbA1c** above target')", plain('**HbA1c** above target')],
 		["dateLabel('Next Tuesday')", dateLabel('Next Tuesday')],
@@ -79,13 +81,13 @@
 	];
 </script>
 
-<svelte:head><title>Ripple · Data kit</title></svelte:head>
-
-<div class="showcase">
-	<header class="showcase-header">
-		<h1>Data kit</h1>
-		<p>The shared parts behind the data widgets. Internal: none of these is a registered widget. Toggle the theme in the top bar to check dark.</p>
-	</header>
+<Showcase slug="data-kit">
+	{#snippet intro()}
+		<p>
+			The Svelte components and helpers the data widgets are built from. They are not spec widgets: import them from
+			<code>widgets/data-kit</code> when you build your own widget, so it matches the others.
+		</p>
+	{/snippet}
 
 	<section class="showcase-section">
 		<h2 class="showcase-section-title">Verdict and status</h2>
@@ -109,7 +111,7 @@
 
 	<section class="showcase-section">
 		<h2 class="showcase-section-title">Sections and the pairing rule</h2>
-		<p class="section-caption">Drag the frame's corner. At 720px+ the two short lists pair; the table and the odd list span. Below that, one column.</p>
+		<p class="section-caption">Drag a frame's corner to resize it. At 720px and wider the two short lists pair up; the table and the odd list span the row. Narrower, it is one column.</p>
 		{#each [360, 760] as width (width)}
 			<div class="pane frame" style:width="{width}px">
 				<SectionGrid {sections} {half}>
@@ -129,9 +131,12 @@
 
 	<section class="showcase-section">
 		<h2 class="showcase-section-title">Photo tiles</h2>
-		<p class="section-caption">4:3 loaded, 1:1 with no src, 16:9 with a URL that fails, 1:1 refused (javascript:). None shows a broken image.</p>
+		<p class="section-caption">
+			A 4:3 tile that loads, a 1:1 tile with no source, a 16:9 tile whose image fails, and a 1:1 tile given a
+			<code>javascript:</code> URL, which it refuses for safety. Each falls back to its icon; none shows a broken image.
+		</p>
 		<div class="pane row">
-			<PhotoTile src="/logos/lumen.svg" alt="Lumen logo" ratio="4:3" class="w-24" icon={MENU_ICONS.main} />
+			<PhotoTile src="/photos/aero-14.svg" alt="Aero 14 laptop" ratio="4:3" class="w-24" icon={MENU_ICONS.main} />
 			<PhotoTile alt="Classic burger" ratio="1:1" class="w-14" icon={MENU_ICONS.main} />
 			<PhotoTile src="/photos/does-not-exist.webp" alt="Harbor view" ratio="16:9" class="w-48" icon={STOP_ICONS.sight} />
 			<PhotoTile src="javascript:alert(1)" alt="Refused" ratio="1:1" class="w-12" icon={SERVICE_ICONS.hair} />
@@ -184,36 +189,9 @@
 			{/each}
 		</div>
 	</section>
-</div>
+</Showcase>
 
 <style>
-	.showcase {
-		max-width: 960px;
-		margin: 0 auto;
-		padding: 2rem 1.5rem 4rem;
-		color: var(--foreground);
-	}
-	.showcase-header h1 {
-		font-size: 1.75rem;
-		font-weight: 700;
-		margin: 0 0 0.25rem;
-	}
-	.showcase-header p,
-	.section-caption {
-		font-size: 0.8125rem;
-		color: var(--muted-foreground);
-		margin: 0 0 1rem;
-	}
-	.showcase-section {
-		margin-bottom: 2.5rem;
-	}
-	.showcase-section-title {
-		font-size: 1.15rem;
-		font-weight: 600;
-		margin: 0 0 0.75rem;
-		padding-bottom: 0.5rem;
-		border-bottom: 1px solid var(--border);
-	}
 	.pane {
 		padding: 1rem;
 		border-radius: 0.75rem;

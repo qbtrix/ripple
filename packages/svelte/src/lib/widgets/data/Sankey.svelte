@@ -1,4 +1,10 @@
-<!-- src/lib/widgets/data/Sankey.svelte -->
+<!--
+  src/lib/widgets/data/Sankey.svelte: the `sankey` widget, an ECharts flow
+  diagram loaded on mount. The canvas cannot read CSS, so the title and node
+  labels take the element's computed text colour (text-foreground) at draw
+  time, with no text outline, and the chart redraws when the root light/dark
+  class or data-theme changes.
+-->
 <script lang="ts">
   import { safeStyle } from '@ripple-ui/core';
   import { onMount } from 'svelte';
@@ -48,13 +54,19 @@
   let chart: any = $state.raw(null);
   let echartsMod: any = null;
 
+  /** The element's resolved text colour (canvas needs a real colour, not a var). */
+  function textColor(): string {
+    return (chartEl && getComputedStyle(chartEl).color) || '#888';
+  }
+
   function buildOption() {
+    const fg = textColor();
     return {
       animation: true,
       animationDuration: 400,
       backgroundColor: 'transparent',
       title: title
-        ? { text: title, left: 0, top: 0, textStyle: { fontSize: 13, fontWeight: 600 } }
+        ? { text: title, left: 0, top: 0, textStyle: { fontSize: 13, fontWeight: 600, color: fg } }
         : undefined,
       tooltip: tooltip ? { trigger: 'item' } : false,
       series: [
@@ -69,7 +81,7 @@
           links,
           emphasis: { focus: 'adjacency' },
           lineStyle: { color: 'gradient', curveness },
-          label: { fontSize: 11 }
+          label: { fontSize: 11, color: fg, textBorderWidth: 0, textShadowBlur: 0 }
         }
       ]
     };
@@ -90,7 +102,11 @@
     if (chartEl) observer.observe(chartEl);
     const onResize = () => chart?.resize();
     window.addEventListener('resize', onResize);
+    // Theme flips change the text colour the canvas was painted with.
+    const theme = new MutationObserver(() => chart?.setOption(buildOption(), true));
+    theme.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme'] });
     return () => {
+      theme.disconnect();
       observer.disconnect();
       window.removeEventListener('resize', onResize);
       chart?.dispose();

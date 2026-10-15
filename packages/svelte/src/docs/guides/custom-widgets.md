@@ -1,7 +1,7 @@
 ---
 title: Custom widgets
 description: Register your own Svelte component as a widget type, replace a built-in one, and keep the catalog check passing.
-order: 1
+order: 9
 ---
 
 The widget catalog is a registry you can add to. Register a Svelte 5 component under a type name and specs can use it like any built-in widget.

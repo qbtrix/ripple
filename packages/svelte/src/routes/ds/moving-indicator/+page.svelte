@@ -8,14 +8,15 @@
 -->
 <script lang="ts">
   import { Ripple } from '$lib/index.js';
-  import type { RippleEvent } from '@ripple-ui/core';
+  import Showcase from '../Showcase.svelte';
   import SegmentedControl from './SegmentedControl.svelte';
 
-  let lastEvent = $state('—');
-  function handleEvent(event: RippleEvent) {
-    lastEvent = `${event.type}${event.name ? ` · ${event.name}` : ''}`;
-    console.log('RippleEvent:', event);
-  }
+  const nav = [
+    { href: '#segmented', label: 'Segmented control (selection)' },
+    { href: '#checkbox', label: 'Checkbox group (hover)' },
+    { href: '/ds/checkbox-group', label: 'Checkbox group' },
+    { href: '/ds/motion', label: 'Motion' }
+  ];
 
   // ── Consumer 1: segmented control (active = SELECTION) ──────────────
   let viewMode = $state('Board');
@@ -23,10 +24,9 @@
   let density = $state('Comfortable');
 
   // ── Consumer 2: checkbox group (active = HOVER) ─────────────────────
-  // A declarative Ripple spec — the SAME widget that was refactored onto the
-  // primitive. Start with a contiguous run selected so the merged block is
-  // visible and the captain can hover an already-selected row to confirm the
-  // doubled-highlight bug is gone.
+  // A declarative Ripple spec for the same widget the primitive drives. It
+  // starts with a contiguous run selected so the merged block is visible and a
+  // hover over a checked row shows no second highlight.
   const checkboxSpec = {
     version: '1.0' as const,
     state: { scopes: ['repo', 'workflow'] },
@@ -36,7 +36,7 @@
       children: [
         {
           type: 'text',
-          props: { text: 'Hover an already-checked row — no second highlight paints inside the selection. Hover an unchecked row — the highlight glides to it.', size: 'sm' },
+          props: { text: 'Hover a checked row: no second highlight paints inside the selection. Hover an unchecked row: the highlight glides to it.', size: 'sm' },
           class: 'text-muted-foreground'
         },
         {
@@ -48,7 +48,7 @@
               { value: 'workflow', label: 'Workflow runs' },
               { value: 'packages', label: 'Package registry' },
               { value: 'webhooks', label: 'Webhook delivery' },
-              { value: 'gist', label: 'Gist read & write' }
+              { value: 'snippets', label: 'Snippet read and write' }
             ]
           },
           bind: 'scopes'
@@ -59,36 +59,21 @@
   };
 </script>
 
-<div class="showcase">
-  <header class="showcase-header">
-    <h1>The moving indicator: one primitive, many widgets</h1>
+<Showcase slug="moving-indicator" {nav}>
+  {#snippet intro()}
     <p>
-      A reusable <code>movingIndicator</code> action: a highlight springs to the
-      active item among its siblings. Mount it on a highlight element, tell it the
-      container, how to enumerate the items, and which one is active — it measures
-      the active item's box (transform-immune <code>offset*</code>) and glides the
-      highlight there on the FF <code>fast</code> (80ms) token. The two demos below
-      run the <strong>same primitive</strong>; the only difference is what each
-      calls "active" — <strong>selection</strong> on the left, <strong>hover</strong>
-      on the right.
+      <code>movingIndicator</code> is a Svelte action: a highlight springs to the active item among its siblings. Put it
+      on a highlight element, tell it the container, how to find the items, and which one is active. It measures that
+      item's box and glides the highlight there on the fast 80ms spring. The two demos below run the same action; one
+      calls the <strong>selected</strong> item active, the other the <strong>hovered</strong> one.
     </p>
-    <nav class="showcase-nav">
-      <a href="#segmented">Segmented control (selection)</a>
-      <a href="#checkbox">Checkbox group (hover)</a>
-      <a href="/ds/checkbox-group">Checkbox group sub-route</a>
-      <a href="/ds/motion">← Motion primitive</a>
-    </nav>
-    <p class="last-event">Last host event: <strong>{lastEvent}</strong></p>
-  </header>
+  {/snippet}
 
   <section id="segmented" class="showcase-section">
-    <h2 class="showcase-section-title">
-      Consumer 1 — segmented control · active source = <code>selection</code>
-    </h2>
-    <p class="showcase-note">
-      Click a segment (or arrow-key it). The white pill glides to the selection —
-      <code>movingIndicator</code> with <code>axis: 'x'</code>, active = the
-      selected index.
+    <h2 class="showcase-section-title">Segmented control: active is the selection</h2>
+    <p class="section-caption">
+      Click a segment or move with the arrow keys. The pill glides to the selection: <code>movingIndicator</code> with
+      <code>axis: 'x'</code> and the selected index as active.
     </p>
     <div class="showcase-item">
       <div class="showcase-item-demo demo-stack">
@@ -116,104 +101,20 @@
   </section>
 
   <section id="checkbox" class="showcase-section">
-    <h2 class="showcase-section-title">
-      Consumer 2 — checkbox group · active source = <code>hover</code>
-    </h2>
-    <p class="showcase-note">
-      The same primitive drives the hover highlight (it tracks unselected rows
-      only). Two rows start selected as one merged block — hover it to confirm no
-      doubled highlight paints inside the selection.
+    <h2 class="showcase-section-title">Checkbox group: active is the hovered row</h2>
+    <p class="section-caption">
+      The same action drives the hover highlight, which tracks unchecked rows only. Two rows start checked as one merged
+      block.
     </p>
     <div class="showcase-item">
       <div class="showcase-item-demo">
-        <Ripple spec={checkboxSpec} onEvent={handleEvent} />
+        <Ripple spec={checkboxSpec} />
       </div>
     </div>
   </section>
-</div>
+</Showcase>
 
 <style>
-  .showcase {
-    max-width: 960px;
-    margin: 0 auto;
-    padding: 2rem 1.5rem 4rem;
-    color: var(--foreground);
-  }
-  .showcase-header {
-    margin-bottom: 2.5rem;
-  }
-  .showcase-header h1 {
-    font-size: 1.75rem;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    margin: 0 0 0.25rem;
-  }
-  .showcase-header p {
-    font-size: 0.875rem;
-    color: var(--muted-foreground);
-    margin: 0 0 1rem;
-    max-width: 65ch;
-    line-height: 1.6;
-  }
-  .showcase-header a {
-    color: var(--foreground);
-    text-decoration: underline;
-    text-underline-offset: 2px;
-  }
-  code {
-    background: color-mix(in srgb, var(--muted) 50%, transparent);
-    padding: 1px 5px;
-    border-radius: 4px;
-    font-size: 0.8rem;
-  }
-  .last-event {
-    font-size: 0.8rem;
-  }
-  .showcase-nav {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 1rem;
-  }
-  .showcase-nav a {
-    padding: 4px 12px;
-    border-radius: 6px;
-    font-size: 0.8rem;
-    font-weight: 500;
-    background: color-mix(in srgb, var(--muted) 40%, transparent);
-    color: var(--foreground);
-    text-decoration: none;
-    transition: background 0.15s;
-  }
-  .showcase-nav a:hover {
-    background: var(--muted);
-  }
-  .showcase-section {
-    margin-bottom: 2.5rem;
-  }
-  .showcase-section-title {
-    font-size: 1.15rem;
-    font-weight: 600;
-    margin: 0 0 0.5rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--border);
-  }
-  .showcase-note {
-    font-size: 0.85rem;
-    color: var(--muted-foreground);
-    margin: 0 0 1rem;
-    max-width: 65ch;
-    line-height: 1.55;
-  }
-  .showcase-item {
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    overflow: hidden;
-  }
-  .showcase-item-demo {
-    padding: 1.5rem;
-    background: var(--background);
-  }
   .demo-stack {
     display: flex;
     flex-direction: column;

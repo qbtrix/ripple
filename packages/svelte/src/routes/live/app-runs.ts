@@ -219,8 +219,8 @@ export const figureRuns: Scenario[] = [
 
 /** Drawings that had a landing chip before the figures took it: same ids, so their /live links still open. */
 export const retiredChipRuns: Scenario[] = [
-	{ id: 'explainer', title: 'Bike gears, explained', category: 'Learning', fixture: explainer, prompt: 'How do bike gears work? Draw me an animated picture of the chain drive and explain it in a few lines.', group: 'Learn' },
-	handWritten('heart', 'How a heart pumps', 'Learning', 'Learn', 'How does the heart pump blood? Draw an animated picture with numbered notes on the chambers and valves.', heartCard)
+	{ id: 'explainer', title: 'How bicycle gears work', category: 'Learning', fixture: explainer, prompt: 'How do bike gears work? Draw me an animated picture of the chain drive and explain it in a few lines.', group: 'Learn' },
+	handWritten('heart', 'How a heart pumps blood', 'Learning', 'Learn', 'How does the heart pump blood? Draw an animated picture with numbered notes on the chambers and valves.', heartCard)
 ];
 
 export const appScenarios: Scenario[] = [
