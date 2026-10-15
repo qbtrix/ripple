@@ -20,7 +20,12 @@
 // fetched once per call and evaluated in each page, so the skill, the worker
 // and the chat page run one audit. A site without that file is a setup error
 // (exit 2): deploy the site before releasing a skill that needs it. axe-core
-// stays here.
+// stays here, and so does typeAudit() (smallText, wideMeasure: text under
+// 12px, lines past 75ch), so it works against a site deployed before it.
+//
+// From 1024 up the playground's chat and JSON panes are hidden, so a shot's
+// width is the card's width (1440 stands for a wide desktop chat card); below
+// 1024 the card lives in the chat column and is left alone.
 //
 // Invariants: one browser per call and only paths under <outdir>, so several
 // calls can run at once. It never starts a server. Theme is set the way a
@@ -43,7 +48,9 @@ and <outdir>/audit.json, and prints the audit JSON.
 options:
   --base <url>      Ripple site to render through (env RIPPLE_BASE)
                     default ${DEFAULT_BASE}
-  --widths <list>   viewport widths, default 380,1024
+  --widths <list>   viewport widths, default 380,1024,1440. From 1024 up the
+                    playground's chat and JSON panes are hidden, so the card
+                    gets the whole width (1440 = a wide desktop chat card)
   --themes <list>   light,dark (default both)
   --help            this text
 
@@ -52,6 +59,10 @@ needs: Playwright with Chromium in the current project
        optional: npm i -D axe-core (else axeViolations is null)
 env:   RIPPLE_PLAYWRIGHT=<dir of the playwright package>, RIPPLE_AXE=<path to axe.min.js>,
        CHROME_PATH=<chromium binary>
+
+counts beyond the shared page audit (this file measures them):
+  smallText    visible text under 12px (sr-only and aria-hidden skipped), with its size
+  wideMeasure  a line of text wider than 75ch (a reader loses the line)
 
 exit:  0 clean, 1 faults found, 2 usage or setup error`;
 
@@ -153,6 +164,60 @@ async function settle(page) {
 }
 
 
+/**
+ * The type-scale audit, run in the page (so it works against any deployed
+ * site): text under 12px, and text lines wider than 75ch. Returns
+ * `{ smallText, wideMeasure, boxes }` shaped like the page audit's items and boxes.
+ */
+export function typeAudit() {
+	const out = { smallText: [], wideMeasure: [], boxes: [] };
+	const root = [...document.querySelectorAll('.surface')].find((x) => x.querySelector('.ripple-root'));
+	if (!root) return out;
+	const r = root.getBoundingClientRect();
+	const ctx = document.createElement('canvas').getContext('2d');
+	const where = (el) => {
+		const node = el.closest('[data-ripple-node]')?.getAttribute('data-ripple-node');
+		const w = el.closest('[data-widget]')?.getAttribute('data-widget');
+		const cls = typeof el.className === 'string' ? el.className.split(/\s+/).slice(0, 2).join('.') : '';
+		return [w && `widget=${w}`, node && `node=${node}`, `${el.tagName.toLowerCase()}${cls ? '.' + cls : ''}`].filter(Boolean).join(' ');
+	};
+	const add = (check, el, message, b = el.getBoundingClientRect()) => {
+		out[check].push(message);
+		const node = el.closest('[data-ripple-node]')?.getAttribute('data-ripple-node');
+		const widget = el.closest('[data-widget]')?.getAttribute('data-widget');
+		out.boxes.push({ check, ...(node ? { node } : {}), ...(widget ? { widget } : {}), x: Math.round(b.left - r.left), y: Math.round(b.top - r.top), w: Math.round(b.width), h: Math.round(b.height) });
+	};
+	const seen = new Set();
+	const walker = document.createTreeWalker(root.querySelector('.ripple-root'), NodeFilter.SHOW_TEXT);
+	for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+		const el = n.parentElement;
+		if (!el || seen.has(el) || !n.textContent.trim()) continue;
+		seen.add(el);
+		if (el.closest('[aria-hidden="true"]') || !el.checkVisibility({ opacityProperty: true, visibilityProperty: true })) continue;
+		const b = el.getBoundingClientRect();
+		const s = getComputedStyle(el);
+		// sr-only text is a 1px clipped box; it is read, not seen.
+		if (b.width <= 2 || b.height <= 2 || (s.clip && s.clip !== 'auto') || s.clipPath.startsWith('inset(50%')) continue;
+		const snippet = (el.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 40);
+		const svg = el.closest('svg');
+		const m = svg ? el.getScreenCTM?.() : null;
+		const px = parseFloat(s.fontSize) * (m ? Math.hypot(m.a, m.b) : 1);
+		if (px < 11.95) add('smallText', el, `${where(el)} ${Math.round(px * 10) / 10}px "${snippet}"`);
+		if (svg) continue;
+		ctx.font = `${s.fontStyle} ${s.fontWeight} ${s.fontSize} ${s.fontFamily}`;
+		const ch = ctx.measureText('0').width || parseFloat(s.fontSize) / 2;
+		let wide = null;
+		for (const t of el.childNodes) {
+			if (t.nodeType !== 3 || !t.textContent.trim()) continue;
+			const range = document.createRange();
+			range.selectNodeContents(t);
+			for (const line of range.getClientRects()) if (line.width > (wide?.width ?? 0)) wide = line;
+		}
+		if (wide && wide.width > 75 * ch + 1) add('wideMeasure', el, `${where(el)} ${Math.round(wide.width / ch)}ch line "${snippet}"`, wide);
+	}
+	return out;
+}
+
 async function launch(chromium) {
 	try {
 		return await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {});
@@ -218,8 +283,14 @@ async function run(packed, { base, widths, themes, outdir }) {
 				page.on('pageerror', (e) => consoleErrors.push(`[${tag}] pageerror: ${String(e.message ?? e).slice(0, 300)}`));
 				await page.goto(url, { waitUntil: 'networkidle' });
 				// Let the card be as tall as it is: the preview stage is a scroll container.
+				// From 1024 up, hide the chat and JSON panes so the card gets the whole
+				// width (below it the card lives inside the chat column, so leave that).
 				await page.addStyleTag({
-					content: `.pg,.work,.preview,.pane,.stage,.chat-col,.inline-preview{height:auto!important;max-height:none!important;overflow:visible!important}`
+					content:
+						`.pg,.work,.preview,.pane,.stage,.chat-col,.inline-preview{height:auto!important;max-height:none!important;overflow:visible!important}` +
+						(width >= 1024
+							? `.pg,.pg[data-chat],.pg .work,.pg[data-json] .work{grid-template-columns:minmax(0,1fr)!important;grid-template-rows:minmax(0,1fr)!important}.pg .chat-col,.pg .json,.pg .grip{display:none!important}`
+							: '')
 				});
 				let rendered = true;
 				try {
@@ -233,9 +304,11 @@ async function run(packed, { base, widths, themes, outdir }) {
 					const s = [...document.querySelectorAll('.surface')].find((x) => x.querySelector('.ripple-root'));
 					return s ? globalThis.ripplePageAudit(s, { documentErrors: '.pane .alert, .url-error' }) : null;
 				});
+				const type = await page.evaluate(typeAudit);
 				const a = { surfaceWidth: res?.width ?? 0, surfaceHeight: res?.height ?? 0 };
-				for (const k of LISTS) a[k] = res?.items[k] ?? [];
-				boxes.push(res?.boxes ?? []);
+				for (const k of PAGE_LISTS) a[k] = res?.items[k] ?? [];
+				for (const k of TYPE_LISTS) a[k] = type[k];
+				boxes.push([...(res?.boxes ?? []), ...type.boxes]);
 				status ??= await page.evaluate(() => {
 					const s = document.querySelector('.surface .ripple-root')?.closest('.pane')?.querySelector('.strip .state');
 					return s ? s.textContent.replace(/\s+/g, ' ').trim() : null;
@@ -269,8 +342,10 @@ async function run(packed, { base, widths, themes, outdir }) {
 	return { shots, boxes, consoleErrors, axeResult, axeSource, status };
 }
 
-const DEFAULTS = { widths: [380, 1024], themes: ['light', 'dark'] };
-const LISTS = ['errorBoxes', 'overflow', 'clippedText', 'emptyContainers', 'badText'];
+const DEFAULTS = { widths: [380, 1024, 1440], themes: ['light', 'dark'] };
+const PAGE_LISTS = ['errorBoxes', 'overflow', 'clippedText', 'emptyContainers', 'badText']; // from the site's page-audit.js
+const TYPE_LISTS = ['smallText', 'wideMeasure']; // from typeAudit() here
+const LISTS = [...PAGE_LISTS, ...TYPE_LISTS];
 
 /**
  * Renders `spec` at each width x theme into `outdir` (PNG per shot, no
@@ -327,8 +402,8 @@ async function main() {
 		return v;
 	};
 	const base = flag('base', process.env.RIPPLE_BASE || DEFAULT_BASE).replace(/\/$/, '');
-	const widths = flag('widths', '380,1024').split(',').map(Number);
-	const themes = flag('themes', 'light,dark').split(',');
+	const widths = flag('widths', DEFAULTS.widths.join(',')).split(',').map(Number);
+	const themes = flag('themes', DEFAULTS.themes.join(',')).split(',');
 	const [specPath, outArg] = args;
 	const die = (msg) => {
 		console.error(`render.mjs: ${msg}`);
@@ -367,6 +442,8 @@ async function main() {
 		clippedText: sum('clippedText'),
 		emptyContainers: sum('emptyContainers'),
 		badText: sum('badText'),
+		smallText: sum('smallText'),
+		wideMeasure: sum('wideMeasure'),
 		axeViolations: Array.isArray(axeResult) ? axeResult.length : null
 	};
 	const clean = Object.values(counts).every((v) => v === 0 || v === null);
