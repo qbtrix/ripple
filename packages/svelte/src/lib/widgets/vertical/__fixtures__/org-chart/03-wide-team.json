@@ -1,0 +1,100 @@
+{
+  "version": "1.0",
+  "state": {
+    "selected": "h2-3"
+  },
+  "ui": {
+    "type": "org-chart",
+    "bind": "selected",
+    "props": {
+      "root": {
+        "id": "ceo",
+        "name": "Rosa Alvarez",
+        "title": "Chief Executive Officer",
+        "children": [
+          {
+            "id": "h1",
+            "name": "Amara Okafor",
+            "title": "Head of Design",
+            "children": [
+              {
+                "id": "h1-1",
+                "name": "Bruno Ferreira",
+                "title": "Product Designer"
+              },
+              {
+                "id": "h1-2",
+                "name": "Chloe Dubois",
+                "title": "Product Designer"
+              },
+              {
+                "id": "h1-3",
+                "name": "Dmitri Volkov",
+                "title": "Brand Designer"
+              },
+              {
+                "id": "h1-4",
+                "name": "Elena Rossi",
+                "title": "Design Researcher"
+              }
+            ]
+          },
+          {
+            "id": "h2",
+            "name": "Farid Rahimi",
+            "title": "Head of Engineering",
+            "children": [
+              {
+                "id": "h2-1",
+                "name": "Grace Liu",
+                "title": "Frontend Engineer"
+              },
+              {
+                "id": "h2-2",
+                "name": "Hugo Lindqvist",
+                "title": "Backend Engineer"
+              },
+              {
+                "id": "h2-3",
+                "name": "Ines Moreau",
+                "title": "Backend Engineer"
+              },
+              {
+                "id": "h2-4",
+                "name": "Jonas Becker",
+                "title": "Mobile Engineer"
+              },
+              {
+                "id": "h2-5",
+                "name": "Kavya Iyer",
+                "title": "Site Reliability Engineer"
+              }
+            ]
+          },
+          {
+            "id": "h3",
+            "name": "Liam O'Connell",
+            "title": "Head of Growth",
+            "children": [
+              {
+                "id": "h3-1",
+                "name": "Mei Tanaka",
+                "title": "Lifecycle Marketer"
+              },
+              {
+                "id": "h3-2",
+                "name": "Nikolai Petrov",
+                "title": "Content Lead"
+              },
+              {
+                "id": "h3-3",
+                "name": "Olivia Grant",
+                "title": "Partnerships Manager"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

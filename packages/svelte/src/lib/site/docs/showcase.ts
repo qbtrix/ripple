@@ -23,7 +23,8 @@
 // - Fictional names and data only. Dates are not after the day this was
 //   written (2026-10-14), except where the widget is about plans (gantt,
 //   calendar). Numbers add up (invoice lines sum to the subtotal, funnel
-//   stages only shrink).
+//   stages only shrink, a sankey node never sends out more than it takes in;
+//   the remainder shows as a drop-off).
 
 const spec = (ui: Record<string, unknown>, state?: Record<string, unknown>): Record<string, unknown> => ({
 	version: '1.0',
@@ -387,18 +388,6 @@ export const SHOWCASE: Record<string, Record<string, unknown>> = {
 		type: 'source-card',
 		props: { source: 'Stackline Weekly', title: 'Warehouse robotics startup raises $50M Series B', color: '#ff6b35', url: 'https://example.com/stackline/robotics' }
 	}),
-	'sources-bar': spec({
-		type: 'sources-bar',
-		props: {
-			sources: [
-				{ name: 'The Harbor Ledger', url: 'https://example.com/harbor-ledger' },
-				{ name: 'Stackline Weekly', url: 'https://example.com/stackline' },
-				{ name: 'Northside Times', url: 'https://example.com/northside' }
-			],
-			share: true,
-			copy: true
-		}
-	}),
 	'discover-card': spec({
 		type: 'discover-card',
 		props: {
@@ -586,6 +575,190 @@ export const SHOWCASE: Record<string, Record<string, unknown>> = {
 				{ id: 'recent', label: 'Recently updated', icon: 'history', count: 88 },
 				{ id: 'done', label: 'Done', icon: 'check', count: 1306 }
 			]
+		}
+	}),
+	gauge: spec({
+		type: 'gauge',
+		props: { title: 'Daily step goal', value: 4228, max: 10000, label: 'Steps today' }
+	}),
+	'order-status': spec({
+		type: 'order-status',
+		props: {
+			orderId: 'B7C2E91A',
+			title: 'On the way',
+			steps: [
+				{ id: 'confirmed', label: 'Confirmed', completedAt: '18 min ago' },
+				{ id: 'preparing', label: 'Preparing', completedAt: '9 min ago' },
+				{ id: 'out-for-delivery', label: 'On the way', completedAt: 'just now' },
+				{ id: 'delivered', label: 'Delivered' }
+			],
+			currentStep: 'out-for-delivery',
+			eta: '12 min',
+			origin: { name: 'Copper Griddle kitchen', lat: 37.7764, lng: -122.4172 },
+			destination: { name: 'Drop-off', lat: 37.788, lng: -122.401 },
+			tracker: { lat: 37.7815, lng: -122.4101, label: 'Courier' },
+			route: [
+				[37.7764, -122.4172],
+				[37.779, -122.414],
+				[37.7815, -122.4101],
+				[37.784, -122.4068],
+				[37.7862, -122.404],
+				[37.788, -122.401]
+			],
+			events: [
+				{ time: 'just now', label: 'Courier picked up your order' },
+				{ time: '9 min ago', label: 'Kitchen started preparing' },
+				{ time: '18 min ago', label: 'Order confirmed' }
+			],
+			mapTiles: 'osm'
+		}
+	}),
+	'org-chart': spec({
+		type: 'org-chart',
+		props: {
+			value: 'h2-3',
+			root: {
+				id: 'ceo',
+				name: 'Rosa Alvarez',
+				title: 'Chief Executive Officer',
+				children: [
+					{
+						id: 'h1',
+						name: 'Amara Okafor',
+						title: 'Head of Design',
+						children: [
+							{ id: 'h1-1', name: 'Bruno Ferreira', title: 'Product Designer' },
+							{ id: 'h1-2', name: 'Chloe Dubois', title: 'Product Designer' },
+							{ id: 'h1-3', name: 'Dmitri Volkov', title: 'Brand Designer' },
+							{ id: 'h1-4', name: 'Elena Rossi', title: 'Design Researcher' }
+						]
+					},
+					{
+						id: 'h2',
+						name: 'Farid Rahimi',
+						title: 'Head of Engineering',
+						children: [
+							{ id: 'h2-1', name: 'Grace Liu', title: 'Frontend Engineer' },
+							{ id: 'h2-2', name: 'Hugo Lindqvist', title: 'Backend Engineer' },
+							{ id: 'h2-3', name: 'Ines Moreau', title: 'Backend Engineer' },
+							{ id: 'h2-4', name: 'Jonas Becker', title: 'Mobile Engineer' },
+							{ id: 'h2-5', name: 'Kavya Iyer', title: 'Site Reliability Engineer' }
+						]
+					},
+					{
+						id: 'h3',
+						name: "Liam O'Connell",
+						title: 'Head of Growth',
+						children: [
+							{ id: 'h3-1', name: 'Mei Tanaka', title: 'Lifecycle Marketer' },
+							{ id: 'h3-2', name: 'Nikolai Petrov', title: 'Content Lead' },
+							{ id: 'h3-3', name: 'Olivia Grant', title: 'Partnerships Manager' }
+						]
+					}
+				]
+			}
+		}
+	}),
+	'pipeline-dashboard': spec({
+		type: 'pipeline-dashboard',
+		props: {
+			title: 'Hiring pipeline',
+			subtitle: 'Engineering and design roles',
+			period: 'H2 2026',
+			quota: { label: 'Hires', current: 14, target: 20, period: 'H2 hiring plan, 11 weeks left' },
+			conversion: [
+				{ from: 'Applied', to: 'Screened', rate: 22.5 },
+				{ from: 'Screened', to: 'Onsite', rate: 41.1 },
+				{ from: 'Onsite', to: 'Offer', rate: 28.3 },
+				{ from: 'Offer', to: 'Accepted', rate: 82.4 }
+			],
+			leaderboard: {
+				title: 'Top referrers',
+				items: [
+					{ name: 'Sunniva Halvorsen', value: 6, sublabel: '2 hired' },
+					{ name: 'Kofi Mensah', value: 4, sublabel: '1 hired' },
+					{ name: 'Lucia Ferreira', value: 3 },
+					{ name: 'Arjun Mehta', value: 3, sublabel: '1 hired' }
+				]
+			},
+			deals: {
+				title: 'Candidates in final rounds',
+				columns: [
+					{ key: 'name', label: 'Candidate' },
+					{ key: 'role', label: 'Role' },
+					{ key: 'stage', label: 'Stage' },
+					{ key: 'days', label: 'Days in stage', align: 'right' }
+				],
+				rows: [
+					{ name: 'Noor Haddad', role: 'Staff engineer', stage: 'Offer', days: 2 },
+					{ name: 'Emil Sandberg', role: 'Product designer', stage: 'Onsite', days: 5 },
+					{ name: 'Thandiwe Nkosi', role: 'Engineering manager', stage: 'Onsite', days: 9 },
+					{ name: 'Mateo Rinaldi', role: 'Data engineer', stage: 'Reference check', days: 1 }
+				]
+			},
+			ticker: [
+				{ time: '10m ago', label: 'Offer accepted: Platform engineer', actor: 'Kofi Mensah', icon: 'check-circle-2' },
+				{ time: '2h ago', label: 'Onsite scheduled: Emil Sandberg', actor: 'Lucia Ferreira', icon: 'calendar' },
+				{ time: 'Yesterday', label: 'Candidate withdrew: Backend engineer', icon: 'x-circle' }
+			]
+		}
+	}),
+	sankey: spec({
+		type: 'sankey',
+		props: {
+			title: 'Support tickets this month',
+			nodes: [
+				{ name: 'Email' },
+				{ name: 'Chat' },
+				{ name: 'Phone' },
+				{ name: 'Web form' },
+				{ name: 'Community' },
+				{ name: 'Self-serve' },
+				{ name: 'Triage' },
+				{ name: 'Billing' },
+				{ name: 'Technical' },
+				{ name: 'Account' },
+				{ name: 'Feedback' },
+				{ name: 'Resolved' },
+				{ name: 'Escalated' },
+				{ name: 'Open' }
+			],
+			links: [
+				{ source: 'Email', target: 'Triage', value: 420 },
+				{ source: 'Chat', target: 'Triage', value: 610 },
+				{ source: 'Chat', target: 'Self-serve', value: 140 },
+				{ source: 'Phone', target: 'Triage', value: 180 },
+				{ source: 'Web form', target: 'Triage', value: 260 },
+				{ source: 'Community', target: 'Triage', value: 45 },
+				{ source: 'Triage', target: 'Billing', value: 380 },
+				{ source: 'Triage', target: 'Technical', value: 640 },
+				{ source: 'Triage', target: 'Account', value: 290 },
+				{ source: 'Triage', target: 'Feedback', value: 160 },
+				{ source: 'Billing', target: 'Resolved', value: 350 },
+				{ source: 'Billing', target: 'Escalated', value: 30 },
+				{ source: 'Technical', target: 'Resolved', value: 510 },
+				{ source: 'Technical', target: 'Escalated', value: 95 },
+				{ source: 'Technical', target: 'Open', value: 35 },
+				{ source: 'Account', target: 'Resolved', value: 270 },
+				{ source: 'Account', target: 'Open', value: 20 },
+				{ source: 'Feedback', target: 'Resolved', value: 60 }
+			]
+		}
+	}),
+	'sources-bar': spec({
+		type: 'sources-bar',
+		props: {
+			sources: [
+				{ name: 'Kestrel Analytics', url: 'https://example.com/kestrel/q3' },
+				{ name: 'Oakmere Reports', url: 'https://example.com/oakmere/q3' },
+				{ name: 'Rivergate Wire', url: 'https://example.com/rivergate/q3' },
+				{ name: 'Saltmarsh Quarterly', url: 'https://example.com/saltmarsh/q3' },
+				{ name: 'Copperline Data', url: 'https://example.com/copperline/q3' }
+			],
+			count: 48,
+			label: 'pages read',
+			share: true,
+			copy: true
 		}
 	})
 };

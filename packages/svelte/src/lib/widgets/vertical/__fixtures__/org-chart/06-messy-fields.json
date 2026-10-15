@@ -1,0 +1,56 @@
+{
+  "version": "1.0",
+  "state": {
+    "selected": "7"
+  },
+  "ui": {
+    "type": "org-chart",
+    "props": {
+      "root": {
+        "id": "root",
+        "name": "**Priya Raman**",
+        "title": "Chief Operating Officer",
+        "avatar": "javascript:alert(1)",
+        "children": [
+          {
+            "id": 7,
+            "name": 42,
+            "title": 2026
+          },
+          {
+            "name": "Quentin Blake-Ford",
+            "title": "Missing id"
+          },
+          {
+            "id": "dup",
+            "name": "Rina Sato",
+            "title": "Ops Lead",
+            "avatar": "https://example.com/avatars/rina-sato.jpg",
+            "children": "Tomas Reyes, Uma Nair"
+          },
+          {
+            "id": "dup",
+            "name": "Sven Larsen",
+            "title": "Ops Lead (duplicate id)",
+            "children": [
+              null,
+              "Viktor Hale",
+              {
+                "id": "x1",
+                "title": "Name missing"
+              }
+            ]
+          },
+          null,
+          {
+            "id": "empty-name",
+            "name": "",
+            "title": "",
+            "children": []
+          }
+        ]
+      }
+    },
+    "bind": "selected"
+  }
+}

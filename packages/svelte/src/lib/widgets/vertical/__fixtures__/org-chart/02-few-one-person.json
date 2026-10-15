@@ -1,0 +1,14 @@
+{
+  "version": "1.0",
+  "state": {},
+  "ui": {
+    "type": "org-chart",
+    "props": {
+      "root": {
+        "id": "founder",
+        "name": "Noor Haddad",
+        "title": "Founder"
+      }
+    }
+  }
+}

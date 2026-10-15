@@ -151,10 +151,10 @@ describe('words', () => {
 	test('summary and its fallbacks', () => {
 		expect(funnelSummary(funnelRows(typical))).toEqual({
 			text: '10.5% of Leads reached Closed',
-			drop: 'biggest drop: Proposal to Closed, 38% continued'
+			drop: 'Biggest drop: Proposal to Closed (38% carried on)'
 		});
 		// The step's start is the last numbered stage, skipping n/a rows.
-		expect(funnelSummary(funnelRows(messy))?.drop).toBe('biggest drop: Stage 4 to Paid, 0% continued');
+		expect(funnelSummary(funnelRows(messy))?.drop).toBe('Biggest drop: Stage 4 to Paid (0% carried on)');
 		expect(funnelSummary(funnelRows([{ label: 'Signed up', value: 86 }]))).toBeUndefined();
 		expect(funnelSummary(funnelRows([{ label: 'a', value: 0 }, { label: 'b', value: 0 }]))?.text).toBe(
 			'Nothing recorded yet'

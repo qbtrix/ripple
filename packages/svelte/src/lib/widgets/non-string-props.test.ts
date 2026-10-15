@@ -34,6 +34,7 @@ import ApiKey from './vertical/ApiKey.svelte';
 import TextEffect from './premium/TextEffect.svelte';
 import DataGrid from './data/DataGrid.svelte';
 import AuditLog from './vertical/AuditLog.svelte';
+import SourcesBar from './research/SourcesBar.svelte';
 
 /** Render and return the trimmed text content; fails the test if render throws. */
 function renderText(Component: any, props: Record<string, unknown>): string {
@@ -149,5 +150,29 @@ describe('non-string props do not crash widgets', () => {
     });
     expect(text).toContain('42');
     expect(text).toContain('1 event');
+  });
+
+  it('SourcesBar shows a numeric name and drops an object name (spec 05)', () => {
+    const text = renderText(SourcesBar, {
+      sources: [
+        { name: 'Lanternpost', url: 'https://lanternpost.example.com/a' },
+        { name: 42, url: 'https://fortytwo.example.org' },
+        { name: { text: 'Harbor Ledger' } },
+        { name: '' },
+        { name: '   ' },
+        null,
+        'Fieldnote Review',
+        { url: 'https://nameless.example.net/x' },
+        { name: 'Quarry Weekly', url: '', favicon: '', color: '' }
+      ],
+      count: '12',
+      label: '',
+      share: false,
+      copy: false
+    });
+    expect(text).toContain('42');
+    expect(text).toContain('12 sources');
+    expect(text).toContain('nameless.example.net');
+    expect(text).not.toMatch(/\[object|undefined|\{/);
   });
 });

@@ -1,12 +1,16 @@
 // widgets/composite/OrderStatus.test.ts: order-status stepper states. The last
 // step renders done (check, no pulse) once status lands on it, the pickup
 // statuses get their own default pipeline, and an in-progress step still
-// pulses. The map-framing case mounts the map on a small Leaflet fake and
-// checks fitBounds runs at mount and on origin/destination moves only. The
-// polled case drives the widget through Ripple state from preparing to
-// delivered and checks the framing, the dashed route and the map survive it.
+// pulses. A failed step shows an X with aria-current and an error pill; a
+// cancelled default pipeline has no rail. Updates fold after four, an unknown
+// icon slug gets the plain dot, a dead action is not drawn. The map-framing
+// case mounts the map on a small Leaflet fake and checks fitBounds runs at
+// mount and on origin/destination moves only; a tracker and step update keeps
+// the same map node. The polled case drives the widget through Ripple state
+// from preparing to delivered and checks the framing, the dashed route and the
+// map survive it.
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render } from '@testing-library/svelte';
+import { cleanup, fireEvent, render } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import Ripple from '$lib/Ripple.svelte';
 import OrderStatus from './OrderStatus.svelte';
@@ -21,7 +25,7 @@ const leaflet = vi.hoisted(() => {
 	const L = {
 		map: () => {
 			maps();
-			return { fitBounds, setView, on() {}, remove() {}, panTo() {} };
+			return { fitBounds, setView, on() {}, remove() {}, panTo() {}, getSize: () => ({ x: 0, y: 0 }), latLngToContainerPoint: () => ({ x: 0, y: 0 }) };
 		},
 		tileLayer: stub,
 		layerGroup: () => {
@@ -140,8 +144,94 @@ describe('order-status stepper', () => {
 	});
 });
 
+describe('order-status bad news', () => {
+	it('marks a failed step that is not the current one with an X and an error pill', () => {
+		const { container } = render(OrderStatus, {
+			props: {
+				orderId: 'HW-77310',
+				status: 'failed',
+				currentStep: 'out',
+				steps: [
+					{ id: 'placed', label: 'Placed', completedAt: 'Oct 11' },
+					{ id: 'out', label: 'Out for delivery', completedAt: 'Oct 14' },
+					{ id: 'attempt', label: 'Delivery attempt', failed: true, description: 'No one was available to sign.' },
+					{ id: 'delivered', label: 'Delivered' }
+				],
+				eta: 'Next attempt tomorrow'
+			}
+		});
+		expect(steps(container).map((x) => x.state)).toEqual(['done', 'done', 'failed', 'pending']);
+		const failed = container.querySelectorAll('.rorder-step')[2];
+		expect(failed.getAttribute('aria-current')).toBe('step');
+		expect(failed.querySelector('.rorder-step-pip svg')).not.toBeNull();
+		expect(container.querySelector('.rorder-title')?.textContent).toBe('Delivery attempt');
+		expect(container.querySelector('[data-status="bad"]')?.textContent).toContain('Failed');
+		expect(container.querySelector('.rorder-step-desc')?.textContent).toBe('No one was available to sign.');
+		// The value already says "Next", so the label word steps aside.
+		expect(container.querySelector('.rorder-when')?.textContent?.trim()).toBe('Next attempt tomorrow');
+		expect(container.querySelector('.rorder-when-label')).toBeNull();
+		expect(container.querySelectorAll('.rorder-step-line[data-line="dotted"]')).toHaveLength(1);
+		expect(container.textContent).not.toMatch(/paused/i);
+	});
+
+	it('draws no rail for a cancelled default pipeline', () => {
+		const { container } = render(OrderStatus, { props: { orderId: 'LB-1', status: 'cancelled' } });
+		expect(container.querySelector('.rorder-steps')).toBeNull();
+		expect(container.querySelector('.rorder-title')?.textContent).toBe('Order cancelled');
+		expect(container.querySelector('[data-status="bad"]')?.textContent).toContain('Cancelled');
+		expect(container.querySelector('.rorder-map')).toBeNull();
+	});
+});
+
+describe('order-status updates and actions', () => {
+	it('folds after four updates and unfolds on click', async () => {
+		const events = Array.from({ length: 9 }, (_, i) => ({ time: `${i}:00`, label: `Update ${i}` }));
+		const { container, getByRole } = render(OrderStatus, { props: { orderId: 'A1', events } });
+		expect(container.querySelectorAll('.rorder-event')).toHaveLength(4);
+		const fold = getByRole('button', { name: 'Show 5 earlier updates' });
+		await fireEvent.click(fold);
+		expect(container.querySelectorAll('.rorder-event')).toHaveLength(9);
+		expect(fold.textContent?.trim()).toBe('Show fewer');
+	});
+
+	it('keeps labels aligned: an icon sits in the marker, an unknown slug is the dot', () => {
+		const { container } = render(OrderStatus, {
+			props: {
+				orderId: 1042 as unknown as string,
+				events: [
+					{ label: '**Delivered** to the front desk', icon: 'rocket-ship-xyz' },
+					{ time: '08:00', label: '- Departed facility', icon: 'truck' },
+					{ time: 'Yesterday', label: '' }
+				] as { time: string; label: string; icon?: string }[]
+			}
+		});
+		const rows = [...container.querySelectorAll('.rorder-event')];
+		expect(rows.map((r) => r.querySelector('.rorder-event-label')?.textContent)).toEqual(['Delivered to the front desk', 'Departed facility']);
+		expect(rows[0].querySelector('.rorder-event-mark svg')).toBeNull();
+		expect(rows[1].querySelector('.rorder-event-mark svg')).not.toBeNull();
+		expect(container.querySelector('.rorder-event-label svg')).toBeNull();
+		expect(container.querySelector('.rorder-eyebrow')?.textContent).toBe('Order 1042');
+	});
+
+	it('drops an action that can do nothing and draws an unknown variant as outline', async () => {
+		const onaction = vi.fn();
+		const { container, getByRole } = render(OrderStatus, {
+			props: {
+				orderId: 'A1',
+				onaction,
+				actions: [{ label: 'Track on the carrier site' }, { id: 'help', label: 'Help', variant: 'link' as 'outline' }]
+			}
+		});
+		expect(container.querySelectorAll('.rorder-btn')).toHaveLength(1);
+		const help = getByRole('button', { name: 'Help' });
+		expect(help.classList.contains('rorder-btn-outline')).toBe(true);
+		await fireEvent.click(help);
+		expect(onaction).toHaveBeenCalledWith('help');
+	});
+});
+
 describe('order-status map framing', () => {
-	it('fits the whole trip with 32px padding at mount and refits only when origin or destination move', async () => {
+	it('fits the whole trip clear of the map chrome at mount and refits only when origin or destination move', async () => {
 		vi.stubGlobal('requestAnimationFrame', () => 1);
 		vi.stubGlobal('cancelAnimationFrame', () => {});
 		leaflet.fitBounds.mockClear();
@@ -156,7 +246,7 @@ describe('order-status map framing', () => {
 				[9.9, 20],
 				[10.2, 20.4]
 			],
-			{ padding: [32, 32] }
+			{ paddingTopLeft: [44, 58], paddingBottomRight: [28, 32] }
 		);
 		expect(leaflet.setView).not.toHaveBeenCalled();
 
@@ -172,8 +262,39 @@ describe('order-status map framing', () => {
 				[9.9, 20],
 				[10.5, 20.6]
 			],
-			{ padding: [32, 32] }
+			{ paddingTopLeft: [44, 58], paddingBottomRight: [28, 32] }
 		);
+	});
+});
+
+describe('order-status host polling', () => {
+	it('keeps the same map node and Leaflet map when the tracker and step change', async () => {
+		vi.stubGlobal('requestAnimationFrame', () => 1);
+		vi.stubGlobal('cancelAnimationFrame', () => {});
+		leaflet.maps.mockClear();
+		const base = {
+			orderId: 'B7C2E91A',
+			steps: [
+				{ id: 'confirmed', label: 'Confirmed', completedAt: '18 min ago' },
+				{ id: 'out', label: 'On the way' },
+				{ id: 'delivered', label: 'Delivered' }
+			],
+			currentStep: 'confirmed',
+			origin: { name: 'Kitchen', lat: 37.7764, lng: -122.4172 },
+			destination: { name: 'Drop-off', lat: 37.788, lng: -122.401 },
+			tracker: { lat: 37.779, lng: -122.414 },
+			showMap: true,
+			mapHeight: '260px'
+		};
+		const { container, rerender } = render(OrderStatus, { props: base });
+		await vi.waitFor(() => expect(leaflet.maps).toHaveBeenCalledTimes(1));
+		const map = container.querySelector('.rorder-map');
+		const leafletEl = container.querySelector('.rmap');
+		await rerender({ ...base, currentStep: 'out', tracker: { lat: 37.7815, lng: -122.4101 } });
+		await rerender({ ...base, currentStep: 'delivered', tracker: undefined, eta: '' });
+		expect(container.querySelector('.rorder-map')).toBe(map);
+		expect(container.querySelector('.rmap')).toBe(leafletEl);
+		expect(leaflet.maps).toHaveBeenCalledTimes(1);
 	});
 });
 

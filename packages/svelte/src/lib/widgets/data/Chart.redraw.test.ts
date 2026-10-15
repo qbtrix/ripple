@@ -1,13 +1,11 @@
-// Chart.redraw.test.ts: the echarts-backed data widgets (chart, sankey), the
-// native gantt and heatmap, and the DOM treemap and funnel redraw when their
+// Chart.redraw.test.ts: the echarts-backed chart, the native gantt and
+// heatmap, and the DOM treemap, funnel and sankey redraw when their
 // props change after mount: state behind `data` changes, a streamed spec delivers
 // title/data in later chunks, or type/title are swapped on the live component.
 // The chart libs are mocked (jsdom has no canvas), so every echarts assertion
 // reads the option handed to the instance's update call. The instance itself
 // must be created once and updated in place, then disposed on unmount. The DOM
-// widgets (treemap, funnel, heatmap, gantt) are checked by reading what they render.
-// Sankey also paints its title and labels in the element's text colour and
-// redraws when the root theme class flips.
+// widgets (treemap, funnel, heatmap, gantt, sankey) are checked by reading what they render.
 
 import { render, fireEvent } from '@testing-library/svelte';
 import { tick } from 'svelte';
@@ -129,35 +127,17 @@ describe('chart', () => {
 	});
 });
 
-describe.each([
-	[
-		'sankey',
-		Sankey,
-		{ nodes: [{ name: 'a' }, { name: 'b' }], links: [{ source: 'a', target: 'b', value: 1 }] },
-		{ nodes: [{ name: 'a' }, { name: 'b' }], links: [{ source: 'a', target: 'b', value: 9 }] },
-		(o: any) => o.series[0].links.map((l: any) => l.value),
-		[9]
-	]
-] as const)('%s', (_name, Widget, before, after, read, expected) => {
-	test('redraws when its data prop changes after mount', async () => {
-		const { rerender } = render(Widget as any, { props: before });
-		await vi.waitFor(() => expect(ec.setOption).toHaveBeenCalled());
-		await rerender(after);
-		await vi.waitFor(() => expect(read(lastOption())).toEqual(expected));
-		expect(ec.init).toHaveBeenCalledTimes(1);
-	});
-});
-
-describe('sankey theme', () => {
-	test('paints the title and labels in the text colour, unstroked, and redraws on a theme flip', async () => {
-		const { container } = render(Sankey, {
-			props: { title: 'Journey', nodes: [{ name: 'a' }, { name: 'b' }], links: [{ source: 'a', target: 'b', value: 1 }] }
-		});
-		(container.firstElementChild as HTMLElement).style.color = 'rgb(240, 240, 240)';
-		document.documentElement.classList.add('dark');
-		await vi.waitFor(() => expect(lastOption().title.textStyle.color).toBe('rgb(240, 240, 240)'));
-		expect(lastOption().series[0].label).toMatchObject({ color: 'rgb(240, 240, 240)', textBorderWidth: 0 });
-		document.documentElement.classList.remove('dark');
+describe('sankey', () => {
+	test('redraws its figures when its links change after mount', async () => {
+		// bind:clientWidth needs entries with a target; the sized stub has none.
+		vi.unstubAllGlobals();
+		const nodes = [{ name: 'a' }, { name: 'b' }];
+		const { container, rerender } = render(Sankey, { props: { nodes, links: [{ source: 'a', target: 'b', value: 1 }] } });
+		const figs = () => [...container.querySelectorAll('.sk-fig')].map((n) => n.textContent);
+		expect(figs()).toEqual(['1', '1 · 100%']);
+		await rerender({ nodes, links: [{ source: 'a', target: 'b', value: 9 }] });
+		expect(figs()).toEqual(['9', '9 · 100%']);
+		expect(ec.init).not.toHaveBeenCalled();
 	});
 });
 

@@ -47,7 +47,15 @@ const fake = vi.hoisted(() => {
 	const layer = () => ({ addTo: () => layer(), addLayer() {}, removeLayer() {}, clearLayers() {} });
 	const path = () => ({ bindTooltip() {}, setLatLngs() {}, setStyle() {} });
 	const L = {
-		map: () => ({ setView: (c: unknown) => (views.center = c), fitBounds: (b: unknown) => (views.bounds = b), on() {}, remove() {}, panTo() {} }),
+		map: () => ({
+			setView: (c: unknown) => (views.center = c),
+			fitBounds: (b: unknown) => (views.bounds = b),
+			on() {},
+			remove() {},
+			panTo() {},
+			getSize: () => ({ x: 0, y: 0 }),
+			latLngToContainerPoint: () => ({ x: 0, y: 0 })
+		}),
 		tileLayer: (url: string) => ((views.tiles = url), { addTo() {} }),
 		layerGroup: layer,
 		divIcon: (o: { html: string }) => o,

@@ -2,7 +2,8 @@
 // manifest widget, every spec contains that widget (the root unless listed in
 // NOT_ROOT) and passes the bound spec audit (schema, catalog, actions, props
 // and the rest; not futureDate, since gantt and calendar plan ahead), and the
-// widget page previews the showcase spec in place of the manifest example.
+// widget page previews the showcase spec in place of the manifest example,
+// which a root showcase must not repeat.
 // Every asset URL is same-origin or on a host the site CSP allows, and every
 // local media file exists under static/. Rendering is covered by
 // widgets.test.ts, which renders every page's pageSpecs(...).example.
@@ -29,7 +30,7 @@ const entry = (type: string) => manifestEntries.find((e) => e.type === type);
 const cases = Object.entries(SHOWCASE).map(([type, spec]) => ({ type, spec }));
 
 describe('widget showcase specs', () => {
-	it('covers the wave-1, wave-2 and preview-polish widgets', () => {
+	it('covers the wave-1 to wave-3 and preview-polish widgets', () => {
 		expect(Object.keys(SHOWCASE)).toEqual(
 			expect.arrayContaining([
 				'gantt',
@@ -68,7 +69,12 @@ describe('widget showcase specs', () => {
 				'source-card',
 				'sources-bar',
 				'discover-card',
-				'logo-cloud'
+				'logo-cloud',
+				'gauge',
+				'order-status',
+				'org-chart',
+				'pipeline-dashboard',
+				'sankey'
 			])
 		);
 	});
@@ -77,7 +83,10 @@ describe('widget showcase specs', () => {
 		expect(entry(type), `${type} is not in the manifest`).toBeDefined();
 		expect(spec.version).toBe('1.0');
 		if (NOT_ROOT[type]) expect(findNode(spec, type)).not.toBeNull();
-		else expect(spec.ui).toMatchObject({ type });
+		else {
+			expect(spec.ui).toMatchObject({ type });
+			expect(spec.ui, `${type} repeats the manifest example`).not.toEqual(entry(type)?.example);
+		}
 		const reports = specAudit(spec, { widgetTypes: getWidgetTypes(), widgets: manifestEntries });
 		const allowed = UNDOCUMENTED[type] ?? [];
 		const problems = reports
