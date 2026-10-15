@@ -1,7 +1,7 @@
 {
   "schema": "ripple.manifest/v1",
   "version": "0.8.0",
-  "generatedAt": "2026-10-14T17:18:56.770Z",
+  "generatedAt": "2026-10-15T04:52:34.086Z",
   "spec": {
     "uiField": "ui",
     "stateField": "state",
@@ -15919,16 +15919,16 @@
         "props": {
           "sources": [
             {
-              "name": "Reuters",
-              "url": "https://reuters.com"
+              "name": "Lanternpost",
+              "url": "https://lanternpost.example.com"
             },
             {
-              "name": "AP News",
-              "url": "https://apnews.com"
+              "name": "Harbor Ledger",
+              "url": "https://harborledger.example.org"
             },
             {
-              "name": "Wall Street Journal",
-              "url": "https://wsj.com"
+              "name": "Fieldnote Review",
+              "url": "https://fieldnote.example.net"
             }
           ],
           "share": true,
