@@ -14,6 +14,11 @@
 //   unit); the same name in another unit stays its own row. That key is also what a tick (`got`) remembers, so a
 //   swap never moves a tick onto another item.
 // - Every reader takes `unknown` and never throws: props are model output.
+//   Kinds and slots compare lowercased; nutrition reads "22g" as 22 and a
+//   negative value as missing; a negative qty is missing; a repeated recipe id
+//   keeps its first row only.
+// - Grams and millilitres of 1,000 or more print as kg and l (display only;
+//   the sum key keeps the written unit).
 // - A widget's own edit of a non-bound prop (a swap, a tick) is an `Edit`
 //   (data-kit/edit.ts).
 import { finite, plain } from '../data-kit/format.js';
@@ -93,6 +98,15 @@ export function positive(v: unknown): number | undefined {
 	return n !== undefined && n > 0 ? n : undefined;
 }
 
+/** A nutrition value: a number, "550" or "22g" / "550 kcal"; negative or junk is missing. */
+export function nutrient(v: unknown): number | undefined {
+	const n = typeof v === 'string' ? Number(/^\s*(\d+(?:\.\d+)?)\s*[a-z]*\s*$/i.exec(v)?.[1]) : finite(v);
+	return n !== undefined && Number.isFinite(n) && n >= 0 ? n : undefined;
+}
+
+/** A recipe ref as words: "leftover-pizza" reads "Leftover pizza". */
+export const humanRef = (ref: string) => word(ref.replace(/[-_]+/g, ' ').trim());
+
 /** How much to multiply the written quantities by; 1 when `serves` is unusable. */
 export function scaleFactor(want: unknown, serves: unknown): number {
 	const base = positive(serves);
@@ -134,7 +148,7 @@ export function formatQty(qty: unknown, unit?: unknown): string {
 
 // Counted units read singular at one and plural above it ("1 can", "2 cans");
 // a model writes either form. tbsp, tsp and metric units never change.
-const COUNTED = new Set(['cup', 'can', 'clove', 'slice', 'head', 'jar', 'bunch', 'pinch', 'sprig', 'stick', 'pack', 'bag', 'fillet', 'piece', 'tin', 'handful', 'bottle', 'scoop']);
+const COUNTED = new Set(['cup', 'can', 'clove', 'slice', 'head', 'jar', 'bunch', 'pinch', 'sprig', 'stick', 'pack', 'bag', 'fillet', 'piece', 'tin', 'handful', 'bottle', 'scoop', 'stalk']);
 const singular = (u: string) => (u.endsWith('es') && COUNTED.has(u.slice(0, -2)) ? u.slice(0, -2) : u.endsWith('s') && COUNTED.has(u.slice(0, -1)) ? u.slice(0, -1) : u);
 
 /** The unit a sum is kept under: lowercased, a counted unit in its singular. */
@@ -150,11 +164,18 @@ export function unitFor(qty: number | undefined, unit: unknown): string {
 	return qty > 1 ? (/(ch|sh)$/.test(one) ? `${one}es` : `${one}s`) : one;
 }
 
-/** "1½ cups", "400 g", "2 eggs" (unit-less), or just the unit when there is no number. */
+const GRAMS = /^(g|gr|grams?)$/;
+const MILLILITRES = /^(ml|millilit(?:er|re)s?)$/;
+
+/** "1½ cups", "400 g", "16 kg" (from 16,000 g), "2 eggs" (unit-less), or just the unit when there is no number. */
 export function qtyLabel(qty: unknown, unit?: unknown): string {
-	const n = formatQty(qty, unit);
+	let q = finite(qty);
+	const big = q !== undefined && q >= 1000;
+	if (big && GRAMS.test(baseUnit(unit))) [q, unit] = [q! / 1000, 'kg'];
+	else if (big && MILLILITRES.test(baseUnit(unit))) [q, unit] = [q! / 1000, 'l'];
+	const n = formatQty(q, unit);
 	// Agree with the number as printed: 1.02 prints "1", so "1 cup".
-	return [n, unitFor(n ? (n === '1' ? 1 : finite(qty)) : undefined, unit)].filter(Boolean).join(' ');
+	return [n, unitFor(n ? (n === '1' ? 1 : q) : undefined, unit)].filter(Boolean).join(' ');
 }
 
 export interface IngredientRow {
@@ -172,7 +193,8 @@ export function readIngredients(v: unknown): IngredientRow[] {
 		const r = rec(raw);
 		const name = plain(r.name);
 		if (!name) return [];
-		return [{ key: `${plain(r.id)}:${i}`, name, qty: finite(r.qty), unit: plain(r.unit), note: plain(r.note), aisle: toAisle(r.aisle) }];
+		const qty = finite(r.qty);
+		return [{ key: `${plain(r.id)}:${i}`, name, qty: qty !== undefined && qty >= 0 ? qty : undefined, unit: plain(r.unit), note: plain(r.note), aisle: toAisle(r.aisle) }];
 	});
 }
 
@@ -207,23 +229,25 @@ export interface LibraryRecipe {
 	minutes?: number;
 }
 
-/** The recipe library: rows with a name or an id, in written order. */
+/** The recipe library: rows with a name or an id, in written order; a repeated ref keeps the first. */
 export function readLibrary(v: unknown): LibraryRecipe[] {
+	const seen = new Set<string>();
 	return list(v).flatMap((raw, i) => {
 		const r = rec(raw);
 		const id = plain(r.id);
 		const name = plain(r.name);
-		if (!id && !name) return [];
+		if ((!id && !name) || seen.has(id || name)) return [];
+		seen.add(id || name);
 		return [
 			{
 				key: `${id}:${i}`,
 				ref: id || name,
 				raw: r,
 				name: name || id,
-				kind: typeof r.kind === 'string' ? r.kind : undefined,
+				kind: plain(r.kind).toLowerCase() || undefined,
 				serves: positive(r.serves),
-				kcal: finite(r.kcal),
-				protein: finite(r.protein_g),
+				kcal: nutrient(r.kcal),
+				protein: nutrient(r.protein_g),
 				minutes: positive(r.minutes)
 			}
 		];

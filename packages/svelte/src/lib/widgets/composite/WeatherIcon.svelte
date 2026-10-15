@@ -4,7 +4,9 @@
   this file; model text never reaches the SVG. With `animate` the sun turns,
   clouds drift, rain and snow fall, the bolt flashes and fog slides, all in
   CSS keyframes so prefers-reduced-motion stops them (SMIL would ignore it).
-  Colours are fixed weather hues that read on light and dark grounds.
+  Colours are fixed weather hues (illustration constants, not UI tokens);
+  cloud bodies mix in a share of the surface ink so they stay visible on a
+  light card and a dark one without any theme selector.
 -->
 <script lang="ts">
 	import { safeStyle } from '@ripple-ui/core';
@@ -71,12 +73,12 @@
 	{#if cloudy}
 		<g class="wx-cloud" transform="translate(0 {cloudY})">
 			{#if kind === 'cloudy'}
-				<g fill="#8b98a9" transform="translate(-8 -8) scale(0.8)">
+				<g class="wx-back" transform="translate(-8 -8) scale(0.8)">
 					<circle cx="26" cy="36" r="9" /><circle cx="37" cy="30" r="12" /><circle cx="47" cy="38" r="8" />
 					<rect x="18" y="36" width="36" height="10" rx="5" />
 				</g>
 			{/if}
-			<g fill={dark ? '#8391a3' : '#c3ccd7'}>
+			<g class={['wx-body', dark && 'wx-storm']}>
 				<circle cx="22" cy="38" r="10" />
 				<circle cx="35" cy="31" r="13" />
 				<circle cx="47" cy="39" r="9" />
@@ -120,6 +122,15 @@
 	.wx {
 		flex-shrink: 0;
 		overflow: visible;
+	}
+	.wx-body {
+		fill: color-mix(in oklab, #c3ccd7 78%, var(--ripple-surface-foreground, currentColor));
+	}
+	.wx-body.wx-storm {
+		fill: color-mix(in oklab, #8391a3 82%, var(--ripple-surface-foreground, currentColor));
+	}
+	.wx-back {
+		fill: color-mix(in oklab, #8b98a9 82%, var(--ripple-surface-foreground, currentColor));
 	}
 	.wx-live .wx-rays {
 		animation: wx-spin 30s linear infinite;

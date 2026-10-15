@@ -5,7 +5,8 @@
   the value drawn over it on the accent or a validated `color` (arc only; every
   glyph stays a token). Centre stack: the number in surface ink with tabular
   figures, and on a non-percent scale the muted target line ("of 10,000",
-  "of 120 · 30 over"). Every data decision lives in gauge-value.ts.
+  "of 120 · 30 over"), in the `currency` or `unit` when one is set. Every data
+  decision, the one percent precision rule included, lives in gauge-value.ts.
 
   Layout keys on the widget's own width (container queries, never the
   viewport): 440px and up puts the dial left and the words right; below that
@@ -38,11 +39,15 @@
     /** Max height in px of the drawn dial. */
     height?: number | string;
     title?: string;
+    /** ISO 4217 code; formats value, target, over and to go as money. */
+    currency?: string;
+    /** Plain suffix for every amount ("GB", "steps") when there is no currency. */
+    unit?: string;
   }
 
-  let { id, class: className, style, value, max, label, color, height, title }: Props = $props();
+  let { id, class: className, style, value, max, label, color, height, title, currency, unit }: Props = $props();
 
-  const g = $derived(gaugeView({ value, max, label, title, color, height }));
+  const g = $derived(gaugeView({ value, max, label, title, color, height, currency, unit }));
   const styleString = $derived(
     style ? Object.entries(style).map(([k, v]) => `${k}:${v}`).join(';') : ''
   );

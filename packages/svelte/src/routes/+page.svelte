@@ -14,7 +14,9 @@
     finished recorded exchange (the bill splitter, seeded synchronously with a
     fixed intro, so it is in the prerendered HTML and hydrates without a
     re-render). The chips are the grouped suggestion panel (live/scenarios.ts
-    suggestionGroups), collapsed to one row until expanded. Live, every chip
+    suggestionGroups), collapsed to one row until expanded; after the visitor's
+    first send the row folds into a toggle left of the composer, so a tall answer
+    card gets that height (foldChips). Live, every chip
     shows (the store ones only with a store). In replay mode every chip shows
     too: one with a recorded or hand-written answer replays it, any other opens
     Paw OS with its prompt like typed text (marked "Opens in Paw OS"), and the
@@ -201,7 +203,7 @@
 				<p>{LIVE ? 'Live demo' : 'Recorded demo'} <span aria-hidden="true">·</span> Paw OS by PocketPaw</p>
 			</div>
 		</div>
-		<Chat {session} {suggestions} pawosUrl={PAWOS_URL} typedLocal={TYPED_LOCAL}>
+		<Chat {session} {suggestions} pawosUrl={PAWOS_URL} typedLocal={TYPED_LOCAL} foldChips>
 			{#snippet top()}
 				<!-- The hero: top of the chat's scroll container, above the first message. -->
 				<header class="hero">

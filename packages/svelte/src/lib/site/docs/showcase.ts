@@ -22,7 +22,7 @@
 //   and OSM tiles. Links point at real routes, '#', or example.com.
 // - Fictional names and data only. Dates are not after the day this was
 //   written (2026-10-14), except where the widget is about plans (gantt,
-//   calendar). Numbers add up (invoice lines sum to the subtotal, funnel
+//   calendar, itinerary). Numbers add up (invoice lines sum to the subtotal, funnel
 //   stages only shrink, a sankey node never sends out more than it takes in;
 //   the remainder shows as a drop-off).
 
@@ -579,7 +579,7 @@ export const SHOWCASE: Record<string, Record<string, unknown>> = {
 	}),
 	gauge: spec({
 		type: 'gauge',
-		props: { title: 'Daily step goal', value: 4228, max: 10000, label: 'Steps today' }
+		props: { title: 'Seed round', value: 182000, max: 250000, currency: 'USD', label: 'Raised so far' }
 	}),
 	'order-status': spec({
 		type: 'order-status',
@@ -760,5 +760,771 @@ export const SHOWCASE: Record<string, Record<string, unknown>> = {
 			share: true,
 			copy: true
 		}
-	})
+	}),
+
+	// ── Wave 4: travel, food, weather, money and study ───────────────────
+	itinerary: spec(
+		{
+			type: 'itinerary',
+			bind: '{state.days}',
+			props: {
+				title: 'A week island hopping',
+				subtitle: '12 to 18 July · 2 travellers',
+				verdict: { text: 'About €120 over budget; the Santorini sailing trip is the biggest single cost.', status: 'warn' },
+				currency: 'EUR',
+				budget: 900,
+				open: 4,
+				route: ['Athens', 'Piraeus', 'Naxos', 'Paros', 'Santorini', 'Heraklion', 'Chania', 'Athens'],
+				legs: [
+					{ id: 'l1', from: 'Athens', to: 'Piraeus', kind: 'bus', ref: 'X96', minutes: 50, cost: 6 },
+					{ id: 'l2', from: 'Piraeus', to: 'Naxos', kind: 'ferry', ref: 'Blue line 07:25', minutes: 300, cost: 45 },
+					{ id: 'l3', from: 'Naxos', to: 'Paros', kind: 'ferry', minutes: 45, cost: 32 },
+					{ id: 'l4', from: 'Paros', to: 'Santorini', kind: 'ferry', minutes: 120, cost: 38 },
+					{ id: 'l5', from: 'Santorini', to: 'Heraklion', kind: 'flight', ref: 'AX 214', minutes: 40, cost: 89 },
+					{ id: 'l6', from: 'Heraklion', to: 'Chania', kind: 'car', ref: 'Rental, one way', minutes: 165, cost: 60 },
+					{ id: 'l7', from: 'Chania', to: 'Athens', kind: 'flight', ref: 'AX 331', minutes: 50, cost: 95 }
+				],
+				days: '{state.days}',
+				packing: [
+					{ group: 'Documents', items: ['Passports', 'Ferry e-tickets', 'Driving licence'] },
+					{ group: 'Beach', items: ['Swimsuits', 'Reef-safe sunscreen', 'Snorkel mask', 'Quick-dry towel'] },
+					{ group: 'Hiking', items: ['Trail shoes', '2 L water each', 'Sun hat'] }
+				]
+			}
+		},
+		{
+			days: [
+				{
+					id: 'd1',
+					label: 'Day 1',
+					when: 'Mon 12 Jul',
+					theme: 'Arrive and climb to the old town',
+					stay: 'Pension Lykavitos, Plaka',
+					stops: [
+						{
+							id: 'd1s1',
+							time: '13:00',
+							title: 'Airport metro into the centre',
+							kind: 'transit',
+							minutes: 45,
+							cost: 9
+						},
+						{
+							id: 'd1s2',
+							time: '15:00',
+							title: 'Acropolis hill and museum',
+							kind: 'sight',
+							place: 'Makrygianni',
+							minutes: 180,
+							cost: 30,
+							must: true
+						},
+						{ id: 'd1s3', time: '19:00', title: 'Sunset from Filopappou hill', kind: 'nature', minutes: 45, cost: 0 },
+						{
+							id: 'd1s4',
+							time: '20:30',
+							title: 'Taverna dinner in Plaka',
+							kind: 'food',
+							place: 'Plaka',
+							minutes: 90,
+							cost: 38
+						}
+					]
+				},
+				{
+					id: 'd2',
+					label: 'Day 2',
+					when: 'Tue 13 Jul',
+					theme: 'Ferry to Naxos',
+					stay: 'Studio Portara, Chora',
+					stops: [
+						{
+							id: 'd2s1',
+							time: '07:25',
+							title: 'Morning ferry from Piraeus',
+							kind: 'transit',
+							place: 'Piraeus',
+							minutes: 300,
+							cost: 0
+						},
+						{
+							id: 'd2s2',
+							time: '14:00',
+							title: 'Portara gate at the harbour',
+							kind: 'sight',
+							place: 'Chora',
+							minutes: 40,
+							cost: 0,
+							must: true
+						},
+						{ id: 'd2s3', time: '16:00', title: 'Swim at Agios Prokopios', kind: 'nature', minutes: 120, cost: 0 },
+						{
+							id: 'd2s4',
+							time: '20:00',
+							title: 'Grilled octopus at the harbour',
+							kind: 'food',
+							minutes: 75,
+							cost: 34
+						}
+					]
+				},
+				{
+					id: 'd3',
+					label: 'Day 3',
+					when: 'Wed 14 Jul',
+					theme: 'Naxos villages by car',
+					stay: 'Studio Portara, Chora',
+					stops: [
+						{ id: 'd3s1', time: '09:00', title: 'Pick up the rental car', kind: 'transit', cost: 0 },
+						{
+							id: 'd3s2',
+							time: '10:00',
+							title: 'Halki village and the citron distillery',
+							kind: 'shop',
+							place: 'Halki',
+							minutes: 90,
+							cost: 18
+						},
+						{
+							id: 'd3s3',
+							time: '12:30',
+							title: 'Lunch in Apiranthos',
+							kind: 'food',
+							place: 'Apiranthos',
+							minutes: 75,
+							cost: 26
+						},
+						{
+							id: 'd3s4',
+							time: '15:00',
+							title: 'Kouros statue in the hills',
+							kind: 'sight',
+							place: 'Melanes',
+							minutes: 45,
+							cost: 0
+						},
+						{ id: 'd3s5', time: '18:00', title: 'Plaka beach sunset', kind: 'nature', minutes: 90, cost: 0 },
+						{
+							id: 'd3s6',
+							time: '21:30',
+							title: 'Cocktails in the old market',
+							kind: 'nightlife',
+							place: 'Chora',
+							minutes: 90,
+							cost: 24
+						}
+					]
+				},
+				{
+					id: 'd4',
+					label: 'Day 4',
+					when: 'Thu 15 Jul',
+					theme: 'Paros and Naoussa harbour',
+					stay: 'Kamares rooms, Naoussa',
+					stops: [
+						{ id: 'd4s1', time: '10:15', title: 'Fast ferry to Paros', kind: 'transit', minutes: 45, cost: 0 },
+						{
+							id: 'd4s2',
+							time: '12:00',
+							title: 'Church of a Hundred Doors',
+							kind: 'sight',
+							place: 'Parikia',
+							minutes: 45,
+							cost: 3
+						},
+						{ id: 'd4s3', time: '14:00', title: 'Kolymbithres rock beach', kind: 'nature', minutes: 150, cost: 12 },
+						{
+							id: 'd4s4',
+							time: '20:00',
+							title: 'Seafood on the Naoussa quay',
+							kind: 'food',
+							place: 'Naoussa',
+							minutes: 90,
+							cost: 52
+						}
+					]
+				},
+				{
+					id: 'd5',
+					label: 'Day 5',
+					when: 'Fri 16 Jul',
+					theme: 'Santorini caldera',
+					stay: 'Cave house Ilios, Oia',
+					stops: [
+						{ id: 'd5s1', time: '09:30', title: 'Ferry to Santorini', kind: 'transit', minutes: 120, cost: 0 },
+						{
+							id: 'd5s2',
+							time: '13:00',
+							title: 'Akrotiri excavations',
+							kind: 'sight',
+							place: 'Akrotiri',
+							minutes: 90,
+							cost: 20,
+							must: true
+						},
+						{
+							id: 'd5s3',
+							time: '16:00',
+							title: 'Caldera sailing trip',
+							kind: 'activity',
+							minutes: 300,
+							cost: 140,
+							must: true
+						},
+						{
+							id: 'd5s4',
+							time: '21:30',
+							title: 'Late dinner in Oia',
+							kind: 'food',
+							place: 'Oia',
+							minutes: 90,
+							cost: 70
+						}
+					]
+				},
+				{
+					id: 'd6',
+					label: 'Day 6',
+					when: 'Sat 17 Jul',
+					theme: 'Crete: Heraklion to Chania',
+					stay: 'Harbour loft, Chania',
+					stops: [
+						{ id: 'd6s1', time: '08:00', title: 'Flight to Heraklion', kind: 'flight', minutes: 40, cost: 0 },
+						{
+							id: 'd6s2',
+							time: '10:00',
+							title: 'Knossos palace',
+							kind: 'sight',
+							place: 'Knossos',
+							minutes: 150,
+							cost: 20,
+							must: true
+						},
+						{ id: 'd6s3', time: '14:00', title: 'Coach west to Chania', kind: 'transit', minutes: 165, cost: 0 },
+						{
+							id: 'd6s4',
+							time: '19:30',
+							title: 'Venetian harbour walk',
+							kind: 'sight',
+							place: 'Chania',
+							minutes: 60,
+							cost: 0
+						},
+						{
+							id: 'd6s5',
+							time: '21:00',
+							title: 'Cretan tasting menu',
+							kind: 'food',
+							place: 'Chania',
+							minutes: 120,
+							cost: 65
+						}
+					]
+				},
+				{
+					id: 'd7',
+					label: 'Day 7',
+					when: 'Sun 18 Jul',
+					theme: 'Gorge hike and fly home',
+					stops: [
+						{
+							id: 'd7s1',
+							time: '06:30',
+							title: 'Samaria gorge day tour',
+							kind: 'nature',
+							minutes: 600,
+							cost: 55,
+							must: true
+						},
+						{
+							id: 'd7s2',
+							time: '18:30',
+							title: 'Souvenir market',
+							kind: 'shop',
+							place: 'Chania',
+							minutes: 45,
+							cost: 40
+						},
+						{ id: 'd7s3', time: '21:40', title: 'Flight back to Athens', kind: 'flight', minutes: 50, cost: 0 }
+					]
+				}
+			]
+		}
+	),
+	'meal-plan': spec(
+		{
+			type: 'meal-plan',
+			props: {
+				title: 'High-protein week',
+				subtitle: '7 days of simple, high-protein meals. Swap any meal and the shopping list follows.',
+				verdict: {
+					text: 'About 150 g protein per person a day, past the 140 g goal; calories run a little under 2,200.',
+					status: 'good'
+				},
+				people: '{state.people}',
+				goal: { protein_g: 140, kcal: 2200 },
+				recipes: [
+					{
+						id: 'oats',
+						name: 'Protein overnight oats',
+						kind: 'breakfast',
+						serves: 1,
+						minutes: 5,
+						kcal: 480,
+						protein_g: 35,
+						ingredients: [
+							{ name: 'rolled oats', qty: 0.5, unit: 'cup', aisle: 'grains' },
+							{ name: 'Greek yogurt', qty: 0.75, unit: 'cup', aisle: 'dairy' },
+							{ name: 'protein powder', qty: 1, unit: 'scoop', aisle: 'pantry' },
+							{ name: 'blueberries', qty: 0.5, unit: 'cup', aisle: 'produce' }
+						]
+					},
+					{
+						id: 'eggs',
+						name: 'Spinach egg scramble',
+						kind: 'breakfast',
+						serves: 1,
+						minutes: 10,
+						kcal: 420,
+						protein_g: 32,
+						ingredients: [
+							{ name: 'eggs', qty: 4, aisle: 'dairy' },
+							{ name: 'baby spinach', qty: 2, unit: 'cup', aisle: 'produce' },
+							{ name: 'feta', qty: 0.25, unit: 'cup', aisle: 'dairy' }
+						]
+					},
+					{
+						id: 'cottage',
+						name: 'Cottage cheese power bowl',
+						kind: 'breakfast',
+						serves: 1,
+						minutes: 5,
+						kcal: 390,
+						protein_g: 34,
+						ingredients: [
+							{ name: 'cottage cheese', qty: 1, unit: 'cup', aisle: 'dairy' },
+							{ name: 'pineapple chunks', qty: 0.5, unit: 'cup', aisle: 'produce' },
+							{ name: 'chia seeds', qty: 1, unit: 'tbsp', aisle: 'pantry' }
+						]
+					},
+					{
+						id: 'chicken-bowl',
+						name: 'Chicken rice bowl',
+						kind: 'lunch',
+						serves: 2,
+						minutes: 30,
+						kcal: 640,
+						protein_g: 52,
+						ingredients: [
+							{ name: 'chicken breast', qty: 500, unit: 'g', aisle: 'protein' },
+							{ name: 'jasmine rice', qty: 1, unit: 'cup', aisle: 'grains' },
+							{ name: 'broccoli', qty: 2, unit: 'cup', aisle: 'produce' },
+							{ name: 'soy sauce', qty: 2, unit: 'tbsp', aisle: 'pantry' }
+						]
+					},
+					{
+						id: 'tuna-wrap',
+						name: 'Tuna and white bean wrap',
+						kind: 'lunch',
+						serves: 2,
+						minutes: 10,
+						kcal: 540,
+						protein_g: 44,
+						ingredients: [
+							{ name: 'canned tuna', qty: 2, unit: 'can', aisle: 'pantry' },
+							{ name: 'white beans', qty: 1, unit: 'can', aisle: 'pantry' },
+							{ name: 'whole-wheat wraps', qty: 2, aisle: 'grains' },
+							{ name: 'arugula', qty: 2, unit: 'cup', aisle: 'produce' }
+						]
+					},
+					{
+						id: 'turkey-salad',
+						name: 'Turkey and quinoa salad',
+						kind: 'lunch',
+						serves: 2,
+						minutes: 20,
+						kcal: 560,
+						protein_g: 46,
+						ingredients: [
+							{ name: 'turkey breast slices', qty: 300, unit: 'g', aisle: 'protein' },
+							{ name: 'quinoa', qty: 0.75, unit: 'cup', aisle: 'grains' },
+							{ name: 'cucumber', qty: 1, aisle: 'produce' },
+							{ name: 'cherry tomatoes', qty: 1, unit: 'cup', aisle: 'produce' }
+						]
+					},
+					{
+						id: 'salmon',
+						name: 'Salmon, quinoa and greens',
+						kind: 'dinner',
+						serves: 2,
+						minutes: 25,
+						kcal: 690,
+						protein_g: 48,
+						ingredients: [
+							{ name: 'salmon fillet', qty: 400, unit: 'g', aisle: 'protein' },
+							{ name: 'quinoa', qty: 0.75, unit: 'cup', aisle: 'grains' },
+							{ name: 'green beans', qty: 2, unit: 'cup', aisle: 'produce' },
+							{ name: 'lemon', qty: 1, aisle: 'produce' }
+						]
+					},
+					{
+						id: 'chili',
+						name: 'Turkey bean chili',
+						kind: 'dinner',
+						serves: 4,
+						minutes: 40,
+						kcal: 560,
+						protein_g: 46,
+						ingredients: [
+							{ name: 'ground turkey', qty: 500, unit: 'g', aisle: 'protein' },
+							{ name: 'black beans', qty: 2, unit: 'can', aisle: 'pantry' },
+							{ name: 'crushed tomatoes', qty: 1, unit: 'can', aisle: 'pantry' },
+							{ name: 'onion', qty: 1, aisle: 'produce' }
+						]
+					},
+					{
+						id: 'steak',
+						name: 'Sirloin steak with sweet potato',
+						kind: 'dinner',
+						serves: 2,
+						minutes: 30,
+						kcal: 680,
+						protein_g: 50,
+						ingredients: [
+							{ name: 'sirloin steak', qty: 450, unit: 'g', aisle: 'protein' },
+							{ name: 'sweet potato', qty: 2, aisle: 'produce' },
+							{ name: 'asparagus', qty: 1, unit: 'bunch', aisle: 'produce' }
+						]
+					},
+					{
+						id: 'shrimp',
+						name: 'Garlic shrimp stir-fry',
+						kind: 'dinner',
+						serves: 2,
+						minutes: 20,
+						kcal: 520,
+						protein_g: 42,
+						ingredients: [
+							{ name: 'shrimp', qty: 450, unit: 'g', aisle: 'protein' },
+							{ name: 'bell pepper', qty: 2, aisle: 'produce' },
+							{ name: 'jasmine rice', qty: 0.75, unit: 'cup', aisle: 'grains' },
+							{ name: 'garlic', qty: 3, unit: 'clove', aisle: 'produce' }
+						]
+					},
+					{
+						id: 'shake',
+						name: 'Greek yogurt and almond snack',
+						kind: 'snack',
+						serves: 1,
+						minutes: 2,
+						kcal: 250,
+						protein_g: 22,
+						ingredients: [
+							{ name: 'Greek yogurt', qty: 1, unit: 'cup', aisle: 'dairy' },
+							{ name: 'almonds', qty: 2, unit: 'tbsp', aisle: 'pantry' }
+						]
+					},
+					{
+						id: 'edamame',
+						name: 'Edamame and jerky',
+						kind: 'snack',
+						serves: 1,
+						minutes: 5,
+						kcal: 230,
+						protein_g: 24,
+						ingredients: [
+							{ name: 'edamame', qty: 1, unit: 'cup', aisle: 'frozen' },
+							{ name: 'beef jerky', qty: 30, unit: 'g', aisle: 'protein' }
+						]
+					}
+				],
+				days: [
+					{
+						day: 'Mon',
+						meals: [
+							{ slot: 'breakfast', recipe: 'oats' },
+							{ slot: 'lunch', recipe: 'chicken-bowl' },
+							{ slot: 'dinner', recipe: 'salmon' },
+							{ slot: 'snack', recipe: 'shake' }
+						]
+					},
+					{
+						day: 'Tue',
+						meals: [
+							{ slot: 'breakfast', recipe: 'eggs' },
+							{ slot: 'lunch', recipe: 'tuna-wrap' },
+							{ slot: 'dinner', recipe: 'chili' },
+							{ slot: 'snack', recipe: 'edamame' }
+						]
+					},
+					{
+						day: 'Wed',
+						meals: [
+							{ slot: 'breakfast', recipe: 'cottage' },
+							{ slot: 'lunch', recipe: 'turkey-salad' },
+							{ slot: 'dinner', recipe: 'steak' },
+							{ slot: 'snack', recipe: 'shake' }
+						]
+					},
+					{
+						day: 'Thu',
+						meals: [
+							{ slot: 'breakfast', recipe: 'oats' },
+							{ slot: 'lunch', recipe: 'chicken-bowl' },
+							{ slot: 'dinner', recipe: 'shrimp' },
+							{ slot: 'snack', recipe: 'edamame' }
+						]
+					},
+					{
+						day: 'Fri',
+						meals: [
+							{ slot: 'breakfast', recipe: 'eggs' },
+							{ slot: 'lunch', recipe: 'tuna-wrap' },
+							{ slot: 'dinner', recipe: 'chili' },
+							{ slot: 'snack', recipe: 'shake' }
+						]
+					},
+					{
+						day: 'Sat',
+						meals: [
+							{ slot: 'breakfast', recipe: 'cottage' },
+							{ slot: 'lunch', recipe: 'turkey-salad' },
+							{ slot: 'dinner', recipe: 'salmon' },
+							{ slot: 'snack', recipe: 'edamame' }
+						]
+					},
+					{
+						day: 'Sun',
+						meals: [
+							{ slot: 'breakfast', recipe: 'oats' },
+							{ slot: 'lunch', recipe: 'chicken-bowl' },
+							{ slot: 'dinner', recipe: 'steak' },
+							{ slot: 'snack', recipe: 'shake' }
+						]
+					}
+				]
+			},
+			bind: '{state.people}'
+		},
+		{ people: 2 }
+	),
+	'weather-forecast': spec({
+		type: 'weather-forecast',
+		props: {
+			place: 'Frostvik Station',
+			unit: 'C',
+			note: 'Sample forecast',
+			now: { temp: -27, condition: 'night-clear', feelsLike: -38, humidity: 71, wind: '31 km/h N' },
+			hourly: [
+				{ time: '21:00', temp: -27, condition: 'night-clear' },
+				{ time: '22:00', temp: -28, condition: 'night-clear' },
+				{ time: '23:00', temp: -29, condition: 'fog' },
+				{ time: '00:00', temp: -30, condition: 'fog' },
+				{ time: '01:00', temp: -31, condition: 'snow' },
+				{ time: '02:00', temp: -31, condition: 'wind' }
+			],
+			days: [
+				{ day: 'Mon', condition: 'night-clear', high: -18, low: -31 },
+				{ day: 'Tue', condition: 'snow', high: -12, low: -24, rainChance: 90 },
+				{ day: 'Wed', condition: 'wind', high: -9, low: -20 },
+				{ day: 'Thu', condition: 'fog', high: -4, low: -11, rainChance: 20 },
+				{ day: 'Fri', condition: 'cloudy', high: 0, low: -6 },
+				{ day: 'Sat', condition: 'rain', high: 3, low: -1, rainChance: 60 },
+				{ day: 'Sun', condition: 'heavy-rain', high: 2, low: -2, rainChance: 95 },
+				{ day: 'Mon', condition: 'thunder', high: 4, low: 1, rainChance: 70 },
+				{ day: 'Tue', condition: 'partly-cloudy', high: -3, low: -10 },
+				{ day: 'Wed', condition: 'sunny', high: -8, low: -19 }
+			]
+		}
+	}),
+	'bill-split': spec(
+		{
+			type: 'bill-split',
+			bind: '{state.bill}',
+			props: {
+				title: 'Team dinner after the launch',
+				currency: 'EUR',
+				subtotal: 1486.5,
+				tax: 133.79,
+				tip_percent: 10,
+				tip_options: [5, 10, 15],
+				extras_label: 'Wine',
+				people: [
+					{ id: 'p1', name: 'Mara', extras: 18 },
+					{ id: 'p2', name: 'Theo', extras: 0 },
+					{ id: 'p3', name: 'Ines', extras: 24.5 },
+					{ id: 'p4', name: 'Bao', extras: 0 },
+					{ id: 'p5', name: 'Lucia', extras: 9 },
+					{ id: 'p6', name: 'Femi', extras: 0 },
+					{ id: 'p7', name: 'Oskar', extras: 31 },
+					{ id: 'p8', name: 'Yuki', extras: 0 },
+					{ id: 'p9', name: 'Ravi', extras: 0 },
+					{ id: 'p10', name: 'Noor', extras: 12 },
+					{ id: 'p11', name: 'Elsa', extras: 0 },
+					{ id: 'p12', name: 'Tomas', extras: 6.5 }
+				],
+				note: 'Tip on the food and wine before tax.'
+			}
+		},
+		{ bill: null }
+	),
+	quiz: spec(
+		{
+			type: 'quiz',
+			bind: '{state.quiz}',
+			props: {
+				title: 'Solar system lightning round',
+				topic: 'Astronomy',
+				seconds_per_question: 15,
+				shuffle_choices: true,
+				questions: [
+					{
+						id: 'q1',
+						prompt: 'Which planet is closest to the Sun?',
+						choices: ['Venus', 'Mercury', 'Mars'],
+						answer: 1,
+						why: 'Mercury orbits at about 58 million km.'
+					},
+					{
+						id: 'q2',
+						prompt: 'How many moons does Mars have?',
+						choices: ['None', 'One', 'Two', 'Four'],
+						answer: 2,
+						why: 'Phobos and Deimos, both small and lumpy.'
+					},
+					{
+						id: 'q3',
+						prompt: 'Which planet has the Great Red Spot?',
+						choices: ['Saturn', 'Jupiter', 'Neptune', 'Uranus', 'Mars'],
+						answer: 1,
+						why: 'A storm wider than Earth that has lasted centuries.'
+					},
+					{
+						id: 'q4',
+						prompt: 'What is the Sun mostly made of?',
+						choices: ['Hydrogen', 'Oxygen', 'Iron'],
+						answer: 0,
+						why: 'About three quarters of its mass is hydrogen.'
+					},
+					{
+						id: 'q5',
+						prompt: 'Which planet spins on its side?',
+						choices: ['Uranus', 'Neptune', 'Saturn'],
+						answer: 0,
+						why: 'Uranus is tilted about 98 degrees.'
+					},
+					{
+						id: 'q6',
+						prompt: 'What is the largest moon of Saturn?',
+						choices: ['Titan', 'Rhea', 'Enceladus', 'Iapetus'],
+						answer: 0,
+						why: 'Titan is bigger than the planet Mercury.'
+					},
+					{
+						id: 'q7',
+						prompt: 'Roughly how old is the Sun?',
+						choices: ['4.6 million years', '460 million years', '4.6 billion years'],
+						answer: 2,
+						why: 'It formed about 4.6 billion years ago.'
+					},
+					{
+						id: 'q8',
+						prompt: 'Which planet has the most volcanoes we know of?',
+						choices: ['Earth', 'Venus', 'Mars', 'Mercury', 'Jupiter'],
+						answer: 1,
+						why: 'Radar maps show over a thousand volcanic features.'
+					},
+					{
+						id: 'q9',
+						prompt: 'What is a light year?',
+						choices: ['A unit of time', 'A unit of distance'],
+						answer: 1,
+						why: 'The distance light travels in one year.'
+					},
+					{
+						id: 'q10',
+						prompt: 'Which planet would float in a giant bathtub?',
+						choices: ['Jupiter', 'Saturn', 'Neptune'],
+						answer: 1,
+						why: 'Saturn is less dense than water.'
+					},
+					{
+						id: 'q11',
+						prompt: 'Where is the asteroid belt?',
+						choices: ['Between Mars and Jupiter', 'Between Earth and Mars', 'Past Neptune'],
+						answer: 0,
+						why: 'Most asteroids orbit between Mars and Jupiter.'
+					},
+					{
+						id: 'q12',
+						prompt: 'Which is the hottest planet?',
+						choices: ['Mercury', 'Venus', 'Mars'],
+						answer: 1,
+						why: 'Its thick atmosphere traps heat, near 465 degrees C.'
+					},
+					{
+						id: 'q13',
+						prompt: 'Which planet has the longest year?',
+						choices: ['Neptune', 'Uranus', 'Saturn'],
+						answer: 0,
+						why: 'One Neptune year is about 165 Earth years.'
+					}
+				]
+			}
+		},
+		{ quiz: null }
+	),
+	'flashcard-deck': spec(
+		{
+			type: 'flashcard-deck',
+			bind: '{state.score}',
+			props: {
+				title: 'Italian kitchen words',
+				cards: [
+					{ front: 'Spoon', back: 'Cucchiaio', category: 'Tableware' },
+					{ front: 'Fork', back: 'Forchetta', category: 'Tableware' },
+					{ front: 'Knife', back: 'Coltello', category: 'Tableware' },
+					{ front: 'Plate', back: 'Piatto', category: 'Tableware' },
+					{ front: 'Glass', back: 'Bicchiere', category: 'Tableware' },
+					{ front: 'Cup', back: 'Tazza', category: 'Tableware' },
+					{ front: 'Napkin', back: 'Tovagliolo', category: 'Tableware' },
+					{ front: 'Bowl', back: 'Ciotola', category: 'Tableware' },
+					{ front: 'Pot', back: 'Pentola', category: 'Cookware' },
+					{ front: 'Pan', back: 'Padella', category: 'Cookware' },
+					{ front: 'Lid', back: 'Coperchio', category: 'Cookware' },
+					{ front: 'Colander', back: 'Scolapasta', category: 'Cookware', hint: 'Literally a pasta drainer' },
+					{ front: 'Grater', back: 'Grattugia', category: 'Cookware' },
+					{ front: 'Ladle', back: 'Mestolo', category: 'Cookware' },
+					{ front: 'Whisk', back: 'Frusta', category: 'Cookware' },
+					{ front: 'Cutting board', back: 'Tagliere', category: 'Cookware' },
+					{ front: 'Oven', back: 'Forno', category: 'Appliances' },
+					{ front: 'Stove', back: 'Fornello', category: 'Appliances' },
+					{ front: 'Fridge', back: 'Frigorifero', category: 'Appliances' },
+					{ front: 'Freezer', back: 'Congelatore', category: 'Appliances' },
+					{ front: 'Dishwasher', back: 'Lavastoviglie', category: 'Appliances' },
+					{ front: 'Kettle', back: 'Bollitore', category: 'Appliances' },
+					{ front: 'Toaster', back: 'Tostapane', category: 'Appliances', hint: 'Toast, plus the word for bread' },
+					{ front: 'Blender', back: 'Frullatore', category: 'Appliances' },
+					{ front: 'Salt', back: 'Sale', category: 'Pantry' },
+					{ front: 'Pepper', back: 'Pepe', category: 'Pantry' },
+					{ front: 'Oil', back: 'Olio', category: 'Pantry' },
+					{ front: 'Vinegar', back: 'Aceto', category: 'Pantry' },
+					{ front: 'Flour', back: 'Farina', category: 'Pantry' },
+					{ front: 'Sugar', back: 'Zucchero', category: 'Pantry' },
+					{ front: 'Rice', back: 'Riso', category: 'Pantry' },
+					{ front: 'Bread', back: 'Pane', category: 'Pantry' },
+					{ front: 'To boil', back: 'Bollire', category: 'Verbs' },
+					{ front: 'To fry', back: 'Friggere', category: 'Verbs' },
+					{ front: 'To bake', back: 'Cuocere al forno', category: 'Verbs' },
+					{ front: 'To chop', back: 'Tritare', category: 'Verbs' },
+					{ front: 'To stir', back: 'Mescolare', category: 'Verbs' },
+					{ front: 'To taste', back: 'Assaggiare', category: 'Verbs' },
+					{ front: 'To peel', back: 'Sbucciare', category: 'Verbs' },
+					{ front: 'To serve', back: 'Servire', category: 'Verbs' }
+				],
+				shuffle: true
+			}
+		},
+		{ score: 0 }
+	)
 };

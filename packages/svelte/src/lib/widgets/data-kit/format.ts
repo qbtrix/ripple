@@ -18,6 +18,12 @@ export function finite(v: unknown): number | undefined {
 	return typeof n === 'number' && Number.isFinite(n) ? n : undefined;
 }
 
+/** A percentage from 42, "42" or "42%", clamped to 0..100; anything else is undefined. */
+export function percent(v: unknown): number | undefined {
+	const n = finite(typeof v === 'string' ? v.trim().replace(/%$/, '') : v);
+	return n === undefined ? undefined : Math.min(100, Math.max(0, n));
+}
+
 /**
  * A plain number for display; non-finite input renders 'n/a'. `sign: true`
  * prints '+4' / '-4' / '0' for deltas; `compact: true` prints '12.8M'.
@@ -82,6 +88,9 @@ export function plain(v: unknown): string {
 	return asText(v)
 		.replace(/\*\*([^*\s](?:[^*]*[^*\s])?)\*\*/g, '$1')
 		.replace(/__([^_\s](?:[^_]*[^_\s])?)__/g, '$1')
+		// Single *x* and _x_ emphasis, only at word edges: 2*3*4 and snake_case_names stay.
+		.replace(/(^|[^\w*])\*([^*\s](?:[^*]*[^*\s])?)\*(?![\w*])/g, '$1$2')
+		.replace(/(^|[^\w_])_([^_\s](?:[^_]*[^_\s])?)_(?![\w_])/g, '$1$2')
 		.replace(/^[ \t]*- +/gm, '')
 		.trim();
 }

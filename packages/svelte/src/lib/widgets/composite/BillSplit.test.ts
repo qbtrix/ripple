@@ -1,8 +1,9 @@
-// widgets/composite/BillSplit.test.ts — the bill-split data widget: the
-// cents-exact split (even, extras, remainder, 0% tip, tax, the 12 cap), the
-// registry, bind contract and manifest entry, visitor edits (tip chips,
-// custom tip, add and remove, extras, names) writing the bound value, edits
-// surviving a re-sent spec, stream parity and junk props.
+// widgets/composite/BillSplit.test.ts: the bill-split data widget. The
+// minor-unit-exact split (even, extras, remainder, 0% tip, tax, the 12 cap,
+// yen), messy model props (money strings, "20%", junk tip options, string and
+// null people), the registry, bind contract and manifest entry, visitor edits
+// writing the bound value, edits surviving a re-sent spec, stream parity and
+// junk props.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
 import Ripple from '$lib/Ripple.svelte';
@@ -11,7 +12,7 @@ import { getWidget, hasWidget } from '../index.js';
 import { manifestEntries } from '$lib/manifest/index.js';
 import { _resetBindContractWarnings, getBindContract, warnUnregisteredBindContract } from '@ripple-ui/core';
 import BillSplit from './BillSplit.svelte';
-import { MAX_PEOPLE, nextId, split, toPeople, toValue } from './bill-split.js';
+import { MAX_PEOPLE, countPeople, minorDigits, nextId, split, toAmount, toPeople, toTipOptions, toValue } from './bill-split.js';
 import type { BillValue } from './bill-split.js';
 
 afterEach(() => {
@@ -85,13 +86,131 @@ describe('bill-split: maths', () => {
 		expect(toPeople([{ id: 'a', name: '**Ana**', extras: -3 }, { id: 'a' }, null, { name: 'Bo', extras: '4.5' }])).toEqual([
 			{ id: 'a', name: 'Ana', extras: 0 },
 			{ id: 'p2', name: 'Person 2', extras: 0 },
-			{ id: 'p3', name: 'Person 3', extras: 0 },
-			{ id: 'p4', name: 'Bo', extras: 4.5 }
+			{ id: 'p3', name: 'Bo', extras: 4.5 }
 		]);
 		expect(toValue({ subtotal: 50, tip_percent: 250, people: crew(2) })?.tip_percent).toBe(100);
 		expect(toValue({ subtotal: 50, people: crew(2) })?.tip_percent).toBe(18);
 		expect(toValue({ subtotal: 'lots', people: crew(2) })).toBeUndefined();
 		expect(nextId(['p1', 'p2', 'p4'])).toBe('p5');
+	});
+});
+
+describe('bill-split: messy model props', () => {
+	it('reads money strings with a symbol and thousands commas', () => {
+		expect(toAmount('$1,240.50')).toBe(1240.5);
+		expect(toAmount('12.50')).toBe(12.5);
+		expect(toAmount('$8')).toBe(8);
+		expect(toAmount(' € 96.14 ')).toBe(96.14);
+		for (const junk of ['lots', '', '$', '1.2.3', null, {}]) expect(toAmount(junk)).toBeUndefined();
+		expect(toValue({ subtotal: '$1,240.50', tip_percent: '20%', people: crew(2) })).toMatchObject({ subtotal: 1240.5, tip_percent: 20 });
+	});
+
+	it('keeps tip options in 0..100, drops the rest, dedupes and sorts', () => {
+		expect(toTipOptions([15, '20', 'lots', -5, 150, 15])).toEqual([15, 20]);
+		expect(toTipOptions([22, 10, 18])).toEqual([10, 18, 22]);
+		expect(toTipOptions(['x', 200])).toEqual([15, 18, 20, 22]);
+	});
+
+	it('takes a string as a name and skips null, numbers and arrays without counting them', () => {
+		const raw = [{ id: 'p1', name: 'Alex' }, 'Dana', null, 7, ['x'], { id: 7, name: 'Wren', extras: 'lots' }];
+		expect(countPeople(raw)).toBe(3);
+		expect(toPeople(raw)).toEqual([
+			{ id: 'p1', name: 'Alex', extras: 0 },
+			{ id: 'p2', name: 'Dana', extras: 0 },
+			{ id: '7', name: 'Wren', extras: 0 }
+		]);
+	});
+
+	it('works in the currency minor unit: yen shares add up to the yen total', () => {
+		expect([minorDigits('USD'), minorDigits('JPY'), minorDigits('BHD'), minorDigits('$')]).toEqual([2, 0, 3, 2]);
+		const r = split(bill(12800, 10, crew(3)), 0, 0);
+		expect(r.total).toBe(14080);
+		expect(r.shares.map((s) => s.cents)).toEqual([4694, 4693, 4693]);
+	});
+
+	it('says how much tip and tax sits inside each share', () => {
+		const r = split(bill(186.4, 18, crew(4, [12, 0, 9, 0])));
+		expect(r.shares[0].added).toBe(961);
+		expect(split(bill(10, 0, crew(2, [8, 7]))).shares.map((s) => s.added)).toEqual([0, 0]);
+	});
+});
+
+describe('bill-split: messy props on screen', () => {
+	const MESSY = {
+		title: '',
+		currency: '$',
+		subtotal: '$1,240.50',
+		tax: '$96.14',
+		tip_percent: '20%',
+		tip_options: [15, '20', 'lots', -5, 150, 15],
+		extras_label: '',
+		people: [
+			{ id: 'p1', name: 'Alex', extras: '12.50' },
+			{ id: 'p2', name: '**Sam**', extras: -4 },
+			{ id: 'p2', name: 'Priya', extras: '$8' },
+			{ name: 'Jo' },
+			'Dana',
+			null,
+			...Array.from({ length: 9 }, (_, i) => ({ id: `q${i}`, name: `Q${i}` }))
+		]
+	};
+
+	it('renders the parsed bill, the clean chips, the names and the 12-of-14 footnote', () => {
+		const { container } = render(BillSplit, { props: MESSY as never });
+		expect(container.querySelector('[data-slot="pending"]')).toBeNull();
+		expect(totals(container)).toContain('$1,240.50');
+		expect(totals(container)).toContain('$96.14');
+		expect(totals(container)).toContain('Tip 20%');
+		expect(screen.getAllByRole('button', { name: /^\d+%$/ })).toHaveLength(2);
+		expect(screen.getByRole('button', { name: '15%' })).toBeTruthy();
+		expect(screen.getByRole('button', { name: '20%' }).getAttribute('aria-pressed')).toBe('true');
+		expect(screen.getByRole('textbox', { name: 'Name of person 2' })).toHaveProperty('value', 'Sam');
+		expect(screen.getByRole('textbox', { name: 'Name of person 5' })).toHaveProperty('value', 'Dana');
+		expect(shares(container)).toHaveLength(MAX_PEOPLE);
+		expect(screen.getByText('Showing the first 12 of 14 people')).toBeTruthy();
+		const ids = [...container.querySelectorAll('[data-person]')].map((e) => e.getAttribute('data-person'));
+		expect(new Set(ids).size).toBe(ids.length);
+	});
+
+	it('shows yen with no decimals, and the shares add up on screen', () => {
+		const { container } = render(BillSplit, { props: { currency: 'JPY', subtotal: 12800, tip_percent: 10, people: crew(3) } });
+		expect(shares(container)).toEqual(['¥4,694', '¥4,693', '¥4,693']);
+		expect(totals(container)).toContain('¥14,080');
+		expect(screen.getByText('Everyone pays ¥4,693 or ¥4,694')).toBeTruthy();
+		expect((screen.getByRole('spinbutton', { name: 'Bill before tip' }) as HTMLInputElement).value).toBe('12800');
+	});
+
+	it('shows money fields with fixed decimals at rest', () => {
+		render(BillSplit, { props: DINNER });
+		expect((screen.getByRole('spinbutton', { name: 'Bill before tip' }) as HTMLInputElement).value).toBe('186.40');
+		expect((screen.getByRole('spinbutton', { name: 'Drinks for Alex' }) as HTMLInputElement).value).toBe('12.00');
+	});
+
+	it('one person still renders and invites a second', () => {
+		const { container } = render(BillSplit, { props: { subtotal: 50, people: [null, 7, { extras: 'x' }] } as never });
+		expect(shares(container)).toEqual(['$59.00']);
+		expect(screen.getByText('Add someone to split with')).toBeTruthy();
+	});
+
+	it('extras over the bill: Adjusted, and a zero share stays on show', () => {
+		const { container } = render(BillSplit, { props: { subtotal: 40, tip_percent: 0, people: crew(3, [28, 19.5, 0]) } });
+		expect(container.querySelector('[data-slot="over"]')?.textContent).toContain('Adjusted');
+		expect(shares(container)).toEqual(['$28.00', '$19.50', '$0.00']);
+		expect(container.textContent).not.toContain('incl.');
+	});
+
+	it('a quiet "+ Drinks" field when nobody had extras, still the labelled spinbutton', () => {
+		render(BillSplit, { props: { subtotal: 120, people: crew(2) } });
+		const box = screen.getByRole('spinbutton', { name: 'Drinks for P1' }) as HTMLInputElement;
+		expect(box.placeholder).toBe('+ Drinks');
+		expect(box.value).toBe('');
+	});
+
+	it('disables Add person at 12 with a reason', () => {
+		render(BillSplit, { props: { subtotal: 120, people: crew(12) } });
+		const add = screen.getByRole('button', { name: 'Add person' }) as HTMLButtonElement;
+		expect(add.disabled).toBe(true);
+		expect(add.title).toBe('12 people is the most');
 	});
 });
 
@@ -179,7 +298,7 @@ describe('bill-split: edits', () => {
 		expect(screen.getByRole('button', { name: '22%' }).getAttribute('aria-pressed')).toBe('true');
 		expect(totals(container)).toContain('$227.41');
 		expect(shares(container)).toEqual(['$56.86', '$56.85', '$56.85', '$56.85']);
-		expect(screen.getByText('Everyone pays $56.85, give or take a cent')).toBeTruthy();
+		expect(screen.getByText('Everyone pays $56.85 or $56.86')).toBeTruthy();
 		expect(lastBill(onStateChange)?.tip_percent).toBe(22);
 	});
 

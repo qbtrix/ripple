@@ -1,5 +1,6 @@
 // Gauge.ssr.test.ts: the gauge server-renders as a named meter with its value
-// in the HTML (no blank first paint), and a hostile colour never reaches it.
+// in the HTML (no blank first paint), a currency reaches every amount, and a
+// hostile colour never reaches it.
 import { render } from 'svelte/server';
 import { describe, expect, it } from 'vitest';
 import Gauge from './Gauge.svelte';
@@ -16,6 +17,13 @@ describe('gauge SSR', () => {
 		expect(body).toContain('--gl: 5');
 		expect(body.match(/<path/g)).toHaveLength(3); // cut, track, value
 		expect(body).toMatch(/mask="url\(#gauge-cut-/);
+	});
+
+	it('a currency reaches the number, the target and the spoken text', () => {
+		const { body } = render(Gauge, { props: { value: 182000, max: 250000, currency: 'USD', label: 'Raised' } });
+		expect(body).toContain('aria-valuetext="$182,000 of $250,000, Raised"');
+		expect(body).toContain('of $250,000');
+		expect(body).toContain('72.8% · $68,000 to go');
 	});
 
 	it('zero draws the track only; a hostile colour falls back to the accent', () => {

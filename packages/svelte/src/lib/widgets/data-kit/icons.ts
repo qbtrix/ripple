@@ -33,7 +33,7 @@ import Mountain from '@lucide/svelte/icons/mountain';
 import Moon from '@lucide/svelte/icons/moon';
 import Plane from '@lucide/svelte/icons/plane';
 // legs
-import TrainFront from '@lucide/svelte/icons/train-front';
+import TrainTrack from '@lucide/svelte/icons/train-track';
 import Bus from '@lucide/svelte/icons/bus';
 import Car from '@lucide/svelte/icons/car';
 import Ship from '@lucide/svelte/icons/ship';
@@ -179,9 +179,9 @@ export const FALLBACK_ICON: LucideIcon = CircleDot;
 /** Lucide props for the two placements. */
 export const ICON = { row: { size: 16, strokeWidth: 1.75 }, tile: { size: 20, strokeWidth: 1.75 } } as const;
 
-/** `map[kind]`, or CircleDot for an unknown, missing or non-string kind. */
-export function kindIcon(map: Readonly<Record<string, LucideIcon>>, kind: unknown): LucideIcon {
-	return (typeof kind === 'string' && Object.hasOwn(map, kind) ? map[kind] : undefined) ?? FALLBACK_ICON;
+/** `map[kind]`, or `fallback` (CircleDot) for an unknown, missing or non-string kind. */
+export function kindIcon(map: Readonly<Record<string, LucideIcon>>, kind: unknown, fallback: LucideIcon = FALLBACK_ICON): LucideIcon {
+	return (typeof kind === 'string' && Object.hasOwn(map, kind) ? map[kind] : undefined) ?? fallback;
 }
 
 /** itinerary StopKind (§3.5) */
@@ -200,7 +200,7 @@ export const STOP_ICONS = {
 /** itinerary legs (§3.5) */
 export const LEG_ICONS = {
 	flight: Plane,
-	train: TrainFront,
+	train: TrainTrack,
 	bus: Bus,
 	car: Car,
 	ferry: Ship,
