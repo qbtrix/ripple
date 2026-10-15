@@ -1,24 +1,29 @@
 <!--
-  widgets/composite/FlashcardDeck.svelte — `flashcard-deck`: a study deck the
-  visitor flips through and marks "Got it" or "Missed it" (design doc
-  2026-10-09 §3.9). Progress dots, the card, the two marks, then a score
-  screen listing what was missed, with "Practise missed" (a re-deal of only
-  those cards) and Restart.
-
-  Built on the kit, not on the `flashcard` widget: that one hardcodes
-  red/green shadcn colours, keeps its flip state private and has no
-  reduced-motion path.
+  widgets/composite/FlashcardDeck.svelte: `flashcard-deck`, a study deck in one
+  card. Reveal first, then grade: the action row holds `Show answer` until the
+  card is flipped, then `Missed it` and `Got it` in the same place. A one-line
+  progress rail and `N / M` are the only counts during play; the card is a
+  raised object with sheets peeking below while cards remain. The end of a
+  pass is a score screen with the cards to practise, `Practise missed` (a
+  re-deal of only those) and Restart. Keys on the root: Space or Enter reveal,
+  Left or 1 marks missed, Right or 2 marks got it, H opens the hint.
 
   Invariants:
   - `score` is the one bound field (bind contract `score` / `onscorechange`):
     the number of cards known since the last restart, written by the widget.
-    `on_complete` fires at the end of every pass with `{ score, total }`.
+    `oncomplete` fires from the handler that records the last mark, once per
+    pass, with `{ score, total }`.
   - The deal derives from `cards` until the visitor re-deals, so a streamed
     deck ends equal to a whole one. `shuffle` is seeded from the cards' text
-    and the pass number, never Math.random, so the server, the client and two
-    mounts all agree on the order.
+    and the pass number, never Math.random, so server, client and two mounts
+    agree on the order.
   - Each card is its own node ({#key pos}), so marking a flipped card never
     rotates back over the next card's answer.
+  - The card's min height comes from the longest face in the whole deck, so
+    the action row stays put from card to card in a typical deck.
+  - Rows without a usable front are skipped, counted on the first card's
+    position line and warned once. Front and back take a string or a number;
+    hint and category take a string only. Objects never print.
   - Reduced motion turns the 3D flip into a cross-fade (CSS only).
 -->
 <script module lang="ts">
@@ -52,19 +57,28 @@
 	function rec(v: unknown): Record<string, unknown> {
 		return v !== null && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
 	}
+
+	/** Visible text tier of one face: short words go big, paragraphs go body size. */
+	function tier(text: string): string {
+		if (text.length <= 24) return 'text-title-1 font-semibold';
+		if (text.length <= 90) return 'text-title-3 font-semibold text-balance';
+		return 'text-body max-w-[60ch] text-pretty';
+	}
+
+	const SHOW_MISSED = 6;
 </script>
 
 <script lang="ts">
+	import { tick } from 'svelte';
 	import { safeStyle } from '@ripple-ui/core';
 	import Check from '@lucide/svelte/icons/check';
 	import X from '@lucide/svelte/icons/x';
 	import Lightbulb from '@lucide/svelte/icons/lightbulb';
-	import RotateCw from '@lucide/svelte/icons/rotate-cw';
 	import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
 	import Repeat from '@lucide/svelte/icons/repeat';
 	import Layers from '@lucide/svelte/icons/layers';
 	import { safeArray } from '$lib/utils/safe-props.js';
-	import { StatChip, VerdictLine, plain, rise } from '../data-kit/index.js';
+	import { VerdictLine, plain, rise } from '../data-kit/index.js';
 	import type { Verdict } from '../data-kit/types.js';
 
 	interface Props {
@@ -107,14 +121,37 @@
 	const heading = $derived(plain(title));
 	const sub = $derived(plain(subtitle));
 
+	/** Face text: a string or a finite number. Anything else counts as absent. */
+	const face = (v: unknown) => (typeof v === 'string' ? plain(v) : typeof v === 'number' && Number.isFinite(v) ? String(v) : '');
+	/** Labels (hint, category): strings only, so a stray number or object never prints. */
+	const label = (v: unknown) => (typeof v === 'string' ? plain(v) : '');
+
+	const rows = $derived(safeArray<unknown>(cards, { widget: 'flashcard-deck', key: 'cards' }));
 	const list = $derived(
-		safeArray<unknown>(cards, { widget: 'flashcard-deck', key: 'cards' }).flatMap((raw, i) => {
+		rows.flatMap((raw, i) => {
 			const c = rec(raw);
-			const front = plain(c.front);
+			const front = face(c.front);
 			if (!front) return [];
-			return [{ key: `${c.id ?? ''}:${i}`, front, back: plain(c.back), hint: plain(c.hint), category: plain(c.category) }];
+			return [{ key: `${c.id ?? ''}:${i}`, front, back: face(c.back), hint: label(c.hint), category: label(c.category) }];
 		})
 	);
+	const skipped = $derived(rows.length - list.length);
+
+	// One warning per message per instance: cards re-derive on every streamed chunk.
+	const warned = new Set<string>();
+	$effect(() => {
+		if (!skipped) return;
+		const msg = `[Ripple] <flashcard-deck> skipped ${skipped} of ${rows.length} cards with no usable front.`;
+		if (warned.has(msg)) return;
+		warned.add(msg);
+		console.warn(msg);
+	});
+
+	/** Min-height tier from the longest face in the deck, so cards do not change height. */
+	const height = $derived.by(() => {
+		const longest = list.reduce((m, c) => Math.max(m, c.front.length + c.hint.length, c.back.length), 0);
+		return longest <= 40 ? 'sm' : longest <= 160 ? 'md' : 'lg';
+	});
 
 	/** Card indices of a re-deal ("Practise missed"); null deals the whole deck. */
 	let practise = $state<number[] | null>(null);
@@ -124,6 +161,11 @@
 	let known = $state<number[]>([]);
 	let flipped = $state(false);
 	let hintOpen = $state(false);
+	let showAllMissed = $state(false);
+
+	let root = $state<HTMLDivElement>();
+	let showBtn = $state<HTMLButtonElement>();
+	let gotBtn = $state<HTMLButtonElement>();
 
 	const order = $derived.by(() => {
 		const base = practise ? practise.filter((i) => i < list.length) : list.map((_, i) => i);
@@ -134,8 +176,10 @@
 	const cardAt = $derived(order[pos] as number | undefined);
 	const card = $derived(cardAt === undefined ? undefined : list[cardAt]);
 	const got = $derived(results.filter((r) => r === 'got').length);
-	const missed = $derived(pos - got);
 	const unknown = $derived(list.flatMap((_, i) => (known.includes(i) ? [] : [i])));
+	const missedShown = $derived(showAllMissed ? unknown : unknown.slice(0, SHOW_MISSED));
+	/** Sheets peeking below the card: one while another card follows, two while two or more do. */
+	const sheets = $derived(Math.min(2, Math.max(0, order.length - pos - 1)));
 
 	function writeScore(v: number) {
 		score = v;
@@ -146,10 +190,26 @@
 		results = [];
 		flipped = false;
 		hintOpen = false;
+		showAllMissed = false;
+	}
+
+	/** Focus follows the action row: the button under the keyboard is replaced, so focus must not fall to body. */
+	async function refocus(target: () => HTMLElement | null | undefined) {
+		await tick();
+		target()?.focus();
+	}
+
+	function reveal(fromKey = false) {
+		if (!card || flipped) return;
+		const move = fromKey || (showBtn !== undefined && document.activeElement === showBtn);
+		flipped = true;
+		hintOpen = false;
+		if (move) refocus(() => gotBtn);
 	}
 
 	function mark(m: Mark) {
-		if (cardAt === undefined || done) return;
+		if (cardAt === undefined || done || !flipped) return;
+		const hadFocus = !!root && root.contains(document.activeElement);
 		const i = cardAt;
 		results = [...results, m];
 		flipped = false;
@@ -159,6 +219,7 @@
 			writeScore(known.length);
 		}
 		if (results.length >= order.length) oncomplete?.({ score: known.length, total: list.length });
+		if (hadFocus) refocus(() => showBtn ?? root?.querySelector<HTMLElement>('[data-slot="score"] button'));
 	}
 
 	function practiseMissed() {
@@ -177,29 +238,53 @@
 		}
 	}
 
-	const live = $derived(done ? `Deck complete. ${known.length} of ${list.length} known.` : '');
+	function onRootKey(e: KeyboardEvent) {
+		if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || !card || done) return;
+		const k = e.key;
+		if ((k === ' ' || k === 'Enter') && !flipped && !(e.target instanceof HTMLButtonElement)) {
+			e.preventDefault();
+			reveal(true);
+		} else if (flipped && (k === 'ArrowLeft' || k === '1')) {
+			e.preventDefault();
+			mark('missed');
+		} else if (flipped && (k === 'ArrowRight' || k === '2')) {
+			e.preventDefault();
+			mark('got');
+		} else if ((k === 'h' || k === 'H') && card.hint && !flipped) {
+			e.preventDefault();
+			hintOpen = true;
+		}
+	}
+
+	// A listener, not an attribute: the root is a plain container, not a control.
+	$effect(() => {
+		const el = root;
+		if (!el) return;
+		el.addEventListener('keydown', onRootKey);
+		return () => el.removeEventListener('keydown', onRootKey);
+	});
+
+	const live = $derived(
+		done ? `Deck complete. ${known.length} of ${list.length} known.` : card && flipped ? `Answer: ${card.back || 'No answer given'}` : ''
+	);
 
 	const focusRing = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ripple-ring';
-	const markBtn = [
-		'inline-flex h-11 items-center justify-center gap-2 rounded-md border border-ripple-border bg-ripple-surface text-body-emph transition-colors duration-150 hover:bg-ripple-muted disabled:opacity-40 motion-reduce:transition-none',
-		focusRing
-	];
-	const primaryBtn = [
-		'inline-flex h-11 items-center justify-center gap-2 rounded-md bg-ripple-accent px-4 text-body-emph text-ripple-accent-foreground transition-opacity hover:opacity-90',
-		focusRing
-	];
+	const btnBase =
+		'inline-flex h-11 items-center justify-center gap-2 rounded-md px-4 text-body-emph transition-[background-color,opacity,transform] duration-150 active:translate-y-px motion-reduce:transition-none motion-reduce:active:translate-y-0';
+	const neutralBtn = [btnBase, 'border border-ripple-border bg-ripple-surface hover:bg-ripple-muted', focusRing];
+	const primaryBtn = [btnBase, 'bg-ripple-accent text-ripple-accent-foreground hover:opacity-90', focusRing];
+	const kbd = 'keyhint ml-1 rounded px-1 text-caption-1 font-normal tabular-nums opacity-70';
+	const textWrap = 'whitespace-pre-line [overflow-wrap:anywhere]';
 </script>
 
-<div {id} class={['@container text-ripple-surface-foreground', className]} style={rootStyle} data-widget="flashcard-deck">
-	<div class="flex flex-col gap-3">
-		{#if heading || sub || list.length}
+<div {id} bind:this={root} class={['@container text-ripple-surface-foreground', className]} style={rootStyle} data-widget="flashcard-deck">
+	<div class="flex flex-col gap-3 @min-[480px]:gap-4">
+		{#if heading || sub || practise}
 			<header class="flex min-w-0 flex-col gap-0.5">
-				{#if heading}<h2 class="text-title-3 font-semibold text-pretty">{heading}</h2>{/if}
-				{#if sub}<p class="text-callout text-ripple-muted-foreground">{sub}</p>{/if}
-				{#if list.length}
-					<p class="text-footnote text-ripple-muted-foreground tabular-nums" data-slot="meta">
-						{list.length} {list.length === 1 ? 'card' : 'cards'}{practise ? ` · practising ${order.length} missed` : ''}
-					</p>
+				{#if heading}<h2 class="line-clamp-2 text-title-3 font-semibold text-pretty" title={heading}>{heading}</h2>{/if}
+				{#if sub}<p class="text-callout text-ripple-muted-foreground text-pretty">{sub}</p>{/if}
+				{#if practise}
+					<p class="text-callout text-ripple-muted-foreground tabular-nums" data-slot="meta">Practising {order.length} missed</p>
 				{/if}
 			</header>
 		{/if}
@@ -207,34 +292,29 @@
 		<VerdictLine {verdict} />
 
 		{#if !list.length}
-			<p class="rounded-ripple border border-ripple-border bg-ripple-surface px-3 py-4 text-callout text-ripple-muted-foreground">
-				No cards yet. Ask for a deck.
+			<p class="flex h-16 items-center gap-2 text-callout text-ripple-muted-foreground">
+				<Layers size={16} strokeWidth={1.75} aria-hidden="true" class="shrink-0" />No cards yet. Ask for a deck.
 			</p>
 		{:else if done}
-			<section
-				class="grid gap-4 rounded-ripple border border-ripple-border bg-ripple-surface p-4 @min-[720px]:grid-cols-2 @min-[720px]:gap-6"
-				aria-label="Score"
-				data-slot="score"
-				in:rise={{ index: 0 }}
-			>
-				<div class="flex flex-col items-center gap-3 text-center @min-[720px]:justify-center">
+			<section class="grid gap-6 @min-[480px]:grid-cols-2 @min-[480px]:gap-8" aria-label="Score" data-slot="score" in:rise={{ index: 0 }}>
+				<div class="flex min-w-0 flex-col items-start gap-3">
 					<p class="text-caption-1 font-medium tracking-[0.04em] text-ripple-muted-foreground uppercase">Cards known</p>
 					<p class="tabular-nums" data-slot="total">
 						<span class="text-[44px] leading-none font-semibold">{known.length}</span>
 						<span class="text-title-2 text-ripple-muted-foreground">/ {list.length}</span>
 					</p>
-					<div class="flex h-1.5 w-full max-w-60 overflow-hidden rounded-full bg-ripple-error/40" aria-hidden="true">
-						<div class="h-full bg-ripple-success" style:width="{(known.length / list.length) * 100}%"></div>
+					<div class="flex h-1.5 w-full max-w-60 overflow-hidden rounded-full bg-ripple-track" aria-hidden="true">
+						<div class="h-full rounded-full bg-ripple-accent" style:width="{(known.length / list.length) * 100}%"></div>
 					</div>
 					{#if practise}
 						<p class="text-callout text-ripple-muted-foreground tabular-nums">This round: {got} of {order.length}</p>
 					{/if}
-					<div class="flex w-full max-w-72 flex-col gap-2">
+					<div class="mt-1 flex w-full max-w-72 flex-col gap-2">
 						{#if unknown.length}
 							<button type="button" class={primaryBtn} onclick={practiseMissed}>
 								<Repeat size={16} strokeWidth={2} aria-hidden="true" />Practise missed ({unknown.length})
 							</button>
-							<button type="button" class={markBtn} onclick={restart}>
+							<button type="button" class={neutralBtn} onclick={restart}>
 								<RotateCcw size={16} strokeWidth={1.75} aria-hidden="true" />Restart
 							</button>
 						{:else}
@@ -249,18 +329,27 @@
 					{#if unknown.length}
 						<p class="text-caption-1 font-medium tracking-[0.04em] text-ripple-muted-foreground uppercase">To practise</p>
 						<ul class="flex flex-col divide-y divide-ripple-border" data-slot="missed">
-							{#each unknown as i, k (list[i].key)}
-								<li class="flex items-center gap-2.5 py-2 first:pt-0 last:pb-0" in:rise={{ index: k }}>
-									<span class="grid size-8 shrink-0 place-items-center rounded-md bg-ripple-error/12 text-ripple-error-text">
-										<X size={16} strokeWidth={1.75} aria-hidden="true" />
+							{#each missedShown as i, k (list[i].key)}
+								<li class="flex items-start gap-2.5 py-2.5 first:pt-0" in:rise={{ index: k }}>
+									<span class="mt-px grid size-6 shrink-0 place-items-center rounded-md bg-ripple-error/12 text-ripple-error-text">
+										<X size={14} strokeWidth={2} aria-hidden="true" />
 									</span>
 									<span class="min-w-0 flex-1">
-										<span class="block text-body-emph text-pretty">{list[i].front}</span>
-										<span class="block text-callout text-pretty text-ripple-muted-foreground">{list[i].back || 'No answer given'}</span>
+										<span class={['block text-body-emph', textWrap]}>{list[i].front}</span>
+										<span class={['block text-callout text-ripple-muted-foreground', textWrap]}>{list[i].back || 'No answer given'}</span>
 									</span>
 								</li>
 							{/each}
 						</ul>
+						{#if unknown.length > missedShown.length}
+							<button
+								type="button"
+								class={['inline-flex min-h-6 items-center self-start rounded-md text-callout font-medium text-ripple-accent-text hover:underline', focusRing]}
+								onclick={() => (showAllMissed = true)}
+							>
+								Show {unknown.length - missedShown.length} more
+							</button>
+						{/if}
 					{:else}
 						<p class="flex items-center gap-2 rounded-md bg-ripple-success/12 px-3 py-2.5 text-body-emph text-ripple-success-text">
 							<Check size={16} strokeWidth={2} aria-hidden="true" />Every card known.
@@ -269,100 +358,114 @@
 				</div>
 			</section>
 		{:else if card}
-			<div class="grid gap-3 @min-[720px]:grid-cols-[minmax(0,560px)_minmax(9rem,12rem)] @min-[720px]:justify-center @min-[720px]:gap-4">
-				<div class="flex min-w-0 flex-col gap-3">
-					<div class="flex items-center gap-3">
-						<ol class="flex min-w-0 flex-1 flex-wrap gap-1.5" aria-label="Progress" data-slot="dots">
-							{#each order as _, k (k)}
-								{@const r = results[k]}
-								<li
-									class={[
-										'size-2 rounded-full',
-										r === 'got'
-											? 'bg-ripple-success'
-											: r === 'missed'
-												? 'bg-ripple-error'
-												: k === pos
-													? 'bg-ripple-accent ring-2 ring-ripple-accent/30'
-													: 'bg-ripple-border'
-									]}
-									data-mark={r ?? (k === pos ? 'now' : 'todo')}
-								>
-									<span class="sr-only">Card {k + 1}: {r === 'got' ? 'got it' : r === 'missed' ? 'missed' : k === pos ? 'current' : 'to do'}</span>
-								</li>
-							{/each}
-						</ol>
-						<span class="shrink-0 text-footnote text-ripple-muted-foreground tabular-nums" data-slot="position">{pos + 1} / {order.length}</span>
-					</div>
-
-					<!-- A new card is a new node, so it never un-flips on screen (that would flash its answer). -->
-					{#key pos}
-					<button
-						type="button"
-						class={['deck-card w-full rounded-ripple text-center', focusRing]}
-						data-flipped={flipped}
-						onclick={() => (flipped = !flipped)}
-						in:rise
-					>
-						<span class="deck-inner">
-							<span
-								class="deck-face deck-front flex min-h-[180px] flex-col items-center justify-center gap-3 rounded-ripple border border-ripple-border bg-ripple-surface p-5 @min-[560px]:min-h-[220px]"
-								aria-hidden={flipped}
+			<div class="mx-auto flex w-full flex-col gap-3 @min-[480px]:max-w-[560px] @min-[480px]:gap-4">
+				<div class="flex h-7 items-center gap-3">
+					<ol class="rail flex min-w-0 flex-1 flex-nowrap" style:--n={order.length} aria-label="Progress" data-slot="dots">
+						{#each order as _, k (k)}
+							{@const r = results[k]}
+							<li
+								class={[
+									'h-1 min-w-0.5 flex-1 basis-0 first:rounded-l-full last:rounded-r-full',
+									r === 'got'
+										? 'bg-ripple-success'
+										: r === 'missed'
+											? 'bg-ripple-error'
+											: k === pos
+												? 'bg-ripple-accent'
+												: 'bg-ripple-track'
+								]}
+								data-mark={r ?? (k === pos ? 'now' : 'todo')}
+								aria-current={k === pos ? 'step' : undefined}
 							>
-								{#if card.category}
-									<span class="text-caption-1 font-medium tracking-[0.04em] text-ripple-muted-foreground uppercase">{card.category}</span>
-								{/if}
-								<span class="text-title-2 font-semibold text-balance" data-slot="front">{card.front}</span>
-								<span class="inline-flex items-center gap-1.5 text-footnote text-ripple-muted-foreground">
-									<RotateCw size={12} strokeWidth={1.75} aria-hidden="true" />Tap to see the answer
-								</span>
-							</span>
-							<span
-								class="deck-face deck-back flex min-h-[180px] flex-col items-center justify-center gap-3 rounded-ripple border border-ripple-accent/40 bg-[color-mix(in_oklab,var(--ripple-accent)_8%,var(--ripple-surface))] p-5 @min-[560px]:min-h-[220px]"
-								aria-hidden={!flipped}
-							>
-								<span class="text-callout text-pretty text-ripple-muted-foreground">{card.front}</span>
-								<span class="text-title-2 font-semibold text-balance" data-slot="back">{card.back || 'No answer given'}</span>
-							</span>
-						</span>
-					</button>
-					{/key}
-
-					{#if card.hint && !flipped}
-						{#if hintOpen}
-							<p class="flex items-start gap-2 rounded-md bg-ripple-muted px-3 py-2 text-callout" data-slot="hint">
-								<Lightbulb size={14} strokeWidth={1.75} aria-hidden="true" class="mt-px shrink-0 text-ripple-warning-text" />{card.hint}
-							</p>
-						{:else}
-							<button
-								type="button"
-								class={['inline-flex h-7 items-center gap-1.5 self-center rounded-md px-2 text-callout text-ripple-muted-foreground hover:text-ripple-surface-foreground', focusRing]}
-								onclick={() => (hintOpen = true)}
-							>
-								<Lightbulb size={14} strokeWidth={1.75} aria-hidden="true" />Show hint
-							</button>
-						{/if}
+								<span class="sr-only">Card {k + 1}: {r === 'got' ? 'got it' : r === 'missed' ? 'missed' : k === pos ? 'current' : 'to do'}</span>
+							</li>
+						{/each}
+					</ol>
+					{#if card.hint}
+						<button
+							type="button"
+							class={[
+								'inline-flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-footnote text-ripple-muted-foreground transition-colors hover:bg-ripple-muted hover:text-ripple-surface-foreground aria-pressed:text-ripple-warning-text',
+								flipped && 'invisible',
+								focusRing
+							]}
+							aria-label="Show hint"
+							aria-pressed={hintOpen}
+							disabled={flipped}
+							onclick={() => (hintOpen = !hintOpen)}
+						>
+							<Lightbulb size={14} strokeWidth={1.75} aria-hidden="true" />Hint
+						</button>
 					{/if}
-
-					<div class="grid grid-cols-2 gap-2">
-						<button type="button" class={markBtn} onclick={() => mark('missed')}>
-							<X size={16} strokeWidth={2} aria-hidden="true" class="text-ripple-error-text" />Missed it
-						</button>
-						<button type="button" class={markBtn} onclick={() => mark('got')}>
-							<Check size={16} strokeWidth={2} aria-hidden="true" class="text-ripple-success-text" />Got it
-						</button>
-					</div>
-
-					<p class="text-center text-footnote text-ripple-muted-foreground tabular-nums @min-[720px]:hidden" data-slot="tally">
-						{got} got it · {missed} missed · {order.length - pos} left
-					</p>
+					<span class="shrink-0 text-footnote text-ripple-muted-foreground tabular-nums" data-slot="position"
+						>{pos + 1} / {order.length}{#if skipped && pos === 0 && !practise}<span>{` · ${skipped} skipped`}</span>{/if}</span
+					>
 				</div>
 
-				<aside class="hidden flex-col gap-2 @min-[720px]:flex" aria-label="This round">
-					<StatChip label="Got it" value={got} icon={Check} />
-					<StatChip label="Missed" value={missed} icon={X} />
-					<StatChip label="Left" value={order.length - pos} icon={Layers} />
-				</aside>
+				<div class="deck-stack" data-sheets={sheets}>
+					<!-- A new card is a new node, so it never un-flips on screen (that would flash its answer). -->
+					{#key pos}
+						<button
+							type="button"
+							class={['deck-card block w-full rounded-ripple', focusRing]}
+							data-flipped={flipped}
+							onclick={() => (flipped ? (flipped = false) : reveal())}
+							in:rise
+						>
+							<span class={['deck-inner', `deck-h-${height}`]} data-height={height}>
+								<span
+									class={[
+										'deck-face deck-front flex flex-col justify-center gap-3 rounded-ripple border border-ripple-border bg-ripple-raised p-5',
+										card.front.length > 90 ? 'items-start text-left' : 'items-center text-center'
+									]}
+									aria-hidden={flipped}
+								>
+									{#if card.category}
+										<span
+											class="max-w-full truncate text-caption-1 font-medium tracking-[0.04em] text-ripple-muted-foreground uppercase"
+											title={card.category}>{card.category}</span
+										>
+									{/if}
+									<span class={[tier(card.front), textWrap]} data-slot="front">{card.front}</span>
+									{#if hintOpen && card.hint}
+										<span class={['flex items-start gap-1.5 text-callout text-ripple-muted-foreground', textWrap]} data-slot="hint"
+											><Lightbulb size={14} strokeWidth={1.75} aria-hidden="true" class="mt-0.5 shrink-0 text-ripple-warning-text" />{card.hint}</span
+										>
+									{/if}
+								</span>
+								<span
+									class={[
+										'deck-face deck-back flex flex-col justify-center gap-2 rounded-ripple border border-ripple-accent/40 bg-[color-mix(in_oklab,var(--ripple-accent)_8%,var(--ripple-raised))] p-5',
+										card.back.length > 90 ? 'items-start text-left' : 'items-center text-center'
+									]}
+									aria-hidden={!flipped}
+								>
+									<span class={['line-clamp-2 max-w-full text-callout text-ripple-muted-foreground', textWrap]} title={card.front}>{card.front}</span>
+									{#if card.back}
+										<span class={[tier(card.back), textWrap]} data-slot="back">{card.back}</span>
+									{:else}
+										<span class="text-callout text-ripple-muted-foreground" data-slot="back">No answer given</span>
+									{/if}
+								</span>
+							</span>
+						</button>
+					{/key}
+				</div>
+
+				<div class="grid h-11 grid-cols-2 gap-2">
+					{#if !flipped}
+						<button type="button" bind:this={showBtn} class={[primaryBtn, 'col-span-2']} onclick={() => reveal()}>
+							Show answer<kbd class={kbd} aria-hidden="true">Space</kbd>
+						</button>
+					{:else}
+						<button type="button" class={neutralBtn} onclick={() => mark('missed')}>
+							<X size={16} strokeWidth={2} aria-hidden="true" class="text-ripple-error-text" />Missed it<kbd class={kbd} aria-hidden="true">←</kbd>
+						</button>
+						<button type="button" bind:this={gotBtn} class={neutralBtn} onclick={() => mark('got')}>
+							<Check size={16} strokeWidth={2} aria-hidden="true" class="text-ripple-success-text" />Got it<kbd class={kbd} aria-hidden="true">→</kbd>
+						</button>
+					{/if}
+				</div>
 			</div>
 		{/if}
 
@@ -371,21 +474,97 @@
 </div>
 
 <style>
+	/* 2px gaps while every segment stays at least 6px wide, closing to 0 for long decks. */
+	.rail {
+		gap: clamp(0px, calc((100% - var(--n) * 6px) / max(var(--n) - 1, 1)), 2px);
+	}
+	.keyhint {
+		display: none;
+		font-family: inherit;
+	}
+	@container (min-width: 480px) {
+		@media (hover: hover) and (pointer: fine) {
+			.keyhint {
+				display: inline;
+			}
+		}
+	}
+
+	/* Sheets peek straight down below the card while more cards remain; never hit-tested. */
+	.deck-stack {
+		position: relative;
+		isolation: isolate;
+		padding-bottom: 12px;
+	}
+	.deck-stack::before,
+	.deck-stack::after {
+		content: '';
+		position: absolute;
+		display: none;
+		pointer-events: none;
+		border: 1px solid var(--ripple-border);
+		border-radius: var(--ripple-radius);
+		background: var(--ripple-raised);
+	}
+	.deck-stack::before {
+		inset: 12px 8px 6px;
+		z-index: -1;
+	}
+	.deck-stack::after {
+		inset: 18px 16px 0;
+		z-index: -2;
+	}
+	.deck-stack[data-sheets='1']::before,
+	.deck-stack[data-sheets='2']::before,
+	.deck-stack[data-sheets='2']::after {
+		display: block;
+	}
+
 	.deck-card {
 		perspective: 1200px;
+		cursor: pointer;
 	}
 	.deck-inner {
 		display: grid;
 		transform-style: preserve-3d;
-		transition: transform 450ms cubic-bezier(0.2, 0.7, 0.2, 1);
+		transition: transform 450ms var(--ripple-ease-out);
+	}
+	.deck-h-sm {
+		min-height: 200px;
+	}
+	.deck-h-md {
+		min-height: 240px;
+	}
+	.deck-h-lg {
+		min-height: 280px;
+	}
+	@container (min-width: 480px) {
+		.deck-h-sm {
+			min-height: 240px;
+		}
+		.deck-h-md {
+			min-height: 280px;
+		}
 	}
 	.deck-card[data-flipped='true'] .deck-inner {
 		transform: rotateY(180deg);
 	}
 	.deck-face {
 		grid-area: 1 / 1;
+		min-width: 0;
 		backface-visibility: hidden;
 		-webkit-backface-visibility: hidden;
+		box-shadow:
+			0 1px 2px color-mix(in oklab, var(--ripple-surface-foreground) 8%, transparent),
+			0 8px 24px -12px color-mix(in oklab, var(--ripple-surface-foreground) 18%, transparent);
+		transition: box-shadow 200ms var(--ripple-ease-out);
+	}
+	@media (hover: hover) {
+		.deck-card:hover .deck-face {
+			box-shadow:
+				0 1px 2px color-mix(in oklab, var(--ripple-surface-foreground) 10%, transparent),
+				0 12px 28px -12px color-mix(in oklab, var(--ripple-surface-foreground) 26%, transparent);
+		}
 	}
 	.deck-back {
 		transform: rotateY(180deg);

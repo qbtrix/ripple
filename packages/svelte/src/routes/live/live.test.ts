@@ -356,11 +356,16 @@ describe('flashcards (flashcard-deck)', () => {
 		const { container, onStateChange } = await mountStreamed(scenario('flashcards'));
 		const ui = within(container);
 		expect(slot(container, 'front')).toBe('Hello');
-		await fireEvent.click(ui.getByRole('button', { name: 'Got it' }));
+		// Reveal, then grade: the marks only exist once the answer is showing.
+		const grade = async (name: string) => {
+			await fireEvent.click(ui.getByRole('button', { name: 'Show answer' }));
+			await fireEvent.click(ui.getByRole('button', { name }));
+		};
+		await grade('Got it');
 		await waitFor(() => expect(lastWrite(onStateChange, 'score')).toBe(1));
 		expect(slot(container, 'front')).toBe('Good morning');
-		await fireEvent.click(ui.getByRole('button', { name: 'Missed it' }));
-		for (let i = 0; i < 8; i++) await fireEvent.click(ui.getByRole('button', { name: 'Got it' }));
+		await grade('Missed it');
+		for (let i = 0; i < 8; i++) await grade('Got it');
 		await waitFor(() => expect(slot(container, 'total')).toBe('9 / 10'));
 		expect(lastWrite(onStateChange, 'score')).toBe(9);
 		expect(container.querySelector('[data-slot="missed"]')?.textContent).toContain('Good morning');
