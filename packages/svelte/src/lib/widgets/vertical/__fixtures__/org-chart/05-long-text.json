@@ -1,0 +1,43 @@
+{
+  "version": "1.0",
+  "state": {},
+  "ui": {
+    "type": "org-chart",
+    "props": {
+      "root": {
+        "id": "chair",
+        "name": "Maximiliana Alexandrovna Konstantinopoulou-Vanderbilt de la Fuente",
+        "title": "Chair of the Board of Trustees and Interim Chief Executive Officer for Global Operations",
+        "children": [
+          {
+            "id": "ab",
+            "name": "Al",
+            "title": "VP"
+          },
+          {
+            "id": "wordy",
+            "name": "Bartholomew",
+            "title": "Senior Vice President, Strategic Partnerships, Business Development and Corporate Alliances (EMEA and APAC)",
+            "children": [
+              {
+                "id": "oneword",
+                "name": "Wolfeschlegelsteinhausenbergerdorffvoralternwarengewissenhaft",
+                "title": "Analyst"
+              },
+              {
+                "id": "jo",
+                "name": "Jo Li",
+                "title": "Coordinator"
+              }
+            ]
+          },
+          {
+            "id": "hyph",
+            "name": "Anne-Marie Saint-Exupéry Montgomery-Llewellyn",
+            "title": "Director of People, Culture & Workplace Experience"
+          }
+        ]
+      }
+    }
+  }
+}

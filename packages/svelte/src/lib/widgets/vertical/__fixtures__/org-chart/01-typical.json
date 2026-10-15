@@ -1,0 +1,45 @@
+{
+  "version": "1.0",
+  "state": {},
+  "ui": {
+    "type": "org-chart",
+    "props": {
+      "root": {
+        "id": "ceo",
+        "name": "Diana Martinez",
+        "title": "Chief Executive Officer",
+        "children": [
+          {
+            "id": "cto",
+            "name": "Edward Chen",
+            "title": "CTO",
+            "children": [
+              {
+                "id": "eng-lead",
+                "name": "Fatima Al-Rashid",
+                "title": "Engineering Lead"
+              },
+              {
+                "id": "qa-lead",
+                "name": "Gabriel Santos",
+                "title": "QA Lead"
+              }
+            ]
+          },
+          {
+            "id": "cfo",
+            "name": "Hannah Park",
+            "title": "CFO",
+            "children": [
+              {
+                "id": "controller",
+                "name": "Isaac Lincoln",
+                "title": "Controller"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}
