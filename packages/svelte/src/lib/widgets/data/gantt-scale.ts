@@ -17,7 +17,7 @@
 //   always fits the width and nothing scrolls sideways. A last label that
 //   would cross the track end is right-aligned on its tick instead.
 // - Today has its own lane under the tick labels, so every tick label stays.
-import { dateKey, finite, plain } from '../data-kit/format.js';
+import { dateKey, percent, plain } from '../data-kit/format.js';
 
 export type ViewMode = 'Quarter Day' | 'Half Day' | 'Day' | 'Week' | 'Month' | 'Year';
 
@@ -51,10 +51,7 @@ export interface Tick {
 const DAY = 86_400_000;
 const HOUR = 3_600_000;
 
-export function parseProgress(v: unknown): number | undefined {
-	const n = finite(typeof v === 'string' ? v.trim().replace(/%$/, '') : v);
-	return n === undefined ? undefined : Math.min(100, Math.max(0, n));
-}
+export const parseProgress = percent;
 
 function depIds(v: unknown): string[] {
 	const list = Array.isArray(v) ? v : typeof v === 'string' ? v.split(',') : typeof v === 'number' ? [v] : [];
