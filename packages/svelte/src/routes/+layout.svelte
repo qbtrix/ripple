@@ -158,9 +158,7 @@
 
 	<footer class="foot">
 		<p>
-			<span>MIT</span><span aria-hidden="true">·</span><a href={NPM_URL}>npm</a><span aria-hidden="true">·</span><a
-				href={GITHUB_URL}>GitHub</a
-			><span aria-hidden="true">·</span><a href="/playground">Playground</a><span aria-hidden="true">·</span><a href={PAWOS_TRY}
+			<span>MIT</span><a href={NPM_URL}>npm</a><a href={GITHUB_URL}>GitHub</a><a href="/playground">Playground</a><a href={PAWOS_TRY}
 				>Paw OS by PocketPaw</a
 			>
 		</p>
@@ -457,7 +455,8 @@
 		padding-inline: var(--site-gutter);
 		display: flex;
 		flex-wrap: wrap;
-		gap: 4px 10px;
+		/* No separator characters: a wrap can never strand one at a line end. */
+		gap: 4px 20px;
 	}
 	.foot a {
 		color: inherit;

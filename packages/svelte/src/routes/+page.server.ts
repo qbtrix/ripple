@@ -6,7 +6,6 @@ import type { PageServerLoad } from './$types';
 const codeSample = `<script>
   import { Ripple } from '@ripple-ui/svelte';
   import { streamSpec } from '@ripple-ui/svelte/streaming';
-  import '@ripple-ui/svelte/theme.css';
 
   let store = $state(null);
 

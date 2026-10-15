@@ -1,43 +1,34 @@
 <!--
   @file routes/+page.svelte
   @description Ripple's landing, chat-first, laid out like a Paw OS chat: under
-    the site bar sits PE's thin context row (the name and a short sub-line),
+    the site bar a thin context row says which demo this is (recorded or live),
     then the chat fills exactly the first screen (100dvh less the bar; while
     an iOS keyboard shrinks the visual viewport, its height instead, so the
-    composer stays above the keyboard), so
-    the page never scrolls on its own: the chat's own container scrolls, with
-    the hero (the h1, a lede and the install chip with Copy) at its top,
-    above the first message, and the chips and composer pinned below it.
-    "More", a ghost button right of the composer, is what moves the page to
-    the sections below. Under the composer a one-line strip: the install
-    command with a copy button, Docs and Gallery, then the Paw OS hint while
-    it fits. Copy falls back to selecting the command when the clipboard is
-    blocked. The
-    context row has no "New chat" action: ChatSession has no reset. A visitor types
-    a request or taps a chip, the answer streams in and its card renders through
-    <Ripple> while it arrives. The chat opens on one finished recorded exchange
-    (the bill splitter, seeded synchronously so it is in the prerendered HTML
-    and hydrates without a re-render), so the fold shows a working card before
-    any tap and with JavaScript off. The chips above the composer are the
-    grouped suggestion panel (live/scenarios.ts suggestionGroups: Browse and
-    discover, Create and build, Organize, Learn and explore, Work and
-    productivity, Lifestyle, Planning, Play), collapsed to one row until the
-    visitor expands it. Live, every chip shows (the store ones only with a
-    store). In replay mode every chip shows too, in the same places: one with
-    a recorded or hand-written answer replays it, any other opens Paw OS with
-    its prompt like typed text (marked "Opens in Paw OS"). The chat calls the Paw Bar API only when PUBLIC_PAWBAR_LIVE=1
-    with PUBLIC_PAWBAR_ENDPOINT / _WIDGET_ID / _SITE_KEY (lib/site/pawbar-env.ts,
-    read in vite.config.ts); otherwise it replays the recorded answers locally
-    and says so. Live, a card's `checkout` and `book` host events go to the test
-    store (PUBLIC_STORE_URL) through the chat session, and a flow card's last
-    step or an `ask` sends the visitor's next message. Typed text opens Paw OS
-    instead (PUBLIC_PAWOS_URL), unless PUBLIC_TYPED_LOCAL=1 with a localhost
-    endpoint keeps it on the Paw Bar. Below, one short line each: how it works
-    (spec, engine, UI, with a live card), install and the streaming code
-    sample, the blue band (install command, and the coding-agent setup prompt
-    from lib/site/setup-prompt.ts, which falls back to its Install docs
-    section when the clipboard is blocked), the recorded examples linking /live, and the bring-your-own-key
-    closer.
+    composer stays above the keyboard). The page never scrolls on its own: the
+    chat's own container scrolls, with the hero (the h1 and a lede) at its top,
+    above the first message, and the chips and composer pinned below it. "How
+    it works", a ghost link right of the composer, moves the page to the
+    sections below. Under the composer a one-line strip: the install command
+    with a copy button (it selects the command when the clipboard is blocked),
+    Docs and Gallery, then the Paw OS hint while it fits. The chat opens on one
+    finished recorded exchange (the bill splitter, seeded synchronously with a
+    fixed intro, so it is in the prerendered HTML and hydrates without a
+    re-render). The chips are the grouped suggestion panel (live/scenarios.ts
+    suggestionGroups), collapsed to one row until expanded. Live, every chip
+    shows (the store ones only with a store). In replay mode every chip shows
+    too: one with a recorded or hand-written answer replays it, any other opens
+    Paw OS with its prompt like typed text (marked "Opens in Paw OS"), and the
+    replayable chips sort first, so the collapsed row leads with them and
+    groups with none sink to the end. The chat calls the Paw Bar API only when
+    PUBLIC_PAWBAR_LIVE=1 with PUBLIC_PAWBAR_ENDPOINT / _WIDGET_ID / _SITE_KEY
+    (lib/site/pawbar-env.ts, read in vite.config.ts); otherwise it replays the
+    recordings locally. Live, `checkout` and `book` host events go to the test
+    store (PUBLIC_STORE_URL). Typed text opens Paw OS (PUBLIC_PAWOS_URL) unless
+    PUBLIC_TYPED_LOCAL=1 with a localhost endpoint keeps it on the Paw Bar.
+    Below: how it works (spec, engine, UI, with a live card), the streaming code
+    sample, the blue band (install command and the coding-agent setup prompt
+    from lib/site/setup-prompt.ts, falling back to its Install docs section),
+    the recorded runs linking /live, and the bring-your-own-key closer.
 
   Creative Direction Declaration
     Scene: a developer at night, comparing generative UI tools with a terminal
@@ -84,6 +75,7 @@
 	// The intro says what is replaying: a matching recording, or (when no
 	// recording overlaps the request) the bill splitter, said plainly. Live, the
 	// fallback says it is a saved answer instead.
+	const SEED_INTRO = 'A recorded answer, replayed. Change something in the card.';
 	const intro = (message: string) =>
 		findScenario(message, chatScenarios)
 			? 'Replaying a recorded answer that matches.'
@@ -100,17 +92,20 @@
 	// Live cards also post their audit counts (session.auditCard).
 	const live = LIVE ? pawbarTransport({ endpoint: ENDPOINT, widgetId: WIDGET_ID, siteKey: SITE_KEY }) : null;
 	const session = live ? new ChatSession(live.send, recorded('Here is a saved answer that fits.'), store, live.audit) : new ChatSession(recorded());
+	// The seeded opener answers no request, so its intro says what it is.
 	const bill = chatScenarios.find((s) => s.id === 'bill-splitter');
-	if (bill) session.seed(bill.fixture.prompt, recordedExchange(bill, intro(bill.fixture.prompt)));
+	if (bill) session.seed(bill.fixture.prompt, recordedExchange(bill, SEED_INTRO));
 	// The suggestion panel's chips, grouped and ordered by suggestionGroups. Live:
 	// the store chips (with a store), the chat-only prompts and the recordings.
 	// Replay: every chip, store ones included; those with no answer here hand
-	// their prompt to Paw OS, as typed text does.
+	// their prompt to Paw OS, as typed text does, and sort last (a stable sort,
+	// so the collapsed row leads with chips that replay on this page).
 	const liveChips = LIVE ? [...scenarios.filter((s) => s.needsStore), ...chatPrompts].filter((c) => !c.needsStore || STORE_URL) : [];
 	const replayable = new Set(chatScenarios.map((s) => s.id));
 	const suggestions = LIVE
 		? groupedSuggestions([...liveChips, ...chatScenarios])
-		: groupedSuggestions([...answerPool, ...chatPrompts]).map((c) => (replayable.has(c.id) ? c : { ...c, handoff: true }));
+		: groupedSuggestions([...answerPool, ...chatPrompts]).map((c) => (replayable.has(c.id) ? c : { ...c, handoff: true }))
+				.sort((a, b) => Number(!!a.handoff) - Number(!!b.handoff));
 
 	// Step 3 of "how it works": a small spec, rendered for real.
 	const demoSpec = {
@@ -133,9 +128,8 @@
 	// Pretty-printed the way the spec peek shows a card (JsonLines).
 	const specSnippet = JSON.stringify({ state: demoSpec.state, ui: demoSpec.ui });
 
-	// The hero chip, the dock's strip and the band each copy the install command; only the one tapped says so.
-	let copied = $state<'hero' | 'code' | 'strip' | 'prompt' | null>(null);
-	let heroCmd = $state<HTMLElement>();
+	// The dock's strip and the band each copy the install command; only the one tapped says so.
+	let copied = $state<'code' | 'strip' | 'prompt' | null>(null);
 	let bandCmd = $state<HTMLElement>();
 	let stripCmd = $state<HTMLElement>();
 	// The band's second action: the setup prompt for a coding agent. If the
@@ -149,14 +143,14 @@
 			location.assign(SETUP_DOC);
 		}
 	}
-	async function copyInstall(where: 'hero' | 'code' | 'strip') {
+	async function copyInstall(where: 'code' | 'strip') {
 		try {
 			await navigator.clipboard.writeText(INSTALL);
 			copied = where;
 			setTimeout(() => (copied = null), 1600);
 		} catch {
 			// Clipboard missing or blocked: select the command so the visitor can copy it.
-			const el = { hero: heroCmd, code: bandCmd, strip: stripCmd }[where];
+			const el = { code: bandCmd, strip: stripCmd }[where];
 			const range = document.createRange();
 			if (el) range.selectNodeContents(el);
 			window.getSelection()?.removeAllRanges();
@@ -203,8 +197,7 @@
 		<!-- PE's chat room header: name, topic, actions on the right (none here). -->
 		<div class="context">
 			<div class="context-info">
-				<p class="name">Ripple</p>
-				<p>Paw OS by PocketPaw <span aria-hidden="true">·</span> {LIVE ? 'live demo' : 'recorded demo'}</p>
+				<p>{LIVE ? 'Live demo' : 'Recorded demo'} <span aria-hidden="true">·</span> Paw OS by PocketPaw</p>
 			</div>
 		</div>
 		<Chat {session} {suggestions} pawosUrl={PAWOS_URL} typedLocal={TYPED_LOCAL}>
@@ -214,18 +207,12 @@
 					<h1 id="hero-title">Ask for a tool. <span>Ripple builds it while the model is still typing.</span></h1>
 					<p class="lede">
 						Ripple is the open-source generative UI engine. A model writes a small JSON spec, and Ripple turns it into a
-						working interface as the spec streams in. Ask for something below.
-					</p>
-					<p class="get">
-						<code bind:this={heroCmd}><span aria-hidden="true">$</span> {INSTALL}</code>
-						<button type="button" onclick={() => copyInstall('hero')} aria-label="Copy install command">
-							{copied === 'hero' ? 'Copied' : 'Copy'}
-						</button>
+						working interface as the spec streams in. {TYPED_LOCAL ? 'Ask for something below.' : 'Tap a suggestion below; a typed request opens in Paw OS.'}
 					</p>
 				</header>
 			{/snippet}
 			{#snippet more()}
-				<a class="more" href="#how">More <ChevronDown size={14} strokeWidth={2} aria-hidden="true" /></a>
+				<a class="more" href="#how">How it works <ChevronDown size={14} strokeWidth={2} aria-hidden="true" /></a>
 			{/snippet}
 			{#snippet foot()}
 				<p class="strip">
@@ -364,7 +351,7 @@
 	   visible height above an iOS keyboard, less the top safe area), so the
 	   page itself sits still at the top. The context row, then the chat,
 	   whose own container scrolls; its dock is pinned at the bottom. Only
-	   "More" moves the page. */
+	   "How it works" moves the page. */
 	.app {
 		max-width: 880px !important;
 		box-sizing: border-box;
@@ -400,14 +387,6 @@
 		justify-content: center;
 		min-width: 0;
 	}
-	.context .name {
-		font-family: var(--font-sans);
-		font-size: 13px;
-		font-weight: 500;
-		letter-spacing: 0;
-		line-height: 1.25;
-		color: var(--site-ink);
-	}
 	.context p {
 		margin: 0;
 		font-size: 12px;
@@ -437,57 +416,7 @@
 		color: var(--site-soft);
 		text-wrap: pretty;
 	}
-	/* The install line, as a quiet mono chip. */
-	.get {
-		display: inline-flex;
-		align-items: center;
-		gap: 10px;
-		max-width: 100%;
-		box-sizing: border-box;
-		margin: 0;
-		padding: 0 0 0 12px;
-		border: 1px solid var(--code-line);
-		border-radius: var(--radius-control);
-		background: var(--code-bg);
-		font-size: 14px;
-	}
-	.get code {
-		min-width: 0;
-		overflow-x: auto;
-		white-space: nowrap;
-		padding: 0;
-		background: none;
-		font-size: inherit;
-		color: var(--code-ink);
-	}
-	.get code span {
-		color: var(--site-soft);
-		margin-right: 6px;
-	}
-	.get button {
-		flex: none;
-		min-height: 44px;
-		padding: 0 12px;
-		border: 0;
-		border-radius: calc(var(--radius-control) - 1px);
-		background: transparent;
-		color: var(--site-soft);
-		font: inherit;
-		font-size: 13px;
-		cursor: pointer;
-		transition:
-			color 0.15s ease,
-			background 0.15s ease;
-	}
-	.get button:hover {
-		background: var(--site-hover);
-		color: var(--site-ink);
-	}
-	.get button:focus-visible {
-		outline: 2px solid var(--ring);
-		outline-offset: 2px;
-	}
-	/* "More": a compact ghost button right of the composer; the one thing
+	/* "How it works": a compact ghost link right of the composer; the one thing
 	   that moves the page (smooth, or a jump under reduced motion: the
 	   layout's scroll-behavior). */
 	.more {
@@ -648,10 +577,15 @@
 		color: var(--code-ink);
 	}
 	/* The full spec is ~40 lines; it scrolls inside so step 1 stays the
-	   height of its neighbours. */
+	   height of its neighbours, its bottom edge faded so the cut reads as
+	   "more below". The extra bottom padding lets the last line scroll clear
+	   of the fade. */
 	.snippet {
 		max-height: 340px;
 		overflow-y: auto;
+		padding-bottom: 40px;
+		-webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 40px), transparent);
+		mask-image: linear-gradient(to bottom, #000 calc(100% - 40px), transparent);
 		padding-inline: 14px;
 		font-size: 12.5px;
 		line-height: 1.55;
@@ -892,7 +826,6 @@
 		}
 	}
 	@media (prefers-reduced-motion: reduce) {
-		.get button,
 		.more {
 			transition: none;
 		}
