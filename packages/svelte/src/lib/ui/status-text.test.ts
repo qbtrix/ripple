@@ -458,6 +458,20 @@ test('sankey nodes and focused bands reach 3:1, rest bands 1.4:1, both themes', 
       if (ratio < min) failures.push(`${what} on ${name}: ${ratio.toFixed(2)} < ${min}`);
     }
   }
+  // The remainder stub: the card's ink at STUB_INK% over the card, a quiet 1.4:1 in both themes.
+  const { STUB_INK } = await import('../widgets/data/sankey-layout.js');
+  expect(src).toContain('fill: color-mix(in oklab, var(--ripple-surface-foreground) var(--sk-stub-dark), transparent)');
+  const inks: [string, Lab, Lab, number][] = [
+    ['site light card', oklch(0.2, 0.01, 95), fromHex('#efeee8'), STUB_INK.light],
+    ['pe light', HOSTS.light.fg, HOSTS.light.ground, STUB_INK.light],
+    ['site dark card', oklch(0.95, 0.005, 260), fromHex('#1d1d1a'), STUB_INK.dark],
+    ['pe dark', HOSTS['dark, --destructive'].fg, HOSTS['dark, --destructive'].ground, STUB_INK.dark],
+  ];
+  for (const [name, fg, groundLab, p] of inks) {
+    const ground = toRgb(groundLab);
+    const ratio = contrast(over(toRgb(fg), p / 100, ground), ground);
+    if (ratio < 1.4) failures.push(`stub on ${name}: ${ratio.toFixed(2)} < 1.4`);
+  }
   // The rest band as the playground paints it (over its #f7f6f2 page ground)
   // read against the site's light card, the pair review measured at 1.38.
   const cross = contrast(over(toRgb(fromHex('#1877f2')), BAND.light / 100, toRgb(fromHex('#f7f6f2'))), toRgb(fromHex('#efeee8')));

@@ -16,16 +16,19 @@
   each label under its bar. The SVG uses a viewBox at the laid-out width and
   labels sit at a percent of it, so the SSR frame (laid out at 640px) never
   scrolls sideways. `height` is a max: past it the plot scrolls inside the
-  card with a bottom fade, under the fixed title and summary.
+  card with a bottom fade, under the fixed title and summary (an overflow no
+  taller than the fade grows the plot instead, so the last row is never faded).
 
   Colour, one hue from tokens only: nodes are solid --ripple-accent; bands are
   the accent at BAND% over the card (more in dark, under .dark or
   data-theme="dark"), LIT% when focused, the rest dimmed to DIM; the remainder
-  stub ("35 stop here") is --ripple-track with a muted figure on a chip beside
-  or under it.
+  stub ("35 stop here") is the card's ink at STUB_INK% (more in dark) with a
+  muted figure on a chip beside or under it, or a bare figure with no chip
+  when `stop` has no room, so a remainder never reads as a node. A label of
+  three lines is name over value over percent.
   Labels are HTML on a surface chip, so ink always comes from tokens and the
   theme flips live.
-  status-text.test.ts measures the band and node pairs on both themes.
+  status-text.test.ts measures the band, node and stub pairs on both themes.
 
   Interaction: hover, tap or keyboard focus on a node, or hover or tap on a
   band, lights its bands and sets the readout; Escape or a tap elsewhere
@@ -45,6 +48,8 @@
 		BAND,
 		LIT,
 		DIM,
+		STUB_INK,
+		FADE,
 		WIDE_MIN,
 		SSR_WIDTH,
 		sanitize,
@@ -172,6 +177,8 @@
 	style:--sk-band-dark="{BAND.dark}%"
 	style:--sk-lit="{LIT}%"
 	style:--sk-dim={DIM}
+	style:--sk-stub="{STUB_INK.light}%"
+	style:--sk-stub-dark="{STUB_INK.dark}%"
 	onpointerdown={onRootDown}
 	onkeydown={onKey}
 >
@@ -193,7 +200,7 @@
 			class:has-more={more}
 			bind:this={frameEl}
 			bind:clientWidth={width}
-			style:max-height="{maxH}px"
+			style:max-height="{L.H - maxH <= FADE ? L.H : maxH}px"
 			onscroll={checkMore}
 		>
 			<div class="sk-plot" style:height="{L.H}px">
@@ -258,10 +265,10 @@
 							onfocus={enter({ node: nd.i })}
 							onblur={() => (active = null)}
 						>
-							{#if lb.text}
-								<span class="sk-name" aria-hidden="true" title={g.nodes[nd.i].name}>{lb.text}</span>
-							{/if}
-							<span class="sk-fig" aria-hidden="true">{lb.fig}</span>
+							<span class="sk-name" aria-hidden="true" title={g.nodes[nd.i].name}>{lb.text}</span>
+							{#each lb.lines === 3 ? lb.fig.split(' · ') : [lb.fig] as f, k (k)}
+								<span class="sk-fig" aria-hidden="true">{f}</span>
+							{/each}
 						</button>
 					{:else}
 						<button
@@ -288,6 +295,7 @@
 						<span
 							class="sk-stop sk-chip text-callout"
 							class:is-end={lb.align === 'end'}
+							class:is-bare={lb.text === lb.fig}
 							aria-hidden="true"
 							style:left={pct(lb.x)}
 							style:top="{lb.y}px"
@@ -401,7 +409,11 @@
 		fill: var(--ripple-accent);
 	}
 	.sk-stub {
-		fill: var(--ripple-track);
+		fill: color-mix(in oklab, var(--ripple-surface-foreground) var(--sk-stub), transparent);
+	}
+	:global(.dark) .sk-stub,
+	:global([data-theme='dark']) .sk-stub {
+		fill: color-mix(in oklab, var(--ripple-surface-foreground) var(--sk-stub-dark), transparent);
 	}
 	.sk-band {
 		fill: color-mix(in oklab, var(--ripple-accent) var(--sk-band), transparent);
@@ -494,6 +506,10 @@
 	}
 	.sk-stop.is-end {
 		text-align: right;
+	}
+	/* A bare remainder figure (no room for `stop`): no chip, so it never reads as a node. */
+	.sk-stop.is-bare {
+		background: none;
 	}
 	.sk-label:focus-visible,
 	.sk-hit:focus-visible {
