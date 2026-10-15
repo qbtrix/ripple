@@ -14,10 +14,12 @@ import {
 	nodeFigure,
 	parseHeight,
 	parseCurve,
-	type Graph
+	guess,
+	type Graph,
+	type Measure
 } from './sankey-layout.js';
 
-import { n, SPEC01, SPEC02, SPEC04, SPEC06 } from './__fixtures__/sankey-specs.js';
+import { n, SPEC01, SPEC02, SPEC03, SPEC04, SPEC05, SPEC06 } from './__fixtures__/sankey-specs.js';
 
 const SPEC07 = { nodes: [], links: [{ source: 'Trial', target: 'Paid', value: 37 }] };
 
@@ -220,13 +222,111 @@ describe('layout', () => {
 		expect(rows[1] - rows[0]).toBe(56);
 		expect(narrow.H).toBeGreaterThan(200);
 		noOverlap(narrow);
-		// Some tiny terminal labels hide; their nodes are still listed for the hit targets.
-		expect(narrow.labels.some((x) => x.kind === 'node' && x.lines === 0)).toBe(true);
+		// The tiny side ends at the row's edge are labelled, so they read as nodes; every node keeps its hit target.
+		for (const name of ['Blocked', 'Denied']) expect(narrow.labels.find((x) => x.key === `n${names(g).indexOf(name)}`)!.lines, name).toBe(1);
 		expect(narrow.nodes).toHaveLength(14);
+		// A narrow bar is at least 6px long, inside the plot.
+		for (const x of narrow.nodes) expect(x.w >= 6 && x.x >= 0 && x.x + x.w <= 328.01).toBe(true);
 	});
 	test('spec 07: implicit nodes, a short plot', () => {
 		const { g, st } = prep(SPEC07);
 		expect(names(g)).toEqual(['Trial', 'Paid']);
 		expect(layout(g, st, { width: 680, maxH: 320, vertical: false, curve: 0.5 }).H).toBe(160);
+	});
+});
+
+// Review round 1: placement rules under real-ish type widths. The browser's
+// widths differ from `guess`, so every rule runs at a narrower and a wider face.
+const FACES: [string, Measure][] = [
+	['guess', guess],
+	['narrow face', (t, b) => guess(t, b) * 0.85],
+	['wide face', (t, b) => guess(t, b) * 1.2]
+];
+// Plot widths of a 360 and a 720 card (with and without the card's padding).
+const NARROW = [290, 328];
+const WIDE = [591, 680];
+type Spec = { nodes: unknown; links: unknown };
+const run = (s: Spec, width: number, measure: Measure, o: { vertical?: boolean; maxH?: number } = {}) => {
+	const { g, st } = prep(s);
+	return { g, st, l: layout(g, st, { width, maxH: o.maxH ?? 320, vertical: !!o.vertical || width < 480, curve: 0.5, measure }) };
+};
+const ALL: [string, Spec, { vertical?: boolean; maxH?: number }][] = [
+	['01', SPEC01, {}],
+	['02', SPEC02, {}],
+	['03', SPEC03, {}],
+	['04', SPEC04, {}],
+	['05', SPEC05, { vertical: true, maxH: 360 }],
+	['06', SPEC06, { maxH: 200 }]
+];
+
+describe('review round 1', () => {
+	describe.each(FACES)('%s', (_, measure) => {
+		test('every drawn remainder carries its figure (specs 01-04, 360 and 720); wide keeps the word', () => {
+			for (const [name, spec] of ALL.slice(0, 4))
+				for (const width of [...NARROW, ...WIDE]) {
+					const { l } = run(spec, width, measure);
+					expect(l.stubs.length, name).toBeGreaterThan(0);
+					for (const s of l.stubs) {
+						const lb = l.labels.find((x) => x.key === `s${s.i}`)!;
+						expect(lb.lines, `${name} at ${width}: stub ${s.i}`).toBe(1);
+						if (width >= 480) expect(lb.text, `${name} at ${width}`).toMatch(/ stop/);
+					}
+				}
+		});
+		test('protected labels (starts, the largest end, over 15%) are never hidden; nothing overlaps', () => {
+			for (const [name, spec, o] of ALL)
+				for (const width of [...NARROW, ...WIDE]) {
+					const { st, l } = run(spec, width, measure, o);
+					const kept = l.nodes.map((q) => q.i).filter((i) => st.inn[i] === 0 || i === st.largestEnd || st.value[i] > 0.15 * st.total);
+					for (const i of kept) expect(l.labels.find((x) => x.key === `n${i}`)!.lines, `${name} at ${width}: n${i}`).toBeGreaterThan(0);
+					const s = shown(l);
+					for (let a = 0; a < s.length; a++)
+						for (let b = a + 1; b < s.length; b++) expect(overlaps(s[a], s[b]), `${name} at ${width}: ${s[a].key} ${s[b].key}`).toBe(false);
+				}
+		});
+		test('spec 05: Offer and Hired are labelled at both widths', () => {
+			for (const width of [328, 680]) {
+				const { g, l } = run(SPEC05, width, measure, { vertical: true, maxH: 360 });
+				for (const name of ['Offer', 'Hired']) {
+					const i = names(g).indexOf(name);
+					expect(l.labels.find((x) => x.key === `n${i}`)!.lines, `${name} at ${width}`).toBeGreaterThan(0);
+				}
+			}
+		});
+		test('wide: opposite-side chips in one gap keep apart, or each ticks to its own bar', () => {
+			for (const [name, spec, o] of ALL.filter(([, , opt]) => !opt.vertical))
+				for (const width of WIDE) {
+					const { l } = run(spec, width, measure, o);
+					const s = shown(l).filter((x) => x.side);
+					for (const a of s)
+						for (const b of s) {
+							if (a.side!.gap !== b.side!.gap || !a.side!.right || b.side!.right) continue;
+							const gy = a.kind === 'node' && b.kind === 'node' ? 14 : 8;
+							const near = a.x < b.x + b.w + 8 && b.x < a.x + a.w + 8 && a.y < b.y + b.h + gy && b.y < a.y + a.h + gy;
+							expect(near, `${name} at ${width}: ${a.key} ${b.key}`).toBe(false);
+							const stacked = a.x < b.x + b.w + 8 && b.x < a.x + a.w + 8 && a.y < b.y + b.h + 34 && b.y < a.y + a.h + 34;
+							if (stacked && a.kind === 'node' && b.kind === 'node') expect(!!a.lead && !!b.lead, `${name} at ${width}: ${a.key} ${b.key} ticks`).toBe(true);
+						}
+				}
+		});
+		test('wide: one figure format per card', () => {
+			for (const [name, spec, o] of ALL.filter(([, , opt]) => !opt.vertical))
+				for (const width of WIDE) {
+					const { st, l } = run(spec, width, measure, o);
+					// Once a two-line label drops its percent, no label keeps one.
+					const own = shown(l).filter((x) => x.kind === 'node' && st.inn[x.i]);
+					if (own.some((x) => x.lines === 2 && !x.fig.includes('·'))) expect(own.filter((x) => x.fig.includes('·')).map((x) => x.key), `${name} at ${width}`).toEqual([]);
+				}
+		});
+		test('a leader runs from its anchor to its own chip', () => {
+			for (const [name, spec, o] of ALL)
+				for (const width of [...NARROW, ...WIDE]) {
+					const { l } = run(spec, width, measure, o);
+					for (const lb of shown(l).filter((x) => x.lead)) {
+						const [, , x2, y2] = lb.lead!;
+						expect(x2 >= lb.x - 0.01 && x2 <= lb.x + lb.w + 0.01 && y2 >= lb.y - 0.01 && y2 <= lb.y + lb.h + 0.01, `${name} at ${width}: ${lb.key}`).toBe(true);
+					}
+				}
+		});
 	});
 });

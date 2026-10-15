@@ -21,16 +21,25 @@
 // tall. Vertical (orient "vertical", or a plot under 480px): ranks are rows at
 // a 72px pitch, shrinking to 56px to fit the max height. Bands are one cubic
 // pair each (control offset = curveness x rank gap), floored at 1px; nodes at
-// 2px. Labels are placed greedily, most important first (start nodes, the
-// largest end, anything over 15% of the total), each in clear space or on a
-// chip: name over `figure · percent`, else over the figure alone, else one
-// line (wide: nudged near its node, a protected one restacks its column;
-// narrow: a second tier under the row), else hidden (its node stays focusable).
+// 2px (narrow bars at 6px long). Labels are placed greedily, most important
+// first (start nodes, the largest end, anything over 15% of the total), each in
+// clear space or on a chip: name over `figure · percent`, else over the figure
+// alone, else one line with the percent, else without. Wide: beside the bar on
+// its half's side, else the other side, else (protected) a restacked column,
+// else one line within 64px with a leader. Two chips from opposite sides of a
+// gap keep 14px apart, and where they still stack each gets a tick to its own
+// bar (R ranks share R - 1 gaps, so one gap holds two). Narrow: under the bar inside its slot of the row (it may run
+// left of a bar with no room to its right), else one line in the band run with
+// a leader. Else hidden; the node stays focusable. Remainder chips come last:
+// beside or under the stub, else in clear space with a leader; wide always
+// keeps the word (`55K stop here`, `55K stop`), only a narrow card may show the
+// bare figure. Wide drops the percent on every label once a two-line label
+// drops it (narrow: per row), so one card reads one format.
 import { sankey, sankeyLeft } from 'd3-sankey';
 import { finite, num, plain } from '../data-kit/format.js';
 
 /** Band tint in % of the accent over the card: rest, by theme; focused; dimmed factor. */
-export const BAND = { light: 30, dark: 32 } as const;
+export const BAND = { light: 33, dark: 32 } as const;
 export const LIT = 90;
 export const DIM = 0.5;
 export const WIDE_MIN = 480;
@@ -49,6 +58,10 @@ const PER_NODE = 40;
 const MIN_PLOT = 160;
 const STUB = { h: 24, v: 16 };
 const MIN_LABEL = 28;
+const SIDE_GAP = 14;
+const REACH = 64;
+/** Narrow bars draw at least this long, so a tiny end reads as a node, not a stray mark. */
+const MIN_BAR = 6;
 
 export type Graph = {
 	nodes: { name: string }[];
@@ -263,6 +276,10 @@ export type Label = Rect & {
 	text: string;
 	/** The figure as drawn: `85 · 71%`, or the value alone where the percent has no room. */
 	fig: string;
+	/** A leader from the anchor (bar or stub) to a chip placed away from it: x1, y1, x2, y2. */
+	lead?: [number, number, number, number];
+	/** Wide: the column gap the chip sits in, and whether its anchor is on the gap's left. */
+	side?: { gap: number; right: boolean };
 };
 export type Layout = { vertical: boolean; W: number; H: number; nodes: LNode[]; links: LLink[]; stubs: LStub[]; labels: Label[] };
 export type Measure = (text: string, bold?: boolean) => number;
@@ -324,8 +341,9 @@ export function layout(
 
 	const nodes: LNode[] = res.nodes.map((d, i) => {
 		const mid = (d.y0 + d.y1) / 2;
-		const h = Math.max(2, d.y1 - d.y0);
-		return { i, ...box(d.x0, d.x1, mid - h / 2, mid + h / 2) };
+		const h = Math.max(vertical ? MIN_BAR : 2, d.y1 - d.y0);
+		const c = Math.min(cross - h / 2, Math.max(h / 2, mid));
+		return { i, ...box(d.x0, d.x1, c - h / 2, c + h / 2) };
 	});
 	const links: LLink[] = res.links.map((l, k) => {
 		const u0 = l.source.x1;
@@ -352,23 +370,116 @@ export function layout(
 		return [{ i, d: `M${P(d.x1, top)}L${P(e, mid - t)}L${P(e, mid + t)}L${P(d.x1, bot)}Z`, box: box(d.x1, e, top, bot) }];
 	});
 
-	// Labels, most important first. Obstacles: wide, the stubs; narrow, the bars
-	// (a stub runs down under its bar, where labels sit on chips anyway).
+	// Labels, most important first, then the remainder chips. Obstacles: every
+	// bar and placed chip (wide, the stubs too; narrow, a chip may cover the stub
+	// under its own bar). Wide, one column gap holds chips from one side only
+	// where they would share a band of height, so a chip always reads as its own
+	// bar's. Narrow, a chip stays in its bar's slot of the row (between the
+	// neighbouring bars), else sits in the band run with a leader to its bar.
 	const protect = (i: number) => st.inn[i] === 0 || i === st.largestEnd || st.value[i] > 0.15 * st.total;
-	const placed: Rect[] = vertical ? nodes.map(({ x, y, w, h }) => ({ x, y, w, h })) : stubs.map((s) => s.box);
+	const placed: Rect[] = [...nodes.map(({ x, y, w, h }) => ({ x, y, w, h })), ...(vertical ? [] : stubs.map((s) => s.box))];
 	const clear = (r: Rect, among: Rect[]) =>
 		among.every((p) => r.x + r.w <= p.x - 2 || p.x + p.w <= r.x - 2 || r.y + r.h <= p.y - 2 || p.y + p.h <= r.y - 2);
-	const free = (r: Rect) => r.y >= 0 && r.y + r.h <= H && r.x >= 0 && r.x + r.w <= W + 0.5 && clear(r, placed);
+	const free = (r: Rect) => r.y >= 0 && r.y + r.h <= H && r.x >= -0.5 && r.x + r.w <= W + 0.5 && clear(r, placed);
 	const rankEdge = (d: number, side: 'x0' | 'x1') => res.nodes.find((q) => q.depth === d)?.[side];
 	const labels: Label[] = [];
 	const rectOf = new Map<Label, Rect>();
+	const sideOf = new Map<Label, { gap: number; right: boolean }>();
+	// Wide: a chip never stacks over or under one from the other side of its gap
+	// (x ranges overlapping, y ranges within `gapY`); side by side is fine. A
+	// remainder chip, tied to its grey stub, only needs to keep clear.
+	const owned = (r: Rect, gap: number, right: boolean, gapY = SIDE_GAP) => {
+		for (const [lb, s] of sideOf)
+			if (
+				lb.lines &&
+				s.gap === gap &&
+				s.right !== right &&
+				r.x < lb.x + lb.w + 8 &&
+				lb.x < r.x + r.w + 8 &&
+				r.y < lb.y + lb.h + gapY &&
+				lb.y < r.y + r.h + gapY
+			)
+				return false;
+		return true;
+	};
+	// Wide: the gap a chip's centre sits in, and whether its anchor is on the gap's left.
+	const sideAt = (r: Rect, ax: number) => {
+		const cx = r.x + r.w / 2;
+		const gap = res.nodes.reduce((k, q) => Math.max(k, q.x0 <= cx ? q.depth : 0), 0);
+		return { gap, right: ax <= cx };
+	};
+	const put = (label: Label, r: Rect, patch: Partial<Label>, side?: { gap: number; right: boolean }) => {
+		Object.assign(label, r, patch);
+		placed.push(r);
+		rectOf.set(label, r);
+		if (side) {
+			sideOf.set(label, side);
+			label.side = side;
+		}
+	};
 	const order = [...g.nodes.keys()].toSorted((a, b) => Number(protect(b)) - Number(protect(a)) || st.value[b] - st.value[a] || a - b);
 	const nudges = (reach: number) => {
 		const out = [0];
 		for (let k = 4; k <= reach; k += 4) out.push(-k, k);
 		return out;
 	};
-	type Entry = { label: Label; mid: number; edge: number; toRight: boolean; avail: number; w1: number };
+	const leadTo = (ax: number, ay: number, r: Rect): [number, number, number, number] => {
+		const [px, py] = near(ax, ay, r);
+		return [r2(ax), r2(ay), r2(px), r2(py)];
+	};
+	// Wide fallback: chip spots within REACH of a bar edge on that edge's side, nearest first.
+	const around = (ax: number, ay: number, w: number, h: number, right: boolean, reach = REACH) => {
+		const out: [number, Rect, number][] = [];
+		const [lo, hi] = right ? [ax + 2, W - w] : [0, ax - 2 - w];
+		for (let x = Math.max(lo, ax - reach - w); x <= Math.min(hi, ax + reach); x += 4)
+			for (let y = Math.max(0, ay - reach - h); y <= Math.min(H - h, ay + reach); y += 4) {
+				const r = { x, y, w, h };
+				const [px, py] = near(ax, ay, r);
+				const dd = Math.hypot(px - ax, py - ay);
+				if (dd <= reach) out.push([dd, r, ax]);
+			}
+		return out;
+	};
+	// A leader that runs under no other chip (sampled every 3px).
+	const unblocked = (lead: Label['lead']) => {
+		if (!lead) return true;
+		const [x1, y1, x2, y2] = lead;
+		const steps = Math.ceil(Math.hypot(x2 - x1, y2 - y1) / 3);
+		for (let k = 1; k < steps; k++) {
+			const [x, y] = [x1 + ((x2 - x1) * k) / steps, y1 + ((y2 - y1) * k) / steps];
+			if (labels.some((lb) => lb.lines && x > lb.x + 1 && x < lb.x + lb.w - 1 && y > lb.y + 1 && y < lb.y + lb.h - 1)) return false;
+		}
+		return true;
+	};
+	const rows = new Map<number, LNode[]>();
+	for (const q of nodes) rows.set(depth[q.i], [...(rows.get(depth[q.i]) ?? []), q]);
+	for (const [k, row] of rows) rows.set(k, row.toSorted((a, b) => a.x - b.x));
+
+	// A bar's slot of its row: from the previous bar's end to the next bar's start.
+	const slot = (own: LNode) => {
+		const row = rows.get(depth[own.i])!;
+		const k = row.indexOf(own);
+		return [k > 0 ? row[k - 1].x + row[k - 1].w + 6 : 0, k < row.length - 1 ? row[k + 1].x - 6 : W];
+	};
+	// Narrow fallback: one-line chip spots in a row's band run, nearest an anchor
+	// first. In the row's label band (first H2 under the bars) a chip must reach
+	// into its own bar's slot and never span a whole other bar, or it would read
+	// as that neighbour's.
+	const runSpots = (own: LNode, ax: number, ay: number, w: number, ys: number[]) => {
+		const [lo, hi] = slot(own);
+		const row = rows.get(depth[own.i])!;
+		const band = own.y + own.h + 4 + H2;
+		const out: [number, Rect][] = [];
+		for (const y of ys)
+			for (const x of sweep(ax, 0, W - w)) {
+				const r = { x, y, w, h: H1 };
+				if (y < band && (r.x >= hi || r.x + r.w <= lo || row.some((q) => q !== own && r.x <= q.x && q.x + q.w <= r.x + r.w))) continue;
+				const [px, py] = near(ax, ay, r);
+				out.push([Math.hypot(px - ax, py - ay), r]);
+			}
+		return out.toSorted((p, q) => p[0] - q[0]);
+	};
+	type Entry = { label: Label; mid: number; edge: number; toRight: boolean; gap: number; avail: number; w1: number };
 	const cols = new Map<string, Entry[]>();
 	// A protected wide label with no room near its node: restack its column top to
 	// bottom in node order (one line for the newcomer), if that clears everything else.
@@ -384,98 +495,240 @@ export function layout(
 			const w = e === add ? Math.min(e.w1, e.avail) : e.label.w;
 			return { x: e.toRight ? e.edge : e.edge - w, y: ys[k], w, h: hs[k] };
 		});
-		if (ys[0] < 0 || !rects.every((r) => clear(r, others))) return;
+		if (ys[0] < 0 || !rects.every((r) => clear(r, others) && owned(r, add.gap, add.toRight))) return;
 		placed.splice(0, placed.length, ...others, ...rects);
 		members.forEach((e, k) => {
 			Object.assign(e.label, rects[k], e === add ? { lines: 1, align: e.toRight ? 'start' : 'end' } : {});
 			rectOf.set(e.label, rects[k]);
+			sideOf.set(e.label, { gap: e.gap, right: e.toRight });
+			e.label.side = { gap: e.gap, right: e.toRight };
 		});
 	};
+	const seen = new Set<number>();
 	for (const i of order) {
+		seen.add(i);
 		const d = res.nodes[i];
 		const name = g.nodes[i].name;
 		const fig = nodeFigure(st, i);
 		const val = fmt(st.value[i]);
-		// Two lines with the full figure, two with the value alone, one line (name and value).
+		// Two lines (full figure, then the value alone), then one line (the same two figures).
 		const forms = [
 			{ lines: 2, fig, w: Math.max(m(name, true), m(fig)) + 2 * PAD_X, min: m(fig) + 2 * PAD_X, h: H2 },
 			{ lines: 2, fig: val, w: Math.max(m(name, true), m(val)) + 2 * PAD_X, min: m(val) + 2 * PAD_X, h: H2 },
+			{ lines: 1, fig, w: m(name, true) + 4 + m(fig) + 2 * PAD_X, min: m(fig) + 2 * PAD_X + 24, h: H1 },
 			{ lines: 1, fig: val, w: m(name, true) + 4 + m(val) + 2 * PAD_X, min: m(val) + 2 * PAD_X + 24, h: H1 }
 		] as const;
-		const w1 = forms[2].w;
+		const w1 = forms[3].w;
 		const label: Label = { key: `n${i}`, kind: 'node', i, x: 0, y: 0, w: 0, h: 0, lines: 0, align: 'start', text: name, fig: val };
 		labels.push(label);
-		const take = (r: Rect, form: (typeof forms)[number], align: 'start' | 'end') => {
-			Object.assign(label, r, { lines: form.lines, fig: form.fig, align });
-			placed.push(r);
-			rectOf.set(label, r);
-		};
 		if (vertical) {
-			// Under the bar up to the next bar in the row; else one line on a second tier when the pitch has room.
+			// Under the bar, inside its slot of the row; a short slot lets the chip run
+			// left of the bar. One-line chips may take a second tier in the slot.
 			const nb = nodes[i];
-			const right = Math.min(W, ...nodes.filter((q) => depth[q.i] === depth[i] && q.x > nb.x).map((q) => q.x - 6));
-			const room = right - nb.x;
-			for (const f of forms.slice(0, 2)) {
-				const r = { x: nb.x, y: nb.y + nb.h + 4, w: Math.min(f.w, room), h: H2 };
-				if (r.w >= Math.max(MIN_LABEL, f.min) && free(r)) {
-					take(r, f, 'start');
-					break;
+			const [lo, hi] = slot(nb);
+			const y0 = nb.y + nb.h + 4;
+			// One-line tiers: under the bar, under a one-line chip, under a two-line chip, under two one-line chips.
+			const tiers = [y0, y0 + H1 + 2, y0 + H2 + 2, y0 + 2 * (H1 + 2)];
+			near: for (const f of forms) {
+				const w = Math.min(f.w, hi - lo);
+				if (w < Math.max(MIN_LABEL, f.min)) continue;
+				const x = Math.max(lo, Math.min(nb.x, hi - w));
+				for (const y of f.lines === 2 ? [y0] : tiers) {
+					const r = { x, y, w, h: f.h };
+					if (free(r)) {
+						put(label, r, { lines: f.lines, fig: f.fig, align: x < nb.x - 0.5 ? 'end' : 'start' });
+						break near;
+					}
 				}
 			}
-			const w = Math.min(w1, W);
-			const low = { x: Math.max(0, Math.min(nb.x, W - w)), y: nb.y + nb.h + 6 + H2, w, h: H1 };
-			if (!label.lines && free(low)) take(low, forms[2], 'start');
+			if (label.lines) continue;
+			// Else one line anywhere in the row's band run, nearest the bar, with a
+			// leader; a protected label then shortens its name (ellipsis) to fit.
+			const widths: [number, string][] = [
+				[forms[2].w, fig],
+				[forms[3].w, val]
+			];
+			if (protect(i)) for (let w = forms[3].w - 8; w >= forms[3].min; w -= 8) widths.push([w, val]);
+			const [ax, ay] = [nb.x + nb.w / 2, nb.y + nb.h];
+			// A leader may cross another chip only for a protected label, as a last resort.
+			far: for (const strict of protect(i) ? [true, false] : [true])
+				for (const [wf, ff] of widths)
+					for (const [dd, r] of runSpots(nb, ax, ay, Math.min(wf, W), tiers)) {
+						const over = r.x < nb.x + nb.w && nb.x < r.x + r.w;
+						const lead = (over && r.y === y0) || dd < 6 ? undefined : leadTo(ax, ay, r);
+						if (free(r) && (!strict || unblocked(lead))) {
+							put(label, r, { lines: 1, fig: ff, align: 'start', lead });
+							break far;
+						}
+					}
 			continue;
 		}
-		const toRight = (d.x0 + d.x1) / 2 < W / 2;
-		const avail = toRight ? (rankEdge(d.depth + 1, 'x0') ?? W) - d.x1 - 12 : d.x0 - (rankEdge(d.depth - 1, 'x1') ?? 0) - 12;
-		if (avail < MIN_LABEL) continue;
+		const pref = (d.x0 + d.x1) / 2 < W / 2;
 		const mid = (d.y0 + d.y1) / 2;
-		const entry: Entry = { label, mid, edge: toRight ? d.x1 + 6 : d.x0 - 6, toRight, avail, w1 };
-		const key = `${d.depth}${toRight}`;
-		const col = cols.get(key) ?? [];
-		cols.set(key, [...col, entry]);
 		const reach = (d.y1 - d.y0) / 2 + 10;
-		place: for (const f of forms) {
-			const w = Math.min(f.w, avail);
-			if (w < f.min) continue;
-			const c0 = Math.min(H - f.h / 2, Math.max(f.h / 2, mid));
-			for (const dy of nudges(reach)) {
-				const r = { x: toRight ? entry.edge : entry.edge - w, y: c0 + dy - f.h / 2, w, h: f.h };
-				if (free(r)) {
-					take(r, f, toRight ? 'start' : 'end');
-					break place;
-				}
+		// The preferred side first (left half: right of the bar), then the other side.
+		const sides = [pref, !pref].flatMap((toRight) => {
+			const avail = toRight ? (rankEdge(d.depth + 1, 'x0') ?? W) - d.x1 - 12 : d.x0 - (rankEdge(d.depth - 1, 'x1') ?? 0) - 12;
+			if (avail < MIN_LABEL) return [];
+			const entry: Entry = { label, mid, edge: toRight ? d.x1 + 6 : d.x0 - 6, toRight, gap: toRight ? d.depth : d.depth - 1, avail, w1 };
+			if (toRight === pref) {
+				const key = `${d.depth}${toRight}`;
+				cols.set(key, [...(cols.get(key) ?? []), entry]);
 			}
-		}
-		if (!label.lines && protect(i)) restack(col, entry);
+			return [entry];
+		});
+		// The other side's gap is a neighbour rank's home when that rank labels into
+		// it; while a protected label there is still to come, leave the gap to it.
+		const home = (e: Entry) =>
+			res.nodes.some(
+				(q) =>
+					q.depth === (e.toRight ? d.depth + 1 : d.depth - 1) &&
+					(q.x0 + q.x1) / 2 < W / 2 !== e.toRight &&
+					protect(q.index) &&
+					!seen.has(q.index)
+			);
+		// Each form on the preferred side, then the other side, before collapsing
+		// further; the other side's home gap only once collapsing has failed.
+		wide: for (const yieldHome of [true, false])
+			for (const f of forms)
+				for (const entry of sides) {
+					const { toRight, avail } = entry;
+					if (toRight !== pref && yieldHome && home(entry)) continue;
+					const w = Math.min(f.w, avail);
+					if (w < f.min) continue;
+					const c0 = Math.min(H - f.h / 2, Math.max(f.h / 2, mid));
+					for (const dy of nudges(reach)) {
+						const r = { x: toRight ? entry.edge : entry.edge - w, y: c0 + dy - f.h / 2, w, h: f.h };
+						if (free(r) && owned(r, entry.gap, toRight)) {
+							put(label, r, { lines: f.lines, fig: f.fig, align: toRight ? 'start' : 'end' }, { gap: entry.gap, right: toRight });
+							break wide;
+						}
+					}
+				}
+		const col = cols.get(`${d.depth}${pref}`);
+		const entry = col?.at(-1);
+		if (!label.lines && protect(i) && col && entry?.label === label) restack(col.slice(0, -1), entry);
+		// Else one line in clear space beside the bar, with a leader back to it.
+		far: for (const strict of label.lines ? [] : protect(i) ? [true, false] : [true])
+			for (const f of forms.slice(2))
+				for (const [, r, ax] of nearest(around(d.x1, mid, f.w, H1, true), around(d.x0, mid, f.w, H1, false))) {
+					const side = sideAt(r, ax);
+					const lead = leadTo(ax, mid, r);
+					// Last resort for a protected label: any clear spot with a leader.
+					if (free(r) && (!strict || (owned(r, side.gap, side.right) && unblocked(lead)))) {
+						put(label, r, { lines: 1, fig: f.fig, align: 'start', lead }, side);
+						break far;
+					}
+				}
 	}
 
-	// Remainder figures, after every node label.
+	// Wide: two node chips from opposite sides of one gap, stacked within a chip's
+	// height (the one gap R ranks must share), each get a tick to their own bar.
+	const tick = (lb: Label) => {
+		if (lb.lead || !lb.side) return;
+		const d = res.nodes[lb.i];
+		const ax = lb.side.right ? d.x1 : d.x0;
+		const ay = Math.min(d.y1, Math.max(d.y0, lb.y + lb.h / 2));
+		lb.lead = [r2(ax), r2(ay), r2(lb.side.right ? lb.x : lb.x + lb.w), r2(Math.min(lb.y + lb.h, Math.max(lb.y, ay)))];
+	};
+	const sided = labels.filter((lb) => lb.lines && lb.side);
+	for (const a of sided)
+		for (const b of sided)
+			if (
+				a !== b &&
+				a.side!.gap === b.side!.gap &&
+				a.side!.right &&
+				!b.side!.right &&
+				a.x < b.x + b.w + 8 &&
+				b.x < a.x + a.w + 8 &&
+				a.y < b.y + b.h + H2 &&
+				b.y < a.y + a.h + H2
+			) {
+				tick(a);
+				tick(b);
+			}
+
+	// Remainder figures, after every node label. Wide always keeps the word.
 	for (const s of stubs) {
 		const f = fmt(st.rem[s.i]);
-		const texts = vertical ? [`${f} stop`, f] : [`${f} stop here`, `${f} stop`, f];
+		// The bare figure only in a narrow card's crowded row.
+		const texts = W < WIDE_MIN ? [`${f} stop`, f] : vertical ? [`${f} stop`] : [`${f} stop here`, `${f} stop`];
 		const label: Label = { key: `s${s.i}`, kind: 'stub', i: s.i, x: 0, y: 0, w: 0, h: H1, lines: 0, align: 'start', text: '', fig: f };
 		labels.push(label);
 		const b = s.box;
-		const room = vertical ? W : (rankEdge(res.nodes[s.i].depth + 1, 'x0') ?? W) - 6;
-		find: for (const text of texts) {
-			const w = m(text) + 2 * PAD_X;
-			const spots: [Rect, 'start' | 'end'][] = vertical
+		const d = res.nodes[s.i];
+		const room = vertical ? W : (rankEdge(d.depth + 1, 'x0') ?? W) - 6;
+		const tryAt = (r: Rect, text: string, align: 'start' | 'end', lead?: Label['lead']) => {
+			const at = vertical ? undefined : lead ? sideAt(r, b.x + b.w) : { gap: d.depth, right: true };
+			if (!free(r) || (!lead && r.x + r.w > room + 0.5) || (at && !owned(r, at.gap, at.right, 8))) return false;
+			put(label, r, { lines: 1, align, text, lead }, at);
+			return true;
+		};
+		// Near: beside the stub, else just below (or, wide, above) it.
+		const spots = (text: string, w: number): [Rect, 'start' | 'end'][] =>
+			vertical
 				? [
 						[{ x: b.x + b.w + 4, y: b.y + 2, w, h: H1 }, 'start'],
-						[{ x: b.x + b.w - w, y: b.y + b.h + 2, w, h: H1 }, 'end']
+						[{ x: Math.max(0, b.x + b.w - w), y: b.y + b.h + 2, w, h: H1 }, 'end'],
+						[{ x: Math.min(b.x, W - w), y: b.y + b.h + 2, w, h: H1 }, 'start']
 					]
-				: nudges(b.h / 2 + 8).map((dy) => [{ x: b.x + b.w + 4, y: b.y + b.h / 2 - H1 / 2 + dy, w, h: H1 }, 'start']);
-			for (const [r, align] of spots) {
-				if (r.x + r.w > room || !free(r)) continue;
-				Object.assign(label, r, { lines: 1, align, text });
-				placed.push(r);
-				break find;
+				: [
+						...nudges(b.h / 2 + 12).map((dy): [Rect, 'start'] => [
+							{ x: b.x + b.w + 4, y: Math.min(H - H1, Math.max(0, b.y + b.h / 2 - H1 / 2 + dy)), w, h: H1 },
+							'start'
+						]),
+						[{ x: b.x + 4, y: b.y + b.h + 2, w, h: H1 }, 'start'],
+						[{ x: b.x + 4, y: b.y - H1 - 2, w, h: H1 }, 'start']
+					];
+		const done = texts.some((text) => spots(text, m(text) + 2 * PAD_X).some(([r, align]) => tryAt(r, text, align)));
+		if (done) continue;
+		// Far: clear space in the band run (narrow) or beside the bar (wide), with a
+		// leader to the stub that crosses no chip; only then one that does, further out.
+		far: for (const strict of [true, false])
+			for (const text of texts) {
+				const w = m(text) + 2 * PAD_X;
+				const [ax, ay] = vertical ? [b.x + b.w / 2, b.y + b.h] : [b.x + b.w, b.y + b.h / 2];
+				const cands = vertical
+					? runSpots(nodes[s.i], ax, ay, w, [0, 1, 2, 3].map((t) => b.y + 2 + t * (H1 + 2)))
+					: nearest(around(b.x, ay, w, H1, true, strict ? REACH : 3 * REACH));
+				for (const [, r] of cands) {
+					const lead = leadTo(ax, ay, r);
+					if ((!strict || unblocked(lead)) && tryAt(r, text, 'start', lead)) break far;
+				}
 			}
+	}
+
+	// One figure format per card (narrow: per row): when a two-line label had to
+	// drop its percent, every label drops it. A collapsed one-line chip doesn't count.
+	const ranks = new Map<number, Label[]>();
+	for (const lb of labels) {
+		const k = vertical ? depth[lb.i] : 0;
+		if (lb.kind === 'node' && lb.lines && st.inn[lb.i]) ranks.set(k, [...(ranks.get(k) ?? []), lb]);
+	}
+	for (const group of ranks.values()) {
+		if (!group.some((lb) => lb.lines === 2 && lb.fig !== nodeFigure(st, lb.i))) continue;
+		for (const lb of group) {
+			if (lb.fig !== nodeFigure(st, lb.i)) continue;
+			const val = fmt(st.value[lb.i]);
+			const name = g.nodes[lb.i].name;
+			const w = Math.min(lb.w, (lb.lines === 2 ? Math.max(m(name, true), m(val)) : m(name, true) + 4 + m(val)) + 2 * PAD_X);
+			if (lb.lead) lb.lead[2] = Math.min(lb.x + (lb.align === 'end' ? lb.w - w : 0) + w - 3, lb.lead[2]);
+			if (lb.align === 'end') lb.x += lb.w - w;
+			lb.w = w;
+			lb.fig = val;
 		}
 	}
 	return { vertical, W, H, nodes, links, stubs, labels };
 }
 
 const r2 = (v: number) => Math.round(v * 100) / 100;
+/** x positions from lo to hi in 4px steps, nearest `at` first. */
+function sweep(at: number, lo: number, hi: number): number[] {
+	const out: number[] = [];
+	for (let x = lo; x <= hi + 0.01; x += 4) out.push(x);
+	if (hi > lo) out.push(hi);
+	return out.toSorted((a, b) => Math.abs(a - at) - Math.abs(b - at));
+}
+/** The point of a chip nearest an anchor (3px in from its ends). */
+const near = (ax: number, ay: number, r: Rect) => [Math.min(r.x + r.w - 3, Math.max(r.x + 3, ax)), Math.min(r.y + r.h, Math.max(r.y, ay))];
+const nearest = (...sets: [number, Rect, number][][]) => sets.flat().toSorted((a, b) => a[0] - b[0]);

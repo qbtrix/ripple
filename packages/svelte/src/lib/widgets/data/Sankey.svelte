@@ -20,7 +20,8 @@
   Colour, one hue from tokens only: nodes are solid --ripple-accent; bands are
   the accent at BAND% over the card (more in dark, under .dark or
   data-theme="dark"), LIT% when focused, the rest dimmed to DIM; the remainder
-  stub ("35 stop here") is --ripple-track with a muted figure. Labels are HTML
+  stub ("35 stop here") is --ripple-track with a muted figure; a chip placed
+  away from its bar or stub gets a muted 1px leader back to it. Labels are HTML
   on a surface chip, so ink always comes from tokens and the theme flips live.
   status-text.test.ts measures the band and node pairs on both themes.
 
@@ -214,6 +215,11 @@
 					{#each L.nodes as nd (nd.i)}
 						<rect class="sk-node" x={nd.x} y={nd.y} width={nd.w} height={nd.h} rx="2" />
 					{/each}
+					{#each L.labels as lb (lb.key)}
+						{#if lb.lines && lb.lead}
+							<line class="sk-lead" x1={lb.lead[0]} y1={lb.lead[1]} x2={lb.lead[2]} y2={lb.lead[3]} />
+						{/if}
+					{/each}
 				</svg>
 
 				{#each tabOrder as nd (nd.i)}
@@ -398,6 +404,11 @@
 	}
 	.sk-stub {
 		fill: var(--ripple-track);
+	}
+	.sk-lead {
+		stroke: var(--ripple-muted-foreground);
+		stroke-width: 1;
+		vector-effect: non-scaling-stroke;
 	}
 	.sk-band {
 		fill: color-mix(in oklab, var(--ripple-accent) var(--sk-band), transparent);

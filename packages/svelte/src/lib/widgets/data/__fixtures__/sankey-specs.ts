@@ -18,6 +18,36 @@ export const SPEC02 = {
 		['Account', 'Open', 20], ['Feedback', 'Resolved', 60]
 	].map(([source, target, value]) => ({ source, target, value }))
 };
+export const SPEC03 = {
+	nodes: n("Subscription revenue from customers on annual enterprise plans", "Ads", "Operating budget", "Research and development including contractors, tooling and cloud infrastructure", "Ops", "Sales, marketing, partner programs and regional events across three continents", "G&A", "Cloud", "People", "IT"),
+	links: [
+		["Subscription revenue from customers on annual enterprise plans", "Operating budget", 820000],
+		["Ads", "Operating budget", 90000],
+		["Operating budget", "Research and development including contractors, tooling and cloud infrastructure", 380000],
+		["Operating budget", "Ops", 120000],
+		["Operating budget", "Sales, marketing, partner programs and regional events across three continents", 260000],
+		["Operating budget", "G&A", 95000],
+		["Research and development including contractors, tooling and cloud infrastructure", "Cloud", 140000],
+		["Research and development including contractors, tooling and cloud infrastructure", "People", 240000],
+		["G&A", "IT", 4000]
+	].map(([source, target, value]) => ({ source, target, value }))
+};
+export const SPEC05 = {
+	nodes: n("Referral", "Job board", "Careers page", "Applied", "Screened", "Not a fit", "Interview", "Withdrew", "Offer", "Not selected", "Hired", "Declined"),
+	links: [
+		["Referral", "Applied", 40],
+		["Job board", "Applied", 310],
+		["Careers page", "Applied", 150],
+		["Applied", "Screened", 220],
+		["Applied", "Not a fit", 280],
+		["Screened", "Interview", 90],
+		["Screened", "Withdrew", 25],
+		["Interview", "Offer", 14],
+		["Interview", "Not selected", 70],
+		["Offer", "Hired", 11],
+		["Offer", "Declined", 3]
+	].map(([source, target, value]) => ({ source, target, value }))
+};
 export const SPEC04 = {
 	nodes: ['Visit', { name: 'Search' }, { name: 'Cart' }, { name: 'Cart' }, { name: '' }, { name: 'Checkout' }, { name: 'Paid' }, { name: 'Orphan' }, { label: 'Promo' }],
 	links: [

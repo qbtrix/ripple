@@ -458,5 +458,9 @@ test('sankey nodes and focused bands reach 3:1, rest bands 1.4:1, both themes', 
       if (ratio < min) failures.push(`${what} on ${name}: ${ratio.toFixed(2)} < ${min}`);
     }
   }
+  // The rest band as the playground paints it (over its #f7f6f2 page ground)
+  // read against the site's light card, the pair review measured at 1.38.
+  const cross = contrast(over(toRgb(fromHex('#1877f2')), BAND.light / 100, toRgb(fromHex('#f7f6f2'))), toRgb(fromHex('#efeee8')));
+  if (cross < 1.4) failures.push(`rest band, page ground on light card: ${cross.toFixed(2)} < 1.4`);
   expect(failures).toEqual([]);
 });
