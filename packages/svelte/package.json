@@ -129,6 +129,7 @@
     "clsx": "^2.1.1",
     "codemirror": "^6.0.2",
     "d3-hierarchy": "^3.1.2",
+    "d3-sankey": "^0.12.3",
     "d3-scale": "^4.0.0",
     "diff": "^9.0.0",
     "dompurify": "^3.4.11",
