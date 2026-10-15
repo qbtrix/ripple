@@ -14,10 +14,12 @@
   person's path from the root is the only accent: stubs, a bar overlay from the
   parent's centre to the child's, and the spine rows above it (`.oc-trail`).
 
-  List rows are 44px; managers end with a direct-report count (the number
-  alone under 400px) and a chevron. Expansion is internal UI state, never
-  written to the bound value. Indent stops after LIST_INDENT_CAP levels and
-  deeper rows say who they report to.
+  List rows are 44px; managers end with a direct-report count (`5 direct`,
+  the number alone on a row too narrow to keep the name) and a chevron.
+  Expansion is internal UI state, never written to the bound value. Indent
+  stops after LIST_INDENT_CAP levels: deeper rows sit at their parent's
+  indent, hang off its avatar column (`.oc-cap`) and lead with who they
+  report to, so truncation eats the title, never the parent's name.
 
   Selection only when wired: with `onchange` (NodeRenderer passes it for
   `bind` or `on_change`) each person with an id is a button with aria-pressed
@@ -84,6 +86,10 @@
   const onPath = $derived(new Set(path));
   const defaults = $derived(defaultOpen(forest, path));
   let toggled = $state<Record<string, boolean>>({});
+  /** Row width under which the count drops its word to keep the name. */
+  const COUNT_WORD_MIN = 250;
+  const countWord = (level: number) =>
+    bodyW - Math.min(level, LIST_INDENT_CAP) * (bodyW >= 480 ? 20 : 16) >= COUNT_WORD_MIN;
   const isOpen = (p: Person) => p.children.length > 0 && (toggled[p.key] ?? defaults.has(p.key));
 
   /** Index of the child on the selected path, or -1. */
@@ -191,7 +197,7 @@
   {@const open = isOpen(p)}
   {@const at = pathChild(p)}
   {@const deep = level > LIST_INDENT_CAP}
-  {@const meta = deep && parent ? (p.title ? `${p.title} · Reports to ${parent}` : `Reports to ${parent}`) : p.title}
+  {@const meta = deep && parent ? (p.title ? `Reports to ${parent} · ${p.title}` : `Reports to ${parent}`) : p.title}
   <li class:oc-through={rail === 1}>
     {#if rail === 2}<span class="oc-trail" aria-hidden="true"></span>{/if}
     <div class="oc-row" class:oc-sel={sel}>
@@ -215,7 +221,7 @@
         <div class="oc-pick" title={fullText(p)}>{@render body()}</div>
       {/if}
       {#if p.children.length}
-        <span class="oc-count text-callout tabular-nums" aria-hidden="true">{p.children.length}<span class="oc-word">{' direct'}</span></span>
+        <span class="oc-count text-callout tabular-nums" aria-hidden="true">{p.children.length}{#if countWord(level)}{' direct'}{/if}</span>
         <button
           type="button"
           class="oc-disc"
@@ -231,7 +237,7 @@
       <p class="oc-more text-callout text-ripple-muted-foreground">+{p.more} more</p>
     {/if}
     {#if open}
-      <ul class={cn('oc-sub', level < LIST_INDENT_CAP && 'oc-rail')} transition:reveal>
+      <ul class={cn('oc-sub', level < LIST_INDENT_CAP ? 'oc-rail' : 'oc-cap')} transition:reveal>
         {#each p.children as c, i (c.key)}
           {@render lnode(c, p.name, level + 1, level < LIST_INDENT_CAP ? (i < at ? 1 : i === at ? 2 : 0) : 0)}
         {/each}
@@ -433,8 +439,25 @@
   .oc-sub.oc-rail {
     padding-left: var(--oc-i);
     --oc-x: calc(var(--oc-g) - var(--oc-i));
-    --oc-elbow: calc(var(--oc-i) - var(--oc-g) + 4px);
+    /* Ends on the avatar's edge: row border 1px + pick padding 8px. */
+    --oc-elbow: calc(var(--oc-i) - var(--oc-g) + 9px);
     --oc-mid: 22px;
+  }
+  /* Past the indent cap: a stub in the avatar column (border 1 + padding 8 +
+     half of 28) from the parent's avatar down to each child's; the rows paint
+     over it, so it shows only in the gaps between avatars. */
+  .oc-cap > li::before {
+    content: '';
+    position: absolute;
+    z-index: 1;
+    top: -8px;
+    bottom: 0;
+    left: 22.5px;
+    border-left: 1px solid var(--oc-line);
+  }
+  .oc-cap > li:last-child::before {
+    bottom: auto;
+    height: 16px;
   }
   .oc-row {
     position: relative;
@@ -462,12 +485,6 @@
     flex: none;
     padding-left: 4px;
     color: var(--ripple-muted-foreground);
-  }
-  /* Under 400px the count is the number alone: deep rows keep their names. */
-  @container (max-width: 399px) {
-    .oc-word {
-      display: none;
-    }
   }
   .oc-disc {
     display: grid;
