@@ -21,7 +21,7 @@ describe('recipe and meal-plan SSR', () => {
 	it('renders a recipe scaled to the bound servings', () => {
 		const { body } = render(Recipe, { props: { ...chili, servings: 8 } });
 		expect(body).toContain('Turkey chili');
-		expect(body).toContain('1,000 g');
+		expect(body).toContain('1 kg');
 		expect(body).toContain('3 cans');
 	});
 

@@ -1,9 +1,10 @@
 // widgets/composite/MealPlan.test.ts — the meal-plan data widget: registry and
 // bind-contract wiring, a bound people change rescaling the shopping list,
 // swaps writing a new days array (and surviving a later people change),
-// shopping ticks, the inline RecipeView, streamed parity with id-less and
-// half-written items, junk props, and the sums in recipe.ts (shopping list,
-// day totals, goal checks).
+// shopping ticks, the Plan / Shopping list switch, day disclosure, the inline
+// RecipeView, streamed parity with id-less and half-written items, junk and
+// malformed props, and the data rules in recipe.ts (shopping list, day totals,
+// goal checks, nutrition parsing, dedupe, kg/l promotion).
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
 import Ripple from '$lib/Ripple.svelte';
@@ -12,7 +13,7 @@ import { getWidget, hasWidget } from '../index.js';
 import { _resetBindContractWarnings, getBindContract, warnUnregisteredBindContract } from '@ripple-ui/core';
 import MealPlan from './MealPlan.svelte';
 import { holds, nextEdit } from '../data-kit/edit.js';
-import { dayTotals, goalCheck, readLibrary, shoppingList, swapMeal, type PlanDay, type RecipeData } from './recipe.js';
+import { dayTotals, goalCheck, humanRef, nutrient, qtyLabel, readIngredients, readLibrary, shoppingList, swapMeal, type PlanDay, type RecipeData } from './recipe.js';
 
 afterEach(() => {
 	cleanup();
@@ -74,6 +75,12 @@ const week = (): PlanDay[] => [
 ];
 const yogurt = () => screen.getByRole('checkbox', { name: /Greek yogurt/ });
 const amount = (c: Element, key: string) => c.querySelector(`[data-item="${key}"] [data-slot="amount"]`)?.textContent?.trim();
+/** Select the Shopping list view the way a reader does, and check it is the one shown. */
+const showList = async (c: Element) => {
+	await fireEvent.click(screen.getByRole('radio', { name: /Shopping list/ }));
+	expect(c.querySelector('[data-slot="shopping-view"]')!.classList.contains('hidden')).toBe(false);
+	expect(c.querySelector('[data-slot="plan"]')!.classList.contains('hidden')).toBe(true);
+};
 
 describe('meal-plan: registry and bind contract', () => {
 	it('resolves the type and both aliases to one component', () => {
@@ -107,6 +114,7 @@ describe('meal-plan: bound edits', () => {
 
 	it('a people press writes to state and rescales the shopping list', async () => {
 		const { container, onStateChange } = mountBound();
+		await showList(container);
 		// 500 g turkey serves 4, cooked once for 2 → 250 g; oats twice for 2 → 2 cups.
 		expect(amount(container, 'ground turkey|g')).toBe('250 g');
 		expect(amount(container, 'rolled oats|cup')).toBe('2 cups');
@@ -121,6 +129,7 @@ describe('meal-plan: bound edits', () => {
 		const select = screen.getByRole('combobox', { name: 'Swap Mon Breakfast' }) as HTMLSelectElement;
 		await fireEvent.change(select, { target: { value: 'eggs' } });
 		expect(container.querySelector('[data-day="Mon"] [data-meal="eggs"]')).not.toBeNull();
+		await showList(container);
 		expect(amount(container, 'eggs|')).toBe('6');
 		// yogurt: Tue oats 0.75 + Mon eggs 0.25 = 1 cup, times 2 people
 		expect(amount(container, 'greek yogurt|cup')).toBe('2 cups');
@@ -146,6 +155,7 @@ describe('meal-plan: bound edits', () => {
 		]);
 		expect(days[0]).toEqual(week()[0]);
 
+		await showList(document.body);
 		await fireEvent.click(screen.getByRole('checkbox', { name: /ground turkey/ }));
 		expect(got).toEqual(['ground turkey|g']);
 		expect(screen.getByText('1 of 5 got')).toBeTruthy();
@@ -200,15 +210,96 @@ describe('meal-plan: junk props', () => {
 	it('reads a day written as label (the ocean-flow crash) and a day with no meals', () => {
 		const { container } = render(MealPlan, { props: { recipes: recipes(), days: [{ label: 'Thu', meals: [{ slot: 'dinner', recipe: 'chili' }] }, { day: 'Fri' }] as never } });
 		expect(container.querySelector('[data-day="Thu"]')).not.toBeNull();
-		expect(screen.getByText('Nothing planned yet.')).toBeTruthy();
+		expect(container.querySelector('[data-day="Fri"]')!.textContent).toContain('Nothing planned');
 	});
 
-	it('shows a skeleton row for a recipe that has not arrived', () => {
+	it('names a recipe that is not in the library, with no swap and no skeleton bar', () => {
 		const { container } = render(MealPlan, { props: { recipes: [], days: [{ day: 'Mon', meals: [{ slot: 'lunch', recipe: 'tuna-melt' }] }] } });
-		expect(container.querySelector('[data-slot="meal-pending"]')!.textContent).toContain('tuna-melt');
+		const row = container.querySelector('[data-slot="meal-pending"]')!;
+		expect(row.textContent).toContain('Tuna melt');
+		expect(row.textContent).toContain('Not in recipes');
+		expect(row.querySelector('[aria-busy]')).toBeNull();
+		expect((screen.getByRole('combobox', { name: 'Swap Mon Lunch' }) as HTMLSelectElement).disabled).toBe(true);
 		expect(screen.getByText('The list fills in as meals are planned.')).toBeTruthy();
 	});
 
+});
+
+describe('meal-plan: the week', () => {
+	it('opens the first day, one at a time, and summarises the closed ones', async () => {
+		const { container } = render(MealPlan, { props: { people: 2, recipes: recipes(), days: week() } });
+		const head = (d: string) => container.querySelector(`[data-day="${d}"] button[aria-expanded]`)!;
+		const meals = (d: string) => container.querySelector(`[data-day="${d}"] [data-slot="meals"]`)!;
+		expect(head('Mon').getAttribute('aria-expanded')).toBe('true');
+		expect(meals('Mon').classList.contains('hidden')).toBe(false);
+		expect(meals('Tue').classList.contains('hidden')).toBe(true);
+		expect(container.querySelector('[data-day="Tue"] [data-slot="summary"]')!.textContent).toBe('Protein oats · Salmon bowl');
+		await fireEvent.click(head('Tue'));
+		expect(head('Tue').getAttribute('aria-expanded')).toBe('true');
+		expect(head('Mon').getAttribute('aria-expanded')).toBe('false');
+		expect(meals('Mon').classList.contains('hidden')).toBe(true);
+		// A swap keeps the open day open.
+		await fireEvent.change(screen.getByRole('combobox', { name: 'Swap Tue Dinner' }), { target: { value: 'chili' } });
+		expect(head('Tue').getAttribute('aria-expanded')).toBe('true');
+	});
+
+	it('every meal has a swap; a slot with one recipe shows it disabled with a reason', () => {
+		const lunch = { id: 'wrap', name: 'Chicken wrap', kind: 'lunch' as const, serves: 1, ingredients: [] };
+		render(MealPlan, { props: { recipes: [...recipes(), lunch], days: [{ day: 'Mon', meals: [{ slot: 'lunch', recipe: 'wrap' }, { slot: 'dinner', recipe: 'chili' }] }] } });
+		const solo = screen.getByRole('combobox', { name: 'Swap Mon Lunch' }) as HTMLSelectElement;
+		expect(solo.disabled).toBe(true);
+		expect(solo.closest('label')!.getAttribute('title')).toBe('No other lunch recipes');
+		expect((screen.getByRole('combobox', { name: 'Swap Mon Dinner' }) as HTMLSelectElement).disabled).toBe(false);
+	});
+
+	it('shows a day pill only when the day misses, and the averages against the goal word', () => {
+		const { container } = render(MealPlan, { props: { people: 2, goal: { protein_g: 80, kcal: 2000 }, recipes: recipes(), days: week() } });
+		// Mon 81 g meets 80; Tue 83 g meets it too: no day pill at all.
+		expect(container.querySelectorAll('ol [data-status]')).toHaveLength(0);
+		const totals = container.querySelector('[data-slot="totals"]')!.textContent!;
+		expect(totals).toContain('Daily average per person');
+		expect(totals).toContain('/ 80 g');
+		expect(totals).toContain('Goal met');
+		expect(totals).toContain('Under'); // 1,075 kcal a day against 2,000
+		expect(totals).not.toContain('Warning');
+		expect(container.textContent).not.toContain('the week comes to');
+	});
+
+	it('cooks for 48 without a silent clamp, and prints big amounts in kg', async () => {
+		const { container } = render(MealPlan, { props: { people: 48, recipes: recipes(), days: week() } });
+		expect(container.querySelector('output')!.textContent).toBe('48');
+		await showList(container);
+		expect(container.querySelector('[data-slot="shopping-view"]')!.textContent).toContain('For 48 people');
+		// 500 g serves 4, for 48 → 6,000 g; 400 g salmon serves 2, for 48 → 9,600 g.
+		expect(amount(container, 'ground turkey|g')).toBe('6 kg');
+		expect(amount(container, 'salmon fillet|g')).toBe('9.6 kg');
+	});
+
+	it('reads messy model rows: lowercased kind, "22g", negatives, a repeated id, a recipe by name', () => {
+		const messy = [
+			{ id: 'rice', name: 'Rice and beans', kind: 'dinner', serves: 0, kcal: '550', protein_g: '22g', ingredients: [{ name: 'rice', qty: 1, unit: 'cup' }] },
+			{ id: 'rice', name: 'Rice and beans (second copy)', kind: 'dinner', serves: 2, kcal: 500, protein_g: 20, ingredients: [] },
+			{ id: 'bagel', name: 'Bagel', kind: 'Breakfast', serves: 1, kcal: -40, ingredients: [{ name: 'cream cheese', qty: -2, unit: 'tbsp' }] },
+			{ id: 'toast', name: 'Toast', kind: 'breakfast', serves: 1, ingredients: [] },
+			{ name: 'Peanut noodles', serves: 2, kcal: 600, ingredients: 'peanut butter, noodles' }
+		];
+		const { container } = render(MealPlan, {
+			props: {
+				people: '3' as never,
+				recipes: messy as never,
+				days: [{ day: 'Mon', meals: [{ slot: 'Breakfast', recipe: 'toast' }, { slot: 'dinner', recipe: 'rice' }, { slot: 'lunch', recipe: 'Peanut noodles' }] }] as never
+			}
+		});
+		expect(container.querySelector('output')!.textContent).toBe('3');
+		expect(container.querySelector('[data-day="Mon"] [data-slot="day-totals"]')!.textContent).toBe('22 g protein · 1,150 kcal');
+		// The Breakfast-kind bagel is offered for the breakfast slot.
+		const breakfast = screen.getByRole('combobox', { name: 'Swap Mon Breakfast' }) as HTMLSelectElement;
+		expect([...breakfast.options].map((o) => o.value)).toEqual(['bagel', 'toast', 'Peanut noodles']);
+		// The second `rice` row never shows as a second option with the same value.
+		const dinner = screen.getByRole('combobox', { name: 'Swap Mon Dinner' }) as HTMLSelectElement;
+		expect([...dinner.options].map((o) => o.value)).toEqual(['rice', 'Peanut noodles']);
+		expect(container.querySelector('[data-day="Mon"] [data-meal="Peanut noodles"]')).not.toBeNull();
+	});
 });
 
 describe('recipe.ts: meal-plan sums', () => {
@@ -270,6 +361,29 @@ describe('recipe.ts: meal-plan sums', () => {
 		expect(holds(again, week())).toBe(true);
 		expect(holds(again, [{ day: 'Sun', meals: [] }])).toBe(false);
 		expect(holds(null, original)).toBe(false);
+	});
+
+	it('reads nutrition, refs, quantities and library rows the way a model writes them', () => {
+		expect([nutrient(450), nutrient('550'), nutrient('22g'), nutrient('550 kcal'), nutrient(0)]).toEqual([450, 550, 22, 550, 0]);
+		expect([nutrient(-40), nutrient('lots'), nutrient(Number.NaN), nutrient(null)]).toEqual([undefined, undefined, undefined, undefined]);
+		expect(humanRef('leftover-pizza')).toBe('Leftover pizza');
+		expect(readIngredients([{ name: 'cream cheese', qty: -2, unit: 'tbsp' }])[0].qty).toBeUndefined();
+		const lib2 = readLibrary([{ id: 'a', name: 'First', kind: 'Dinner' }, { id: 'a', name: 'Second' }, { name: 'By name' }]);
+		expect(lib2.map((r) => [r.ref, r.name, r.kind])).toEqual([
+			['a', 'First', 'dinner'],
+			['By name', 'By name', undefined]
+		]);
+	});
+
+	it('promotes grams and millilitres at 1,000 to kg and l', () => {
+		expect([qtyLabel(16000, 'g'), qtyLabel(1500, 'ml'), qtyLabel(999, 'g'), qtyLabel(1200, 'grams'), qtyLabel(2000, 'cups'), qtyLabel(202000, 'ml')]).toEqual([
+			'16 kg',
+			'1.5 l',
+			'999 g',
+			'1.2 kg',
+			'2,000 cups',
+			'202 l'
+		]);
 	});
 
 	it('swapMeal returns a new days array and leaves the old one alone', () => {

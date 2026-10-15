@@ -389,13 +389,14 @@ describe('meal-plan (meal-plan)', () => {
 	const amount = (c: HTMLElement, key: string) => c.querySelector(`[data-item="${key}"] [data-slot="amount"]`)?.textContent?.trim();
 
 	// Salmon (400 g, serves 2) is on Mon and Sat; for 2 people that is 800 g,
-	// for 3 people 1,200 g. Turkey chili (500 g, serves 4) on Tue and Fri: 500 g.
+	// for 3 people 1.2 kg. Turkey chili (500 g, serves 4) on Tue and Fri: 500 g.
 	test('after streaming, More people rescales the shopping list and writes people', async () => {
 		const { container, onStateChange } = await mountStreamed(scenario('meal-plan'));
+		await fireEvent.click(within(container).getByRole('radio', { name: /Shopping list/ }));
 		expect(amount(container, 'salmon fillet|g')).toBe('800 g');
 		await fireEvent.click(within(container).getByRole('button', { name: 'More people' }));
 		await waitFor(() => expect(lastWrite(onStateChange, 'people')).toBe(3));
-		await waitFor(() => expect(amount(container, 'salmon fillet|g')).toBe('1,200 g'));
+		await waitFor(() => expect(amount(container, 'salmon fillet|g')).toBe('1.2 kg'));
 		expect(amount(container, 'ground turkey|g')).toBe('750 g');
 	});
 
@@ -404,6 +405,7 @@ describe('meal-plan (meal-plan)', () => {
 	test('after streaming, swapping a day\'s dinner re-totals the shopping list', async () => {
 		const { container } = await mountStreamed(scenario('meal-plan'));
 		await fireEvent.change(within(container).getByRole('combobox', { name: 'Swap Mon Dinner' }), { target: { value: 'chili' } });
+		await fireEvent.click(within(container).getByRole('radio', { name: /Shopping list/ }));
 		await waitFor(() => expect(amount(container, 'salmon fillet|g')).toBe('400 g'));
 		expect(amount(container, 'ground turkey|g')).toBe('750 g');
 	});
