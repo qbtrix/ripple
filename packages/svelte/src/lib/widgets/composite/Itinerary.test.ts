@@ -68,14 +68,14 @@ describe('itinerary: bound edits', () => {
 	])('the open day survives a tick that re-sends the spec %s `open` in it', async (_, props) => {
 		const { container } = render(Ripple, { props: { spec: { state: { days: tokyo() }, ui: { type: 'itinerary', bind: '{state.days}', props } } } });
 		await fireEvent.click(container.querySelectorAll('[aria-expanded]')[1]);
-		await fireEvent.click(screen.getByRole('checkbox', { name: 'Meiji shrine' }));
+		await fireEvent.click(screen.getByRole('checkbox', { name: 'Meiji shrine, 10:00' }));
 		expect(container.querySelectorAll('[aria-expanded]')[1].getAttribute('aria-expanded')).toBe('true');
-		expect(screen.getByRole('checkbox', { name: 'Meiji shrine' }).getAttribute('aria-checked')).toBe('true');
+		expect(screen.getByRole('checkbox', { name: 'Meiji shrine, 10:00' }).getAttribute('aria-checked')).toBe('true');
 	});
 
 	it('ticking a stop writes a new days array with that stop done', async () => {
 		const { initial, onStateChange } = mountBound();
-		const box = screen.getByRole('checkbox', { name: 'Soba lunch' });
+		const box = screen.getByRole('checkbox', { name: 'Soba lunch, 12:30' });
 		expect(box.getAttribute('aria-checked')).toBe('false');
 		await fireEvent.click(box);
 
@@ -85,9 +85,9 @@ describe('itinerary: bound edits', () => {
 		expect(next[0].stops![1]).toMatchObject({ id: 's2', done: true });
 		expect(next[0].stops![0]).not.toHaveProperty('done');
 		expect(initial[0].stops![1]).not.toHaveProperty('done');
-		expect(screen.getByRole('checkbox', { name: 'Soba lunch' }).getAttribute('aria-checked')).toBe('true');
+		expect(screen.getByRole('checkbox', { name: 'Soba lunch, 12:30' }).getAttribute('aria-checked')).toBe('true');
 
-		await fireEvent.click(screen.getByRole('checkbox', { name: 'Soba lunch' }));
+		await fireEvent.click(screen.getByRole('checkbox', { name: 'Soba lunch, 12:30' }));
 		expect(lastDays(onStateChange)[0].stops![1].done).toBe(false);
 	});
 
@@ -102,7 +102,7 @@ describe('itinerary: bound edits', () => {
 		const titles = lastDays(onStateChange)[0].stops!.map((s) => s.title);
 		expect(titles).toEqual(['Senso-ji at dawn', 'Soba lunch', 'Coffee at Fuglen', 'Sumida river cruise']);
 		expect(lastDays(onStateChange)[0].stops![2]).toMatchObject({ time: '14:00', cost: 6, kind: 'activity' });
-		expect(screen.getByRole('checkbox', { name: 'Coffee at Fuglen' })).toBeTruthy();
+		expect(screen.getByRole('checkbox', { name: 'Coffee at Fuglen, 14:00' })).toBeTruthy();
 	});
 
 	it('ignores an add with no title', async () => {
@@ -115,7 +115,7 @@ describe('itinerary: bound edits', () => {
 	it('a Svelte parent bound to days sees the new array', async () => {
 		let got: unknown;
 		render(Itinerary, { props: { days: tokyo(), ondayschange: (d: unknown) => (got = d) } });
-		await fireEvent.click(screen.getByRole('checkbox', { name: 'Senso-ji at dawn' }));
+		await fireEvent.click(screen.getByRole('checkbox', { name: 'Senso-ji at dawn, 08:00' }));
 		expect((got as ItineraryDay[])[0].stops![0].done).toBe(true);
 	});
 });
@@ -197,13 +197,13 @@ describe('itinerary: logic', () => {
 		const { container, rerender } = render(Itinerary, { props: { days: tokyo(), legs, budget: 200, currency: 'USD' } });
 		const spend = () => container.querySelector('[data-slot="spend"]')!;
 		// 0 + 18 + 12 + 0 stops, 100 leg = 130 of 200: good
-		expect(spend().textContent).toContain('$130.00');
+		expect(spend().textContent).toContain('$130');
 		expect(spend().getAttribute('data-status')).toBe('good');
 		await rerender({ budget: 140 });
 		expect(spend().getAttribute('data-status')).toBe('warn');
 		await rerender({ budget: 100 });
 		expect(spend().getAttribute('data-status')).toBe('bad');
-		expect(spend().textContent).toContain('Over by $30.00');
+		expect(spend().textContent).toContain('Over by $30');
 	});
 
 	it('derives the route from legs and draws a leg icon between cities', () => {
@@ -237,8 +237,8 @@ describe('itinerary: logic', () => {
 		await tick();
 		expect(day1.getAttribute('aria-expanded')).toBe('false');
 		expect(day2.getAttribute('aria-expanded')).toBe('true');
-		expect(screen.getByRole('checkbox', { name: 'Meiji shrine' })).toBeTruthy();
-		expect(screen.queryByRole('checkbox', { name: 'Soba lunch' })).toBeNull();
+		expect(screen.getByRole('checkbox', { name: 'Meiji shrine, 10:00' })).toBeTruthy();
+		expect(screen.queryByRole('checkbox', { name: 'Soba lunch, 12:30' })).toBeNull();
 	});
 
 	it('never renders a refused stop image', () => {
@@ -252,5 +252,75 @@ describe('itinerary: logic', () => {
 		render(Itinerary, { props: { days: [{ label: 'Day 1', stops: [{ time: 'Late morning', title: 'Tsukiji market', kind: 'food', must: true }] }] } });
 		expect(screen.getByText('Late morning')).toBeTruthy();
 		expect(screen.getByText('Must see')).toBeTruthy();
+	});
+
+	it('moves a non-clock time into the meta line and keeps the clock column otherwise', () => {
+		const { container } = render(Itinerary, {
+			props: { days: [{ stops: [{ time: 'Late morning', title: 'Market', place: 'Baixa' }, { time: '13:00', title: 'Lunch' }] }] }
+		});
+		const meta = screen.getByText('Late morning').parentElement!;
+		expect(meta.textContent!.replace(/\s+/g, ' ')).toContain('Late morning · Baixa');
+		expect(container.querySelector('.text-right')).toBeNull();
+		cleanup();
+		render(Itinerary, { props: { days: tokyo() } });
+		expect(screen.getByText('08:00').classList.contains('text-right')).toBe(true);
+	});
+
+	it('turns bare-string and comma-string stops into stops, and a tick writes back a real array', async () => {
+		let got: ItineraryDay[] = [];
+		const days = [{ stops: [null, 'Fourviere basilica'] }, { stops: 'Lake cruise, Castle hill' }];
+		render(Itinerary, { props: { days: days as never, open: 0, ondayschange: (d: unknown) => (got = d as typeof got) } });
+		await fireEvent.click(screen.getByRole('checkbox', { name: 'Fourviere basilica' }));
+		expect(got[0].stops![1]).toEqual({ title: 'Fourviere basilica', done: true });
+		await fireEvent.click(document.querySelectorAll('[aria-expanded]')[1]);
+		await fireEvent.click(screen.getByRole('checkbox', { name: 'Castle hill' }));
+		expect(got[1].stops).toEqual(['Lake cruise', { title: 'Castle hill', done: true }]);
+	});
+
+	it('renders a single day open, with no disclosure button', () => {
+		const { container } = render(Itinerary, { props: { days: [{ label: 'Saturday', stops: [{ title: 'Park' }] }] } });
+		expect(container.querySelector('[aria-expanded]')).toBeNull();
+		expect(screen.getByRole('checkbox', { name: 'Park' })).toBeTruthy();
+		expect(screen.getByText('Saturday')).toBeTruthy();
+	});
+
+	it('falls back to the first day with stops when open is out of range; -1 closes all', async () => {
+		const days = [{ stops: [] }, { stops: [{ title: 'Pier' }] }, { stops: [{ title: 'Park' }] }];
+		const { container, rerender } = render(Itinerary, { props: { days, open: 9 } });
+		expect([...container.querySelectorAll('[aria-expanded]')].map((b) => b.getAttribute('aria-expanded'))).toEqual(['false', 'true', 'false']);
+		await rerender({ open: -1 });
+		expect(container.querySelectorAll('[aria-expanded="true"]')).toHaveLength(0);
+	});
+
+	it('drops a leg missing an end and a non-string route city', () => {
+		const { container } = render(Itinerary, {
+			props: { route: ['Lyon', '', 'Annecy', 42] as never, legs: [{ from: 'Lyon', kind: 'train' }, { from: 'Lyon', to: 'Annecy', ref: 'TER' }] as never }
+		});
+		const route = container.querySelector('[data-slot="route"]')!;
+		expect([...route.querySelectorAll('li')].map((li) => li.textContent?.trim().split(/\s/)[0])).toEqual(['Lyon', 'Annecy']);
+		expect(screen.getAllByText('→')).toHaveLength(1);
+	});
+
+	it('shows the hint only while nothing is done, and whole money on the spend line', () => {
+		const { container } = render(Itinerary, { props: { days: tokyo(), budget: 400 } });
+		expect(container.querySelector('[data-slot="hint"]')).not.toBeNull();
+		expect(container.querySelector('[data-slot="spend"]')!.textContent).toContain('$30');
+		expect(container.querySelector('[data-slot="spend"]')!.textContent).not.toContain('.00');
+		cleanup();
+		const days = tokyo();
+		days[0].stops![1] = { ...days[0].stops![1], done: true };
+		const r = render(Itinerary, { props: { days, budget: 400 } });
+		expect(r.container.querySelector('[data-slot="hint"]')).toBeNull();
+		expect(r.container.textContent).toContain('$18 spent so far');
+	});
+
+	it('wraps a long route inline instead of scrolling, and skips Getting around for bare legs', () => {
+		const cities = ['A1', 'B2', 'C3', 'D4', 'E5', 'F6', 'G7', 'H8'];
+		const legs = cities.slice(1).map((to, i) => ({ from: cities[i], to, kind: 'bus' }));
+		const { container } = render(Itinerary, { props: { legs: legs as never } });
+		const route = container.querySelector('[data-slot="route"]')!;
+		expect(route.querySelector('[data-route="rail"]')).toBeNull();
+		expect(route.querySelector('[data-route="inline"]')!.querySelectorAll('[data-leg="bus"]')).toHaveLength(7);
+		expect(screen.queryByText('Getting around')).toBeNull();
 	});
 });
