@@ -1,10 +1,13 @@
 <!--
   SourcesBar.svelte: the "where did this come from" row at the foot of a
-  research answer. Closed, one quiet line names the sources: a stack of up to
-  three marks (+N pill), the count in words, then the names, ellipsized.
+  research answer. Closed, one quiet row names the sources: a stack of up to
+  three marks (+N pill), the count in words, then the names, ellipsized. Under
+  480px of bar width the names drop to a second line under the count so the
+  first name stays readable; marks, pill, count and chevron never shrink.
   Opened (native <details>, works with JavaScript off), a numbered list with
   name, domain and a new-tab link per source; past 5 sources it goes two
-  columns once the bar itself is 480px wide (container query on the root).
+  columns once the bar itself is 640px wide (container query on the root).
+  Domains ellipsize in the middle so the top-level part stays visible.
 
   Data rules (names, links, count, grammar) live in ./sources.ts; this file
   only lays them out. Marks are the shadcn Avatar primitives: a supplied
@@ -88,7 +91,7 @@
   function markStyle(s: SourceView): string {
     const tint = nameTint(s.name);
     return s.color
-      ? `${tint};background-color:color-mix(in oklab, ${s.color} 28%, var(--ripple-surface));color:var(--ripple-surface-foreground)`
+      ? `${tint};background-color:color-mix(in oklab, ${s.color} 28%, var(--ripple-surface));color:var(--ripple-surface-foreground);box-shadow:inset 0 0 0 1px color-mix(in oklab, var(--ripple-surface-foreground) 30%, transparent)`
       : tint;
   }
 
@@ -134,8 +137,8 @@
   }
 </script>
 
-{#snippet mark(s: SourceView, size: 'md' | 'sm', extra = '')}
-  <Avatar.Root class={cn('after:hidden', size === 'md' ? 'size-5 ring-2 ring-ripple-surface not-first:-ms-1' : 'size-4', extra)}>
+{#snippet mark(s: SourceView, size: 'md' | 'sm')}
+  <Avatar.Root class={cn('after:hidden', size === 'md' ? 'size-5 ring-2 ring-ripple-surface not-first:-ms-1' : 'size-4')}>
     {#if safeUrl(s.favicon, { kind: 'resource' })}
       <Avatar.Image src={safeUrl(s.favicon, { kind: 'resource' })} alt="" class="bg-ripple-surface" />
     {/if}
@@ -148,13 +151,12 @@
 
 {#snippet row(disclosure: boolean)}
   <span class="rsbar-stack" aria-hidden="true">
-    <!-- Under 420px of bar width the third mark and the +N pill step aside so
-         the first source's name stays readable; the count still says how many. -->
-    {#each marks as s, i (keys[i])}{@render mark(s, 'md', i === 2 ? '@max-[419px]:hidden' : '')}{/each}
+    {#each marks as s, i (keys[i])}{@render mark(s, 'md')}{/each}
     {#if plus > 0}<span class="rsbar-plus text-caption-2">+{num(plus)}</span>{/if}
   </span>
   <span class="rsbar-count text-body-emph">{countText}</span>
-  <span class="rsbar-names text-callout" aria-hidden="true"><span class="rsbar-dot">·</span>{names}</span>
+  <span class="rsbar-dot text-callout" aria-hidden="true">·</span>
+  <span class="rsbar-names text-callout" aria-hidden="true">{names}</span>
   {#if disclosure}
     <span class="rsbar-chev" aria-hidden="true"><ChevronDownIcon size={14} /></span>
   {/if}
@@ -176,11 +178,13 @@
         {#each items as s, i (keys[i])}
           <li>
             {#if s.href}
+              {@const cut = Math.max(0, (s.host ?? '').lastIndexOf('.'))}
               <a class="rsbar-item rsbar-link" href={safeUrl(s.href, { kind: 'link' })} target="_blank" rel="noopener noreferrer" title={s.title}>
                 <span class="rsbar-idx text-callout">{i + 1}</span>
                 {@render mark(s, 'sm')}
-                <span class="rsbar-name text-body">{s.name}<span class="sr-only"> (opens in a new tab)</span></span>
-                <span class="rsbar-host text-callout">{s.host}</span>
+                <span class="rsbar-name text-body">{s.name}<span class="sr-only">, {s.host} (opens in a new tab)</span></span>
+                <!-- Split so the domain ellipsizes in the middle; read whole from the sr-only text above. -->
+                <span class="rsbar-host text-callout" aria-hidden="true"><span class="rsbar-host-head">{(s.host ?? '').slice(0, cut || undefined)}</span>{cut ? (s.host ?? '').slice(cut) : ''}</span>
                 <span class="rsbar-out" aria-hidden="true"><ArrowUpRightIcon size={12} /></span>
               </a>
             {:else}
@@ -241,12 +245,15 @@
     font: inherit;
     text-align: start;
     cursor: pointer;
+    user-select: none; /* a click otherwise parks a caret in the names and Chrome drops their ellipsis */
     list-style: none;
     transition: background-color 150ms var(--ripple-ease-out);
   }
   .rsbar-summary::-webkit-details-marker { display: none; }
   .rsbar-summary::marker { content: ''; }
-  .rsbar-summary:hover { background: color-mix(in oklab, var(--ripple-track) 45%, transparent); }
+  @media (hover: hover) {
+    .rsbar-summary:hover { background: color-mix(in oklab, var(--ripple-track) 45%, transparent); }
+  }
   .rsbar-summary:focus-visible,
   .rsbar-btn:focus-visible,
   .rsbar-link:focus-visible {
@@ -260,6 +267,7 @@
     display: inline-flex;
     align-items: center;
     flex: none;
+    min-inline-size: max-content;
   }
   .rsbar-plus {
     display: inline-flex;
@@ -275,6 +283,7 @@
     font-variant-numeric: tabular-nums;
     position: relative;
     margin-inline-start: -4px;
+    flex: none;
   }
 
   .rsbar-count {
@@ -290,7 +299,7 @@
     white-space: nowrap;
     color: var(--ripple-muted-foreground);
   }
-  .rsbar-dot { margin-inline-end: 4px; }
+  .rsbar-dot { flex: none; color: var(--ripple-muted-foreground); }
   .rsbar-chev {
     display: inline-flex;
     flex: none;
@@ -367,7 +376,14 @@
     text-decoration: none;
     border-radius: calc(var(--ripple-radius) - 2px);
   }
-  .rsbar-link { transition: background-color 150ms var(--ripple-ease-out); }
+  /* Linked row: the name keeps its full width while the domain still has 8ch;
+     past that the name ellipsizes, so every row keeps a domain end like "re….org". */
+  .rsbar-link {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, max-content) minmax(8ch, 1fr) auto;
+    column-gap: 8px;
+    transition: background-color 150ms var(--ripple-ease-out);
+  }
   .rsbar-link:hover,
   .rsbar-link:focus-visible { background: color-mix(in oklab, var(--ripple-track) 45%, transparent); }
   .rsbar-link:hover .rsbar-name,
@@ -380,22 +396,24 @@
     font-variant-numeric: tabular-nums;
   }
   .rsbar-name {
-    /* The name keeps its width until it alone would overflow; the domain gives way first. */
     position: relative;
-    flex: 0 0 auto;
-    max-inline-size: calc(100% - 2ch - 72px);
+    flex: 0 1 auto;
+    min-inline-size: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
   .rsbar-host {
-    flex: 0 1 auto;
+    display: flex;
+    justify-content: flex-end;
     min-inline-size: 0;
-    margin-inline-start: auto;
-    overflow: hidden;
-    text-overflow: ellipsis;
     white-space: nowrap;
     color: var(--ripple-muted-foreground);
+  }
+  .rsbar-host-head {
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .rsbar-out {
     display: inline-flex;
@@ -409,15 +427,24 @@
     color: var(--ripple-muted-foreground);
   }
 
-  @container (max-width: 419px) {
-    .rsbar-plus { display: none; }
-    .rsbar-summary { gap: 6px; }
+  /* Narrow bar: names take their own line under the count, running under the chevron. */
+  @container (max-width: 479px) {
+    .rsbar-summary {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      grid-template-areas: 'stack count chev' 'stack names names';
+      column-gap: 8px;
+      min-block-size: 44px;
+      padding-block: 4px;
+    }
+    .rsbar-stack { grid-area: stack; }
+    .rsbar-count { grid-area: count; }
+    .rsbar-names { grid-area: names; }
+    .rsbar-chev { grid-area: chev; }
+    .rsbar-dot { display: none; }
+    .rsbar-actions { block-size: 44px; }
   }
-  @container (max-width: 339px) {
-    .rsbar-host { display: none; }
-    .rsbar-out { margin-inline-start: auto; }
-  }
-  @container (min-width: 480px) {
+  @container (min-width: 640px) {
     .rsbar-list[data-cols='2'] { columns: 2; column-gap: 24px; }
   }
 
