@@ -8,6 +8,26 @@
      unless the column sets `align` (left, center, right), which always wins.
      The primitive's container still scrolls sideways when columns cannot fit.
 
+     `layout="stack"` (internal, not in the manifest; read-only tables only:
+     no editable, sortable, searchable or pageSize) fits a phone-width card.
+     From 480px of the table's own width it is the same table, but text cells
+     wrap at spaces with no min width, so a word never splits, and a short
+     column (longest value up to 20 characters) stays on one line so the
+     first column absorbs the wrapping; the first column keeps
+     a 12ch floor so short columns give up width before the title does.
+     Under 480px it is a list, one labelled group per row: the first column as
+     the title (two lines, then ellipsis; the full text is the group's name)
+     with the first right-aligned column trailing it, unless that column holds
+     bare numbers (a day count, a score), which mean nothing without their
+     label and so stay in the meta line beside it; then the other columns as one
+     muted meta line, each value after its column label, each pair wrapping as
+     one unit. Every later pair carries a leading dot in a 1em gutter that the
+     line's clipped negative margin hides at the start of each line, so no
+     line starts or ends with a dot. The wide table uses the card's type
+     scale: body cells, muted caption headers. An empty first cell
+     reads a muted italic Untitled. Both are in the DOM; a container query
+     shows one.
+
      Editing is opt-in (`editable` plus a `bind`): a commit builds the FULL
      mutated rows array and fires `onchange(next)`, which NodeRenderer turns
      into `stateManager.set(<bind path>, next)` (the Kanban pattern). Editable
@@ -85,6 +105,8 @@
          */
         onchange?: (rows: any[]) => void;
         onRowClick?: EventHandlerOrArray;
+        /** Internal: 'stack' turns a read-only table into a list under 480px of its width. */
+        layout?: "scroll" | "stack";
         class?: string;
     }
 
@@ -102,6 +124,7 @@
         editable = false,
         onchange,
         onRowClick,
+        layout = "scroll",
         class: className,
     }: Props = $props();
 
@@ -196,9 +219,42 @@
         col.align ? ALIGN[col.align] : numericCols.has(col.accessorKey) ? "text-right" : "";
     const cellClass = (col: NormalizedColumn) =>
         `${alignClass(col)} ` +
-        (numericCols.has(col.accessorKey)
+        (numericCols.has(col.accessorKey) || (stack && col.align === "right")
             ? "tabular-nums whitespace-nowrap align-top"
-            : "whitespace-normal align-top [overflow-wrap:anywhere] min-w-[8ch]");
+            : stack
+              ? `align-top [overflow-wrap:break-word] ${col === columns[0] ? "min-w-[12ch]" : ""} ${shortCols.get(col.accessorKey) ?? "whitespace-normal"}`
+              : "whitespace-normal align-top [overflow-wrap:anywhere] min-w-[8ch]");
+
+    // Stacked list (layout="stack", read-only only): title, trailing value, labelled meta.
+    const stack = $derived(
+        layout === "stack" &&
+            !editable &&
+            !tableSortable &&
+            !searchable &&
+            !pageSize &&
+            !columns.some((c) => c.sortable),
+    );
+    const isRight = (c: NormalizedColumn) =>
+        c.align === "right" || (!c.align && numericCols.has(c.accessorKey));
+    // Longest text per column, for the wide stack table's no-wrap short columns.
+    const shortCols = $derived.by(() => {
+        const out = new Map<string | undefined, string>();
+        if (!stack) return out;
+        for (const c of columns.slice(1)) {
+            const n = Math.max(0, ...tableData.map((r) => shown(r?.[c.accessorKey]).length));
+            if (n <= 20) out.set(c.accessorKey, "whitespace-nowrap");
+        }
+        return out;
+    });
+    const BARE = /^[+\-−]?[\d.,\s]+$/;
+    const bare = (c: NormalizedColumn) =>
+        tableData.every((r) => {
+            const t = shown(r?.[c.accessorKey]).trim();
+            return t === "" || BARE.test(t);
+        });
+    const trailCol = $derived(columns.slice(1).find((c) => isRight(c) && !bare(c)));
+    const metaCols = $derived(columns.slice(1).filter((c) => c !== trailCol));
+    const shown = (v: unknown) => (v === null || v === undefined ? "" : asText(v));
 
     let sortKey = $state<string | null>(null);
     let sortDir = $state<"asc" | "desc">("asc");
@@ -380,7 +436,7 @@
     );
 </script>
 
-<div {id} data-ripple-node={id} class={cn("flex flex-col gap-2", className)}>
+<div {id} data-ripple-node={id} class={cn("flex flex-col gap-2", stack && "@container", className)}>
     {#if searchable}
         <div class="flex items-center gap-2">
             <input
@@ -395,7 +451,7 @@
         </div>
     {/if}
 
-    <div class={cn("rounded-md", variantClasses)}>
+    <div class={cn("rounded-md", variantClasses, stack && "hidden @min-[480px]:block [&_td]:py-1.5 [&_td]:text-[length:var(--text-body)] [&_td]:leading-(--lh-body) [&_th]:h-8 [&_th]:text-[length:var(--text-caption-1)] [&_th]:leading-(--lh-caption) [&_th]:font-normal [&_th]:text-ripple-muted-foreground [&_td:first-child]:pl-0 [&_th:first-child]:pl-0 [&_td:last-child]:pr-0 [&_th:last-child]:pr-0")}>
         <Table.Root>
             <Table.Header>
                 <Table.Row>
@@ -504,6 +560,8 @@
                                         >
                                             {cellValue}
                                         </a>
+                                    {:else if stack && ci === 0 && cellValue === ""}
+                                        <span class="italic text-ripple-muted-foreground">Untitled</span>
                                     {:else}
                                         {cellValue}
                                     {/if}
@@ -524,6 +582,41 @@
             </Table.Body>
         </Table.Root>
     </div>
+
+    {#if stack && columns.length > 0}
+        <ul class="@min-[480px]:hidden" data-slot="table-stack">
+            {#each visible as row}
+                {@const title = shown(row?.[columns[0].accessorKey])}
+                {@const trail = trailCol ? shown(row?.[trailCol.accessorKey]) : ""}
+                {@const meta = metaCols
+                    .map((c) => ({ label: c.header, value: shown(row?.[c.accessorKey]) }))
+                    .filter((m) => m.value !== "")}
+                <li
+                    role="group"
+                    aria-label={title || "Untitled"}
+                    class="border-b border-ripple-border py-2.5 first:pt-0 last:border-b-0 last:pb-0"
+                >
+                    <div class="flex items-baseline justify-between gap-3">
+                        {#if title}
+                            <span aria-hidden="true" class="line-clamp-2 min-w-0 text-body-emph [overflow-wrap:break-word]" {title}>{title}</span>
+                        {:else}
+                            <span aria-hidden="true" class="min-w-0 text-body italic text-ripple-muted-foreground">Untitled</span>
+                        {/if}
+                        {#if trail}
+                            <span class="shrink-0 whitespace-nowrap text-body-emph tabular-nums"
+                                ><span class="sr-only">{trailCol?.header} </span>{trail}</span
+                            >
+                        {/if}
+                    </div>
+                    {#if meta.length}
+                        <p class="mt-0.5 overflow-hidden text-callout" data-slot="table-stack-meta">
+                            <span class="-ml-[1em] flex flex-wrap">{#each meta as m, mi}{#if mi > 0}{' '}{/if}<span class="relative min-w-0 pl-[1em] [overflow-wrap:break-word]">{#if mi > 0}<span class="absolute left-[0.3em] text-ripple-muted-foreground" aria-hidden="true">{"· "}</span>{/if}<span class="text-ripple-muted-foreground">{m.label}</span>&nbsp;{m.value}</span>{/each}</span>
+                        </p>
+                    {/if}
+                </li>
+            {/each}
+        </ul>
+    {/if}
 
     {#if pageSize && sorted.length > pageSize}
         <div

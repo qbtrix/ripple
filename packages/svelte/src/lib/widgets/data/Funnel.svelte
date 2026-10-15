@@ -3,7 +3,9 @@
   stage, and where did most of them leave", as native DOM rows (funnel-math.ts
   holds the parsing, order, rate and summary rules; read its header).
 
-  Frame: optional title (text-headline), one muted summary line, then an <ol>
+  Frame: optional title (text-headline), muted summary lines (the overall
+  rate, then the worst step as its own sentence at every width; stage names
+  are never shortened there, the prose wraps), then an <ol>
   of stages split by hairlines. No inner panel; the card is the only frame.
   Height: the widget is as tall as its content. Only a model-set `height` caps
   it; then the list scrolls under the fixed title, summary and caption. Its
@@ -12,8 +14,8 @@
 
   Layout follows the root's own width (container query at 480px):
   - wide: one grid for every row (name | bar track | count | rate of previous),
-    a caption over the two number columns, and the worst step's clause on its
-    own line under the summary;
+    a caption over the two number columns; a long name wraps to two lines,
+    then ellipsis (title and the row's accessible name carry the full text);
   - narrow: each stage is name + count, then a full-width bar, with the step
     rate as a connector line (`62% of previous`) between two stages. Its arrow
     points down, or up when the stage grew, so it never reads as the opposite.
@@ -208,8 +210,8 @@
 		font-variant-numeric: tabular-nums;
 		overflow-wrap: break-word;
 	}
-	.fn-drop {
-		display: none;
+	.fn-summary {
+		text-wrap: pretty;
 	}
 	.fn-empty {
 		display: flex;
@@ -351,9 +353,6 @@
 	   stable gutter on both grids keeps the caption over its columns when the
 	   list scrolls. */
 	@container (min-width: 480px) {
-		.fn-drop {
-			display: block;
-		}
 		.fn-caption,
 		.fn-list {
 			display: grid;
@@ -395,9 +394,6 @@
 		}
 		.fn-name {
 			grid-area: 1 / 1;
-			display: block;
-			white-space: nowrap;
-			text-overflow: ellipsis;
 		}
 		.fn-track {
 			grid-area: 1 / 2;

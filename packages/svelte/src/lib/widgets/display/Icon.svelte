@@ -1,7 +1,8 @@
 <!--
   src/lib/widgets/display/Icon.svelte: a lucide icon by kebab-case slug. An
   unknown slug renders an empty box of the same size. `resolveIcon` is the one
-  slug lookup, exported so a widget can tell a known slug from an unknown one.
+  slug lookup, exported so a widget can tell a known slug from an unknown one;
+  `iconExists(slug)` is the boolean form for hosts that want a visible fallback.
 -->
 <script lang="ts" module>
   import type { Component } from 'svelte';
@@ -27,6 +28,8 @@
     // Exact PascalCase first, then the "Icon" suffix variant (lucide v0 export style).
     return (p && (lookup[p] ?? lookup[`${p}Icon`])) || null;
   }
+
+  export const iconExists = (name: unknown): boolean => resolveIcon(name) !== null;
 </script>
 
 <script lang="ts">

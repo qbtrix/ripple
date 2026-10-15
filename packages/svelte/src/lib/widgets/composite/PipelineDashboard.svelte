@@ -1,538 +1,258 @@
 <!--
-  @file PipelineDashboard.svelte
-  @description Sales / pipeline / fundraising / recruiting funnel archetype:
-  quota progress hero + leaderboard side rail → funnel chart with stage
-  conversion stats → deals table → live activity ticker.
+  widgets/composite/PipelineDashboard.svelte: `pipeline-dashboard` (aliases
+  `sales-dashboard`, `funnel-dashboard`). One chat card that answers: how close
+  are we to the target, where do things stall, who carries it, which deals
+  matter and what just happened. The domain may be sales, hiring or a
+  fundraiser; every data rule lives in pipeline-dashboard.ts.
+
+  Frame: the host card is the only frame. A header (h3 title, muted subtitle,
+  plain period text), then sections in one column split by hairlines, each
+  under an h4 label row: quota, funnel (or conversion when there is no usable
+  funnel), leaderboard, deals, recent activity. A section with no data renders
+  nothing; with no data at all one muted line says so.
+
+  Leaderboard: under 480px the sublabel sits under the name and the delta
+  under the value. At 480px and up every row is one 36px line: the sublabel
+  follows the name and truncates first, and the delta sits left of the value
+  on its baseline. The delta is plain muted signed text (no arrow, no pill).
+
+  Never put `text-body` and a `text-ripple-*` colour through one cn() call:
+  tailwind-merge reads both as colours and drops the size.
+
+  Colour: one accent. Only the quota fill, the funnel's own bars and worst
+  step, the lowest conversion rate (accent ink) and the success line at or
+  past target carry colour. No pace judgement: the widget has no pace data.
+
+  Layout follows the root's own width (container query at 480px): the period
+  moves beside the title, leaderboard rows go to one line,
+  activity times move into a right column, and the deals
+  table replaces its stacked rows (Table layout="stack"). Lists cap at 5 reps,
+  6 deals and 4 events behind a "Show N more" (activity: "Show N earlier")
+  button (body ink, a chevron that turns when open); nothing scrolls inside.
+  The root forwards `id` and data-ripple-node for the visual editor.
 -->
 <script lang="ts">
-  import { safeUrl, safeStyle } from '@ripple-ui/core';
-  import { cn } from '$lib/utils.js';
-  import Icon from '$lib/widgets/display/Icon.svelte';
-  import Funnel from '$lib/widgets/data/Funnel.svelte';
-  import Table from '$lib/widgets/data/Table.svelte';
+	import { safeStyle, safeUrl } from '@ripple-ui/core';
+	import Check from '@lucide/svelte/icons/check';
+	import ArrowRight from '@lucide/svelte/icons/arrow-right';
+	import ChevronDown from '@lucide/svelte/icons/chevron-down';
+	import { cn } from '$lib/utils.js';
+	import Icon, { iconExists } from '$lib/widgets/display/Icon.svelte';
+	import Avatar from '$lib/widgets/display/Avatar.svelte';
+	import Funnel from '$lib/widgets/data/Funnel.svelte';
+	import Table from '$lib/widgets/data/Table.svelte';
+	import Delta from '$lib/widgets/data-kit/Delta.svelte';
+	import { plain } from '$lib/widgets/data-kit/format.js';
+	import {
+		funnelStages,
+		moreLabel,
+		readCurrency,
+		readDeals,
+		readLeaders,
+		readQuota,
+		readRates,
+		readTicker,
+		usableFunnel,
+		type Leader
+	} from './pipeline-dashboard.js';
 
-  interface Quota {
-    label?: string;
-    current: number;
-    target: number;
-    currency?: string;
-    period?: string;
-  }
+	interface Props {
+		id?: string;
+		class?: string;
+		style?: Record<string, string> | string;
+		title?: string;
+		subtitle?: string;
+		period?: string;
+		quota?: { label?: string; current: number; target: number; currency?: string; period?: string };
+		funnel?: { stages: Array<{ label: string; value: number; color?: string }>; title?: string };
+		conversion?: Array<{ from: string; to: string; rate: number }>;
+		leaderboard?: { title?: string; items: Array<Record<string, unknown>> };
+		deals?: { title?: string; columns: Array<{ key: string; label: string; align?: 'left' | 'right' | 'center' }>; rows: Record<string, unknown>[] };
+		ticker?: Array<{ time: string; label: string; actor?: string; icon?: string }>;
+	}
 
-  interface Stage {
-    label: string;
-    value: number;
-    color?: string;
-  }
+	let { id, class: className, style, title, subtitle, period, quota, funnel, conversion, leaderboard, deals, ticker }: Props = $props();
 
-  interface Conversion {
-    from: string;
-    to: string;
-    rate: number; // 0..100
-  }
+	const CAP = { leaders: 5, deals: 6, events: 4 };
 
-  interface LeaderItem {
-    name: string;
-    avatar?: string;
-    value: string | number;
-    delta?: string;
-    sublabel?: string;
-    position?: number;
-  }
+	const rootStyle = $derived(
+		style && typeof style === 'object'
+			? safeStyle(Object.entries(style).map(([k, v]) => `${k}:${v}`).join(';'))
+			: safeStyle(typeof style === 'string' ? style : '')
+	);
+	const heading = $derived(plain(title));
+	const sub = $derived(plain(subtitle));
+	const per = $derived(plain(period));
 
-  interface Leaderboard {
-    title?: string;
-    items: LeaderItem[];
-  }
+	const q = $derived(readQuota(quota));
+	const stages = $derived(funnelStages(funnel));
+	const funnelTitle = $derived(plain((funnel as { title?: unknown } | undefined)?.title) || 'Pipeline');
+	const rates = $derived(usableFunnel(stages) ? [] : readRates(conversion));
+	const board = $derived(leaderboard && typeof leaderboard === 'object' ? leaderboard : undefined);
+	const leaders = $derived(readLeaders(board?.items, readCurrency(quota?.currency)));
+	const d = $derived(readDeals(deals, readCurrency(quota?.currency)));
+	const events = $derived(readTicker(ticker));
+	const empty = $derived(!q && !stages.length && !rates.length && !leaders.length && !d.rows.length && !events.length);
 
-  interface TableConfig {
-    title?: string;
-    columns: { key: string; label: string; align?: 'left' | 'right' | 'center' }[];
-    rows: Record<string, unknown>[];
-  }
+	let open = $state({ leaders: false, deals: false, events: false });
+	const cut = <T,>(list: T[], key: keyof typeof CAP) => (open[key] ? list : list.slice(0, CAP[key]));
 
-  interface TickerItem {
-    time: string;
-    label: string;
-    actor?: string;
-    icon?: string;
-  }
+	const leaderText = (l: Leader) => [l.rank, l.name || 'Unnamed', l.value ?? 'n/a', l.delta, l.sublabel].filter(Boolean).join(', ');
 
-  interface Props {
-    id?: string;
-    class?: string;
-    style?: Record<string, string>;
-    title?: string;
-    subtitle?: string;
-    period?: string;
-    quota?: Quota;
-    funnel?: { stages: Stage[]; title?: string };
-    conversion?: Conversion[];
-    leaderboard?: Leaderboard;
-    deals?: TableConfig;
-    ticker?: TickerItem[];
-  }
-
-  let {
-    id,
-    class: className,
-    style,
-    title,
-    subtitle,
-    period,
-    quota,
-    funnel,
-    conversion = [],
-    leaderboard,
-    deals,
-    ticker = []
-  }: Props = $props();
-
-  const styleString = $derived(
-    style ? Object.entries(style).map(([k, v]) => `${k}:${v}`).join(';') : undefined
-  );
-
-  function fmtCurrency(n: number, currency: string = '$'): string {
-    if (n >= 1_000_000) return `${currency}${(n / 1_000_000).toFixed(1)}M`;
-    if (n >= 1_000) return `${currency}${(n / 1_000).toFixed(0)}k`;
-    return `${currency}${n}`;
-  }
-
-  function initials(name: string): string {
-    return name.split(/\s+/).filter(Boolean).slice(0, 2).map((n) => n[0]?.toUpperCase()).join('');
-  }
-
-  const quotaPct = $derived(quota ? Math.min(100, Math.max(0, (quota.current / quota.target) * 100)) : 0);
-  const onTrack = $derived(quotaPct >= 70);
+	const sec = 'flex min-w-0 flex-col gap-3 border-t border-ripple-border pt-4 first:border-t-0 first:pt-0';
+	const row = 'border-b border-ripple-border last:border-b-0';
 </script>
 
-<div {id} class={cn('rpipe', className)} style={styleString}>
-  {#if title || subtitle || period}
-    <header class="rpipe-header">
-      <div>
-        {#if title}<h1 class="rpipe-title">{title}</h1>{/if}
-        {#if subtitle}<p class="rpipe-subtitle">{subtitle}</p>{/if}
-      </div>
-      {#if period}
-        <span class="rpipe-period">
-          <Icon name="calendar" size={12} />
-          {period}
-        </span>
-      {/if}
-    </header>
-  {/if}
+{#snippet label(text: string, count?: number)}
+	<h4 class="m-0 text-caption-1 font-semibold uppercase tracking-[0.04em] text-ripple-muted-foreground [overflow-wrap:break-word]">
+		{text}{#if count}<span class="font-normal tabular-nums">{' · '}{count}</span>{/if}
+	</h4>
+{/snippet}
 
-  {#if quota || leaderboard}
-    <div class={cn('rpipe-top', quota && leaderboard ? 'rpipe-top-2' : 'rpipe-top-1')}>
-      {#if quota}
-        <div class="rpipe-quota">
-          <div class="rpipe-quota-head">
-            <div>
-              <div class="rpipe-quota-label">{quota.label ?? 'Quota'}</div>
-              {#if quota.period}<div class="rpipe-quota-period">{quota.period}</div>{/if}
-            </div>
-            <div class="rpipe-quota-pct">
-              <span class={cn('rpipe-quota-pct-num', onTrack ? 'rpipe-on-track' : 'rpipe-off-track')}>{Math.round(quotaPct)}%</span>
-              <span class="rpipe-quota-pct-label">of target</span>
-            </div>
-          </div>
-          <div class="rpipe-quota-bar">
-            <div class={cn('rpipe-quota-fill', onTrack ? 'rpipe-fill-on' : 'rpipe-fill-off')} style={safeStyle(`width:${quotaPct}%`)}></div>
-          </div>
-          <div class="rpipe-quota-foot">
-            <div>
-              <span class="rpipe-quota-current">{fmtCurrency(quota.current, quota.currency)}</span>
-              <span class="rpipe-quota-sep"> / </span>
-              <span class="rpipe-quota-target">{fmtCurrency(quota.target, quota.currency)}</span>
-            </div>
-            <div class="rpipe-quota-remaining">
-              {fmtCurrency(Math.max(0, quota.target - quota.current), quota.currency)} to go
-            </div>
-          </div>
-        </div>
-      {/if}
-      {#if leaderboard}
-        <div class="rpipe-card">
-          <div class="rpipe-card-title">{leaderboard.title ?? 'Leaderboard'}</div>
-          <ol class="rpipe-leader">
-            {#each leaderboard.items as item, i}
-              {@const pos = item.position ?? i + 1}
-              <li class={cn('rpipe-leader-item', pos === 1 && 'rpipe-leader-1', pos === 2 && 'rpipe-leader-2', pos === 3 && 'rpipe-leader-3')}>
-                <span class="rpipe-leader-pos">{pos}</span>
-                {#if item.avatar}
-                  <img src={safeUrl(item.avatar, { kind: 'resource' })} alt={item.name} class="rpipe-leader-avatar" />
-                {:else}
-                  <span class="rpipe-leader-initials">{initials(item.name)}</span>
-                {/if}
-                <div class="rpipe-leader-body">
-                  <div class="rpipe-leader-name">{item.name}</div>
-                  {#if item.sublabel}<div class="rpipe-leader-sub">{item.sublabel}</div>{/if}
-                </div>
-                <div class="rpipe-leader-stat">
-                  <span class="rpipe-leader-value">{item.value}</span>
-                  {#if item.delta}<span class="rpipe-leader-delta">{item.delta}</span>{/if}
-                </div>
-              </li>
-            {/each}
-          </ol>
-        </div>
-      {/if}
-    </div>
-  {/if}
+{#snippet more(key: keyof typeof CAP, total: number, noun: string)}
+	{#if total > CAP[key]}
+		<button
+			type="button"
+			aria-expanded={open[key]}
+			onclick={() => (open[key] = !open[key])}
+			class="group -mx-1.5 -my-1 inline-flex min-h-8 items-center gap-1 self-start rounded-md px-1.5 text-callout font-medium text-ripple-surface-foreground transition-colors hover:bg-ripple-track focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ripple-ring active:bg-ripple-border"
+		>
+			{open[key] ? 'Show fewer' : moreLabel(total, CAP[key], noun)}
+			<ChevronDown size={14} aria-hidden="true" class="shrink-0 text-ripple-muted-foreground transition-transform duration-200 ease-(--ripple-ease-out) group-aria-expanded:rotate-180 motion-reduce:transition-none" />
+		</button>
+	{/if}
+{/snippet}
 
-  {#if funnel}
-    <div class={cn('rpipe-funnel-row', conversion.length > 0 ? 'rpipe-funnel-row-2' : 'rpipe-funnel-row-1')}>
-      <div class="rpipe-card">
-        <div class="rpipe-card-title">{funnel.title ?? 'Funnel'}</div>
-        <Funnel
-          data={funnel.stages.map((s) => ({ label: s.label, value: s.value }))}
-          colors={funnel.stages.map((s) => s.color).filter((c): c is string => Boolean(c))}
-        />
-      </div>
-      {#if conversion.length > 0}
-        <div class="rpipe-card">
-          <div class="rpipe-card-title">Conversion</div>
-          <ul class="rpipe-conv">
-            {#each conversion as c}
-              <li class="rpipe-conv-item">
-                <span class="rpipe-conv-stages">
-                  {c.from}
-                  <Icon name="arrow-right" size={11} />
-                  {c.to}
-                </span>
-                <span class={cn('rpipe-conv-rate', c.rate >= 50 ? 'rpipe-conv-good' : c.rate >= 25 ? 'rpipe-conv-mid' : 'rpipe-conv-low')}>
-                  {c.rate.toFixed(1)}%
-                </span>
-              </li>
-            {/each}
-          </ul>
-        </div>
-      {/if}
-    </div>
-  {/if}
+<div {id} data-ripple-node={id} class={cn('@container flex w-full min-w-0 flex-col gap-4 text-ripple-surface-foreground', className)} style={rootStyle} data-widget="pipeline-dashboard">
+	{#if heading || sub || per}
+		<header class="flex min-w-0 flex-col gap-1 @min-[480px]:grid @min-[480px]:grid-cols-[minmax(0,1fr)_auto] @min-[480px]:items-baseline @min-[480px]:gap-x-4">
+			{#if heading}<h3 class="m-0 text-title-3 font-semibold text-pretty [overflow-wrap:break-word]">{heading}</h3>{/if}
+			{#if sub}<p class="m-0 text-callout text-pretty text-ripple-muted-foreground [overflow-wrap:break-word] @min-[480px]:col-start-1">{sub}</p>{/if}
+			{#if per}<p class="m-0 text-callout text-ripple-muted-foreground @min-[480px]:col-start-2 @min-[480px]:row-start-1 @min-[480px]:max-w-[16rem] @min-[480px]:text-right">{per}</p>{/if}
+		</header>
+	{/if}
 
-  {#if deals}
-    <div class="rpipe-card">
-      {#if deals.title}<div class="rpipe-card-title">{deals.title}</div>{/if}
-      <Table columns={deals.columns} rows={deals.rows} />
-    </div>
-  {/if}
+	{#if empty}
+		<p class="m-0 text-callout text-ripple-muted-foreground">No pipeline data yet</p>
+	{:else}
+		<div class="flex min-w-0 flex-col gap-4 {heading || sub || per ? 'border-t border-ripple-border pt-4' : ''}">
+			{#if q}
+				<section class={sec} data-slot="quota">
+					<h4 class="m-0 text-caption-1 font-semibold tracking-[0.04em] text-pretty text-ripple-muted-foreground [overflow-wrap:break-word]">
+						<span class="uppercase">{q.label}</span>{#if q.period}<span class="font-normal tracking-normal">{' · '}{q.period}</span>{/if}
+					</h4>
+					<div class="flex items-baseline justify-between gap-3">
+						<p class="m-0 min-w-0">
+							<span class="whitespace-nowrap text-title-2 font-semibold tabular-nums">{q.current}</span>
+							{#if q.target}<span class="whitespace-nowrap text-body text-ripple-muted-foreground tabular-nums">of {q.target}</span>{/if}
+						</p>
+						{#if q.pctText}<span class="shrink-0 text-title-3 font-semibold tabular-nums">{q.pctText}</span>{/if}
+					</div>
+					{#if q.pct !== undefined}
+						<div
+							role="progressbar"
+							aria-label={q.label}
+							aria-valuemin={0}
+							aria-valuemax={100}
+							aria-valuenow={Math.min(100, Math.round(q.pct))}
+							aria-valuetext="{q.current} of {q.target}, {q.pctText?.replace('%', ' percent')}"
+							class="h-2 overflow-hidden rounded-full bg-ripple-track"
+						>
+							<div class="h-full rounded-full bg-ripple-accent transition-[width] duration-200 ease-(--ripple-ease-out) motion-reduce:transition-none" style:width="{Math.min(100, q.pct)}%"></div>
+						</div>
+						{#if q.met}
+							<p class="m-0 flex items-center gap-1 text-callout font-medium text-ripple-success-text" data-slot="quota-foot"><Check size={14} strokeWidth={2.5} aria-hidden="true" />{q.foot}</p>
+						{:else}
+							<p class="m-0 text-callout text-ripple-muted-foreground tabular-nums" data-slot="quota-foot">{q.foot}</p>
+						{/if}
+					{/if}
+				</section>
+			{/if}
 
-  {#if ticker.length > 0}
-    <div class="rpipe-card">
-      <div class="rpipe-card-title">Live activity</div>
-      <ol class="rpipe-ticker">
-        {#each ticker as t}
-          <li class="rpipe-ticker-item">
-            <span class="rpipe-ticker-dot"></span>
-            <div class="rpipe-ticker-body">
-              <div class="rpipe-ticker-row">
-                <span class="rpipe-ticker-label">
-                  {#if t.icon}<Icon name={t.icon} size={11} />{/if}
-                  {t.label}
-                </span>
-                <span class="rpipe-ticker-time">{t.time}</span>
-              </div>
-              {#if t.actor}<span class="rpipe-ticker-actor">{t.actor}</span>{/if}
-            </div>
-          </li>
-        {/each}
-      </ol>
-    </div>
-  {/if}
+			{#if stages.length}
+				<section class={sec} data-slot="funnel">
+					{@render label(funnelTitle)}
+					<Funnel data={stages} />
+				</section>
+			{/if}
+
+			{#if rates.length}
+				<section class={sec} data-slot="conversion">
+					{@render label('Conversion')}
+					<ul class="m-0 flex list-none flex-col p-0">
+						{#each rates as r (r.key)}
+							<li class="flex items-baseline justify-between gap-3 py-2 first:pt-0 last:pb-0 {row}">
+								<span class="min-w-0 text-body [overflow-wrap:break-word]">
+									{#if r.from && r.to}{r.from}<ArrowRight size={12} class="mx-1 inline-block align-[-1px] text-ripple-muted-foreground" aria-hidden="true" /><span class="sr-only">{' to '}</span>{r.to}{:else if r.from}From {r.from}{:else}To {r.to}{/if}
+								</span>
+								<span class="shrink-0 text-body font-medium tabular-nums {r.lowest ? 'text-ripple-accent-text' : ''}">{r.text}</span>
+							</li>
+						{/each}
+					</ul>
+				</section>
+			{/if}
+
+			{#if leaders.length}
+				<section class={sec} data-slot="leaderboard">
+					{@render label(plain(board?.title) || 'Leaderboard', leaders.length)}
+					<ol class="m-0 flex list-none flex-col p-0">
+						{#each cut(leaders, 'leaders') as l (l.key)}
+							<li aria-label={leaderText(l)} class="grid min-h-11 grid-cols-[1.5rem_1.75rem_minmax(0,1fr)_auto] items-center gap-x-3 py-1.5 @min-[480px]:min-h-9 @min-[480px]:py-1 {row}">
+								<span aria-hidden="true" class="flex items-center justify-center self-center tabular-nums" data-slot="rank">
+									{#if l.rank <= 3}
+										<span class="inline-flex size-5 items-center justify-center rounded-full bg-ripple-track text-footnote font-semibold">{l.rank}</span>
+									{:else}
+										<span class="text-footnote text-ripple-muted-foreground">{l.rank}</span>
+									{/if}
+								</span>
+								<span aria-hidden="true" class="contents"><Avatar src={safeUrl(l.avatar, { kind: 'resource' })} alt={l.name} class="size-7 text-[11px]" /></span>
+								<span aria-hidden="true" class="flex min-w-0 flex-col @min-[480px]:flex-row @min-[480px]:items-baseline @min-[480px]:gap-x-2">
+									<span class="min-w-0 truncate text-body {l.name ? '' : 'pr-1 italic text-ripple-muted-foreground'}" title={l.name || undefined}>{l.name || 'Unnamed'}</span>
+									{#if l.sublabel}<span class="min-w-0 text-callout text-ripple-muted-foreground [overflow-wrap:break-word] @min-[480px]:shrink-[999] @min-[480px]:truncate" title={l.sublabel}>{l.sublabel}</span>{/if}
+								</span>
+								<span aria-hidden="true" class="flex flex-col items-end gap-0.5 @min-[480px]:flex-row-reverse @min-[480px]:items-baseline @min-[480px]:gap-2">
+									{#if l.value}<span class="whitespace-nowrap text-body font-medium tabular-nums">{l.value}</span>{:else}<span class="text-callout text-ripple-muted-foreground">n/a</span>{/if}
+									{#if l.delta}<Delta text={l.delta} dir={l.dir} sentiment="neutral" arrow={false} class="bg-transparent px-0 py-0" />{/if}
+								</span>
+							</li>
+						{/each}
+					</ol>
+					{@render more('leaders', leaders.length, 'more')}
+				</section>
+			{/if}
+
+			{#if d.rows.length}
+				<section class={sec} data-slot="deals">
+					{@render label(d.title || 'Deals', d.rows.length)}
+					<Table layout="stack" columns={d.columns} rows={cut(d.rows, 'deals')} />
+					{@render more('deals', d.rows.length, 'more')}
+				</section>
+			{/if}
+
+			{#if events.length}
+				<section class={sec} data-slot="activity">
+					{@render label('Recent activity', events.length)}
+					<ol class="m-0 flex list-none flex-col p-0">
+						{#each cut(events, 'events') as e (e.key)}
+							<li class="grid grid-cols-[1rem_minmax(0,1fr)] gap-x-3 py-2 first:pt-0 last:pb-0 @min-[480px]:grid-cols-[1rem_minmax(0,1fr)_auto] {row}">
+								<span class="flex h-[1lh] items-center justify-center text-body text-ripple-muted-foreground" aria-hidden="true" data-slot="event-icon">
+									{#if iconExists(e.icon)}<Icon name={e.icon} size={14} />{:else}<span class="size-1.5 rounded-full bg-ripple-muted-foreground"></span>{/if}
+								</span>
+								<div class="min-w-0">
+									<p class="m-0 text-body text-pretty [overflow-wrap:break-word]">{e.label}</p>
+									{#if e.actor || e.time}
+										<p class="m-0 text-callout text-ripple-muted-foreground">
+											{e.actor}{#if e.time}<span class="@min-[480px]:hidden">{e.actor ? ' · ' : ''}<span class="whitespace-nowrap">{e.time}</span></span>{/if}
+										</p>
+									{/if}
+								</div>
+								{#if e.time}<span class="hidden text-right text-callout whitespace-nowrap text-ripple-muted-foreground tabular-nums @min-[480px]:block">{e.time}</span>{/if}
+							</li>
+						{/each}
+					</ol>
+					{@render more('events', events.length, 'earlier')}
+				</section>
+			{/if}
+		</div>
+	{/if}
 </div>
-
-<style>
-  .rpipe {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    width: 100%;
-  }
-  .rpipe-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 12px;
-    flex-wrap: wrap;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 12px;
-  }
-  .rpipe-title { font-size: 22px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
-  .rpipe-subtitle { font-size: 13px; color: var(--muted-foreground); margin: 4px 0 0; }
-  .rpipe-period {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    height: 32px;
-    padding: 0 12px;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    background: var(--card);
-    font-size: 12.5px;
-  }
-
-  .rpipe-top { display: grid; gap: 14px; grid-template-columns: 1fr; }
-  @media (min-width: 920px) {
-    .rpipe-top-2 { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); }
-  }
-
-  .rpipe-quota {
-    padding: 22px 24px;
-    border-radius: 14px;
-    border: 1px solid var(--border);
-    background: linear-gradient(180deg, color-mix(in oklab, oklch(0.55 0.18 250) 7%, var(--card)) 0%, var(--card) 100%);
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  .rpipe-quota-head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 12px;
-  }
-  .rpipe-quota-label {
-    font-size: 11.5px;
-    color: var(--muted-foreground);
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-  }
-  .rpipe-quota-period {
-    font-size: 12px;
-    color: var(--muted-foreground);
-    margin-top: 2px;
-  }
-  .rpipe-quota-pct {
-    text-align: right;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-  }
-  .rpipe-quota-pct-num {
-    font-size: 36px;
-    font-weight: 700;
-    line-height: 1;
-    font-variant-numeric: tabular-nums;
-    letter-spacing: -0.02em;
-  }
-  .rpipe-on-track { color: oklch(0.55 0.18 150); }
-  .rpipe-off-track { color: oklch(0.6 0.2 50); }
-  .rpipe-quota-pct-label {
-    font-size: 11px;
-    color: var(--muted-foreground);
-    margin-top: 1px;
-  }
-  .rpipe-quota-bar {
-    height: 14px;
-    background: var(--muted);
-    border-radius: 999px;
-    overflow: hidden;
-  }
-  .rpipe-quota-fill {
-    height: 100%;
-    border-radius: 999px;
-    transition: width 0.6s cubic-bezier(.2,.8,.2,1);
-  }
-  .rpipe-fill-on { background: linear-gradient(90deg, oklch(0.6 0.18 150), oklch(0.55 0.18 150)); }
-  .rpipe-fill-off { background: linear-gradient(90deg, oklch(0.65 0.2 50), oklch(0.55 0.2 50)); }
-  .rpipe-quota-foot {
-    display: flex;
-    justify-content: space-between;
-    font-size: 13px;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-  .rpipe-quota-current { font-weight: 700; color: var(--foreground); font-variant-numeric: tabular-nums; }
-  .rpipe-quota-sep { color: var(--muted-foreground); }
-  .rpipe-quota-target { color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
-  .rpipe-quota-remaining { color: var(--muted-foreground); }
-
-  .rpipe-card {
-    padding: 16px 18px;
-    border-radius: 12px;
-    border: 1px solid var(--border);
-    background: var(--card);
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    min-width: 0;
-  }
-  .rpipe-card-title {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--muted-foreground);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  /* Leaderboard */
-  .rpipe-leader {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  .rpipe-leader-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 10px;
-    border-radius: 10px;
-    background: color-mix(in oklab, var(--muted) 30%, transparent);
-  }
-  .rpipe-leader-1 { background: linear-gradient(90deg, color-mix(in oklab, oklch(0.78 0.16 90) 25%, transparent), transparent); }
-  .rpipe-leader-2 { background: linear-gradient(90deg, color-mix(in oklab, oklch(0.7 0.04 250) 18%, transparent), transparent); }
-  .rpipe-leader-3 { background: linear-gradient(90deg, color-mix(in oklab, oklch(0.6 0.12 50) 18%, transparent), transparent); }
-  .rpipe-leader-pos {
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background: var(--card);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11.5px;
-    font-weight: 700;
-    flex-shrink: 0;
-    color: var(--muted-foreground);
-    border: 1px solid var(--border);
-  }
-  .rpipe-leader-1 .rpipe-leader-pos { background: oklch(0.78 0.16 90); color: white; border-color: transparent; }
-  .rpipe-leader-2 .rpipe-leader-pos { background: oklch(0.7 0.04 250); color: white; border-color: transparent; }
-  .rpipe-leader-3 .rpipe-leader-pos { background: oklch(0.6 0.12 50); color: white; border-color: transparent; }
-  .rpipe-leader-avatar,
-  .rpipe-leader-initials {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    object-fit: cover;
-    background: var(--muted);
-    color: var(--foreground);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    font-weight: 600;
-    flex-shrink: 0;
-  }
-  .rpipe-leader-body {
-    flex: 1;
-    min-width: 0;
-  }
-  .rpipe-leader-name {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--foreground);
-  }
-  .rpipe-leader-sub {
-    font-size: 11px;
-    color: var(--muted-foreground);
-  }
-  .rpipe-leader-stat {
-    text-align: right;
-    display: flex;
-    flex-direction: column;
-  }
-  .rpipe-leader-value {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--foreground);
-    font-variant-numeric: tabular-nums;
-  }
-  .rpipe-leader-delta {
-    font-size: 10.5px;
-    color: var(--muted-foreground);
-  }
-
-  .rpipe-funnel-row { display: grid; gap: 12px; grid-template-columns: 1fr; }
-  @media (min-width: 920px) {
-    .rpipe-funnel-row-2 { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); }
-  }
-
-  /* Conversion */
-  .rpipe-conv {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  .rpipe-conv-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    padding: 8px 10px;
-    border-radius: 8px;
-    background: color-mix(in oklab, var(--muted) 30%, transparent);
-  }
-  .rpipe-conv-stages {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 12.5px;
-    color: var(--foreground);
-  }
-  .rpipe-conv-rate {
-    font-size: 14px;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-  }
-  .rpipe-conv-good { color: oklch(0.55 0.18 150); }
-  .rpipe-conv-mid { color: oklch(0.55 0.18 70); }
-  .rpipe-conv-low { color: oklch(0.55 0.22 25); }
-
-  /* Ticker */
-  .rpipe-ticker {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    max-height: 280px;
-    overflow-y: auto;
-  }
-  .rpipe-ticker-item {
-    display: flex;
-    gap: 10px;
-    align-items: flex-start;
-  }
-  .rpipe-ticker-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: oklch(0.55 0.18 250);
-    margin-top: 6px;
-    flex-shrink: 0;
-    box-shadow: 0 0 0 3px color-mix(in oklab, oklch(0.55 0.18 250) 18%, transparent);
-  }
-  .rpipe-ticker-body { flex: 1; min-width: 0; }
-  .rpipe-ticker-row {
-    display: flex;
-    justify-content: space-between;
-    gap: 10px;
-    align-items: baseline;
-  }
-  .rpipe-ticker-label {
-    font-size: 13px;
-    color: var(--foreground);
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-  }
-  .rpipe-ticker-time {
-    font-size: 11px;
-    color: var(--muted-foreground);
-    font-variant-numeric: tabular-nums;
-  }
-  .rpipe-ticker-actor {
-    font-size: 11.5px;
-    color: var(--muted-foreground);
-  }
-</style>
