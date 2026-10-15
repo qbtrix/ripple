@@ -51,7 +51,9 @@ export const CHECK_IDS = [
 	'overflow',
 	'clippedText',
 	'emptyContainers',
-	'badText'
+	'badText',
+	'smallText',
+	'wideMeasure'
 ] as const;
 
 export const waivers: readonly Waiver[] = [
@@ -129,7 +131,7 @@ export const lenses: readonly Lens[] = [
 	{ id: 'data-truth', question: 'Is every given fact still there and unchanged, and do the words agree with the data?' },
 	{ id: 'dates', question: 'Is every invented date on or before today, unless it is a forecast that says it is a sample?' },
 	{ id: 'numbers', question: 'Is every number rounded, carrying its unit or currency, and the same wherever it repeats?' },
-	{ id: 'layout', question: 'Does the card read at 360 px and at 720 px with nothing cut, squeezed or past its edge?' },
+	{ id: 'layout', question: 'Does the card read at 360 px, 720 px and 1,400 px with nothing cut, squeezed, stretched or past its edge?' },
 	{ id: 'hierarchy', question: 'Is there one heading per section and one primary action, with each value outweighing its label?' },
 	{ id: 'density', question: 'Is every element bound to real data or an action, with no dead region and no filler?' },
 	{ id: 'states', question: 'Do empty, error and edge cases show something honest instead of a blank, NaN or raw JSON?' },
@@ -162,14 +164,22 @@ export const rules: readonly CraftRule[] = [
 		text: "A designed sideways scroll is the widget's, not yours, and the audit still counts it."
 	},
 	{ id: 'inputs-full-row', lens: 'layout', text: 'Inputs get a full row or a 2-column grid.' },
+	{ id: 'readable-measure', lens: 'layout', check: 'wideMeasure', text: 'A line of text stops at about 70 characters, however wide the card.' },
 	// 3. Hierarchy
 	{ id: 'answer-leads', lens: 'answer', text: 'The answer leads.' },
 	{ id: 'one-primary-action', lens: 'hierarchy', text: 'One primary action per card.' },
 	{ id: 'one-heading-per-section', lens: 'hierarchy', text: 'One heading per section, most important section first.' },
 	{ id: 'colour-is-data', lens: 'themes', text: 'Colour encodes data or state only.' },
+	{
+		id: 'type-scale',
+		lens: 'hierarchy',
+		check: 'smallText',
+		text: 'Body and values at least 14 px, meta 13 px, chips and labels 12 px, and key numbers clearly larger than their labels.'
+	},
 	// 4. Density and fill
 	{ id: 'every-element-bound', lens: 'density', text: 'Every element is bound to a data field or an action.' },
 	{ id: 'no-dead-region', lens: 'density', check: 'emptyContainers', text: 'No dead region.' },
+	{ id: 'wide-fills', lens: 'density', text: 'At a wide desktop width every region uses its width or caps it.' },
 	{ id: 'dashboards-not-stat-rows', lens: 'density', text: 'Dashboards are more than a stat row.' },
 	{ id: 'phone-tiles-pair', lens: 'layout', text: 'On a phone, tiles pair up.' },
 	// 5. Numbers, money and units

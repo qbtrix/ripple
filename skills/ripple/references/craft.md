@@ -2,7 +2,7 @@
 
 Every rule names the card that taught it. F-numbers are faults from two audits of 60 generated cards each
 (October 2026); "G:" marks a fault found by rendering the gallery recordings with `scripts/render.mjs`; "A/B:" marks
-one found while testing this skill on six small cards. "Enforcer" is what catches it mechanically; "eyes" means
+one found while testing this skill on six small cards; "W:" marks one found reviewing cards on a wide desktop. "Enforcer" is what catches it mechanically; "eyes" means
 only a look at the screenshot does.
 
 Each rule carries its id as `rule:<id>`. The same ids live in Ripple's manifest (`craft.rules`, with the lens a
@@ -57,8 +57,8 @@ is missing from the manifest or a manifest id is missing here.
 
 ## 2. Layout and width
 
-- **The card must read at 360 px and at 720 px.** `rule:reads-at-phone` The render script shoots 380 and 1024 viewports, which give a card
-  surface of about 322 and 623 px. Long turn-by-turn text ran off the table edge (F4); NDA table cells were cut
+- **The card must read at 360 px and at 720 px.** `rule:reads-at-phone` The render script shoots 380, 1024 and 1440 viewports, which give a
+  card surface of about 322, 983 and 1,399 px. Long turn-by-turn text ran off the table edge (F4); NDA table cells were cut
   mid-word (F12). Enforcer: `render.mjs` `overflow` and `clippedText`.
 - **Tile rows wrap.** `rule:tile-rows-wrap` For a row of tiles use `"columns": "repeat(auto-fit, minmax(150px, 1fr))"` (260px for cards side
   by side); otherwise at most 2 fixed columns. A 4-column grid of stats is 80 px a tile on a phone. Set `wrap: true` on
@@ -79,6 +79,10 @@ is missing from the manifest or a manifest id is missing here.
   and `waiver:data-grid/overflow` (a wide table); the manifest's `waivers` lists them with their reasons.
 - **Inputs get a full row or a 2-column grid.** `rule:inputs-full-row` A number input beside a long label squeezes both; a slider thumb must
   never sit on a label (F13).
+- **A line of text stops at about 70 characters, however wide the card.** `rule:readable-measure` A chat card on a
+  big desktop is about 1,400 px wide, and a paragraph that stretches with it gives 150-character lines the eye
+  cannot track back across. Cap the text column at a readable measure, or use a grid that adds columns as the card
+  widens instead of stretching one. Enforcer: `wideMeasure` (a text line wider than 75 characters).
 
 ## 3. Hierarchy
 
@@ -92,6 +96,12 @@ is missing from the manifest or a manifest id is missing here.
   muted, values large; a label never outweighs its value (G: `quote-builder` item titles are larger than the line
   totals they explain).
 - **Colour encodes data or state only.** `rule:colour-is-data` No decorative tints. A brown "coffee" tint on a panel (F18) was a token fault.
+- **Text has a floor at every width.** `rule:type-scale` Body and value text at least 14 px, secondary and meta text
+  at least 13 px, chip and label text at least 12 px, and the numbers that matter (prices, totals, key values)
+  clearly larger than their labels. W: a comparison card at about 1,400 px wide set its meta text at 12 to 13 px;
+  on a wide card small text reads as smaller still, because the eye travels further between pieces. Enforcer:
+  `smallText` (visible text under 12 px, with its size); the 13 and 14 px floors and the number weight are eyes on
+  the 1440 shots. A widget whose own text is under the floor is a widget fault for the final answer's list.
 
 ## 4. Density and fill
 
@@ -100,6 +110,11 @@ is missing from the manifest or a manifest id is missing here.
   three chips, "Metric 1/2/3") and "flat" (one white card, a paragraph, a button).
 - **No dead region.** `rule:no-dead-region` No empty lower half, no chart plot under about a third of its card, no empty photo box (F18).
   Enforcer: `emptyContainers` (in-flow boxes 40 px or more with nothing in them).
+- **At a wide desktop width every region uses its width or caps it.** `rule:wide-fills` W: the same comparison
+  card left most of its best-pick row empty at about 1,400 px: one short line of text in a full-width band. A hero
+  or best-pick region lays its facts out across the width (a grid that adds columns) or caps its width and sits
+  beside something. Enforcer: eyes on the 1440 shots; `emptyContainers` only sees boxes with nothing in them, not
+  a box that is mostly empty.
 - **Dashboards are more than a stat row.** `rule:dashboards-not-stat-rows` Plain stat rows with the same number twice (F17) is the generic look;
   `exec-dashboard` from raw rows gives KPIs with deltas, a chart, a breakdown and a table that agree.
 - **On a phone, tiles pair up.** `rule:phone-tiles-pair` G: `sales-dashboard` at 380 stacked its 4 KPI tiles one per row (fixed since: two a row), 4 screens of

@@ -1,6 +1,6 @@
 ---
 name: ripple
-description: Write crafted Ripple specs (the {version, state, ui} JSON that Ripple renders as an interactive card) by picking the right widget first, then rendering the spec, auditing it mechanically, looking at its own screenshots at phone and desktop width in light and dark, fixing, and repeating until a round is clean. Use whenever you write or improve a Ripple spec, a generative UI card, a chat answer drawn as UI, a gallery fixture or a widget example, even if the request only says "make a card for X" or "build a small tool".
+description: Write crafted Ripple specs (the {version, state, ui} JSON that Ripple renders as an interactive card) by picking the right widget first, then rendering the spec, auditing it mechanically, looking at its own screenshots at phone, desktop and wide desktop width in light and dark, fixing, and repeating until a round is clean. Use whenever you write or improve a Ripple spec, a generative UI card, a chat answer drawn as UI, a gallery fixture or a widget example, even if the request only says "make a card for X" or "build a small tool".
 license: MIT
 compatibility: Works in Claude Code, Codex and OpenCode. Needs Node 20+ and Playwright with Chromium in the project you run it from (npm i -D playwright && npx playwright install chromium). axe-core is optional.
 ---
@@ -27,7 +27,7 @@ screenshots; fix; repeat until a round finds nothing. The words and the script h
 
 ## The quality bar
 
-A card is done when all of these hold, in both themes, at both widths:
+A card is done when all of these hold, in both themes, at every width:
 
 - **It is the right archetype.** A trip is an `itinerary`, a split bill a `bill-split`, a report an
   `exec-dashboard`, plans a `pricing-table`. A primitive tree is only for what no widget does.
@@ -38,6 +38,9 @@ A card is done when all of these hold, in both themes, at both widths:
 - **Nothing is cut, clipped, empty or leaked.** No ellipsis eating words, nothing past the card edge, no blank box,
   no NaN, `undefined`, `[object Object]` or raw JSON, no error box.
 - **It reads at 360 px.** Tiles wrap, inputs get a row, no sideways scroll.
+- **It reads at 1,400 px.** A chat card on a big desktop is that wide. Body and value text at least 14 px, meta
+  13 px, chips and labels 12 px, key numbers (a price, a total) clearly larger than their labels. No text line past
+  about 70 characters, and no region (a best pick, a hero) left mostly empty: it uses its width or caps it.
 - **It is real.** Fictional but specific names and numbers, never "Person 1", "Item A", lorem ipsum or a real brand
   with a made-up price. Dates are plausible against today.
 
@@ -139,11 +142,11 @@ and which you will invent (fictional, plausible, never after today).
 ### 4. Render and audit
 
 ```sh
-node <skill>/scripts/render.mjs <spec.json> <outdir> [--base <url>] [--widths 380,1024] [--themes light,dark]
+node <skill>/scripts/render.mjs <spec.json> <outdir> [--base <url>] [--widths 380,1024,1440] [--themes light,dark]
 ```
 
-It opens the playground with the spec in the link, shoots only the preview surface at 380 and 1024 wide, light and
-dark (`<outdir>/380-light.png`, `<outdir>/1024-dark.png`, ...), writes `<outdir>/audit.json`, prints the same JSON
+It opens the playground with the spec in the link, shoots only the preview surface at 380, 1024 and 1440 wide,
+light and dark (`<outdir>/380-light.png`, `<outdir>/1440-dark.png`, ...), writes `<outdir>/audit.json`, prints the same JSON
 and exits 0 when clean, 1 when any count is non-zero, 2 on a setup error (no Playwright, no server, bad spec, or a base
 with no `page-audit.js`, which means deploying the site; the message says what to run; if Playwright's own Chromium build is missing, `npx playwright install chromium` or
 `CHROME_PATH=<a chromium binary>` fixes it; the message lists the builds it found and the one it wanted). Use a fresh `<outdir>` per round (`out/r1`, `out/r2`) so you can compare. Several runs
@@ -161,11 +164,14 @@ The audit counts, all targeting 0:
 | `clippedText` | Words cut by an ellipsis, overflow or a line clamp; an input whose value is wider than its box; svg text past its svg | Shorten at the source, not with CSS (2) |
 | `emptyContainers` | An in-flow box of 40 px or more with nothing in it | Real data or remove it (4) |
 | `badText` | NaN, undefined, null, Infinity, `[object Object]`, `{state.` unevaluated, raw JSON | Prop names and formats (5, 6) |
+| `smallText` | Visible text under 12 px, with its size (screen-reader-only and `aria-hidden` text skipped) | A bigger size or variant; inside a widget it is a widget fault (3) |
+| `wideMeasure` | A line of text wider than 75 characters (it stretched with the card) | A narrower column, or a grid that adds columns (2) |
 | `axeViolations` | axe-core violations, or `null` when axe-core is not installed (`axeHint` says how) | Labels, contrast, roles |
 
 Each shot in `shots[]` lists the offenders with a locator (`widget=...`, the tag and class, the text), and
-`surfaceWidth` says how wide the card really was (about 322 at a 380 viewport, 623 at 1024: the playground's
-chrome takes the rest).
+`surfaceWidth` says how wide the card really was: about 322 at a 380 viewport (the card sits in the chat column),
+983 at 1024 and 1,399 at 1440 (from 1024 up the playground's chat and JSON panes are hidden, so the card gets the
+whole width, the way a chat card on a big desktop does).
 
 A pass is necessary, not sufficient. Gaming it is a bug: clamping text, hiding a box, blanking a value or changing
 the data (rule 1) to make a count go to 0 makes the card worse.
@@ -205,7 +211,7 @@ Give the user the final spec (or its path) and the 380 light screenshot, then th
 
 ## Review lenses, in this order
 
-Run them one at a time over all four shots. One lens, one pass: a reviewer looking for everything finds less.
+Run them one at a time over all six shots. One lens, one pass: a reviewer looking for everything finds less.
 
 1. **Archetype.** Is this the widget the map names for this ask? Is anything hand-built that a widget does? Are
    controls duplicated?
@@ -221,11 +227,17 @@ Run them one at a time over all four shots. One lens, one pass: a reviewer looki
 7. **Hierarchy.** One heading per section, labels quieter than values, one primary action, most important first.
 8. **Density.** Any dead region, empty box, a chart that is mostly blank, or the opposite: a wall of equal-weight
    text?
-9. **States.** What does it show with no rows, the longest name, the biggest number, the last step, items ticked?
+9. **Type and width at 1440.** Open the 1440 shots. Is body and value text at least 14 px, meta 13 px, chips and
+   labels 12 px (`smallText` lists anything under 12)? Do the numbers that matter (prices, totals, key values)
+   clearly outweigh their labels? Does any text line run past about 70 characters (`wideMeasure`)? Is any region
+   (a best pick, a hero, a summary row) mostly empty because it stretched? It must use its width or cap it. The
+   fault that taught this: a comparison card at about 1,400 px wide set its meta text at 12 to 13 px and left most
+   of its best-pick row empty, and the 380 and 1024 shots looked fine.
+10. **States.** What does it show with no rows, the longest name, the biggest number, the last step, items ticked?
    Render a worst-case copy of the spec too (`card-ticked.json`). Changing state in a preview copy is not a data
    change; the spec you hand over keeps the user's data.
-10. **Both themes.** Anything that vanishes or glares in dark or in light (models, drawings, tinted panels)?
-11. **Interaction.** Inputs bound, outputs derived, a validate before any send, book or approve, only real actions.
+11. **Both themes.** Anything that vanishes or glares in dark or in light (models, drawings, tinted panels)?
+12. **Interaction.** Inputs bound, outputs derived, a validate before any send, book or approve, only real actions.
 
 ## When to stop and say so
 
@@ -243,7 +255,7 @@ Run them one at a time over all four shots. One lens, one pass: a reviewer looki
   (`comparison-layout`'s `chosen` or `defaultView`, a tab's initial value), or `state` set to the value the widget
   would write (the bind key, a ticked item). Save it as a separate preview file (`card-chosen.json`); changing state
   in a preview copy is not a data change, and the spec you hand over keeps the user's data.
-- The shot widths are viewport widths; the card itself is narrower (see `surfaceWidth`).
+- The shot widths are viewport widths; the card itself is a little narrower (see `surfaceWidth`).
 - `chart` draws on canvas and `model-viewer` in WebGL: their insides are eyes-only.
 - The public playground runs the latest released Ripple. A widget fix that is not released yet only shows against
   a local build (`--base`).

@@ -1,7 +1,7 @@
 {
   "schema": "ripple.manifest/v1",
   "version": "0.8.0",
-  "generatedAt": "2026-10-15T14:57:48.631Z",
+  "generatedAt": "2026-10-15T16:00:21.115Z",
   "spec": {
     "uiField": "ui",
     "stateField": "state",
@@ -19377,6 +19377,12 @@
         "text": "Inputs get a full row or a 2-column grid."
       },
       {
+        "id": "readable-measure",
+        "lens": "layout",
+        "check": "wideMeasure",
+        "text": "A line of text stops at about 70 characters, however wide the card."
+      },
+      {
         "id": "answer-leads",
         "lens": "answer",
         "text": "The answer leads."
@@ -19397,6 +19403,12 @@
         "text": "Colour encodes data or state only."
       },
       {
+        "id": "type-scale",
+        "lens": "hierarchy",
+        "check": "smallText",
+        "text": "Body and values at least 14 px, meta 13 px, chips and labels 12 px, and key numbers clearly larger than their labels."
+      },
+      {
         "id": "every-element-bound",
         "lens": "density",
         "text": "Every element is bound to a data field or an action."
@@ -19406,6 +19418,11 @@
         "lens": "density",
         "check": "emptyContainers",
         "text": "No dead region."
+      },
+      {
+        "id": "wide-fills",
+        "lens": "density",
+        "text": "At a wide desktop width every region uses its width or caps it."
       },
       {
         "id": "dashboards-not-stat-rows",
@@ -19585,7 +19602,7 @@
       },
       {
         "id": "layout",
-        "question": "Does the card read at 360 px and at 720 px with nothing cut, squeezed or past its edge?"
+        "question": "Does the card read at 360 px, 720 px and 1,400 px with nothing cut, squeezed, stretched or past its edge?"
       },
       {
         "id": "hierarchy",
