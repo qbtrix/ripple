@@ -53,7 +53,8 @@
 	let { children } = $props();
 
 	const GITHUB_URL = 'https://github.com/qbtrix/ripple-iui';
-	const NPM_URL = 'https://www.npmjs.com/package/@ripple-ui/svelte';
+	// The packages are not on npm yet; the footer points at the release tarballs.
+	const RELEASES_URL = 'https://github.com/qbtrix/ripple-iui/releases';
 	const PAWOS_TRY = `${pawosBase(import.meta.env.PUBLIC_PAWOS_URL ?? '')}/?ref=ripple`;
 	// `short` is the active pill's label on phones; null means icon only there.
 	const nav = [
@@ -158,7 +159,7 @@
 
 	<footer class="foot">
 		<p>
-			<span>MIT</span><span aria-hidden="true">·</span><a href={NPM_URL}>npm</a><span aria-hidden="true">·</span><a
+			<span>MIT</span><span aria-hidden="true">·</span><a href={RELEASES_URL}>Releases</a><span aria-hidden="true">·</span><a
 				href={GITHUB_URL}>GitHub</a
 			><span aria-hidden="true">·</span><a href="/playground">Playground</a><span aria-hidden="true">·</span><a href={PAWOS_TRY}
 				>Paw OS by PocketPaw</a

@@ -5,6 +5,8 @@
 import { describe, expect, it } from 'vitest';
 import { highlightJson } from './highlight.js';
 import { parseFrontmatter, renderDoc, splitDiagramCaption, toPlainMarkdown } from './markdown.js';
+import { SITE_URL } from './model.js';
+import { SETUP_PROMPT } from '../setup-prompt.js';
 
 const FM = '---\ntitle: T\ndescription: D\norder: 2\n---\n';
 const fence = (body: string) => '```ripple\n' + body + '\n```\n';
@@ -111,5 +113,16 @@ describe('mermaid fences', () => {
 	});
 	it('keeps the fence as written in the plain markdown', () => {
 		expect(toPlainMarkdown(FM + diagram, 'x.md')).toContain(diagram.trim());
+	});
+});
+
+describe('expandTokens', () => {
+	it('fills the site host and the setup prompt, in the page and the .md output', () => {
+		const raw = '---\ntitle: T\ndescription: D\n---\n\nSee {{SITE_URL}}/manifest.json.\n\n{{SETUP_PROMPT}}\n';
+		const md = toPlainMarkdown(raw, 'x.md');
+		expect(md).toContain(`${SITE_URL}/manifest.json`);
+		expect(md).toContain(SETUP_PROMPT);
+		expect(md).not.toContain('{{');
+		expect(renderDoc(raw, 'x.md').segments.map((s) => (s.kind === 'html' ? s.html : '')).join('')).toContain(`${SITE_URL}/manifest.json`);
 	});
 });
