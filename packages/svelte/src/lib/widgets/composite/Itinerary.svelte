@@ -129,6 +129,7 @@
 	import BedDouble from '@lucide/svelte/icons/bed-double';
 	import RouteIcon from '@lucide/svelte/icons/route';
 	import Luggage from '@lucide/svelte/icons/luggage';
+	import MapPin from '@lucide/svelte/icons/map-pin';
 	import {
 		PhotoTile,
 		SectionCard,
@@ -395,11 +396,14 @@
 </script>
 
 {#snippet dayHead(d: (typeof view)[number], di: number, isOpen: boolean)}
-	<span
-		class="grid size-6 shrink-0 place-items-center rounded-md bg-ripple-muted text-headline tabular-nums @min-[480px]:size-7"
-		aria-hidden="true">{di + 1}</span
-	>
-	<span class="flex min-w-0 flex-1 flex-col gap-0.5">
+	{#if !single}
+		<span
+			class="grid size-6 shrink-0 place-items-center rounded-md bg-ripple-muted text-headline tabular-nums @min-[480px]:size-7"
+			aria-hidden="true">{di + 1}</span
+		>
+	{/if}
+	<!-- min-h = the tile, so a one-line header centres on it and a wrapped one stays top-aligned -->
+	<span class="flex min-h-6 min-w-0 flex-1 flex-col justify-center gap-0.5 @min-[480px]:min-h-7">
 		{#if d.eyebrow}
 			<span class="text-footnote text-ripple-muted-foreground tabular-nums [overflow-wrap:anywhere]">{d.eyebrow}</span>
 		{/if}
@@ -447,7 +451,7 @@
 						data-route="rail"
 					>
 						{#each hops as h, i (i)}
-							{@const LegIcon = kindIcon(LEG_ICONS, h.leg?.kind)}
+							{@const LegIcon = kindIcon(LEG_ICONS, h.leg?.kind, MapPin)}
 							<li class="relative flex min-w-0 flex-col items-center gap-1">
 								<span class="flex h-5 items-center" aria-hidden="true">
 									<span
@@ -490,7 +494,7 @@
 						data-route="inline"
 					>
 						{#each hops as h, i (i)}
-							{@const LegIcon = h.leg ? kindIcon(LEG_ICONS, h.leg.kind) : ChevronRight}
+							{@const LegIcon = h.leg ? kindIcon(LEG_ICONS, h.leg.kind, MapPin) : ChevronRight}
 							<li class="inline-flex min-w-0 items-center gap-1.5">
 								<span
 									class={['font-medium [overflow-wrap:anywhere]', (i === 0 || h.last) && 'text-ripple-accent-text']}
@@ -566,7 +570,7 @@
 										{/if}
 										<ol class="flex flex-col">
 											{#each d.stops as s, k (s.key)}
-												{@const KindIcon = kindIcon(STOP_ICONS, s.kind)}
+												{@const KindIcon = kindIcon(STOP_ICONS, s.kind, MapPin)}
 												{@const isNext = nextKey === `${di}/${s.key}`}
 												{@const pic = photo(s.image)}
 												{@const segs = [
@@ -713,7 +717,7 @@
 							{/snippet}
 							<ul class="flex flex-col divide-y divide-ripple-border">
 								{#each legList as l, i (l.key)}
-									{@const LegIcon = kindIcon(LEG_ICONS, l.kind)}
+									{@const LegIcon = kindIcon(LEG_ICONS, l.kind, MapPin)}
 									<li class="flex items-start gap-2.5 py-2 first:pt-0 last:pb-0" in:rise={{ index: i }}>
 										<span class="grid size-8 shrink-0 place-items-center rounded-md bg-ripple-muted text-ripple-muted-foreground">
 											<LegIcon size={16} strokeWidth={1.75} aria-hidden="true" />
@@ -735,7 +739,7 @@
 						<SectionCard title="Packing" icon={Luggage}>
 							<div class="flex flex-col gap-2.5">
 								{#each packList as g, i (g.key)}
-									<div in:rise={{ index: i }}>
+									<div class={[!g.group && i > 0 && 'border-t border-ripple-border pt-2.5']} in:rise={{ index: i }}>
 										{#if g.group}<p class="mb-1 text-footnote font-medium text-ripple-muted-foreground">{g.group}</p>{/if}
 										<ul class="flex flex-wrap gap-1">
 											{#each g.items as item, j (j)}
