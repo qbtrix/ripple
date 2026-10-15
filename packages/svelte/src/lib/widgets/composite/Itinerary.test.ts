@@ -10,7 +10,7 @@ import Ripple from '$lib/Ripple.svelte';
 import { expectStreamParity } from '$lib/streaming/__fixtures__/stream-parity.js';
 import { getWidget, hasWidget } from '../index.js';
 import { _resetBindContractWarnings, getBindContract, warnUnregisteredBindContract } from '@ripple-ui/core';
-import Itinerary, { budgetStatus, clockMinutes, duration, insertByTime, type ItineraryDay } from './Itinerary.svelte';
+import Itinerary, { budgetStatus, clockMinutes, duration, hourTime, insertByTime, type ItineraryDay } from './Itinerary.svelte';
 
 afterEach(() => {
 	cleanup();
@@ -322,5 +322,20 @@ describe('itinerary: logic', () => {
 		expect(route.querySelector('[data-route="rail"]')).toBeNull();
 		expect(route.querySelector('[data-route="inline"]')!.querySelectorAll('[data-leg="bus"]')).toHaveLength(7);
 		expect(screen.queryByText('Getting around')).toBeNull();
+	});
+
+	it('gives a bare hour a clock, says the stop count once, and frames Days only beside other sections', () => {
+		expect([hourTime('9'), hourTime('23'), hourTime('24'), hourTime('Late')]).toEqual(['9:00', '23:00', '24', 'Late']);
+		const { container } = render(Itinerary, { props: { days: [{ label: 'Saturday', stops: [{ time: '9', title: 'Park' }, { time: '13:00', title: 'Lunch' }] }] } });
+		expect(screen.getByText('9:00').classList.contains('text-right')).toBe(true);
+		expect(container.textContent).not.toContain('2 stops');
+		expect(screen.getByText('Saturday')).toBeTruthy();
+		expect(container.querySelector('section')).toBeNull();
+	});
+
+	it('drops a photo row whose image fails to load', async () => {
+		const { container } = render(Itinerary, { props: { days: [{ stops: [{ title: 'Park', image: '/photos/park.webp' }] }] } });
+		await fireEvent.error(container.querySelector('img')!);
+		expect(container.querySelector('[data-state]')).toBeNull();
 	});
 });

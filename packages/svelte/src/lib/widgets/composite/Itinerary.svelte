@@ -19,8 +19,12 @@
   - Rows key by `${id ?? ''}:${index}`, never by a model string; a stop with
     no title (mid-stream, junk) is skipped but keeps its index for edits.
   - Nothing parses a date or time for display. `when` goes through dateLabel,
-    `time` renders as written: in the time column only when every time that
-    day is HH:MM, else at the start of the meta line.
+    `time` renders as written (a bare hour "9" becomes "9:00"): in the time
+    column only when every time that day is H:MM, else at the start of the
+    meta line.
+  - A stop photo keeps its 16:9 frame only while it loads or has loaded; a
+    refused or failed image drops the row (the kind icon is on the marker).
+  - Days is framed as a section only beside Getting around or packing.
   - The route strip is the static fallback the route globe (GL-2) replaces;
     `geo` is accepted and unused until then.
 -->
@@ -70,6 +74,11 @@
 	export function clockMinutes(t: unknown): number | undefined {
 		const m = typeof t === 'string' ? HHMM.exec(t.trim()) : null;
 		return m ? Number(m[1]) * 60 + Number(m[2]) : undefined;
+	}
+
+	/** A bare hour ("9") reads as a count; give it a clock ("9:00"). Anything else as written. */
+	export function hourTime(t: string): string {
+		return /^\d{1,2}$/.test(t) && Number(t) <= 23 ? `${Number(t)}:00` : t;
 	}
 
 	/** Insert before the first stop timed later than this one; untimed on either side appends. */
@@ -214,7 +223,7 @@
 						key: `${s.id ?? ''}:${si}`,
 						i: si,
 						title: name,
-						time: plain(s.time),
+						time: hourTime(plain(s.time)),
 						kind: s.kind,
 						place: plain(s.place),
 						cost: cost !== undefined && cost >= 0 ? cost : undefined,
@@ -227,17 +236,24 @@
 			});
 			const name = plain(d.label) || `Day ${di + 1}`;
 			const times = stops.filter((s) => s.time);
+			const label = new RegExp(`^day\\s*${di + 1}$`, 'i').test(name) ? '' : name;
+			const when = dateLabel(d.when);
+			const theme = plain(d.theme);
+			const dayCost = sum(stops.map((s) => s.cost));
+			const costText = dayCost > 0 ? cash(dayCost) : '';
+			// No theme: the label or date moves up to line 2, since the done count already says how many stops.
+			const promote = !theme && stops.length > 0;
 			return {
 				key: `${d.id ?? ''}:${di}`,
 				name,
 				// The tile already says the number; a "Day N" label would repeat it.
-				label: new RegExp(`^day\\s*${di + 1}$`, 'i').test(name) ? '' : name,
-				when: dateLabel(d.when),
-				theme: plain(d.theme),
+				eyebrow: promote ? '' : [label, when, costText].filter(Boolean).join(' · '),
+				headCost: promote ? costText : '',
+				headline: theme || (promote ? [label, when].filter(Boolean).join(' · ') || name : 'No stops yet'),
 				stay: plain(d.stay),
 				stops,
 				clock: times.length > 0 && times.every((s) => clockMinutes(s.time) !== undefined),
-				planned: sum(stops.map((s) => s.cost)),
+				planned: dayCost,
 				done: stops.filter((s) => s.done).length
 			};
 		})
@@ -296,6 +312,8 @@
 	});
 	// Each rail hop needs about 72 px narrow and 96 px wide; past that the route wraps inline.
 	const railFits = $derived(hops.length <= 4 ? 'all' : hops.length <= 7 ? 'wide' : 'none');
+	// Leg durations sit under the glyphs on the cell edges; city names then pad in to clear them.
+	const legTimes = $derived(hops.some((h) => duration(h.leg?.minutes)));
 
 	const cap = $derived.by(() => {
 		const b = finite(budget);
@@ -364,6 +382,13 @@
 		draft = { title: '', time: '', cost: null };
 	}
 
+	// A refused or failed photo drops its row: the kind icon is already on the rail marker.
+	let failed = $state<Record<string, true>>({});
+	const photo = (v: unknown) => {
+		const u = safeUrl(v, { kind: 'resource' });
+		return u && !failed[u] ? u : undefined;
+	};
+
 	const field =
 		'h-8 min-w-0 rounded-md border border-ripple-border bg-ripple-input px-2 text-callout text-ripple-input-foreground placeholder:text-ripple-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ripple-ring';
 	const focusRing = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ripple-ring';
@@ -375,14 +400,12 @@
 		aria-hidden="true">{di + 1}</span
 	>
 	<span class="flex min-w-0 flex-1 flex-col gap-0.5">
-		{#if d.label || d.when || d.planned > 0}
-			<span class="text-footnote text-ripple-muted-foreground tabular-nums [overflow-wrap:anywhere]">
-				{[d.label, d.when, d.planned > 0 ? cash(d.planned) : ''].filter(Boolean).join(' · ')}
-			</span>
+		{#if d.eyebrow}
+			<span class="text-footnote text-ripple-muted-foreground tabular-nums [overflow-wrap:anywhere]">{d.eyebrow}</span>
 		{/if}
-		<span class="text-body-emph text-pretty [overflow-wrap:anywhere]">
-			{d.theme || (d.stops.length ? `${d.stops.length} ${d.stops.length === 1 ? 'stop' : 'stops'}` : 'No stops yet')}
-		</span>
+		<span class="text-body-emph text-pretty [overflow-wrap:anywhere]"
+			>{d.headline}{#if d.headCost}<span class="font-normal text-ripple-muted-foreground tabular-nums">{` · ${d.headCost}`}</span>{/if}</span
+		>
 	</span>
 	{#if d.stops.length}
 		<span
@@ -434,7 +457,7 @@
 										]}
 									></span>
 								</span>
-								<span class="px-0.5 text-center text-footnote font-medium text-balance break-normal">{h.city}</span>
+								<span class={['px-0.5 text-center text-footnote font-medium text-balance break-normal', legTimes && '@min-[480px]:px-6']}>{h.city}</span>
 								{#if !h.last}
 									<span class="absolute top-0 left-1/2 flex h-5 w-full items-center justify-center" data-leg={h.leg?.kind ?? ''}>
 										<span
@@ -448,6 +471,12 @@
 												<LegIcon size={14} strokeWidth={1.75} aria-hidden="true" />
 											</span>
 											<span class="sr-only">{` then by ${h.leg.kind ?? 'road'}${h.leg.minutes ? `, ${duration(h.leg.minutes)}` : ''}`}</span>
+											{#if duration(h.leg.minutes)}
+												<span
+													class="absolute top-full mt-1 hidden text-caption-1 whitespace-nowrap text-ripple-muted-foreground tabular-nums @min-[480px]:block"
+													aria-hidden="true">{duration(h.leg.minutes)}</span
+												>
+											{/if}
 										{/if}
 									</span>
 								{/if}
@@ -504,8 +533,7 @@
 			</div>
 		{/if}
 
-		{#if view.length}
-			<SectionCard title={extras.length ? 'Days' : undefined}>
+		{#snippet daysBlock()}
 				<ol class="flex flex-col divide-y divide-ripple-border" aria-label="Days">
 					{#each view as d, di (d.key)}
 						{@const isOpen = single || at === di}
@@ -534,12 +562,13 @@
 								<div id={panel} class="pt-2.5">
 									{#if d.stops.length}
 										{#if !anyDone}
-											<p class="mb-2 text-footnote text-ripple-muted-foreground" data-slot="hint">Tap a circle to tick a stop off.</p>
+											<p class="mb-2 text-footnote text-ripple-muted-foreground" data-slot="hint">Select a circle to tick a stop off.</p>
 										{/if}
 										<ol class="flex flex-col">
 											{#each d.stops as s, k (s.key)}
 												{@const KindIcon = kindIcon(STOP_ICONS, s.kind)}
 												{@const isNext = nextKey === `${di}/${s.key}`}
+												{@const pic = photo(s.image)}
 												{@const segs = [
 													{ t: d.clock ? '' : s.time, star: false },
 													{ t: s.must ? 'Must see' : '', star: true },
@@ -616,8 +645,8 @@
 																{/each}
 															</p>
 														{/if}
-														{#if s.image}
-															<PhotoTile src={safeUrl(s.image, { kind: 'resource' })} alt={s.title} ratio="16:9" icon={KindIcon} class="mt-2 w-full max-w-80" />
+														{#if pic}
+															<PhotoTile src={safeUrl(s.image, { kind: 'resource' })} alt={s.title} ratio="16:9" icon={KindIcon} class="mt-2 w-full max-w-80" onerror={() => (failed[pic] = true)} />
 														{/if}
 													</div>
 												</li>
@@ -663,7 +692,13 @@
 						</li>
 					{/each}
 				</ol>
-			</SectionCard>
+		{/snippet}
+
+		{#if view.length && extras.length}
+			<SectionCard title="Days">{@render daysBlock()}</SectionCard>
+		{:else if view.length}
+			<!-- The only section: no frame inside the card's own frame. -->
+			{@render daysBlock()}
 		{:else}
 			<SectionCard title="Days" empty="No stops yet. Ask for a day plan." />
 		{/if}

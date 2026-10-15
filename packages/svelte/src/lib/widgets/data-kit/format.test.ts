@@ -51,6 +51,9 @@ describe('plain', () => {
 		expect(plain('__Note__: fasting')).toBe('Note: fasting');
 		expect(plain('- one\n- two')).toBe('one\ntwo');
 		expect(plain('**a** and **b**')).toBe('a and b');
+		expect(plain('Bouchon lunch _with_ the family')).toBe('Bouchon lunch with the family');
+		expect(plain('a *quiet* walk')).toBe('a quiet walk');
+		expect(plain('snake_case_name and 2*3*4')).toBe('snake_case_name and 2*3*4');
 	});
 
 	it('leaves single markers and in-word dashes alone', () => {

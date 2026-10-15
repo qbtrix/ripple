@@ -33,7 +33,7 @@ import Mountain from '@lucide/svelte/icons/mountain';
 import Moon from '@lucide/svelte/icons/moon';
 import Plane from '@lucide/svelte/icons/plane';
 // legs
-import TrainFront from '@lucide/svelte/icons/train-front';
+import TrainTrack from '@lucide/svelte/icons/train-track';
 import Bus from '@lucide/svelte/icons/bus';
 import Car from '@lucide/svelte/icons/car';
 import Ship from '@lucide/svelte/icons/ship';
@@ -200,7 +200,7 @@ export const STOP_ICONS = {
 /** itinerary legs (§3.5) */
 export const LEG_ICONS = {
 	flight: Plane,
-	train: TrainFront,
+	train: TrainTrack,
 	bus: Bus,
 	car: Car,
 	ferry: Ship,
