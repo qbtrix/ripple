@@ -4,7 +4,7 @@ description: Add @ripple-ui/svelte to a Svelte 5 app and point Tailwind v4 at it
 order: 1
 ---
 
-Ripple renders a JSON UI spec as a live Svelte 5 interface. It ships as one package, `@ripple-ui/svelte`. The engine underneath, `@ripple-ui/core`, comes with it as a dependency, so you don't install it separately.
+Ripple renders a JSON UI spec as a live Svelte 5 interface. You render with `@ripple-ui/svelte`. The engine underneath, `@ripple-ui/core`, is its dependency. Until both are on the npm registry, you point your package manager at the core tarball too, as "Add the package" shows.
 
 ## Set up with a coding agent
 

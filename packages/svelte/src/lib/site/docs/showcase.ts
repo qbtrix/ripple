@@ -1,4 +1,4 @@
-// site/docs/showcase.ts — Site-only preview specs for widgets whose manifest
+// site/docs/showcase.ts: site-only preview specs for widgets whose manifest
 // `example` is too small to show them off, or points at media this site cannot
 // load (example.com placeholders and third-party hosts the CSP in
 // svelte.config.js blocks, links to pages the site lacks). Those use local
