@@ -4,7 +4,8 @@
   ControlButton and ControlBar with a CountBadge, ParticipantTile with a menu
   holding the Slider, a FloatingDock in a frame, IncomingCallCard and a
   BottomSheet. Mock state only. Imports from `$lib/ui` directly, like a
-  hand-written caller.
+  hand-written caller. The tile grid starts below a top strip, so the dock
+  (top-right) never covers a tile.
 -->
 <script lang="ts">
   import {
@@ -26,6 +27,7 @@
   import PhoneOff from '@lucide/svelte/icons/phone-off';
   import Phone from '@lucide/svelte/icons/phone';
   import Ellipsis from '@lucide/svelte/icons/ellipsis';
+  import Showcase from '../Showcase.svelte';
 
   type Layout = 'glass' | 'focus' | 'classic';
   let layout = $state<Layout>('glass');
@@ -40,18 +42,22 @@
   let log = $state('');
   const people = [
     { id: 'maya', name: 'Maya Chen' },
-    { id: 'ada', name: 'Ada Lovelace', muted: true },
+    { id: 'ada', name: 'Ada Brennan', muted: true },
     { id: 'paw', name: 'Paw', agent: true },
   ];
 </script>
 
-<main class="p-4 text-foreground sm:p-8">
-  <h1 class="mb-1 text-xl font-semibold">Call parts</h1>
-  <p class="mb-6 text-sm text-muted-foreground">
-    ControlButton, ControlBar, ParticipantTile, FloatingDock, IncomingCallCard, BottomSheet and Slider from <code>./ui</code>.
-  </p>
+<Showcase slug="call">
+  {#snippet intro()}
+    <p>
+      Svelte components for a call screen: <code>ControlButton</code> and <code>ControlBar</code>,
+      <code>ParticipantTile</code>, a draggable <code>FloatingDock</code>, <code>IncomingCallCard</code>,
+      <code>BottomSheet</code> and <code>Slider</code>. Import them from <code>@ripple-ui/svelte/ui</code>. Switch the
+      layout to see the three control styles; the state here is mock data.
+    </p>
+  {/snippet}
 
-  <div class="mb-6 flex items-center gap-4">
+  <div class="mb-6 flex flex-wrap items-center gap-4 text-foreground">
     <Button variant="outline" size="sm" onclick={() => (speaker = people[(people.findIndex((p) => p.id === speaker) + 1) % people.length].id)}>Next speaker</Button>
     <Segmented
       size="sm"
@@ -67,7 +73,7 @@
 
   <!-- The stage: dark in both themes, like the app's call stage. -->
   <section class="dark relative h-[520px] overflow-hidden rounded-2xl bg-background text-foreground">
-    <div class="grid h-[calc(100%-5rem)] grid-cols-3 gap-3 p-4">
+    <div class="grid h-[calc(100%-6rem)] grid-cols-3 gap-3 px-4 pb-4 pt-20">
       {#each people as p (p.id)}
           <ParticipantTile name={p.name} skin={layout} speaking={speaker === p.id} muted={p.muted} data-testid="tile">
             {#snippet badge()}
@@ -114,7 +120,7 @@
       </ControlBar>
     </div>
 
-    <FloatingDock label="Call dock" bounds="parent" corner="top-right" onPositionChange={(p) => (log = `dock at ${p.x},${p.y}`)}>
+    <FloatingDock label="Call dock" bounds="parent" corner="top-right" onPositionChange={(p) => (log = `dock moved to ${p.x}, ${p.y}`)}>
       <div class="flex items-center gap-2 p-2">
         <div class="size-11"><ParticipantTile name="Maya Chen" size="orb" skin="glass" speaking /></div>
         <span class="text-sm font-medium">Design sync</span>
@@ -148,12 +154,15 @@
     </div>
 
     <div class="dark relative h-80 overflow-hidden rounded-2xl bg-background text-foreground">
-      <p class="p-4 text-sm text-muted-foreground">Sheet stop: {stop}</p>
+      <p class="p-4 text-sm text-muted-foreground">
+        A bottom sheet with three stops: peek, half and full. Drag its handle or press it to move between them. Now at:
+        <strong>{stop}</strong>.
+      </p>
       <BottomSheet bind:stop label="Call chat" handleLabel={(s) => (s === 'peek' ? 'Open chat' : s === 'half' ? 'Expand chat' : 'Shrink chat')}>
         <p class="px-4 text-sm">Maya: the deck is in the channel.</p>
       </BottomSheet>
     </div>
   </div>
 
-  <p class="mt-4 text-sm text-muted-foreground" aria-live="polite">{log}</p>
-</main>
+  <p class="event-log" aria-live="polite">Last action: {log || 'none yet. Drag the dock or press Leave.'}</p>
+</Showcase>

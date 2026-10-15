@@ -77,6 +77,15 @@ export function widgetPrevNext(type: string, list: WidgetManifestEntry[] = manif
 	return { prev: i > 0 ? sibs[i - 1].type : null, next: i >= 0 ? (sibs[i + 1]?.type ?? null) : null };
 }
 
+/**
+ * A description's first sentence: up to the first full stop followed by a space
+ * or the end, skipping the stops inside "e.g.", "i.e." and "vs.".
+ */
+export function firstSentence(text: string): string {
+	const m = /(?<!\be\.g|\bi\.e|\bvs)\.(?=\s|$)/.exec(text);
+	return m ? text.slice(0, m.index + 1) : text;
+}
+
 /** The entry's `example` node wrapped in the smallest valid spec. */
 export const exampleSpec = (e: WidgetManifestEntry): Record<string, unknown> => ({ version: SPEC_VERSION, ui: e.example });
 

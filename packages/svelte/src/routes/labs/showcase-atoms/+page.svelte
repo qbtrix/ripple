@@ -5343,7 +5343,7 @@
   <a href="/ds/call">Call</a>
   <a href="/ds/checkbox-group">Checkbox group</a>
   <a href="/ds/marketing">Marketing pack</a>
-  <a href="/ds/premium">Premium pack</a>
+  <a href="/ds/effects">Effects</a>
   <span class="subroute-nav-sep" aria-hidden="true">·</span>
   <a href="/ds/card">Card</a>
   <a href="/ds/stat">Stat</a>

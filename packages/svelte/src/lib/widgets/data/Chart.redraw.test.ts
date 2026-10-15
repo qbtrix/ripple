@@ -6,6 +6,8 @@
 // reads the option handed to the instance's update call. The instance itself
 // must be created once and updated in place, then disposed on unmount. The DOM
 // widgets (treemap, funnel, heatmap, gantt) are checked by reading what they render.
+// Sankey also paints its title and labels in the element's text colour and
+// redraws when the root theme class flips.
 
 import { render, fireEvent } from '@testing-library/svelte';
 import { tick } from 'svelte';
@@ -143,6 +145,19 @@ describe.each([
 		await rerender(after);
 		await vi.waitFor(() => expect(read(lastOption())).toEqual(expected));
 		expect(ec.init).toHaveBeenCalledTimes(1);
+	});
+});
+
+describe('sankey theme', () => {
+	test('paints the title and labels in the text colour, unstroked, and redraws on a theme flip', async () => {
+		const { container } = render(Sankey, {
+			props: { title: 'Journey', nodes: [{ name: 'a' }, { name: 'b' }], links: [{ source: 'a', target: 'b', value: 1 }] }
+		});
+		(container.firstElementChild as HTMLElement).style.color = 'rgb(240, 240, 240)';
+		document.documentElement.classList.add('dark');
+		await vi.waitFor(() => expect(lastOption().title.textStyle.color).toBe('rgb(240, 240, 240)'));
+		expect(lastOption().series[0].label).toMatchObject({ color: 'rgb(240, 240, 240)', textBorderWidth: 0 });
+		document.documentElement.classList.remove('dark');
 	});
 });
 

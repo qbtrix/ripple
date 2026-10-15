@@ -1,4 +1,10 @@
-<!-- src/lib/widgets/input/CodeEditor.svelte -->
+<!--
+  src/lib/widgets/input/CodeEditor.svelte: the `code-editor` widget, a
+  CodeMirror 6 editor loaded on mount with JavaScript, TypeScript, JSON or HTML
+  support. Its surface (background, text, gutter, active line, cursor,
+  selection) is painted from the theme tokens, so it follows the root
+  light/dark class with no remount.
+-->
 <script lang="ts">
   import { safeStyle } from '@ripple-ui/core';
   import { onMount } from 'svelte';
@@ -85,9 +91,20 @@
             EditorView.editable.of(!readonly),
             EditorState.readOnly.of(readonly),
             EditorView.theme({
-              '&': { fontSize: '13px', height: '100%' },
+              '&': { fontSize: '13px', height: '100%', backgroundColor: 'var(--background)', color: 'var(--foreground)' },
               '.cm-scroller': { fontFamily: 'ui-monospace, SFMono-Regular, Consolas, monospace' },
-              '.cm-content': { padding: '8px 0' }
+              '.cm-content': { padding: '8px 0', caretColor: 'var(--foreground)' },
+              '.cm-cursor, .cm-dropCursor': { borderLeftColor: 'var(--foreground)' },
+              '.cm-gutters': {
+                backgroundColor: 'color-mix(in oklch, var(--muted) 50%, var(--background))',
+                color: 'var(--muted-foreground)',
+                borderRight: '1px solid var(--border)'
+              },
+              '.cm-activeLine': { backgroundColor: 'color-mix(in oklch, var(--muted) 45%, transparent)' },
+              '.cm-activeLineGutter': { backgroundColor: 'color-mix(in oklch, var(--muted) 70%, transparent)', color: 'var(--foreground)' },
+              '&.cm-focused .cm-selectionBackground, .cm-selectionBackground, ::selection': {
+                backgroundColor: 'color-mix(in oklch, var(--primary) 25%, transparent)'
+              }
             }),
             updateListener
           ]

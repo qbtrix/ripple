@@ -3,7 +3,7 @@
   from SectionHeader and ListRow (active, unread dot and count, muted, indent,
   hover actions, rename mode), a side panel with PanelHeader, Kbd hints and
   Segmented option badges. Imports from `$lib/ui` directly, like a
-  hand-written caller.
+  hand-written caller. Every demo row wraps, so the page fits a 380px phone.
 -->
 <script lang="ts">
   import { ListRow, SectionHeader, PanelHeader, Kbd, Segmented } from '$lib/ui/index.js';
@@ -12,6 +12,7 @@
   import TrashIcon from '@lucide/svelte/icons/trash-2';
   import PlusIcon from '@lucide/svelte/icons/plus';
   import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
+  import Showcase from '../Showcase.svelte';
 
   const rooms = [
     { id: 'general', name: 'general', unread: 0 as number | boolean, meta: '2m' },
@@ -29,11 +30,17 @@
   let log = $state('');
 </script>
 
-<main class="p-4 text-foreground sm:p-8">
-  <h1 class="mb-1 text-xl font-semibold">Shell primitives</h1>
-  <p class="mb-6 text-sm text-muted-foreground">ListRow, SectionHeader, PanelHeader, Kbd and Segmented badges from <code>./ui</code>.</p>
+<Showcase slug="shell">
+  {#snippet intro()}
+    <p>
+      Svelte components for an app's frame: <code>ListRow</code> and <code>SectionHeader</code> for a sidebar,
+      <code>PanelHeader</code> for a side panel, <code>Kbd</code> for key hints and <code>Segmented</code> with badges.
+      Import them from <code>@ripple-ui/svelte/ui</code>. Try the row size switch, hover a row for its actions, and
+      rename one with the pencil.
+    </p>
+  {/snippet}
 
-  <div class="mb-6 flex items-center gap-4">
+  <div class="mb-6 flex flex-wrap items-center gap-4 text-foreground">
     <Segmented
       size="sm"
       value={size}
@@ -52,8 +59,8 @@
     <span class="text-sm text-muted-foreground">Search <Kbd keys={['⌘', 'K']} /></span>
   </div>
 
-  <div class="flex gap-6">
-    <nav class="w-64 rounded-lg border border-border p-1.5" aria-label="Rooms">
+  <div class="flex flex-wrap items-start gap-6 text-foreground">
+    <nav class="w-full max-w-64 rounded-lg border border-border p-1.5" aria-label="Rooms">
       <SectionHeader label="Rooms" count={rooms.length} bind:open={roomsOpen} controls="demo-rooms">
         {#snippet action()}
           <button type="button" aria-label="New room" class="inline-flex size-6 items-center justify-center rounded-md hover:bg-ripple-accent/10">
@@ -104,18 +111,18 @@
     </nav>
 
     {#if panelOpen}
-      <section class="w-80 rounded-lg border border-border">
+      <section class="w-full max-w-80 rounded-lg border border-border">
         <PanelHeader title="Thread" subtitle="3 replies in #{active}" onclose={() => (panelOpen = false)} closeLabel="Close thread">
           {#snippet leading()}
             <button type="button" aria-label="Back" class="inline-flex size-7 items-center justify-center rounded-md hover:bg-ripple-accent/10"><ArrowLeftIcon size={14} /></button>
           {/snippet}
         </PanelHeader>
-        <p class="p-3 text-sm text-muted-foreground">Panel body.</p>
+        <p class="p-3 text-sm text-muted-foreground">Replies to the selected room appear here. Close the panel with the X.</p>
       </section>
     {:else}
       <button type="button" class="h-8 self-start rounded-md border border-border px-3 text-sm" onclick={() => (panelOpen = true)}>Reopen panel</button>
     {/if}
   </div>
 
-  <p class="mt-4 text-sm text-muted-foreground" aria-live="polite">{log}</p>
-</main>
+  <p class="event-log" aria-live="polite">Last action: {log || 'none yet. Right-click or delete a room.'}</p>
+</Showcase>
