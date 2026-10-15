@@ -1,13 +1,16 @@
 <!--
   SourcesBar.svelte: the "where did this come from" row at the foot of a
   research answer. Closed, one quiet row names the sources: a stack of up to
-  three marks (+N pill), the count in words, then the names, ellipsized. Under
-  480px of bar width the names drop to a second line under the count so the
-  first name stays readable; marks, pill, count and chevron never shrink.
+  three marks (+N pill), the count in words with its chevron pinned right
+  after it, then the names, ellipsized. Under 480px of bar width the names
+  drop to a second line under the count so the first name stays readable;
+  marks, pill, count and chevron never shrink. In dark the marks and pill get
+  a stronger hairline (--rsbar-edge) so they separate from the card at 3:1.
   Opened (native <details>, works with JavaScript off), a numbered list with
   name, domain and a new-tab link per source; past 5 sources it goes two
-  columns once the bar itself is 640px wide (container query on the root).
-  Domains ellipsize in the middle so the top-level part stays visible.
+  columns once the bar itself is 640px wide (container query on the root;
+  below that two columns cut names and domains to stubs). Domains keep at
+  least 8ch and ellipsize in the middle so the top-level part stays visible.
 
   Data rules (names, links, count, grammar) live in ./sources.ts; this file
   only lays them out. Marks are the shadcn Avatar primitives: a supplied
@@ -91,7 +94,7 @@
   function markStyle(s: SourceView): string {
     const tint = nameTint(s.name);
     return s.color
-      ? `${tint};background-color:color-mix(in oklab, ${s.color} 28%, var(--ripple-surface));color:var(--ripple-surface-foreground);box-shadow:inset 0 0 0 1px color-mix(in oklab, var(--ripple-surface-foreground) 30%, transparent)`
+      ? `${tint};background-color:color-mix(in oklab, ${s.color} 28%, var(--ripple-surface));color:var(--ripple-surface-foreground);box-shadow:inset 0 0 0 1px var(--rsbar-edge-strong)`
       : tint;
   }
 
@@ -143,7 +146,7 @@
       <Avatar.Image src={safeUrl(s.favicon, { kind: 'resource' })} alt="" class="bg-ripple-surface" />
     {/if}
     <Avatar.Fallback
-      class={cn('font-semibold leading-none shadow-[inset_0_0_0_1px_var(--ripple-border)]', size === 'md' ? 'text-[10px]' : 'text-[9px]')}
+      class={cn('font-semibold leading-none shadow-[inset_0_0_0_1px_var(--rsbar-edge)]', size === 'md' ? 'text-[10px]' : 'text-[9px]')}
       style={safeStyle(markStyle(s))}
     >{s.initial}</Avatar.Fallback>
   </Avatar.Root>
@@ -155,11 +158,11 @@
     {#if plus > 0}<span class="rsbar-plus text-caption-2">+{num(plus)}</span>{/if}
   </span>
   <span class="rsbar-count text-body-emph">{countText}</span>
-  <span class="rsbar-dot text-callout" aria-hidden="true">·</span>
-  <span class="rsbar-names text-callout" aria-hidden="true">{names}</span>
   {#if disclosure}
     <span class="rsbar-chev" aria-hidden="true"><ChevronDownIcon size={14} /></span>
   {/if}
+  <span class="rsbar-dot text-callout" aria-hidden="true">·</span>
+  <span class="rsbar-names text-callout" aria-hidden="true">{names}</span>
 {/snippet}
 
 <div {id} data-ripple-node={id} class={cn('rsbar', className)} data-actions={actions}>
@@ -223,11 +226,22 @@
 <style>
   .rsbar {
     --rsbar-row: 36px;
+    --rsbar-edge: var(--ripple-border);
+    --rsbar-edge-strong: color-mix(in oklab, var(--ripple-surface-foreground) 30%, transparent);
+    --rsbar-pill-edge: transparent;
     container-type: inline-size;
     position: relative;
     inline-size: 100%;
     min-inline-size: 0;
     color: var(--ripple-surface-foreground);
+  }
+
+  /* Dark: the light hairlines sit near 1.3:1 on the card; this one clears 3:1. */
+  :global(.dark) .rsbar,
+  :global([data-theme='dark']) .rsbar {
+    --rsbar-edge: color-mix(in oklab, var(--ripple-muted-foreground) 70%, var(--ripple-surface));
+    --rsbar-edge-strong: var(--rsbar-edge);
+    --rsbar-pill-edge: var(--rsbar-edge);
   }
 
   /* The summary row: marks, count and actions keep their size; names shrink. */
@@ -279,7 +293,7 @@
     border-radius: 999px;
     background: var(--ripple-track);
     color: var(--ripple-surface-foreground);
-    box-shadow: 0 0 0 2px var(--ripple-surface);
+    box-shadow: 0 0 0 2px var(--ripple-surface), inset 0 0 0 1px var(--rsbar-pill-edge);
     font-variant-numeric: tabular-nums;
     position: relative;
     margin-inline-start: -4px;
@@ -303,6 +317,7 @@
   .rsbar-chev {
     display: inline-flex;
     flex: none;
+    margin-inline-start: -4px;
     color: var(--ripple-muted-foreground);
     transition: transform 150ms var(--ripple-ease-out);
   }
@@ -431,7 +446,7 @@
   @container (max-width: 479px) {
     .rsbar-summary {
       display: grid;
-      grid-template-columns: auto 1fr auto;
+      grid-template-columns: auto auto 1fr;
       grid-template-areas: 'stack count chev' 'stack names names';
       column-gap: 8px;
       min-block-size: 44px;
@@ -440,7 +455,7 @@
     .rsbar-stack { grid-area: stack; }
     .rsbar-count { grid-area: count; }
     .rsbar-names { grid-area: names; }
-    .rsbar-chev { grid-area: chev; }
+    .rsbar-chev { grid-area: chev; justify-self: start; }
     .rsbar-dot { display: none; }
     .rsbar-actions { block-size: 44px; }
   }
