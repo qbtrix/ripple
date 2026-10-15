@@ -251,7 +251,8 @@ async function run(packed, { base, widths, themes, outdir }) {
 					await surface.first().screenshot({ path: file, animations: 'disabled' });
 				}
 				if (axeSource && n >= 1) {
-					await page.addScriptTag({ content: axeSource });
+					// evaluate, not a script tag: the playground CSP blocks inline scripts.
+					await page.evaluate(axeSource);
 					const v = await page.evaluate(async () => {
 						const res = await window.axe.run(document.querySelector('.surface .ripple-root'), { resultTypes: ['violations'] });
 						return res.violations.map((x) => `${x.id} (${x.impact}) x${x.nodes.length}`);

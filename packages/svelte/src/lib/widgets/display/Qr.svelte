@@ -4,7 +4,8 @@
      style="fill:…" attribute with NO escaping — so a value like
      `red" /><img src=x onerror=…>` breaks out of the attribute and injects an
      HTML element into the {@html} sink. Two defenses: validate the colors to a
-     safe CSS-literal allowlist before they reach the generator (safeColor,
+     safe CSS-literal allowlist before they reach the generator (safeColor from
+     utils/safe-color.ts,
      applied at BOTH the onMount and $effect call sites), and sanitizeSvg the
      output (the HTML profile would strip <svg>, so this uses the SVG profile). -->
 <script lang="ts">
@@ -12,15 +13,10 @@
   import { onMount } from 'svelte';
   import { cn } from '$lib/utils.js';
   import { sanitizeSvg } from '$lib/utils/sanitize-html.js';
+  import { safeColor } from '$lib/utils/safe-color.js';
 
   type ECL = 'L' | 'M' | 'Q' | 'H';
 
-  // Only CSS color literals that can't terminate an attribute or a style
-  // declaration: hex, rgb/rgba/hsl/hsla functional forms, and bare keywords
-  // (named colors + transparent). Anything else falls back to the default.
-  const COLOR_RE = /^(#[0-9a-f]{3,8}|[a-z]+|(rgb|rgba|hsl|hsla)\([0-9a-z%.,\s/]+\))$/i;
-  const safeColor = (raw: string | undefined, fallback: string): string =>
-    raw && COLOR_RE.test(raw.trim()) ? raw.trim() : fallback;
 
   interface Props {
     id?: string;
