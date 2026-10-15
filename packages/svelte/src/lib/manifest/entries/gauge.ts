@@ -9,7 +9,7 @@ export const gaugeEntry: WidgetManifestEntry = {
     max: { type: 'number', required: false, description: 'Maximum value. Default 100.' },
     label: { type: 'string', required: false, description: 'Gauge label.' },
     color: { type: 'string', required: false, description: 'Custom gauge color.' },
-    height: { type: 'number', required: false, description: 'Height in px. Default 200.' },
+    height: { type: 'number', required: false, description: 'Max height in px.' },
     title: { type: 'string', required: false, description: 'Title above gauge.' },
   },
   example: { type: 'gauge', props: { value: 75, max: 100, label: 'Capacity', height: 240 } },

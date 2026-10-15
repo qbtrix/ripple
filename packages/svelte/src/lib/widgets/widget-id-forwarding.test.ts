@@ -55,6 +55,7 @@ const TARGETS: Target[] = [
   { type: 'news-card', id: 'n-news-card', props: { headline: 'Story', source: 'NYT' } },
   { type: 'analyst-bar', id: 'n-analyst-bar', props: { buy: 3, hold: 1, sell: 1 } },
   { type: 'range-bar', id: 'n-range-bar', props: { min: 0, max: 100, current: 50 } },
+  { type: 'gauge', id: 'n-gauge', props: { value: 40, label: 'Load' } },
   { type: 'audit-log', id: 'n-audit-log', props: { entries: [{ id: 1, actor: 'Ana', action: 'signed in' }] } },
 ];
 
