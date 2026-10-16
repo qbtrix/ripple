@@ -1,11 +1,11 @@
 /**
  * @file index.ts
- * @description Public entry for `@ripple-ui/svelte/headless` — Ripple's
+ * @description Public entry for `@ripple-ui/core/headless` — Ripple's
  * spec engine with no renderer attached.
  *
  * Nothing reachable from this file imports Svelte, `.svelte` files, or
  * touches `document` / `window`, which is what lets it run in bare Node,
- * a Worker, a test, or a non-Svelte framework. `headless-purity.test.ts`
+ * a Worker, a test, or a non-Svelte framework. `purity.test.ts`
  * enforces that as a build gate rather than a convention.
  *
  * What you get:
