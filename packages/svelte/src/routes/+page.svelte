@@ -19,7 +19,7 @@
     card gets that height (foldChips). Live, every chip
     shows (the store ones only with a store). In replay mode every chip shows
     too: one with a recorded or hand-written answer replays it, any other opens
-    Paw OS with its prompt like typed text (marked "Opens in Paw OS"), and the
+    Paw OS with its prompt like typed text (marked "Opens in Paw OS, free early-access credits"), and the
     replayable chips sort first, so the collapsed row leads with them and
     groups with none sink to the end. The chat calls the Paw Bar API only when
     PUBLIC_PAWBAR_LIVE=1 with PUBLIC_PAWBAR_ENDPOINT / _WIDGET_ID / _SITE_KEY
@@ -50,7 +50,7 @@
 	import JsonLines from '$lib/site/JsonLines.svelte';
 	import { SETUP_PROMPT } from '$lib/site/setup-prompt.js';
 	import Chat from './pawbar/Chat.svelte';
-	import { BYOK_URL, ChatSession, pawbarTransport, pawosBase, typedStaysLocal, type Transport } from './pawbar/session.svelte.js';
+	import { EARLY_ACCESS_URL, ChatSession, pawbarTransport, pawosBase, typedStaysLocal, type Transport } from './pawbar/session.svelte.js';
 	import { answerPool, findScenario, pickScenario, recordedEvents, recordedExchange } from './pawbar/recorded.js';
 	import { chatPrompts, groupedSuggestions, scenarios } from './live/scenarios.js';
 
@@ -292,10 +292,10 @@
 	</section>
 
 	<section class="closer" aria-labelledby="closer-title">
-		<h2 id="closer-title">Keep asking in Paw OS</h2>
-		<p>Add your own key and ask for anything.</p>
+		<h2 id="closer-title">Paw OS is in early access</h2>
+		<p>Sign up and get free credits to keep building.</p>
 		<div class="closer-actions">
-			<a class="btn primary" href={BYOK_URL}>Bring your own key</a>
+			<a class="btn primary" href={EARLY_ACCESS_URL}>Get early access</a>
 			<a class="link" href={GITHUB_URL}>Read the source</a>
 		</div>
 	</section>

@@ -13,8 +13,8 @@
     Sending: a chip runs here (session.send); typed text goes to Paw OS
     (session.handoff, opened from the send gesture) unless `typedLocal` keeps it
     on the Paw Bar (mock and dev only), as the hint under the composer says. A
-    `handoff` chip takes the typed path and says "Opens in Paw OS" (one hidden
-    note shared through aria-describedby).
+    `handoff` chip takes the typed path and says "Opens in Paw OS, free
+    early-access credits" (one hidden note shared through aria-describedby).
     Look: Paw OS. ChatPill's glass composer (send turns into stop while a turn
     streams), the visitor's message a blue-tint bubble, cards on --site-card
     with a hairline, typing dots and a shimmer label while waiting, shimmer bars
@@ -587,7 +587,7 @@
 					type="button"
 					class="chip"
 					disabled={session.busy}
-					title={s.handoff ? `${s.prompt} (Opens in Paw OS)` : s.prompt}
+					title={s.handoff ? `${s.prompt} (Opens in Paw OS, free early-access credits)` : s.prompt}
 					aria-describedby={s.handoff ? 'ripple-chip-handoff' : undefined}
 					onclick={() => {
 						closePanel();
@@ -613,7 +613,7 @@
 				{#if showAll}<ChevronsDownUp size={16} aria-hidden="true" />{:else}<ChevronsUpDown size={16} aria-hidden="true" />{/if}
 			</button>
 		{/snippet}
-		{#if suggestions.some((s) => s.handoff)}<span id="ripple-chip-handoff" hidden>Opens in Paw OS</span>{/if}
+		{#if suggestions.some((s) => s.handoff)}<span id="ripple-chip-handoff" hidden>Opens in Paw OS, free early-access credits</span>{/if}
 		{#if suggestions.length && (!folded || showAll)}
 			<div id="ripple-suggestions" class="chip-groups" data-expanded={expanded} data-overlay={showAll || undefined}>
 				{#if expanded}
@@ -666,7 +666,7 @@
 		</div>
 		<div class="dock-foot">
 			{@render foot?.()}
-			{#if !typedLocal}<p class="hint" id="ripple-ask-hint">Typed requests open in Paw OS.</p>{/if}
+			{#if !typedLocal}<p class="hint" id="ripple-ask-hint">Typed requests open in Paw OS (early access, free credits).</p>{/if}
 			{#if note}<p class="chat-note">{note}</p>{/if}
 		</div>
 	</div>
