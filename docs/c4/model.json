@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "scope": "ripple",
-  "generated_at": "2026-06-21T12:30:00Z",
+  "generated_at": "2026-10-16T00:00:00Z",
   "source_path": "/Users/prakash-1/Documents/paw-workspace/ripple",
   "authored": true,
   "model": {
@@ -10,103 +10,198 @@
       {
         "id": "ripple",
         "name": "Ripple",
-        "description": "Svelte 5 generative-UI runtime (@ripple-ui/svelte). Renders declarative JSON specs (UISpec / UniversalSpec) into fully interactive UIs with reactive state, expression resolution, event dispatch, and ~240 widget types including marketing, premium, and motion packs.",
+        "description": "Generative-UI runtime published as two packages: @ripple-ui/core (framework-agnostic spec engine: schema, expressions, state, events, a headless runtime) and @ripple-ui/svelte (Svelte 5 renderer with ~220 widget types across marketing, premium, data, research, craft and motion packs). Renders declarative JSON specs (UISpec / UniversalSpec) into interactive UIs.",
         "tags": ["internal"],
         "containers": [
           {
-            "id": "ripple-runtime",
-            "name": "Ripple Runtime",
-            "description": "The publishable npm library (dist/). All components, the core engine, schema definitions, the widget registry, intent layouts, and the motion system. The SvelteKit routes (src/routes/) are a dev playground only.",
-            "technology": "Svelte 5, TypeScript, Tailwind 4",
+            "id": "ripple-core",
+            "name": "@ripple-ui/core",
+            "description": "Framework-agnostic spec engine (packages/core). No DOM and no Svelte reachable from the root entry; subpaths /headless, /headless/slim, /schema, /manifest, /motion, /iso and /build keep heavy parts out of chat bundles.",
+            "technology": "TypeScript",
             "tags": ["internal"],
             "kb_article": "",
             "components": [
               {
                 "id": "core",
                 "name": "Core Engine",
-                "description": "Reactive state machine and rendering primitives. StateManager ($state rune, dot-path get/set), EventDispatcher (set/api/navigate/toast/emit/open/pin/unpin actions), ExpressionResolver ({state.path}, {item.field}, ternary, arithmetic), spec normalizer (UISpec→UniversalSpec), and NodeRenderer.svelte (recursive widget tree renderer with show-condition eval, loop context, prop binding). src/lib/core/ + src/lib/components/NodeRenderer.svelte + src/lib/Ripple.svelte.",
-                "technology": "Svelte 5, TypeScript",
+                "description": "Spec engine primitives: ExpressionResolver ({state.path}, {item.field}, ternary, arithmetic), EventDispatcher over a base dispatcher (set/api/navigate/toast/emit/open/pin/unpin/animate), the state store and mutators, the UISpec to UniversalSpec normalizer, spec audit, issues and mutator, the WidgetRegistry, theme and brand appliers, the data guard and safe-url checks. packages/core/src/core + src/security.",
+                "technology": "TypeScript",
                 "kb_article": ""
               },
               {
                 "id": "schema",
                 "name": "Schema",
-                "description": "Type contracts for the two spec systems: UISpec (explicit widget tree with UINode), UniversalSpec (intent-based high-level spec), FlowAction (chain-step action types), and WidgetTypes (widget type enum). src/lib/schema/.",
+                "description": "Type contracts for the two spec systems: UISpec (explicit widget tree with UINode), UniversalSpec (intent-based high-level spec), event handlers, brand, motion fields and WidgetTypes. packages/core/src/schema.",
                 "technology": "TypeScript",
+                "kb_article": ""
+              },
+              {
+                "id": "headless",
+                "name": "Headless Runtime",
+                "description": "Resolves a spec into a plain tree with state and events and no renderer (runtime.ts, resolve-tree.ts), plus a slim build. Exported as @ripple-ui/core/headless and /headless/slim. packages/core/src/headless.",
+                "technology": "TypeScript",
+                "kb_article": ""
+              },
+              {
+                "id": "manifest",
+                "name": "Widget Manifest",
+                "description": "Widget descriptions, actions, the craft rules and the slim widget list that hosts and agents read to pick and validate widgets; the envelope that wraps a spec for transport. packages/core/src/manifest.",
+                "technology": "TypeScript",
+                "kb_article": ""
+              },
+              {
+                "id": "motion",
+                "name": "Motion System",
+                "description": "Declarative node-level animation (RFC 12): the motion engine resolves presets and honours reduced motion (packages/core/src/motion). The with-motion Svelte action that attaches it to rendered nodes lives in packages/svelte/src/lib/actions. Reveal and Parallax sugar widgets desugar to motion fields.",
+                "technology": "TypeScript",
+                "kb_article": ""
+              },
+              {
+                "id": "iso-build",
+                "name": "Iso Kit + Build Loop",
+                "description": "The isometric kit behind the iso-scene widget (solids, scene builder, detail pass, figure audit; packages/core/src/iso) and the build loop a node host runs to craft a spec in rounds (packages/core/src/build), used by the ripple skill and the pocketpaw worker.",
+                "technology": "TypeScript",
+                "kb_article": ""
+              }
+            ]
+          },
+          {
+            "id": "ripple-svelte",
+            "name": "@ripple-ui/svelte",
+            "description": "The Svelte 5 renderer (packages/svelte/src/lib), published from dist/. Turns specs into interactive UI using @ripple-ui/core. Subpath exports: /widgets, /ui, /primitives, /schema, /streaming, /editor, /discover, theme.css, styles.css and the built manifest.json / manifest.slim.json.",
+            "technology": "Svelte 5, TypeScript, Tailwind 4",
+            "tags": ["internal"],
+            "kb_article": "",
+            "components": [
+              {
+                "id": "renderer",
+                "name": "Renderer",
+                "description": "Ripple.svelte and NodeRenderer.svelte (recursive widget tree with show conditions, loop context and prop binding), the runes StateManager (state-manager.svelte.ts) and the toast bus. packages/svelte/src/lib + src/lib/components + src/lib/core.",
+                "technology": "Svelte 5, TypeScript",
                 "kb_article": ""
               },
               {
                 "id": "widgets",
                 "name": "Widget Registry",
-                "description": "WidgetRegistry class plus ~240 widget types across layout, display, input, data, control, composite, overlay, research, vertical, workflow, interactive, and media categories. Build-time manifest for static-safe widget enumeration. src/lib/widgets/ + src/lib/manifest/.",
+                "description": "~220 widget types (one manifest entry each) across ai, c4, call, composite, control, craft, data, data-kit, design-system, display, input, interactive, layout, media, motion, overlay, research, vertical and workflow categories, registered through core's WidgetRegistry. Figures (lazy 3D scenes) and sound cues ship beside them; scripts/build-manifest.ts emits the static-safe manifest. packages/svelte/src/lib/widgets.",
                 "technology": "Svelte 5, TypeScript",
                 "kb_article": ""
               },
               {
                 "id": "marketing-premium",
                 "name": "Marketing + Premium Widgets",
-                "description": "50+ MIT-ported landing and marketing widgets (Hero, Cta, FeatureGrid, Footer, Faq, MarketingHero, Navbar, Testimonial, LogoCloud, Newsletter) and premium animated widgets (Marquee, BorderBeam, AnimatedBeam, Aurora, Spotlight, BentoGrid, TextEffect, Shimmer). src/lib/widgets/marketing/ + src/lib/widgets/premium/.",
+                "description": "Landing and marketing widgets (Hero, Cta, FeatureGrid, Footer, Faq, Navbar, Testimonial, LogoCloud, Newsletter) and premium animated widgets (Marquee, BorderBeam, AnimatedBeam, Aurora, Spotlight, BentoGrid, TextEffect, Shimmer). packages/svelte/src/lib/widgets/marketing + widgets/premium.",
                 "technology": "Svelte 5, TypeScript",
                 "kb_article": ""
               },
               {
                 "id": "intent",
                 "name": "Intent System",
-                "description": "High-level intent rendering: IntentRenderer.svelte dispatches to LayoutEngine (auto-selects layout from intent type and data shape), PatternDetector (identifies quiz/results patterns), and 14 named intent layouts (FormLayout, SummaryLayout, DetailLayout, SelectLayout, TableLayout, etc.). Falls back to NodeRenderer for 'custom' intent. src/lib/intent/.",
+                "description": "High-level intent rendering: IntentRenderer.svelte dispatches to LayoutEngine (picks a layout from intent type and data shape), PatternDetector (quiz/results patterns) and the named intent layouts. Falls back to the renderer for 'custom' intent. packages/svelte/src/lib/intent.",
                 "technology": "Svelte 5, TypeScript",
                 "kb_article": ""
               },
               {
                 "id": "dashboard",
                 "name": "Dashboard Renderer",
-                "description": "Muuri-backed draggable grid renderer for dashboard intents. DashboardRenderer.svelte manages slot registration, drag-and-drop reorder, and resize events. dashboard-manager.svelte.ts holds the reactive grid state. src/lib/intent/DashboardRenderer.svelte + src/lib/intent/dashboard-manager.svelte.ts.",
+                "description": "Draggable grid renderer for dashboard intents. DashboardRenderer.svelte manages slot registration, drag-and-drop reorder and resize; dashboard-manager.svelte.ts holds the grid state. packages/svelte/src/lib/intent.",
                 "technology": "Svelte 5, Muuri",
                 "kb_article": ""
               },
               {
                 "id": "chain-flow",
                 "name": "Chain Flow",
-                "description": "Client-side multi-step flow engine (RFC 13). ChainExecutor (chain-executor.svelte.ts) walks nested chain/chain_map UniversalSpec trees with zero round-trips, accumulating per-step data, enforcing required-field gates, and maintaining back/forward history. FlowRunner.svelte is the host component. src/lib/intent/chain-executor.svelte.ts + src/lib/intent/FlowRunner.svelte.",
+                "description": "Client-side multi-step flow engine (RFC 13). ChainExecutor (chain-executor.svelte.ts) walks nested chain/chain_map UniversalSpec trees with zero round-trips, keeps per-step data, required-field gates and back/forward history. FlowRunner.svelte hosts it. packages/svelte/src/lib/intent.",
                 "technology": "Svelte 5, TypeScript",
                 "kb_article": ""
               },
               {
-                "id": "motion",
-                "name": "Motion System",
-                "description": "Declarative node-level animation (RFC 12). Motion engine (src/lib/motion/engine.ts) resolves animation presets and applies them. with-motion.ts Svelte action (src/lib/actions/with-motion.ts) attaches motion to rendered nodes. Reveal and Parallax sugar widgets desugar to motion fields. Supports reduced-motion via prefers-reduced-motion.",
+                "id": "streaming",
+                "name": "Streaming",
+                "description": "streamSpec renders a spec while it is still arriving: partial JSON parse, first paint and mid-stream display. Isolated as @ripple-ui/svelte/streaming. packages/svelte/src/lib/streaming.",
+                "technology": "Svelte 5, TypeScript",
+                "kb_article": ""
+              },
+              {
+                "id": "editor",
+                "name": "Visual Editor",
+                "description": "Inline editor overlay, inspector and drag layer over a rendered spec, with the selection model, editable-prop policy and one-op apply seam. Exported as @ripple-ui/svelte/editor. packages/svelte/src/lib/editor.",
+                "technology": "Svelte 5, TypeScript",
+                "kb_article": ""
+              },
+              {
+                "id": "ui-kit",
+                "name": "UI Kit",
+                "description": "Shared building blocks the widgets are made of: ui, primitives, molecules, organisms, elevation and hover systems, theme.css and styles.css; plus the Discover catalogue kit (@ripple-ui/svelte/discover) and the illustration SVG sanitizer and URL sink guards (src/lib/security).",
                 "technology": "Svelte 5, TypeScript",
                 "kb_article": ""
               }
             ]
+          },
+          {
+            "id": "ripple-site",
+            "name": "Ripple Site",
+            "description": "The public docs and demo site built from packages/svelte/src/routes: home, docs, playground, showcase, the live landing, design-system and editor labs, llms.txt files, and the Paw Bar landing chat with its pay flow. Built with build:site and served as a static site.",
+            "technology": "SvelteKit (static), Svelte 5",
+            "tags": ["internal"],
+            "kb_article": "",
+            "components": []
+          },
+          {
+            "id": "ripple-skill",
+            "name": "Ripple Skill",
+            "description": "The agent skill for writing crafted Ripple specs (skills/ripple): SKILL.md, widget and craft references with examples, and scripts that build, render, audit and critique a spec in rounds.",
+            "technology": "Markdown, Node",
+            "tags": ["internal"],
+            "kb_article": "",
+            "components": []
           }
         ]
       },
       {
         "id": "paw-enterprise",
         "name": "paw-enterprise",
-        "description": "External: SvelteKit frontend that consumes ripple as @ripple-ui/svelte (file: dep). Renders pocket UIs and admin surfaces via the Ripple runtime.",
+        "description": "External: SvelteKit frontend that consumes @ripple-ui/core and @ripple-ui/svelte as file: deps on ../ripple/packages/*. Renders pocket UIs and admin surfaces via the Ripple runtime.",
         "tags": ["external"],
         "containers": []
       },
       {
         "id": "pocketpaw",
         "name": "PocketPaw",
-        "description": "External: agentic OS backend. Pockets produce rippleSpec JSON; the cloud site engine compiles the ripple track for static/dynamic Paw Sites.",
+        "description": "External: agentic OS backend. Pockets produce rippleSpec JSON; the cloud site engine compiles the ripple track for static/dynamic Paw Sites; its worker runs the core build loop.",
+        "tags": ["external"],
+        "containers": []
+      },
+      {
+        "id": "paw-bar",
+        "name": "Paw Bar",
+        "description": "External: the Paw Bar chat API. The site's landing chat calls it live only when PUBLIC_PAWBAR_LIVE=1; otherwise it plays a recorded replay.",
         "tags": ["external"],
         "containers": []
       }
     ],
     "relationships": [
       {"source": "core", "target": "schema", "description": "normalizes and validates specs", "technology": "", "style": "sync"},
-      {"source": "core", "target": "widgets", "description": "resolves widget type and renders", "technology": "", "style": "sync"},
-      {"source": "intent", "target": "core", "description": "falls back to NodeRenderer for custom intent", "technology": "", "style": "sync"},
+      {"source": "core", "target": "widgets", "description": "WidgetRegistry resolves a widget type to the component the renderer registered", "technology": "", "style": "sync"},
+      {"source": "intent", "target": "renderer", "description": "falls back to the renderer for custom intent", "technology": "", "style": "sync"},
       {"source": "intent", "target": "widgets", "description": "composes layout widgets into intent views", "technology": "", "style": "sync"},
-      {"source": "dashboard", "target": "widgets", "description": "renders dashboard slot widgets in Muuri grid", "technology": "", "style": "sync"},
-      {"source": "chain-flow", "target": "core", "description": "hosts a per-step Ripple instance inside the flow", "technology": "", "style": "sync"},
+      {"source": "dashboard", "target": "widgets", "description": "renders dashboard slot widgets in a draggable grid", "technology": "", "style": "sync"},
+      {"source": "chain-flow", "target": "renderer", "description": "hosts a per-step Ripple instance inside the flow", "technology": "", "style": "sync"},
       {"source": "widgets", "target": "marketing-premium", "description": "registers and resolves marketing/premium widget types", "technology": "", "style": "sync"},
-      {"source": "motion", "target": "core", "description": "attaches animation to rendered nodes via Svelte action", "technology": "", "style": "sync"},
-      {"source": "paw-enterprise", "target": "core", "description": "consumes @ripple-ui/svelte to render pocket UIs", "technology": "npm package (file dep)", "style": "sync"},
-      {"source": "pocketpaw", "target": "core", "description": "pockets render via ripple; sites engine compiles ripple track", "technology": "", "style": "sync"}
+      {"source": "motion", "target": "renderer", "description": "attaches animation to rendered nodes via the with-motion Svelte action", "technology": "", "style": "sync"},
+      {"source": "paw-enterprise", "target": "renderer", "description": "consumes @ripple-ui/svelte and @ripple-ui/core to render pocket UIs", "technology": "npm packages (file: deps)", "style": "sync"},
+      {"source": "pocketpaw", "target": "manifest", "description": "pockets render via ripple; agents read the widget manifest; the sites engine compiles the ripple track", "technology": "", "style": "sync"},
+      {"source": "renderer", "target": "core", "description": "resolves expressions, dispatches events and looks up widgets through the core engine", "technology": "", "style": "sync"},
+      {"source": "renderer", "target": "widgets", "description": "renders widget components for each node", "technology": "", "style": "sync"},
+      {"source": "headless", "target": "core", "description": "resolves specs into plain trees with the same engine", "technology": "", "style": "sync"},
+      {"source": "manifest", "target": "schema", "description": "describes widget props and actions against the spec types", "technology": "", "style": "sync"},
+      {"source": "streaming", "target": "renderer", "description": "feeds partially parsed specs to the renderer as they arrive", "technology": "", "style": "sync"},
+      {"source": "editor", "target": "renderer", "description": "overlays selection and edits on the rendered tree and applies one op at a time", "technology": "", "style": "sync"},
+      {"source": "widgets", "target": "ui-kit", "description": "builds widgets from the shared primitives, organisms and theme", "technology": "", "style": "sync"},
+      {"source": "ripple-site", "target": "ripple-svelte", "description": "renders docs, playground, showcase and live demos with the library", "technology": "", "style": "sync"},
+      {"source": "ripple-site", "target": "paw-bar", "description": "landing chat calls the Paw Bar API when the live flag is on", "technology": "HTTP / SSE", "style": "async"},
+      {"source": "ripple-skill", "target": "iso-build", "description": "build.mjs runs the core build loop and renders each round", "technology": "", "style": "sync"},
+      {"source": "pocketpaw", "target": "iso-build", "description": "the worker runs the build loop to craft specs", "technology": "", "style": "sync"}
     ]
   }
 }
