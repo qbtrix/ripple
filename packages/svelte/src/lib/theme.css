@@ -17,7 +17,8 @@
      slots) are ink washes over whatever card the host paints, so controls
      read on any surface: tracks at least 1.4:1 and borders at least 3:1
      (WCAG 1.4.11) against the card in both themes. --ripple-raised fills a
-     selected tab or segment, lighter than the track in both themes.
+     selected tab or segment, lighter than the track in both themes;
+     --ripple-card-face is the paper of a card object.
    The -text and control tokens sit on :where(.ripple-root) too, so a host
    that re-points a tone or the ink on .ripple-root gets values blended from
    its own, and any direct override still wins (zero specificity).
@@ -77,6 +78,12 @@
   /* A raised chip (selected tab or segment): the card lifted toward white, so
      it sits lighter than --ripple-track in light and dark alike. */
   --ripple-raised: color-mix(in oklab, var(--ripple-surface) 68%, white);
+  /* Paper for a card object (study cards, their sheets): white under dark ink,
+     a step above a dark card under light ink. Keyed off the ink, not the
+     surface, so it holds on a host that paints the card lighter than
+     --ripple-surface or leaves it transparent, where --ripple-raised reads
+     recessed in light and mid grey in dark. */
+  --ripple-card-face: oklch(from var(--ripple-surface-foreground) min(1, calc(1.2 - l * 0.9)) calc(c * 0.5) h);
 }
 
 @theme inline {
@@ -92,6 +99,7 @@
   --color-ripple-track: var(--ripple-track);
   --color-ripple-control-border: var(--ripple-control-border);
   --color-ripple-raised: var(--ripple-raised);
+  --color-ripple-card-face: var(--ripple-card-face);
   --color-ripple-border: var(--ripple-border);
   --color-ripple-ring: var(--ripple-ring);
   --color-ripple-success: var(--ripple-success);

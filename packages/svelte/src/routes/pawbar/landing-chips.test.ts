@@ -4,6 +4,8 @@
 // with them and groups with none come last). A chip with a recorded or
 // hand-written answer replays it; any other opens Paw OS with its prompt, the
 // same handoff a typed message takes, and is described as "Opens in Paw OS".
+// The seeded exchange leaves the row up; the visitor's first send folds it into
+// the toggle left of the composer, so the answer card gets that height.
 
 import { fireEvent, render } from '@testing-library/svelte';
 import { afterEach, expect, test, vi } from 'vitest';
@@ -72,4 +74,26 @@ test('a chip with no recording hands its prompt to Paw OS; a recorded chip still
 	await fireEvent.click(savings);
 	await waitFor(() => expect(view.getAllByText('Replaying a recorded answer that matches.')).toHaveLength(1));
 	expect(open).toHaveBeenCalledOnce();
+});
+
+test('the first send folds the chip row into a toggle beside the composer; the seeded exchange does not', async () => {
+	const view = render(Landing, { props });
+	const rowChips = () => view.container.querySelectorAll('#ripple-suggestions button.chip');
+	// The seeded bill splitter is there and the row is still up.
+	expect(view.getByText('A recorded answer, replayed. Change something in the card.')).toBeTruthy();
+	expect(rowChips().length).toBeGreaterThan(0);
+	expect(view.getByRole('button', { name: 'Show all suggestions' }).closest('.composer-row')).toBeNull();
+
+	await fireEvent.click(rowChips()[0]);
+	await waitFor(() => expect(view.queryByRole('button', { name: 'Stop' })).toBeNull());
+	expect(view.container.querySelector('#ripple-suggestions')).toBeNull();
+	const toggle = view.getByRole('button', { name: 'Show all suggestions' });
+	expect(toggle.closest('.composer-row')).toBeTruthy();
+	expect(toggle.getAttribute('aria-expanded')).toBe('false');
+
+	// The toggle still opens every chip, over the log.
+	await fireEvent.click(toggle);
+	expect(toggle.getAttribute('aria-expanded')).toBe('true');
+	expect(view.container.querySelector('#ripple-suggestions')?.hasAttribute('data-overlay')).toBe(true);
+	expect(view.container.querySelectorAll('.chip-group').length).toBeGreaterThan(1);
 });

@@ -187,7 +187,7 @@
         {#if opt.badge != null && opt.badge !== ''}
           <span
             data-segmented-badge
-            class="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-ripple-accent/15 px-1 text-[10.5px] font-medium leading-none tabular-nums text-ripple-accent"
+            class="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-ripple-accent/15 px-1 text-[10.5px] font-medium leading-none tabular-nums text-ripple-accent-text"
             >{opt.badge}</span
           >
         {/if}

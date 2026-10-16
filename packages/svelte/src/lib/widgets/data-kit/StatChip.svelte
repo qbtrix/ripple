@@ -6,6 +6,8 @@
   arrives pre-formatted with money(). A trend is coloured only when `good`
   says which way is good; otherwise it is neutral ink. An inset border edge
   keeps the tile apart from a card of nearly the same tone (light theme).
+  `statusLabel` replaces the status's default word with a domain word
+  ("Goal met", "Under").
 -->
 <script lang="ts">
 	import type { LucideIcon } from '@lucide/svelte';
@@ -21,12 +23,14 @@
 		value?: number | string | null;
 		unit?: string;
 		status?: Status;
+		/** The pill's word in place of the status default ("Goal met"). */
+		statusLabel?: string;
 		trend?: Trend;
 		icon?: LucideIcon;
 		class?: string;
 	}
 
-	let { label, value, unit, status, trend, icon: Icon, class: className }: Props = $props();
+	let { label, value, unit, status, statusLabel, trend, icon: Icon, class: className }: Props = $props();
 
 	const shown = $derived(typeof value === 'string' && value.trim() ? plain(value) : num(value));
 	const dir = $derived(trend?.dir === 'up' || trend?.dir === 'down' ? trend.dir : 'flat');
@@ -51,7 +55,7 @@
 	</div>
 	{#if status || trend}
 		<div class="flex flex-wrap items-center gap-1.5">
-			{#if status}<StatusPill {status} />{/if}
+			{#if status}<StatusPill {status} label={statusLabel} />{/if}
 			{#if trend}
 				<span class={['inline-flex items-center gap-0.5 text-footnote tabular-nums', tone]} data-trend={dir}>
 					<TrendIcon size={12} strokeWidth={2} aria-hidden="true" />

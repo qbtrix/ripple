@@ -1,37 +1,53 @@
 <!--
   widgets/composite/MealPlan.svelte — `meal-plan`: a week of meals from one
-  recipe library (design doc 2026-10-09 §3.6). The model writes `recipes` once
-  and `days[{day, meals[{slot, recipe}]}]` pointing at them by id; the widget
-  does the design: a people stepper, daily and weekly protein and calories
-  against `goal`, the week as day cards below 720px and a days-by-slots grid
-  above it, a swap per meal (a native select filtered by slot), the tapped
-  meal's RecipeView inline under its day, and a derived shopping list summed
-  per ingredient, scaled to the people count and grouped by aisle.
+  recipe library. The model writes `recipes` once and `days[{day, meals[{slot,
+  recipe}]}]` pointing at them by id; the widget does the design: "Cooking for
+  [stepper] people", a Plan / Shopping list switch, the daily averages against
+  `goal` (value / goal, the goal word), and the week as day rows.
+
+  Layout (one DOM, CSS-only): under 540px container width, and at any width
+  with more than four slots, each day is a disclosure row (label wrapping to
+  two lines, a pill only when the day misses, totals, then a full-width meter
+  against the goal so the goal tick sits at one x on every row, then the meal
+  names in slot order, clamped to three lines); the first day starts open, one
+  open at a time, and a one-day plan is simply open. At 540px and up with four
+  slots or fewer the same rows are a days-by-slots grid with every day shown:
+  the day cell is the label with the miss pill beside it (wrapping under a
+  long label), grams and kcal (labelled once in the header row), then the
+  meter. Each meal is a name track plus the swap box, so the box pins to the
+  cell's right edge in every row; grid names clamp at three lines (four
+  columns leave about 110px for a name).
+  Every meal row ends in the same swap control (a native select, disabled with
+  a title when the slot has no alternative). Tapping a meal opens its Recipe
+  inline under the day, scaled to `people`.
 
   Invariants:
-  - `people` is the one bound field (bind contract `people` /
-    `onpeoplechange`). `days` (a swap writes a NEW array) and `got` (ticked
-    shopping keys) are Svelte-side $bindables with change callbacks, held as
-    Edits so a host re-sending the original spec does not undo them.
-  - Everything shown derives from props: the shopping list, totals and slot
-    columns recompute as recipes and days stream in. A meal whose recipe has
-    not arrived renders a skeleton row and adds nothing to the sums.
-  - Nutrition is per serving, so day totals are per person and never scale;
-    quantities scale by people / serves (rules in recipe.ts).
-  - Days and meals key by `${id ?? ''}:${index}`; a day reads `day`, then
-    `label`, so neither spelling crashes it.
+  - `people` is the one bound field (bind contract `people` / `onpeoplechange`).
+    `days` (a swap writes a NEW array) and `got` (ticked shopping keys) are
+    Svelte-side $bindables with change callbacks, held as Edits so a host
+    re-sending the original spec does not undo them. The switch and the open
+    day are view state, never written to the spec.
+  - Collapsed meal lists and the hidden view are hidden by a class, never the
+    `hidden` attribute: tests find swaps by name (`Swap Mon Dinner`) and read
+    shopping amounts in jsdom, where Tailwind does not apply.
+  - Everything derives from props (rules in recipe.ts). Nutrition is per
+    serving, so day totals are per person; quantities scale by people / serves.
+  - Status colour appears only in pills; meters, ticks and the open-meal ring
+    use the one accent. The switch keeps the house Segmented look.
 -->
 <script lang="ts">
 	import { safeStyle } from '@ripple-ui/core';
+	import type { LucideIcon } from '@lucide/svelte';
 	import ArrowLeftRight from '@lucide/svelte/icons/arrow-left-right';
 	import Check from '@lucide/svelte/icons/check';
+	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import Dumbbell from '@lucide/svelte/icons/dumbbell';
 	import Flame from '@lucide/svelte/icons/flame';
-	import ShoppingCart from '@lucide/svelte/icons/shopping-cart';
 	import { safeArray } from '$lib/utils/safe-props.js';
-	import { AISLE_ICONS, MEAL_ICONS, SectionCard, StatChip, StatusPill, VerdictLine, STATUS_CLASS, holds, kindIcon, nextEdit, num, plain, rise } from '../data-kit/index.js';
+	import { AISLE_ICONS, MEAL_ICONS, SectionCard, StatChip, StatusPill, VerdictLine, holds, kindIcon, nextEdit, num, plain, rise } from '../data-kit/index.js';
 	import type { Edit } from '../data-kit/edit.js';
 	import type { Verdict } from '../data-kit/types.js';
+	import Segmented from '../input/Segmented.svelte';
 	import Recipe, { stepper } from './Recipe.svelte';
 	import {
 		SLOTS,
@@ -39,6 +55,7 @@
 		dayTotals,
 		findRecipe,
 		goalCheck,
+		humanRef,
 		list,
 		positive,
 		qtyLabel,
@@ -91,7 +108,7 @@
 		ongotchange
 	}: Props = $props();
 
-	const MAX_PEOPLE = 20;
+	const MAX_PEOPLE = 99;
 	const uid = $props.id();
 
 	const rootStyle = $derived(
@@ -114,6 +131,12 @@
 	const gotList = $derived(holds(gotEdit, got) ? gotEdit.value : list(got));
 	const goalObj = $derived(rec(goal));
 
+	/** Swap choices per slot: recipes of that kind, plus kind-less ones (refs are unique). */
+	function choices(slot: string, current: (typeof lib)[number]) {
+		const opts = lib.filter((r) => !r.kind || r.kind === slot);
+		return opts.some((o) => o.ref === current.ref) ? opts : [current, ...opts];
+	}
+
 	const view = $derived(
 		dayList.map((raw, di) => {
 			const d = rec(raw);
@@ -123,7 +146,8 @@
 				const recipe = findRecipe(lib, ref);
 				const slot = plain(m.slot).toLowerCase() || recipe?.kind || (ref ? 'other' : '');
 				if (!slot) return [];
-				return [{ key: `${m.id ?? ''}:${mi}`, mi, slot, ref, recipe }];
+				const name = recipe?.name ?? humanRef(ref || slotLabel(slot));
+				return [{ key: `${m.id ?? ''}:${mi}`, mi, slot, ref, recipe, name, opts: recipe ? choices(slot, recipe) : [] }];
 			});
 			// Protein leads the day when the goal names it; calories otherwise.
 			const t = dayTotals(raw, lib);
@@ -139,19 +163,18 @@
 		const used = new Set(view.flatMap((d) => d.meals.map((m) => m.slot)));
 		return [...SLOTS.filter((s) => used.has(s)), ...[...used].filter((s) => !(SLOTS as readonly string[]).includes(s))];
 	});
+	// The days-by-slots grid only reads with four columns or fewer.
+	const grid = $derived(slots.length > 0 && slots.length <= 4);
+	// A one-day plan has nothing to collapse: its day renders open, no disclosure.
+	const single = $derived(view.length === 1);
+	const canSwap = $derived(view.some((d) => d.meals.some((m) => m.opts.length > 1)));
 
 	const mean = (xs: (number | undefined)[]) => {
 		const ok = xs.filter((x): x is number => x !== undefined);
 		return ok.length ? ok.reduce((a, b) => a + b, 0) / ok.length : undefined;
 	};
-	const total = (xs: (number | undefined)[]) => {
-		const ok = xs.filter((x): x is number => x !== undefined);
-		return ok.length ? ok.reduce((a, b) => a + b, 0) : undefined;
-	};
 	const avgProtein = $derived(mean(view.map((d) => d.protein)));
 	const avgKcal = $derived(mean(view.map((d) => d.kcal)));
-	const weekProtein = $derived(total(view.map((d) => d.protein)));
-	const weekKcal = $derived(total(view.map((d) => d.kcal)));
 	const proteinCheck = $derived(goalCheck(avgProtein, goalObj.protein_g, 'floor'));
 	const kcalCheck = $derived(goalCheck(avgKcal, goalObj.kcal, 'target'));
 
@@ -160,13 +183,9 @@
 	const gotSet = $derived(new Set(gotList.filter((k): k is string => typeof k === 'string')));
 	const gotCount = $derived(shop.reduce((n, g) => n + g.items.filter((i) => gotSet.has(i.key)).length, 0));
 
-	/** Swap choices per slot: recipes of that kind, plus kind-less ones. */
-	function choices(slot: string, current: { ref: string } | undefined) {
-		const opts = lib.filter((r) => !r.kind || r.kind === slot);
-		return current && !opts.some((o) => o.ref === current.ref) ? [current as (typeof lib)[number], ...opts] : opts;
-	}
-
-	// Which meal's recipe is open, as `${dayIndex}:${mealIndex}`: view state.
+	// View state: the switch, the one open day (first by default), the open meal.
+	let tab = $state<'plan' | 'shop'>('plan');
+	let openDay = $state<number | null>(0);
 	let openAt = $state<string | null>(null);
 
 	function setPeople(n: number) {
@@ -189,237 +208,311 @@
 	}
 
 	const g0 = (v: number | undefined) => (v === undefined ? undefined : Math.round(v));
+	const people$ = (n: number) => (n === 1 ? '1 person' : `${n} people`);
+		// Collapsed summary: the separator stays on the name before it (never starts a
+	// line) and a hyphenated name does not split at its hyphen.
+	const summary = (names: string[]) => names.map((n) => n.replaceAll('-', '\u2011')).join('\u00a0· ');
 	const focusRing = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ripple-ring';
-	const gridCols = '@min-[720px]:grid-cols-[8.5rem_repeat(var(--slots),minmax(0,1fr))]';
+	// Meter scale runs to 120% so an overshoot shows past the goal tick.
+	const SCALE = 1.2;
 </script>
+
+{#snippet meter(d: (typeof view)[number])}
+	{#if d.ratio !== undefined}
+		<span class="relative block h-1 min-w-0 flex-1 rounded-full bg-ripple-muted" aria-hidden="true">
+			<span class="absolute inset-y-0 left-0 rounded-full bg-ripple-accent" style:width="{(Math.min(Math.max(d.ratio, 0), SCALE) / SCALE) * 100}%"></span>
+			<span class="absolute -inset-y-0.5 w-px bg-ripple-muted-foreground" style:left="{100 / SCALE}%"></span>
+		</span>
+	{/if}
+{/snippet}
+
+<!-- Day grams and kcal. The narrow header says "protein" only from 540px (room); the grid labels it once in its header row. -->
+{#snippet figures(d: (typeof view)[number], cls: string, word: boolean)}
+	<span class={[cls, 'text-footnote text-ripple-muted-foreground tabular-nums']} data-slot="day-totals"
+		>{#if d.protein !== undefined}{num(g0(d.protein))} g<span class={['sr-only', word && '@min-[540px]:not-sr-only']}>{' protein'}</span>{/if}{#if d.protein !== undefined && d.kcal !== undefined}{' · '}{/if}{#if d.kcal !== undefined}{num(g0(d.kcal))} kcal{/if}</span
+	>
+{/snippet}
+
+{#snippet miss(d: (typeof view)[number])}
+	{#if d.check && d.check.status !== 'good'}<StatusPill status={d.check.status} label={d.check.word} class="shrink-0" />{/if}
+{/snippet}
 
 <div {id} class={['@container text-ripple-surface-foreground', className]} style={rootStyle} data-widget="meal-plan">
 	<div class="flex flex-col gap-3">
 		{#if heading || sub}
 			<header class="flex min-w-0 flex-col gap-0.5">
 				{#if heading}<h2 class="text-title-3 font-semibold text-pretty">{heading}</h2>{/if}
-				{#if sub}<p class="text-callout text-ripple-muted-foreground">{sub}</p>{/if}
+				{#if sub}<p class="text-callout text-pretty text-ripple-muted-foreground">{sub}</p>{/if}
 			</header>
 		{/if}
 
 		<VerdictLine {verdict} />
 
-		<!-- Two columns below 720px (the stepper spans both, an odd last chip too,
-		     so no chip sits beside an empty half); one row above it. -->
-		<div class="grid grid-cols-2 gap-2 @min-[720px]:flex" data-slot="totals">
-			<div class="col-span-2 flex min-w-0 items-center justify-between gap-2 rounded-md bg-ripple-muted px-3 py-2 @min-[720px]:flex-[1.3]">
-				<div class="flex min-w-0 flex-col">
-					<span class="text-footnote text-ripple-muted-foreground">Cooking for</span>
-					<span class="text-footnote text-ripple-muted-foreground">{count === 1 ? '1 person' : `${count} people`}</span>
-				</div>
+		<div class="flex flex-col gap-2 @min-[540px]:flex-row @min-[540px]:items-center @min-[540px]:justify-between" data-slot="controls">
+			<div class="flex items-center gap-2 text-callout">
+				<span>Cooking for</span>
 				{@render stepper(count, 1, MAX_PEOPLE, 'people', setPeople)}
+				<span>{count === 1 ? 'person' : 'people'}</span>
 			</div>
-			{#if avgProtein !== undefined}
-				<StatChip label="Protein a day" value={g0(avgProtein)} unit="g" status={proteinCheck?.status} icon={Dumbbell} class="@min-[720px]:flex-1" />
-			{/if}
-			{#if avgKcal !== undefined}
-				<StatChip label="Calories a day" value={g0(avgKcal)} unit="kcal" status={kcalCheck?.status} icon={Flame} class="@min-[720px]:flex-1" />
-			{/if}
-			<StatChip
-				label="To buy"
-				value={shopCount}
-				unit={shopCount === 1 ? 'item' : 'items'}
-				icon={ShoppingCart}
-				class={['@min-[720px]:flex-1', (avgProtein === undefined) === (avgKcal === undefined) && 'col-span-2'].filter(Boolean).join(' ')}
+			<Segmented
+				class="[&_[role=radiogroup]]:w-full @min-[540px]:[&_[role=radiogroup]]:w-fit"
+				options={[
+					{ value: 'plan', label: 'Plan' },
+					{ value: 'shop', label: 'Shopping list', badge: shopCount || undefined }
+				]}
+				value={tab}
+				onchange={(v) => (tab = v === 'shop' ? 'shop' : 'plan')}
 			/>
 		</div>
-		{#if weekProtein !== undefined || weekKcal !== undefined || goalObj.protein_g !== undefined}
-			<p class="-mt-1 text-footnote text-ripple-muted-foreground tabular-nums" data-slot="week">
-				Per person, the week comes to {[weekProtein !== undefined && `${num(g0(weekProtein))} g protein`, weekKcal !== undefined && `${num(g0(weekKcal))} kcal`]
-					.filter(Boolean)
-					.join(' and ') || 'nothing yet'}{#if positive(goalObj.protein_g)}{` against a goal of ${num(goalObj.protein_g)} g protein a day`}{/if}.
-			</p>
-		{/if}
 
-		{#if view.length}
-			<div class="rounded-ripple border border-ripple-border bg-ripple-surface" style:--slots={slots.length || 1} data-slot="week-grid">
-				<div class={['hidden gap-3 border-b border-ripple-border px-3 pt-2.5 pb-2 @min-[720px]:grid', gridCols]} aria-hidden="true">
-					<span class="text-caption-1 font-medium tracking-[0.04em] text-ripple-muted-foreground uppercase">Day</span>
-					{#each slots as s (s)}
-						{@const SlotIcon = kindIcon(MEAL_ICONS, s)}
-						<span class="flex items-center gap-1.5 px-2 text-caption-1 font-medium tracking-[0.04em] text-ripple-muted-foreground uppercase">
-							<SlotIcon size={12} strokeWidth={1.75} />{slotLabel(s)}
-						</span>
-					{/each}
-				</div>
-				<ol class="divide-y divide-ripple-border" aria-label="Days">
-					{#each view as d, di (d.key)}
-						{@const cells = slots.map((s) => d.meals.filter((m) => m.slot === s))}
-						<li class={['grid grid-cols-1 gap-1.5 px-3 py-3 @min-[720px]:gap-3', gridCols]} in:rise={{ index: di }} data-day={d.label}>
-							<div class="flex min-w-0 flex-col gap-1">
-								<div class="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 @min-[720px]:flex-col @min-[720px]:items-start">
-									<h3 class="text-caption-1 font-medium tracking-[0.04em] uppercase">{d.label}</h3>
-									{#if d.check}<StatusPill status={d.check.status} label={d.check.word} />{/if}
-								</div>
-								{#if d.protein !== undefined || d.kcal !== undefined}
-									<p class="text-footnote text-ripple-muted-foreground tabular-nums" data-slot="day-totals">
-										{#if d.protein !== undefined}<span class="font-medium text-ripple-surface-foreground">{num(g0(d.protein))} g</span> protein{/if}{#if d.protein !== undefined && d.kcal !== undefined}{' · '}{/if}{#if d.kcal !== undefined}{num(g0(d.kcal))} kcal{/if}
-									</p>
-								{/if}
-								{#if d.check && d.ratio !== undefined}
-									<div class="h-1 overflow-hidden rounded-full bg-ripple-border @min-[720px]:max-w-28" aria-hidden="true">
-										<div class={['h-full rounded-full', STATUS_CLASS[d.check.status].fill]} style:width="{Math.min(Math.max(d.ratio, 0), 1) * 100}%"></div>
+		<div class={['flex flex-col gap-3', tab !== 'plan' && 'hidden']} data-slot="plan">
+			{#if avgProtein !== undefined || avgKcal !== undefined}
+				<section class="flex flex-col gap-1.5" aria-labelledby="{uid}-avg" data-slot="totals">
+					<h3 id="{uid}-avg" class="text-footnote text-ripple-muted-foreground">Daily average per person</h3>
+					<div class="grid grid-cols-[repeat(auto-fit,minmax(8.5rem,1fr))] gap-2">
+						{#if avgProtein !== undefined}
+							{@const gp = positive(goalObj.protein_g)}
+							<StatChip label="Protein" value={g0(avgProtein)} unit={gp ? `/ ${num(gp)} g` : 'g'} status={proteinCheck?.status} statusLabel={proteinCheck?.word} icon={Dumbbell} />
+						{/if}
+						{#if avgKcal !== undefined}
+							{@const gk = positive(goalObj.kcal)}
+							<StatChip label="Calories" value={g0(avgKcal)} unit={gk ? `/ ${num(gk)} kcal` : 'kcal'} status={kcalCheck?.status} statusLabel={kcalCheck?.word} icon={Flame} />
+						{/if}
+					</div>
+				</section>
+			{/if}
+
+			{#if view.length}
+				<div style:--slots={slots.length || 1} data-slot="week-grid">
+					{#if grid}
+						<div class="hidden gap-x-3 border-b border-ripple-border pb-1.5 @min-[540px]:grid @min-[540px]:grid-cols-[6.5rem_repeat(var(--slots),minmax(0,1fr))]" aria-hidden="true">
+							<span class="truncate px-0.5 text-footnote text-ripple-muted-foreground">{[view.some((d) => d.protein !== undefined) && 'Protein', view.some((d) => d.kcal !== undefined) && 'kcal'].filter(Boolean).join(' · ')}</span>
+							{#each slots as s (s)}
+								{@const SlotIcon = kindIcon(MEAL_ICONS, s)}
+								<span class="flex min-w-0 items-center gap-1.5 px-0.5 text-footnote text-ripple-muted-foreground">
+									<SlotIcon size={14} strokeWidth={1.75} class="shrink-0" /><span class="truncate">{slotLabel(s)}</span>
+								</span>
+							{/each}
+						</div>
+					{/if}
+					<ol class="divide-y divide-ripple-border" aria-label="Days">
+						{#each view as d, di (d.key)}
+							{@const open = single || openDay === d.di}
+							{@const cells = slots.map((s) => d.meals.filter((m) => m.slot === s))}
+														<li
+								class={['flex flex-col py-2.5', grid && '@min-[540px]:grid @min-[540px]:grid-cols-[6.5rem_repeat(var(--slots),minmax(0,1fr))] @min-[540px]:items-start @min-[540px]:gap-x-3 @min-[540px]:py-2']}
+								in:rise={{ index: di }}
+								data-day={d.label}
+							>
+								<!-- Row header: a disclosure, or a plain header for a one-day plan. Hidden in the grid, which has its own. -->
+								<svelte:element
+									this={single ? 'div' : 'button'}
+									class={['flex w-full min-w-0 items-start gap-2 rounded-md text-left', !single && focusRing, grid && '@min-[540px]:hidden']}
+									{...single ? {} : { type: 'button', 'aria-expanded': open, 'aria-controls': `${uid}-day-${d.di}`, onclick: () => (openDay = open ? null : d.di) }}
+								>
+									<span class="flex min-w-0 flex-1 flex-col gap-1">
+										<!-- Pill sits on the header line so every row's meter runs the full width with the goal tick at one x. -->
+										<span class="flex min-w-0 items-center gap-2">
+											<span class="line-clamp-2 min-w-0 flex-1 text-callout font-medium break-words" title={d.label}>{d.label}</span>
+											{@render miss(d)}
+											{#if d.protein !== undefined || d.kcal !== undefined}{@render figures(d, 'shrink-0', true)}{/if}
+										</span>
+										{#if d.ratio !== undefined}<span class="flex">{@render meter(d)}</span>{/if}
+										{#if !d.meals.length}
+											<span class="text-footnote text-ripple-muted-foreground">Nothing planned</span>
+										{:else if !open}
+											{@const names = cells.flat().map((m) => (m.recipe ? m.name : `${m.name} (not in recipes)`))}
+											<span class="line-clamp-3 text-footnote text-ripple-muted-foreground" title={names.join(' · ')} data-slot="summary">{summary(names)}</span>
+										{/if}
+									</span>
+									{#if d.meals.length && !single}
+										<ChevronDown
+											size={16}
+											strokeWidth={1.75}
+											aria-hidden="true"
+											class={['mt-px shrink-0 text-ripple-muted-foreground transition-transform duration-150 motion-reduce:transition-none', open && 'rotate-180']}
+										/>
+									{/if}
+								</svelte:element>
+								{#if grid}
+									<div class="hidden min-w-0 flex-col gap-1 py-1 pr-1 @min-[540px]:flex">
+										<span class="flex flex-wrap items-center gap-x-1 gap-y-1">
+											<span class="line-clamp-2 min-w-0 text-callout break-words font-medium" title={d.label}>{d.label}</span>
+											{@render miss(d)}
+										</span>
+										{#if d.protein !== undefined || d.kcal !== undefined}
+											{@render figures(d, 'truncate', false)}
+										{/if}
+										{#if d.ratio !== undefined}<span class="flex">{@render meter(d)}</span>{/if}
 									</div>
 								{/if}
-							</div>
 
-							{#each cells as cell, ci (slots[ci])}
-								<div class={['min-w-0 flex-col gap-1', cell.length ? 'flex' : 'hidden @min-[720px]:flex']}>
-									{#each cell as m (m.key)}
-										{@const SlotIcon = kindIcon(MEAL_ICONS, m.slot)}
-										{@const at = `${d.di}:${m.mi}`}
-										{@const isOpen = openAt === at}
-										{#if m.recipe}
-											{@const opts = choices(m.slot, m.recipe)}
-											<div
-												class={[
-													'flex min-w-0 items-center gap-1 rounded-md border transition-colors duration-150 motion-reduce:transition-none',
-													isOpen ? 'border-ripple-accent bg-ripple-accent/8' : 'border-transparent hover:bg-ripple-muted'
-												]}
-												data-meal={m.recipe.ref}
-											>
-												<button
-													type="button"
-													class={['flex min-w-0 flex-1 items-center gap-2.5 rounded-md px-2 py-1.5 text-left', focusRing]}
-													aria-expanded={isOpen}
-													aria-controls="{uid}-recipe-{d.di}"
-													onclick={() => (openAt = isOpen ? null : at)}
+								<div
+									id="{uid}-day-{d.di}"
+									class={['flex-col gap-0.5 pt-1.5', open && d.meals.length ? 'flex' : 'hidden', grid && '@min-[540px]:contents']}
+									data-slot="meals"
+								>
+									{#each cells as cell, ci (slots[ci])}
+										<div class={['min-w-0 flex-col gap-1', cell.length ? 'flex' : 'hidden', grid && d.meals.length && '@min-[540px]:flex']}>
+											{#each cell as m (m.key)}
+												{@const SlotIcon = kindIcon(MEAL_ICONS, m.slot)}
+												{@const at = `${d.di}:${m.mi}`}
+												{@const isOpen = openAt === at}
+												<div
+													class={[
+														'flex min-w-0 items-center gap-1 rounded-md transition-colors @min-[540px]:gap-0.5 duration-150 motion-reduce:transition-none',
+														grid && '@min-[540px]:items-start',
+														isOpen ? 'bg-ripple-accent/8 ring-1 ring-ripple-accent' : m.recipe && 'hover:bg-ripple-muted'
+													]}
+													data-meal={m.recipe?.ref}
+													data-slot={m.recipe ? undefined : 'meal-pending'}
 												>
-													<span class="grid size-8 shrink-0 place-items-center rounded-md bg-ripple-muted text-ripple-muted-foreground @min-[720px]:hidden" aria-hidden="true">
-														<SlotIcon size={16} strokeWidth={1.75} />
-													</span>
-													<span class="flex min-w-0 flex-col">
-														<span class="text-caption-1 font-medium tracking-[0.04em] text-ripple-muted-foreground uppercase @min-[720px]:sr-only">{slotLabel(m.slot)}</span>
-														<span class="line-clamp-2 text-callout font-medium text-pretty">{m.recipe.name}</span>
-														{#if m.recipe.kcal !== undefined || m.recipe.protein !== undefined}
-															<span class="text-footnote text-ripple-muted-foreground tabular-nums">
-																{[m.recipe.protein !== undefined && `${num(m.recipe.protein)} g protein`, m.recipe.kcal !== undefined && `${num(m.recipe.kcal)} kcal`].filter(Boolean).join(' · ')}
+													{#if m.recipe}
+														<button
+															type="button"
+															class={['flex min-w-0 flex-1 items-start gap-2 rounded-md px-1.5 py-1.5 text-left', focusRing, grid && '@min-[540px]:pr-0 @min-[540px]:pl-0.5']}
+															aria-expanded={isOpen}
+															aria-controls="{uid}-recipe-{d.di}"
+															onclick={() => (openAt = isOpen ? null : at)}
+														>
+															{@render slotCol(SlotIcon, m.slot)}
+															<span class="flex min-w-0 flex-1 flex-col">
+																<span class={['line-clamp-2 text-callout font-medium break-words', grid && '@min-[540px]:line-clamp-3']} title={m.name}>{m.name}</span>
+																{#if m.recipe.kcal !== undefined || m.recipe.protein !== undefined}
+																	<span class={['text-footnote text-ripple-muted-foreground tabular-nums', grid && '@min-[540px]:hidden']}>
+																		{[m.recipe.protein !== undefined && `${num(m.recipe.protein)} g protein`, m.recipe.kcal !== undefined && `${num(m.recipe.kcal)} kcal`].filter(Boolean).join(' · ')}
+																	</span>
+																{/if}
 															</span>
-														{/if}
-													</span>
-												</button>
-												{#if opts.length > 1}
+														</button>
+													{:else}
+														<span class={['flex min-w-0 flex-1 items-start gap-2 px-1.5 py-1.5', grid && '@min-[540px]:pr-0 @min-[540px]:pl-0.5']}>
+															{@render slotCol(SlotIcon, m.slot)}
+															<span class="flex min-w-0 flex-1 flex-col">
+																<span class={['line-clamp-2 text-callout break-words text-ripple-muted-foreground', grid && '@min-[540px]:line-clamp-3']} title={m.name}>{m.name}</span>
+																<span class="text-footnote text-ripple-muted-foreground">Not in recipes</span>
+															</span>
+														</span>
+													{/if}
 													<label
-														class="relative mr-1 grid size-8 shrink-0 place-items-center rounded-md text-ripple-muted-foreground transition-colors hover:bg-ripple-border hover:text-ripple-surface-foreground focus-within:outline-2 focus-within:outline-ripple-ring motion-reduce:transition-none"
-														title="Swap this meal"
+														class={[
+																							'relative grid size-7 shrink-0 place-items-center rounded-md text-ripple-muted-foreground transition-colors focus-within:outline-2 focus-within:outline-ripple-ring motion-reduce:transition-none',
+															m.opts.length > 1 ? 'hover:bg-ripple-muted hover:text-ripple-surface-foreground' : 'opacity-40'
+														]}
+														title={m.opts.length > 1 ? 'Swap this meal' : m.recipe ? `No other ${m.slot} recipes` : 'Not in recipes'}
 													>
 														<ArrowLeftRight size={14} strokeWidth={1.75} aria-hidden="true" />
 														<select
-															class="absolute inset-0 size-full cursor-pointer appearance-none opacity-0"
+															class="absolute inset-0 size-full cursor-pointer appearance-none opacity-0 disabled:cursor-not-allowed"
 															aria-label="Swap {d.label} {slotLabel(m.slot)}"
-															value={m.recipe.ref}
+															disabled={m.opts.length < 2}
+															value={m.recipe?.ref ?? ''}
 															onchange={(e) => swap(d.di, m.mi, e.currentTarget.value)}
 														>
-															{#each opts as o (o.key)}
+															{#each m.opts as o (o.key)}
 																<option value={o.ref}>{o.name}{o.protein !== undefined ? ` (${num(o.protein)} g protein)` : ''}</option>
+															{:else}
+																<option value="">{m.name}</option>
 															{/each}
 														</select>
 													</label>
-												{/if}
-											</div>
-										{:else}
-											<div class="flex min-w-0 items-center gap-2.5 px-2 py-1.5" data-slot="meal-pending" aria-busy="true">
-												<span class="grid size-8 shrink-0 place-items-center rounded-md bg-ripple-muted text-ripple-muted-foreground @min-[720px]:hidden" aria-hidden="true">
-													<SlotIcon size={16} strokeWidth={1.75} />
-												</span>
-												<span class="flex min-w-0 flex-1 flex-col gap-1.5">
-													<span class="truncate text-callout text-ripple-muted-foreground">{m.ref || slotLabel(m.slot)}</span>
-													<span class="h-2.5 w-2/3 rounded bg-ripple-muted" aria-hidden="true"></span>
-												</span>
-											</div>
-										{/if}
+												</div>
+											{/each}
+											{#if !cell.length}<span class="px-1.5 py-1.5 text-footnote text-ripple-muted-foreground">None</span>{/if}
+										</div>
 									{/each}
-									{#if !cell.length}<span class="px-2 py-2 text-footnote text-ripple-muted-foreground" aria-hidden="true">–</span>{/if}
 								</div>
-							{/each}
-
-							{#if !d.meals.length}
-								<p class="text-callout text-ripple-muted-foreground @min-[720px]:hidden">Nothing planned yet.</p>
-							{/if}
-
-							{#each d.meals as m (m.key)}
-								{#if openAt === `${d.di}:${m.mi}` && m.recipe}
-									<div id="{uid}-recipe-{d.di}" class="col-span-full mt-1 rounded-ripple border border-ripple-border bg-ripple-muted/40 p-3" in:rise>
-										<Recipe
-											embedded
-											name={m.recipe.name}
-											kind={m.recipe.raw.kind as never}
-											image={m.recipe.raw.image as never}
-											minutes={m.recipe.raw.minutes as never}
-											serves={m.recipe.raw.serves as never}
-											kcal={m.recipe.raw.kcal as never}
-											protein_g={m.recipe.raw.protein_g as never}
-											tags={m.recipe.raw.tags as never}
-											ingredients={m.recipe.raw.ingredients as never}
-											steps={m.recipe.raw.steps as never}
-											goal={goal}
-											servings={count}
-											onclose={() => (openAt = null)}
-										/>
-									</div>
+								{#if grid && !d.meals.length}
+									<p class="hidden py-1 text-footnote text-ripple-muted-foreground @min-[540px]:col-[2/-1] @min-[540px]:block">Nothing planned</p>
 								{/if}
-							{/each}
-						</li>
-					{/each}
-				</ol>
-			</div>
-		{:else}
-			<SectionCard title="Week" empty="No meals yet. Ask for a week of meals." />
-		{/if}
 
-		<SectionCard title="Shopping list" icon={ShoppingCart} empty={shopCount ? undefined : 'The list fills in as meals are planned.'}>
-			{#snippet aside()}
-				{#if shopCount}
-					<span class="text-footnote tabular-nums">{gotCount ? `${gotCount} of ${shopCount} got` : `for ${count === 1 ? '1 person' : `${count} people`}`}</span>
-				{/if}
-			{/snippet}
-			<div class="grid grid-cols-1 gap-x-6 gap-y-4 @min-[560px]:grid-cols-2 @min-[720px]:grid-cols-3" data-slot="shopping">
-				{#each shop as g (g.aisle)}
-					{@const AisleIcon = kindIcon(AISLE_ICONS, g.aisle)}
-					<section class="min-w-0" data-aisle={g.aisle}>
-						<h4 class="mb-1 flex items-center gap-1.5 text-footnote font-medium text-ripple-muted-foreground">
-							<AisleIcon size={14} strokeWidth={1.75} aria-hidden="true" />{slotLabel(g.aisle)}
-							<span class="ml-auto tabular-nums">{g.items.length}</span>
-						</h4>
-						<ul class="flex flex-col">
-							{#each g.items as it (it.key)}
-								{@const ticked = gotSet.has(it.key)}
-								{@const amount = qtyLabel(it.qty, it.unit)}
-								<li class="border-b border-ripple-border/60 last:border-b-0">
-									<button
-										type="button"
-										role="checkbox"
-										aria-checked={ticked}
-										class={['flex w-full items-start gap-2.5 rounded py-1.5 text-left', focusRing]}
-										onclick={() => toggleGot(it.key)}
-										data-item={it.key}
-									>
-										<span
-											class={[
-												'mt-0.5 grid size-4 shrink-0 place-items-center rounded-[4px] border transition-colors duration-150 motion-reduce:transition-none',
-												ticked ? 'border-ripple-success bg-ripple-success text-ripple-success-foreground' : 'border-ripple-muted-foreground/50'
-											]}
-											aria-hidden="true"
+								{#each d.meals as m (m.key)}
+									{#if openAt === `${d.di}:${m.mi}` && m.recipe}
+										<div id="{uid}-recipe-{d.di}" class="col-span-full mt-2 rounded-md bg-ripple-muted/60 p-3" in:rise>
+											<Recipe
+												embedded
+												name={m.recipe.name}
+												kind={m.recipe.raw.kind as never}
+												image={m.recipe.raw.image as never}
+												minutes={m.recipe.raw.minutes as never}
+												serves={m.recipe.raw.serves as never}
+												kcal={m.recipe.raw.kcal as never}
+												protein_g={m.recipe.raw.protein_g as never}
+												tags={m.recipe.raw.tags as never}
+												ingredients={m.recipe.raw.ingredients as never}
+												steps={m.recipe.raw.steps as never}
+												goal={goal}
+												servings={count}
+												onclose={() => (openAt = null)}
+											/>
+										</div>
+									{/if}
+								{/each}
+							</li>
+						{/each}
+					</ol>
+				</div>
+				{#if canSwap}<p class="text-footnote text-ripple-muted-foreground">Swap any meal; the shopping list follows.</p>{/if}
+			{:else}
+				<SectionCard title="Week" empty="No meals yet. Ask for a week of meals." />
+			{/if}
+		</div>
+
+		<section class={['flex flex-col gap-2', tab !== 'shop' && 'hidden']} aria-label="Shopping list" data-slot="shopping-view">
+			<p class="text-footnote text-ripple-muted-foreground tabular-nums">
+				<span>For {people$(count)}</span>{#if shopCount}{' · '}<span>{gotCount ? `${gotCount} of ${shopCount} got` : `${shopCount} ${shopCount === 1 ? 'item' : 'items'}`}</span>{/if}
+			</p>
+			{#if shopCount}
+				<div class="columns-1 gap-6 @min-[540px]:columns-2" data-slot="shopping">
+					{#each shop as g (g.aisle)}
+						{@const AisleIcon = kindIcon(AISLE_ICONS, g.aisle)}
+						<section class="mb-4 min-w-0 break-inside-avoid" data-aisle={g.aisle}>
+							<h4 class="mb-1 flex items-center gap-1.5 text-footnote font-medium text-ripple-muted-foreground">
+								<AisleIcon size={14} strokeWidth={1.75} aria-hidden="true" />{slotLabel(g.aisle)}
+								<span class="ml-auto tabular-nums">{g.items.length}</span>
+							</h4>
+							<ul class="flex flex-col divide-y divide-ripple-border">
+								{#each g.items as it (it.key)}
+									{@const ticked = gotSet.has(it.key)}
+									{@const amount = qtyLabel(it.qty, it.unit)}
+									<li>
+										<button
+											type="button"
+											role="checkbox"
+											aria-checked={ticked}
+											class={['flex w-full items-start gap-2.5 rounded py-1.5 text-left', focusRing]}
+											onclick={() => toggleGot(it.key)}
+											data-item={it.key}
 										>
-											{#if ticked}<Check size={11} strokeWidth={3} />{/if}
-										</span>
-										<span class={['min-w-0 flex-1 text-callout', ticked && 'text-ripple-muted-foreground line-through']}>
-											{it.name}
-											{#if it.uses > 1}<span class="text-footnote text-ripple-muted-foreground no-underline"> · {it.uses} meals</span>{/if}
-										</span>
-										<span class={['shrink-0 text-callout tabular-nums', ticked ? 'text-ripple-muted-foreground' : 'font-medium']} data-slot="amount">{amount || 'to taste'}</span>
-									</button>
-								</li>
-							{/each}
-						</ul>
-					</section>
-				{/each}
-			</div>
-		</SectionCard>
+											<span
+												class={[
+													'mt-px grid size-4 shrink-0 place-items-center rounded-[4px] border transition-colors duration-150 motion-reduce:transition-none',
+													ticked ? 'border-ripple-accent bg-ripple-accent text-ripple-accent-foreground' : 'border-ripple-muted-foreground'
+												]}
+												aria-hidden="true"
+											>
+												{#if ticked}<Check size={11} strokeWidth={3} />{/if}
+											</span>
+											<span class={['min-w-0 flex-1 text-callout break-words', ticked && 'text-ripple-muted-foreground line-through']}>
+												{it.name}{#if it.uses > 1}<span class="text-footnote text-ripple-muted-foreground">{` · ${it.uses} meals`}</span>{/if}
+											</span>
+											<span class={['shrink-0 text-callout tabular-nums', ticked ? 'text-ripple-muted-foreground' : 'font-medium']} data-slot="amount">{amount || 'to taste'}</span>
+										</button>
+									</li>
+								{/each}
+							</ul>
+						</section>
+					{/each}
+				</div>
+			{:else}
+				<p class="text-callout text-ripple-muted-foreground">The list fills in as meals are planned.</p>
+			{/if}
+		</section>
 	</div>
 </div>
+
+{#snippet slotCol(SlotIcon: LucideIcon, slot: string)}
+	<span class={['flex w-[4.5rem] shrink-0 items-center gap-1.5 pt-px text-footnote text-ripple-muted-foreground', grid && '@min-[540px]:sr-only']}>
+		<SlotIcon size={14} strokeWidth={1.75} aria-hidden="true" class="shrink-0" /><span class="truncate">{slotLabel(slot)}</span>
+	</span>
+{/snippet}

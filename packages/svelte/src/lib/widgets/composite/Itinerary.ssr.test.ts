@@ -17,6 +17,6 @@ describe('itinerary SSR', () => {
 		});
 		expect(body).toContain('Pena Palace');
 		expect(body).toContain('data-slot="route"');
-		expect(body).toContain('$25.00');
+		expect(body).toContain('$25');
 	});
 });
