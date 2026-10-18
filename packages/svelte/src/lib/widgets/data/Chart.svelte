@@ -119,6 +119,8 @@
 
 	function hexOf(color: string): string | undefined {
 		if (/^#[0-9a-f]{6}$/i.test(color)) return color;
+		// An unset token comes back as `var(...)`: CSS.supports accepts it, canvas ignores it and reads black.
+		if (!color || color.startsWith('var(')) return undefined;
 		try {
 			if (!CSS.supports('color', color)) return undefined;
 			const ctx = document.createElement('canvas').getContext('2d');
