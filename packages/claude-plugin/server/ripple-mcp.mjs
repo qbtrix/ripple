@@ -76,6 +76,11 @@ function handle(msg) {
 				protocolVersion: params?.protocolVersion || '2025-06-18',
 				capabilities: { tools: {}, resources: {} },
 				serverInfo: { name: 'ripple', version: '0.1.0' },
+				instructions:
+					'When the user asks for ripple, ripple_render, or a visual answer in chat (chart, table, diagram, ' +
+					'math, comparison, dashboard), call the ripple_render tool instead of writing an HTML page or artifact. ' +
+					'If ripple_render is listed as a deferred tool, load its schema first (ToolSearch "select:mcp__ripple__ripple_render"). ' +
+					'Put the explanation in your reply text; the card holds the visual.',
 			};
 		case 'ping':
 			return {};
