@@ -1,7 +1,7 @@
 // sanitize-html.test.ts — proves the {@html} sink sanitizer strips XSS vectors
 // from spec-controlled HTML (the P1 finding) while keeping legitimate markup.
 import { describe, it, expect } from 'vitest';
-import { sanitizeHtml, sanitizeSvg } from './sanitize-html.js';
+import { sanitizeHtml, sanitizeMath, sanitizeSvg } from './sanitize-html.js';
 
 describe('sanitizeHtml', () => {
   it('strips the onerror image XSS vector but keeps the <img>', () => {
@@ -85,5 +85,24 @@ describe('sanitizeSvg', () => {
 
   it('returns empty string for empty input', () => {
     expect(sanitizeSvg('')).toBe('');
+  });
+});
+
+describe('sanitizeMath', () => {
+  it('keeps temml MathML', () => {
+    const out = sanitizeMath('<math display="block"><mfrac><mn>1</mn><mn>2</mn></mfrac></math>');
+    expect(out).toContain('<math');
+    expect(out).toContain('<mfrac>');
+  });
+
+  it('strips links, handlers and style from MathML', () => {
+    const out = sanitizeMath(
+      '<math><mrow href="javascript:alert(1)" onclick="pwn()" style="color:red"><mi>x</mi></mrow><script>x()</script></math>'
+    );
+    expect(out).not.toContain('javascript:');
+    expect(out).not.toContain('onclick');
+    expect(out).not.toContain('style');
+    expect(out).not.toContain('<script');
+    expect(out).toContain('<mi>x</mi>');
   });
 });

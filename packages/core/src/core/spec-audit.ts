@@ -34,7 +34,7 @@ import type { SlimWidgetEntry } from '../manifest/slim.js';
 import { resolveTree } from '../headless/resolve-tree.js';
 import type { ResolvedNode } from '../headless/types.js';
 import type { AuditItem, AuditReport } from './audit-report.js';
-import { evaluateExpression } from './expression-resolver.js';
+import { evaluateExpression, findExpressions } from './expression-resolver.js';
 import { getStatePath } from './state-mutator.js';
 import { validateCatalog, type ValidateCatalogOptions } from './validate-catalog.js';
 
@@ -143,8 +143,10 @@ function envelopeItems(spec: Obj): AuditItem[] {
 		}));
 }
 
-const EXPRESSION = /\{([^}]+)\}/g; // the resolver's EXPRESSION_REGEX
-const LEFTOVER_TEXT = /\{[^{}\s][^{}]*\}|\bundefined\b|\bNaN\b|\bInfinity\b|\[object Object\]/;
+const LEFTOVER_WORDS = /\bundefined\b|\bNaN\b|\bInfinity\b|\[object Object\]/;
+/** A brace the resolver would still read as an expression; literal TeX/mermaid braces are not leftovers. */
+const leftoverText = (value: string) =>
+	LEFTOVER_WORDS.test(value) || findExpressions(value, { state: {} }).some((s) => /\{[^{}\s][^{}]*\}/.test(value.slice(s.start, s.end)));
 
 /** Where a resolved node's spec node sits, through `ResolvedNode.source`. */
 const flatten = (nodes: ResolvedNode[]): ResolvedNode[] => nodes.flatMap((n) => [n, ...flatten(n.children)]);
@@ -164,9 +166,10 @@ function exprItems(resolved: ResolvedNode[], where: Map<object, string>, state: 
 		if (!at) continue;
 		for (const leaf of leaves(node.source?.props, `${at}/props`)) {
 			if (typeof leaf.value !== 'string') continue;
-			for (const [, expr] of leaf.value.matchAll(EXPRESSION)) {
+			const ctx = { state, data: {}, ...(node.loop ?? {}) };
+			for (const { expr } of findExpressions(leaf.value, ctx)) {
 				try {
-					const value = evaluateExpression(expr, { state, data: {}, ...(node.loop ?? {}) });
+					const value = evaluateExpression(expr, ctx);
 					if (value === undefined && !READS_DATA.test(expr))
 						blank.push({
 							code: 'leftover',
@@ -207,7 +210,7 @@ function leftoverItems(resolved: ResolvedNode[], where: Map<object, string>, ski
 					? 'resolves to undefined; seed the state it reads'
 					: typeof value === 'number' && !Number.isFinite(value)
 						? `resolves to ${value}`
-						: typeof value === 'string' && source.get(leaf.at) !== value && LEFTOVER_TEXT.test(value)
+						: typeof value === 'string' && source.get(leaf.at) !== value && leftoverText(value)
 							? `renders as "${value.slice(0, 60)}"`
 							: '';
 			if (bad) items.push({ code: 'leftover', path: leaf.at, message: `this prop ${bad}` });

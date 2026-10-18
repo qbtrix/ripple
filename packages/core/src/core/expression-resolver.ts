@@ -1,20 +1,22 @@
 /**
  * @file expression-resolver.ts
- * @description Resolves binding expressions like {state.value} and {item.name}.
- * @created 2024-12-XX
- * @changes
- *   - 2026-09-17 (oxlint no-base-to-string sweep): all string coercions of
- *     unknown values route through asText, so an object-valued binding
- *     interpolates / concatenates / sorts as readable JSON instead of
- *     "[object Object]"
- *   - Initial creation with expression parsing and evaluation
- *   - Support for simple paths, comparisons, and null checks
- *   - Template string resolution for embedded expressions
- *   - RFC 13 M1: `state` scope can carry a Chain Flow's accumulated `context`
- *     so a later step pre-fills from an earlier one with
- *     `{state.<flowId>_selection.field}`. This is a SCOPE ADDITION — see
- *     `withFlowContext` — not a new expression engine. App state wins on key
- *     collision, so a flow can never shadow real state.
+ * @description Resolves binding expressions like {state.value} and {item.name}
+ * in spec strings: paths, comparisons, logic, ternaries, arithmetic, literals
+ * and whitelisted method calls. Both runtimes (NodeRenderer and the headless
+ * resolve-tree) call resolveValue/resolveString here, so they cannot diverge.
+ *
+ * Which `{` opens an expression is decided by findExpressions, not a bare
+ * regex, so TeX and mermaid written straight into a prop survive:
+ * an escaped `\{`, a TeX command argument (`\frac{1}{2}`, `\sqrt[3]{x}` and
+ * the groups chained after it), and a brace whose inside holds a backslash or
+ * a newline are always literal text. A brace glued to `^`, `_` or a letter or
+ * digit (`x^{2}`, `B{Decision}`) is an expression only when its first name
+ * reads something that exists (state, a context scope, a state key), which
+ * keeps `modal_{id}` and `javascript{state.c}` resolving. A whole-string
+ * `{...}` is untouched by these rules: card-policy.ts mirrors that regex.
+ *
+ * The `state` scope can carry a Chain Flow's accumulated `context` (see
+ * withFlowContext); app state wins on key collision.
  */
 
 import { asText } from './text-coerce.js';
@@ -61,12 +63,6 @@ export function withFlowContext(
 }
 
 /**
- * Expression pattern: {expression}
- * Matches content between curly braces.
- */
-const EXPRESSION_REGEX = /\{([^}]+)\}/g;
-
-/**
  * Single expression pattern for exact match.
  */
 const SINGLE_EXPRESSION_REGEX = /^\{([^}]+)\}$/;
@@ -76,7 +72,83 @@ const SINGLE_EXPRESSION_REGEX = /^\{([^}]+)\}$/;
  */
 export function hasExpressions(value: unknown): boolean {
 	if (typeof value !== 'string') return false;
-	return EXPRESSION_REGEX.test(value);
+	return findExpressions(value).length > 0;
+}
+
+/** One `{...}` that resolveString evaluates: `[start, end)` covers the braces. */
+export interface ExpressionSpan {
+	start: number;
+	end: number;
+	expr: string;
+}
+
+/** `\frac`, `\sqrt[3]`, `\operatorname*` right before a `{`. */
+const TEX_COMMAND_BEFORE = /\\[A-Za-z]+\*?(?:\[[^\]\n]*\])?$/;
+const QUOTED = /'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"/g;
+const ROOT_NAME = /^[\s!(]*([A-Za-z_$][\w$]*)/;
+
+/** An odd run of backslashes before `at` escapes the character there. */
+function isEscaped(value: string, at: number): boolean {
+	let n = 0;
+	while (at - 1 - n >= 0 && value[at - 1 - n] === '\\') n++;
+	return n % 2 === 1;
+}
+
+/** Index just past the `}` that balances the `{` at `open` (escaped braces skipped); end of string when none. */
+function groupEnd(value: string, open: number): number {
+	let depth = 0;
+	for (let i = open; i < value.length; i++) {
+		const ch = value[i];
+		if ((ch !== '{' && ch !== '}') || isEscaped(value, i)) continue;
+		depth += ch === '{' ? 1 : -1;
+		if (depth === 0) return i + 1;
+	}
+	return value.length;
+}
+
+/** Whether the expression's first name reads something present in the context. */
+function readsSomething(expr: string, context: ResolverContext): boolean {
+	const root = ROOT_NAME.exec(expr)?.[1];
+	if (!root) return false;
+	if (root === 'state' || context[root] !== undefined) return true;
+	const state = context.state as unknown;
+	return typeof state === 'object' && state !== null && root in state;
+}
+
+/**
+ * The `{...}` spans in `value` that are expressions, in order. Each span runs
+ * from a `{` to the first `}` after it (the same span the old
+ * `/\{([^}]+)\}/g` took); the rules in the file header leave TeX and mermaid
+ * braces as literal text. Without a `context` a glued brace counts as an
+ * expression, so `hasExpressions` stays a safe over-approximation.
+ */
+export function findExpressions(value: string, context?: ResolverContext): ExpressionSpan[] {
+	const spans: ExpressionSpan[] = [];
+	let literalEnd = -1;
+	let i = value.indexOf('{');
+	while (i !== -1) {
+		const close = value.indexOf('}', i + 1);
+		if (close === -1) break;
+		const expr = value.slice(i + 1, close);
+		if (isEscaped(value, i) || expr === '') {
+			i = value.indexOf('{', i + 1);
+			continue;
+		}
+		const prev = value[i - 1] ?? '';
+		const literal =
+			i === literalEnd ||
+			TEX_COMMAND_BEFORE.test(value.slice(Math.max(0, i - 64), i)) ||
+			/[\\\n]/.test(expr.replace(QUOTED, '')) ||
+			(/[\^_A-Za-z0-9]/.test(prev) && context !== undefined && !readsSomething(expr, context));
+		if (literal) {
+			literalEnd = groupEnd(value, i);
+			i = value.indexOf('{', literalEnd);
+			continue;
+		}
+		spans.push({ start: i, end: close + 1, expr });
+		i = value.indexOf('{', close + 1);
+	}
+	return spans;
 }
 
 /**
@@ -977,15 +1049,21 @@ export function resolveString(value: string, context: ResolverContext): unknown 
 		}
 	}
 
-	// Multiple expressions - interpolate as string
-	return value.replace(EXPRESSION_REGEX, (_, expr) => {
+	// Embedded expressions - interpolate as string; literal braces stay as written
+	const spans = findExpressions(value, context);
+	if (spans.length === 0) return value;
+	let out = '';
+	let at = 0;
+	for (const { start, end, expr } of spans) {
+		out += value.slice(at, start);
 		try {
-			const result = evaluateExpression(expr, context);
-			return asText(result);
+			out += asText(evaluateExpression(expr, context));
 		} catch {
-			return '';
+			// a throwing expression renders as nothing, as before
 		}
-	});
+		at = end;
+	}
+	return out + value.slice(at);
 }
 
 /**

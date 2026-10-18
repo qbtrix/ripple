@@ -117,6 +117,27 @@ The library has 31 models: astronaut, boombox, camera, car, chair, dog, fish, fo
 }
 ```
 
+## Math and diagrams in markdown
+
+The `markdown` widget also renders LaTeX math and mermaid diagrams, so an answer can carry a formula or a flowchart without a separate widget.
+
+- Inline math is `$...$` or `\(...\)`. Display math is `$$...$$` or `\[...\]` on its own lines. It renders as MathML through [Temml](https://temml.org), with no font files.
+- A dollar is math only when no space follows the opening one or precedes the closing one, and the content is not a bare number, so "$5 and $10" stays text. Write `\$` for a dollar sign that must stay text.
+- A ` ```mermaid ` fence draws as an SVG in the card's colours, with mermaid's strict security level. While a spec is still streaming, and if the diagram does not parse, the reader sees the source.
+- Write the markdown straight into `content`. TeX braces (`\frac{1}{2}`, `x^{2}`) and mermaid's `{Decision}` nodes stay text; [Literal braces](/docs/concepts/state-and-expressions#literal-braces) has the rule.
+- Both libraries load only when a card has math or a diagram, so other cards pay nothing for them.
+
+```ripple
+{
+  "ui": {
+    "type": "markdown",
+    "props": {
+      "content": "Amdahl's law: speeding up a fraction $p$ of the work by $s$ gives\n\n$$\nS = \\frac{1}{(1-p) + \\frac{p}{s}}\n$$\n\n```mermaid\nflowchart LR\n  Q[Request] --> A{Cached?}\n  A -->|no| D[(Database)]\n```"
+    }
+  }
+}
+```
+
 ## Credits
 
 - The isometric drawing kit in `@ripple-ui/core/iso` is ported from [Anatomy](https://skills.wheresryan.sh/anatomy) by Ryan ([source](https://github.com/wheresryan22/anatomy)), MIT License. The full license text and the list of files it covers are in `THIRD_PARTY_NOTICES.md` at the repo root.

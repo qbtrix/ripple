@@ -11,6 +11,9 @@
 // url(https://evil/...) beacons on render, and position:fixed can overlay the
 // host app with a fake credential prompt. Structural markup is unaffected.
 //
+// sanitizeMath is the MathML-profile sibling for temml output (the markdown
+// widget's math); the HTML profile would delete the <math> element outright.
+//
 // sanitizeSvg is the SVG-profile sibling for widgets that {@html} generated SVG
 // (Qr): the HTML profile would delete the <svg> element outright.
 //
@@ -42,4 +45,15 @@ export function sanitizeSvg(svg: string): string {
   if (!svg) return '';
   if (typeof window === 'undefined') return svg; // SSR fail-open — see header
   return DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true, svgFilters: true } });
+}
+
+/**
+ * Sanitize generated MathML (temml output) for insertion. `style` is dropped
+ * like everywhere else: it only carries \color and a few spacing tweaks, and
+ * keeping it would reopen the url() beacon channel.
+ */
+export function sanitizeMath(mathml: string): string {
+  if (!mathml) return '';
+  if (typeof window === 'undefined') return mathml; // SSR fail-open, see header
+  return DOMPurify.sanitize(mathml, { USE_PROFILES: { mathMl: true }, FORBID_ATTR: ['style'] });
 }
