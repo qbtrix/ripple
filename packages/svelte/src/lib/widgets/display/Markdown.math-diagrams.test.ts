@@ -6,6 +6,7 @@
 import { render } from '@testing-library/svelte';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import Markdown from './Markdown.svelte';
+import Ripple from '$lib/Ripple.svelte';
 
 const m = vi.hoisted(() => ({
 	loaded: 0,
@@ -62,6 +63,19 @@ describe('markdown widget, math', () => {
 	});
 });
 
+describe('markdown widget, TeX written straight into a spec prop', () => {
+	it('survives expression resolution while a real expression beside it resolves', async () => {
+		const spec = {
+			state: { name: 'Ada' },
+			ui: { type: 'markdown', props: { content: 'For {state.name}: $x^{2} + \\frac{1}{(1-p) + \\frac{p}{s}}$' } }
+		};
+		const { container } = render(Ripple, { props: { spec } });
+		await vi.waitFor(() => expect(container.querySelector('math mfrac mfrac')).not.toBeNull());
+		expect(container.textContent).toContain('For Ada:');
+		expect(container.querySelector('math msup')).not.toBeNull();
+	});
+});
+
 describe('markdown widget, mermaid', () => {
 	it('does not import mermaid without a fence', async () => {
 		render(Markdown, { props: { content: '# Title\n\n```sql\nselect 1;\n```' } });
@@ -78,6 +92,7 @@ describe('markdown widget, mermaid', () => {
 		const config = m.initialize.mock.calls[0][0];
 		expect(config.securityLevel).toBe('strict');
 		expect(config.htmlLabels).toBe(false);
+		expect(config).toMatchObject({ look: 'neo', layout: 'dagre', flowchart: { curve: 'basis' } });
 		expect(container.querySelector('pre')?.hidden).toBe(true);
 	});
 
