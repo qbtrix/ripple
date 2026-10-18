@@ -55,7 +55,8 @@
         ink: 'var(--ripple-surface-foreground)',
         soft: 'var(--ripple-muted-foreground)',
         border: 'color-mix(in oklab, var(--ripple-surface-foreground) 28%, transparent)',
-        card: 'color-mix(in oklab, var(--ripple-accent) 7%, var(--ripple-surface))',
+        // workflow's lifted card (--wf-card) with a soft accent wash
+        card: 'color-mix(in oklab, var(--ripple-accent) 6%, oklch(from var(--ripple-surface-foreground) calc(1.18 - l * 0.92) calc(c * 0.5) h))',
         panel: 'var(--ripple-muted)',
         inset: 'var(--ripple-muted)',
         primary: 'var(--ripple-accent)',

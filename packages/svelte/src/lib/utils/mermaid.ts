@@ -4,9 +4,11 @@
 // - mermaid is a dynamic import, fetched the first time anything renders, so a
 //   bundle (or a chat card) with no diagram never loads it.
 // - mermaidConfig maps a palette of opaque hex colours onto mermaid's 'base'
-//   theme. Callers resolve their own tokens with resolveColors: mermaid's colour
-//   maths cannot parse oklch or color-mix, so each token is painted over the
-//   ground on a 1px canvas and read back as #rrggbb.
+//   theme in the neo look: rounded nodes with brand (palette.primary) strokes
+//   on a soft card fill, curved (basis) flowchart edges in the soft ink.
+//   Callers resolve their own tokens with resolveColors: mermaid's colour maths
+//   cannot parse oklch or color-mix, so each token is painted over the ground
+//   on a 1px canvas and read back as #rrggbb.
 // - mermaid.initialize is global, and the site and a widget can draw on one
 //   page with different palettes, so every render goes through one promise
 //   chain and re-initializes only when the config changed. securityLevel is
@@ -76,7 +78,12 @@ export function mermaidConfig(c: Palette, font: string, { htmlLabels = true } = 
 		theme: 'base' as const,
 		fontFamily: font,
 		htmlLabels,
-		flowchart: { wrappingWidth: 260, htmlLabels },
+		look: 'neo' as const,
+		// mermaid 12 defaults to elk, which forces orthogonal edges; dagre honours `curve`.
+		layout: 'dagre',
+		// Rounded nodes even where the neo look keeps a square shape; lives in the SVG's own <style>.
+		themeCSS: '.node rect, .cluster rect { rx: 10px; ry: 10px; } .edgePath .path, .flowchart-link { stroke-width: 1.5px; }',
+		flowchart: { wrappingWidth: 260, htmlLabels, curve: 'basis' as const, nodeSpacing: 36, rankSpacing: 44, padding: 14 },
 		sequence: { actorFontFamily: font, messageFontFamily: font, noteFontFamily: font },
 		themeVariables: {
 			darkMode: isDarkHex(c.ground),
@@ -88,7 +95,7 @@ export function mermaidConfig(c: Palette, font: string, { htmlLabels = true } = 
 			lineColor: c.soft,
 			primaryColor: c.card,
 			primaryTextColor: c.ink,
-			primaryBorderColor: c.border,
+			primaryBorderColor: c.primary,
 			secondaryColor: c.inset,
 			secondaryTextColor: c.ink,
 			secondaryBorderColor: c.border,
@@ -96,10 +103,11 @@ export function mermaidConfig(c: Palette, font: string, { htmlLabels = true } = 
 			tertiaryTextColor: c.ink,
 			tertiaryBorderColor: c.border,
 			mainBkg: c.card,
-			nodeBorder: c.border,
+			nodeBorder: c.primary,
 			nodeTextColor: c.ink,
 			clusterBkg: c.panel,
 			clusterBorder: c.border,
+			arrowheadColor: c.soft,
 			edgeLabelBackground: c.ground,
 			actorBkg: c.tint,
 			actorBorder: c.primary,
