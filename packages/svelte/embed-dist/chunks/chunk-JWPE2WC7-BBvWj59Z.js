@@ -1,0 +1,1 @@
+import{_ as t}from"./mermaid.core-DfbsjEgB.js";function i(c,e){c.accDescr&&e.setAccDescription?.(c.accDescr),c.accTitle&&e.setAccTitle?.(c.accTitle),c.title&&e.setDiagramTitle?.(c.title)}t(i,"populateCommonDb");export{i as p};

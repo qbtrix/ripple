@@ -1,0 +1,25 @@
+<!doctype html>
+<!-- embed/test.html: local proof for the standalone embed. Serve packages/svelte
+     and open /embed/test.html; it mounts attention.json from ../embed-dist.
+     Add ?theme=dark for the dark theme. The host's own CSS below must not leak in. -->
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Ripple embed proof</title>
+	<style>
+		body { margin: 0; padding: 16px; font: 16px/1.4 Georgia, serif; background: #ddd; }
+		h2, p, table, td { color: red !important; }
+		#card { max-width: 760px; margin: 0 auto; }
+	</style>
+</head>
+<body>
+	<div id="card"></div>
+	<script type="module">
+		import { mount } from '../embed-dist/ripple-embed.js';
+		const spec = await (await fetch('./attention.json')).json();
+		const theme = new URLSearchParams(location.search).get('theme') === 'dark' ? 'dark' : 'light';
+		window.card = mount(document.getElementById('card'), spec, { theme });
+	</script>
+</body>
+</html>

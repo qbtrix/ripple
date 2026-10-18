@@ -1,0 +1,10 @@
+/* embed/embed.css: the stylesheet the standalone embed (main.ts) injects into
+   its shadow root. The package styles plus the site's widget tokens, so an
+   embedded card looks like the playground. Imported with ?inline, so it is a
+   string, never a document stylesheet. main.ts rewrites :root to the shadow
+   wrapper and lifts @property and @font-face (both ignored inside a shadow
+   root) into document.head; the site's /fonts/ faces are replaced there by
+   faces pointing at the bundled woff2 files. */
+@import "../lib/styles.css";
+@import "../routes/site.css";
+@source "../lib";

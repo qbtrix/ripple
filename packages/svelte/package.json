@@ -95,6 +95,7 @@
     "lint": "oxlint && bun run lint:anim",
     "lint:anim": "bun run scripts/check-no-toplevel-anim-imports.ts",
     "preview": "vite preview",
+    "build:embed": "vite build -c vite.embed.config.ts",
     "build:site": "bun run --cwd ../core build && bun run build:page-audit && vite build && pagefind --site build",
     "build:page-audit": "bun build src/lib/build/page-audit.entry.ts --format iife --outfile static/page-audit.js",
     "thumbs": "bun scripts/capture-thumbs.ts",
