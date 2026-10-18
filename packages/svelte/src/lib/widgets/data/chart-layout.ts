@@ -3,7 +3,8 @@
 // Palette order, which colour each point or series wears, how the category
 // axis fits its labels to the measured width, and the pie/donut legend text
 // and layout. Chart.svelte resolves `var(--x)` colours and the theme, then
-// feeds these the numbers.
+// feeds these the numbers; its default palette is the theme's --chart-1..5
+// laid over CATEGORICAL, passed in as `palette`.
 
 /**
  * Categorical palette in draw order. Brand blue first, then hues that read as
@@ -13,9 +14,9 @@
  */
 export const CATEGORICAL = ['#3b82f6', '#14b8a6', '#8b5cf6', '#ec4899', '#f59e0b', '#06b6d4', '#f97316', '#64748b'];
 
-/** The i-th series colour: the spec's `colors[i]`, else the palette in order. */
-export function seriesColor(i: number, colors: readonly string[]): string {
-	return colors[i] || CATEGORICAL[i % CATEGORICAL.length];
+/** The i-th series colour: the spec's `colors[i]`, else `palette` in order. */
+export function seriesColor(i: number, colors: readonly string[], palette: readonly string[] = CATEGORICAL): string {
+	return colors[i] || palette[i % palette.length];
 }
 
 /**
@@ -23,18 +24,18 @@ export function seriesColor(i: number, colors: readonly string[]): string {
  * One series is one colour. Points differ only when the spec says so: a point's
  * own `color`, or a `colors` list longer than one (read as per point).
  */
-export function pointColors(data: readonly object[], colors: readonly string[]): string[] {
+export function pointColors(data: readonly object[], colors: readonly string[], palette: readonly string[] = CATEGORICAL): string[] {
 	return data.map((d, i) => {
 		const own = ownColor(d);
 		if (own) return own;
 		if (colors.length > 1) return colors[i % colors.length];
-		return seriesColor(0, colors);
+		return seriesColor(0, colors, palette);
 	});
 }
 
 /** Slice colours for pie and donut: every slice is its own category. */
-export function sliceColors(data: readonly object[], colors: readonly string[]): string[] {
-	return data.map((d, i) => ownColor(d) ?? seriesColor(i, colors));
+export function sliceColors(data: readonly object[], colors: readonly string[], palette: readonly string[] = CATEGORICAL): string[] {
+	return data.map((d, i) => ownColor(d) ?? seriesColor(i, colors, palette));
 }
 
 /** A point's own `color`, when it names one. */
