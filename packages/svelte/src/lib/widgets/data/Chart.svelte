@@ -8,6 +8,9 @@
   effect reads it as null on its first run, subscribes to nothing, and the
   chart freezes on whatever props it mounted with (e.g. a half-streamed spec).
   The root div forwards the node id (id + data-ripple-node) for editor selection.
+  Colours: an explicit `colors` prop wins. Otherwise one series wears the theme's
+  --chart-1 (brand blue by default) on every point, and series or pie slices
+  take --chart-1..5 in order, read as hex because echarts draws on a canvas.
 -->
 <script lang="ts">
   import { safeStyle } from '@ripple-ui/core';
@@ -66,7 +69,8 @@
 		safeObject<Record<string, unknown>>(rawThemeOverrides, { widget: 'chart', key: 'themeOverrides' })
 	);
 
-	const defaultColors = ['#3b82f6', '#ef4444', '#22c55e', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
+	/** The --chart-1..5 defaults in styles.css (light), used when a slot does not resolve. */
+	const SLOT_FALLBACK = ['#1877f2', '#0d9488', '#d97706', '#7c3aed', '#64748b'];
 
 	function deepMerge<T extends Record<string, any>>(target: T, ...sources: Record<string, any>[]): T {
 		const result = { ...target };
@@ -94,7 +98,28 @@
 
 	/** In order: per series when points carry `series`, else per point. */
 	function getColor(i: number): string {
-		return colors[i] || defaultColors[i % defaultColors.length];
+		return colors[i] || slotColor(i);
+	}
+
+	/** Theme slot --chart-(i mod 5 + 1) as #rrggbb (callers append hex alpha). */
+	function slotColor(i: number): string {
+		const slot = i % SLOT_FALLBACK.length;
+		return hexOf(cssColor(`var(--chart-${slot + 1})`)) ?? SLOT_FALLBACK[slot];
+	}
+
+	function hexOf(color: string): string | undefined {
+		if (/^#[0-9a-f]{6}$/i.test(color)) return color;
+		try {
+			if (!CSS.supports('color', color)) return undefined;
+			const ctx = document.createElement('canvas').getContext('2d');
+			if (!ctx) return undefined;
+			ctx.fillStyle = color;
+			ctx.fillRect(0, 0, 1, 1);
+			const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+			return `#${[r, g, b].map((n) => n.toString(16).padStart(2, '0')).join('')}`;
+		} catch {
+			return undefined;
+		}
 	}
 
 	let chartEl: HTMLDivElement | undefined = $state();
@@ -154,8 +179,9 @@
 		const tc = themeColors();
 		const labels = data.map(d => d.label);
 		const values = data.map(d => d.value ?? 0);
-		// One series: a single given colour paints every point (no rainbow bars).
-		const itemColors = data.map((_, i) => (colors.length === 1 && colors[0] ? colors[0] : getColor(i)));
+		// One series is one colour on every point (no rainbow bars), unless `colors` lists several.
+		const one = colors[0] || slotColor(0);
+		const itemColors = data.map((_, i) => (colors.length > 1 ? getColor(i) : one));
 
 		// Detect multi-series: any point carries a `series` map → one ECharts series per key.
 		const seriesKeys: string[] = (() => {

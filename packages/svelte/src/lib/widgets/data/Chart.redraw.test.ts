@@ -189,3 +189,33 @@ describe('gantt', () => {
 		expect(container.textContent).toContain('Jan 1 – Jan 10, 2026 · 2 tasks');
 	});
 });
+
+describe('chart default colours', () => {
+	const pts = [{ label: 'a', value: 1 }, { label: 'b', value: 2 }, { label: 'c', value: 3 }];
+	const barColours = () => {
+		const color = lastOption().series[0].itemStyle.color as (p: { dataIndex: number }) => string;
+		return pts.map((_, dataIndex) => color({ dataIndex }));
+	};
+
+	test('one series is brand blue (--chart-1) on every bar, not a rainbow', async () => {
+		render(Chart, { props: { type: 'bar', data: pts } });
+		await vi.waitFor(() => expect(ec.setOption).toHaveBeenCalled());
+		expect(barColours()).toEqual(['#1877f2', '#1877f2', '#1877f2']);
+	});
+
+	test('pie slices take the brand-led slots in order', async () => {
+		render(Chart, { props: { type: 'pie', data: pts } });
+		await vi.waitFor(() => expect(ec.setOption).toHaveBeenCalled());
+		expect(lastOption().series[0].data.map((d: { itemStyle: { color: string } }) => d.itemStyle.color)).toEqual([
+			'#1877f2',
+			'#0d9488',
+			'#d97706'
+		]);
+	});
+
+	test('an explicit colors prop wins', async () => {
+		render(Chart, { props: { type: 'bar', data: pts, colors: ['#111111', '#222222', '#333333'] } });
+		await vi.waitFor(() => expect(ec.setOption).toHaveBeenCalled());
+		expect(barColours()).toEqual(['#111111', '#222222', '#333333']);
+	});
+});

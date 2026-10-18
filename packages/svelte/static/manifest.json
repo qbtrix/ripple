@@ -1,7 +1,7 @@
 {
   "schema": "ripple.manifest/v1",
   "version": "0.8.0",
-  "generatedAt": "2026-10-18T02:50:40.166Z",
+  "generatedAt": "2026-10-18T03:20:08.354Z",
   "spec": {
     "uiField": "ui",
     "stateField": "state",
@@ -1880,7 +1880,7 @@
         "colors": {
           "type": "string[]",
           "required": false,
-          "description": "Palette in order: one per series when points carry `series`, else one per point (bar, pie). A single colour paints every point of one series."
+          "description": "Palette in order: one per series when points carry `series`, else one per point (bar, pie). A single colour paints every point of one series. Default: one series is the theme's chart-1 (brand blue); several series or pie slices take chart-1 to chart-5."
         },
         "tooltip": {
           "type": "boolean",
@@ -8260,7 +8260,7 @@
         "content": {
           "type": "string",
           "required": false,
-          "description": "Markdown source. Math: $x$ inline, $$x$$ on its own lines for display; a bare number like $5 stays text. A ```mermaid fence draws as a diagram. Braces read as expressions, so put TeX or mermaid with {} in state and pass \"{state.x}\"."
+          "description": "Markdown source. Math: $x$ inline, $$x$$ on its own lines for display; a bare number like $5 stays text. A ```mermaid fence draws as a diagram."
         },
         "text": {
           "type": "string",
