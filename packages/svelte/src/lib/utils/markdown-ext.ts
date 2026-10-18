@@ -30,13 +30,8 @@ const INLINE: Array<[RegExp, boolean]> = [
 const BLOCK = /^(?:\$\$([\s\S]+?)\$\$|\\\[([\s\S]+?)\\\])[ \t]*(?:\n+|$)/;
 const PLAIN_NUMBER = /^[\d\s.,]+$/;
 
-interface MathToken extends Tokens.Generic {
-	tex: string;
-	display: boolean;
-}
-
 function placeholder(token: Tokens.Generic, tag: 'span' | 'div'): string {
-	const { tex, display, raw } = token as MathToken;
+	const { tex, display, raw } = token;
 	const cls = display ? `${MATH_CLASS} ${MATH_CLASS}-display` : MATH_CLASS;
 	return `<${tag} class="${cls}" data-tex="${escapeHtml(tex)}"${display ? ' data-display=""' : ''}>${escapeHtml(raw.trim())}</${tag}>${tag === 'div' ? '\n' : ''}`;
 }
@@ -50,9 +45,9 @@ export function markedMath(): MarkedExtension {
 				start: (src) => src.match(/^ {0,3}(?:\$\$|\\\[)/m)?.index,
 				tokenizer(src) {
 					const m = BLOCK.exec(src);
-					if (!m) return;
+					if (!m) return undefined;
 					const tex = (m[1] ?? m[2]).trim();
-					if (!tex) return;
+					if (!tex) return undefined;
 					return { type: 'mathBlock', raw: m[0], tex, display: true };
 				},
 				renderer: (token) => placeholder(token, 'div')
@@ -69,9 +64,10 @@ export function markedMath(): MarkedExtension {
 						const m = re.exec(src);
 						if (!m) continue;
 						const tex = m[1].trim();
-						if (!tex || PLAIN_NUMBER.test(tex)) return;
+						if (!tex || PLAIN_NUMBER.test(tex)) return undefined;
 						return { type: 'mathInline', raw: m[0], tex, display };
 					}
+					return undefined;
 				},
 				renderer: (token) => placeholder(token, 'span')
 			}

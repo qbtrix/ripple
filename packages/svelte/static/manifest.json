@@ -1,7 +1,7 @@
 {
   "schema": "ripple.manifest/v1",
   "version": "0.8.2",
-  "generatedAt": "2026-10-28T13:51:45.167Z",
+  "generatedAt": "2026-10-29T08:31:04.864Z",
   "spec": {
     "uiField": "ui",
     "stateField": "state",
@@ -8287,12 +8287,12 @@
     {
       "type": "markdown",
       "category": "display",
-      "description": "Render markdown with GFM support (tables, strikethrough, autolinks, task lists).",
+      "description": "Render markdown with GFM (tables, strikethrough, autolinks, task lists), LaTeX math and mermaid diagrams.",
       "props": {
         "content": {
           "type": "string",
           "required": false,
-          "description": "Markdown source."
+          "description": "Markdown source. Math: $x$ inline, $$x$$ on its own lines for display; a bare number like $5 stays text. A ```mermaid fence draws as a diagram. Braces read as expressions, so put TeX or mermaid with {} in state and pass \"{state.x}\"."
         },
         "text": {
           "type": "string",
