@@ -1,0 +1,8 @@
+{
+  "name": "ripple",
+  "version": "0.1.0",
+  "description": "Show Ripple UI cards (charts, tables, diagrams, math) live inside Claude chats",
+  "author": { "name": "PocketPaw" },
+  "homepage": "https://github.com/qbtrix/ripple-iui",
+  "license": "MIT"
+}

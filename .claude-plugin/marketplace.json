@@ -1,0 +1,11 @@
+{
+  "name": "ripple-iui",
+  "owner": { "name": "PocketPaw" },
+  "plugins": [
+    {
+      "name": "ripple",
+      "source": "./packages/claude-plugin",
+      "description": "Show Ripple UI cards live inside Claude chats"
+    }
+  ]
+}
