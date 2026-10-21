@@ -32,7 +32,7 @@
     useViewportInitialized,
   } from '@xyflow/svelte';
   import { prefersReducedMotion } from 'svelte/motion';
-  import { FIT_MIN_ZOOM, planCamera, rippleEase, zoomVar, type CameraState, type Rect } from './live.js';
+  import { FIT_MIN_ZOOM, MOVE_MS, planCamera, rippleEase, zoomVar, type CameraState, type Rect } from './live.js';
   import type { C4Marker } from './types.js';
 
   interface Props {
@@ -58,7 +58,6 @@
   const store = useStore();
   const initialized = useNodesInitialized();
   const viewportReady = useViewportInitialized();
-  const MOVE_MS = 560;
 
   // DOM sync: the node cards read the zoom from CSS, so names counter-scale
   // and stay legible when the map is zoomed out. --c4-zoom is inherited by

@@ -1,9 +1,10 @@
 // C4 Model diagram widget types — the data model for all 4 C4 levels, the
-// SvelteFlow node payload, and the optional live-state shapes (status, crew
-// markers, a highlighted reach) a host passes to show work happening on the map.
+// SvelteFlow node payload, the optional live-state shapes (status, crew
+// markers, a highlighted reach) a host passes to show work happening on the map,
+// and the flow a host can play over it step by step.
 //
 // Every live field is optional: a diagram without `kind`, `drillable`,
-// `status`, `markers` or `highlight` renders exactly as it did before they existed.
+// `status`, `markers`, `highlight` or `flow` renders exactly as it did before they existed.
 
 /** The C4 abstraction an element is. When absent, the shape is inferred from
  *  which fields are present (see getNodeType) — the legacy behaviour. */
@@ -31,6 +32,22 @@ export interface C4Highlight {
   id: string;
   reach?: C4Reach;
   depth?: number;
+}
+
+/** One step of a flow. A message travels a relationship (`reverse`: the model draws it `to` → `from`,
+ *  the reply runs back along it; `implied`: no relationship, drawn as a dashed hop); a process
+ *  happens at one element; a note is text only. */
+export type C4FlowStep =
+  | { from: string; to: string; label: string; technology?: string; reverse?: boolean; implied?: boolean }
+  | { at: string; label: string }
+  | { note: string };
+
+/** A data flow over the diagram, played one step at a time (the `flow` and `step` props). */
+export interface C4Flow {
+  id: string;
+  name: string;
+  description?: string;
+  steps: C4FlowStep[];
 }
 
 /** How edges draw along ELK's route: orthogonal with rounded corners, or a smooth curve with arrowheads. */
