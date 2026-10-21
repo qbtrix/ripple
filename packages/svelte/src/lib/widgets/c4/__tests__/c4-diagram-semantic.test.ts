@@ -5,10 +5,12 @@
 // and the scope ghost stay independent, keyboard activation does what a click does (a click when
 // the host has no ondrilldown), an element that opens swaps its view inside one node wrapper, a click
 // selects when selection is uncontrolled (SvelteFlow's write comes back through the nodes binding),
-// and a repeated id shows the error state rather than hanging.
+// a repeated id shows the error state rather than hanging, and a host handing over the same model
+// as a new object (a re-read) runs no ELK and blanks no edges, while a real change still lays out.
 
 import { describe, it, expect, vi } from 'vitest';
 import { render, waitFor, fireEvent } from '@testing-library/svelte';
+import ELK from 'elkjs/lib/elk.bundled.js';
 import C4Diagram from '../C4Diagram.svelte';
 import type { C4Diagram as C4DiagramData } from '$lib/widgets/c4/types.js';
 
@@ -184,6 +186,30 @@ describe('C4Diagram semantic zoom', { timeout: 30000 }, () => {
     await fireEvent.click(wrapper(container, 'pe')!);
     await waitFor(() => expect(wrapper(container, 'pe')?.classList.contains('selected')).toBe(true));
     expect(wrapper(container, 'rp')?.classList.contains('selected')).toBe(false);
+  });
+
+  it('lays out nothing for a new diagram object with the same content, and again for a real change', async () => {
+    const elk = vi.spyOn(ELK.prototype, 'layout');
+    const { container, rerender } = render(C4Diagram, { diagram, expanded: DEEP, scopeId: 'ui', edgeShape: 'curved' });
+    await waitFor(() => expect(container.querySelector('.svelte-flow__edge')).not.toBeNull());
+    const first = elk.mock.calls.length;
+    expect(first).toBeGreaterThan(0);
+    const canvas = container.querySelector('.c4-canvas')!;
+    const moves: boolean[] = [];
+    new MutationObserver(() => moves.push(canvas.hasAttribute('data-c4-moving'))).observe(canvas, { attributes: true, attributeFilter: ['data-c4-moving'] });
+
+    // A host re-read: same model, new object (a viewer that re-reads on every update and on focus).
+    await rerender({ diagram: structuredClone(diagram) });
+    await new Promise((r) => setTimeout(r, 200));
+    expect(elk.mock.calls.length).toBe(first);
+    expect(moves).toEqual([]);
+
+    const changed = structuredClone(diagram);
+    changed.relationships.push({ from: 'pe', to: 'rp.core', label: 'reads' });
+    await rerender({ diagram: changed });
+    await waitFor(() => expect(moves).toContain(true));
+    expect(elk.mock.calls.length).toBeGreaterThan(first);
+    elk.mockRestore();
   });
 
   it('shows the error state for an id used twice instead of hanging', async () => {
