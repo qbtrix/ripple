@@ -6,7 +6,7 @@
 
 Two packages, always in this order: `@ripple-ui/core` first, then
 `@ripple-ui/svelte`, which depends on it. Current versions: core `0.6.0`,
-svelte `0.8.0`. On 2026-10-15 both names were 404 on npm.
+svelte `0.8.1`. On 2026-10-15 both names were 404 on npm.
 
 ## Why you publish a tarball, not the package folder
 
@@ -63,7 +63,7 @@ bun install --frozen-lockfile
 bun run build
 bun run pack:release
 #   ok  @ripple-ui/core@0.6.0    .../release/ripple-ui-core-0.6.0.tgz    228 files, ~263 kB packed
-#   ok  @ripple-ui/svelte@0.8.0  .../release/ripple-ui-svelte-0.8.0.tgz  1812 files, ~1.6 MB packed
+#   ok  @ripple-ui/svelte@0.8.1  .../release/ripple-ui-svelte-0.8.1.tgz  1812 files, ~1.6 MB packed
 git status --short   # package.json files unchanged; the build always bumps the
                      # generatedAt stamp in packages/svelte/static/manifest.json,
                      # git checkout that file to clear it
@@ -74,11 +74,11 @@ npm publish --dry-run --access public ./release/ripple-ui-core-0.6.0.tgz
 # 4. Publish, core first. Keep the ./ prefix: without it npm reads
 #    release/x.tgz as a GitHub repo shorthand.
 npm publish --access public ./release/ripple-ui-core-0.6.0.tgz
-npm publish --access public ./release/ripple-ui-svelte-0.8.0.tgz
+npm publish --access public ./release/ripple-ui-svelte-0.8.1.tgz
 
 # 5. Verify.
 npm view @ripple-ui/core version            # 0.6.0
-npm view @ripple-ui/svelte version          # 0.8.0
+npm view @ripple-ui/svelte version          # 0.8.1
 npm view @ripple-ui/svelte dependencies     # '@ripple-ui/core': '^0.6.0', no file:
 ```
 
