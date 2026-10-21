@@ -5,7 +5,7 @@
   marker dots to their nodes with NodeToolbar, which draws in screen space, so
   a dot stays the same size at every zoom.
 
-  It also mirrors the zoom into --c4-zoom / data-c4-far on the flow root, which
+  It also mirrors the zoom into --c4-zoom / data-c4-far / data-c4-near on the flow root, which
   the node cards use to stay legible when zoomed out. Each write restyles the
   whole map, so it writes only a change the cards can see, and holds still
   while a camera move it started is flying.
@@ -51,6 +51,8 @@
    *  the 11px lines would read under 10px, and the counter-scaled name needs
    *  their room inside the fixed ELK box. */
   const FAR_ZOOM = 0.9;
+  /** From this zoom up a quiet (curved) map shows every edge label (data-c4-near). */
+  const NEAR_ZOOM = 1.2;
 
   const flow = useSvelteFlow();
   const store = useStore();
@@ -78,11 +80,12 @@
     const el = store.domNode;
     const zoom = store.viewport.zoom;
     if (!el || flying) return;
-    const next = `${zoomVar(zoom)}|${zoom < FAR_ZOOM}`;
+    const next = `${zoomVar(zoom)}|${zoom < FAR_ZOOM}|${zoom >= NEAR_ZOOM}`;
     if (next === written) return;
     written = next;
     el.style.setProperty('--c4-zoom', zoomVar(zoom));
     el.toggleAttribute('data-c4-far', zoom < FAR_ZOOM);
+    el.toggleAttribute('data-c4-near', zoom >= NEAR_ZOOM);
   });
   // The last camera input, kept outside reactivity: it is only compared.
   let prev: CameraState | null = null;

@@ -50,10 +50,11 @@
   import C4ViewNode from './nodes/C4ViewNode.svelte';
   import C4LiveLayer from './C4LiveLayer.svelte';
   import C4Edge from './C4Edge.svelte';
-  import { untrack } from 'svelte';
+  import { setContext, untrack } from 'svelte';
   import { prefersReducedMotion } from 'svelte/motion';
   import { computeElkGraph, edgeLabelText, getNodeType, isGroupNode, type LayoutPosition } from './elk-layout.js';
   import {
+    bundleEdges,
     decorateEdges,
     decorateNodes,
     litIds,
@@ -473,9 +474,26 @@
     };
     return flowNodes.filter((n) => viewOf(n) !== 'group').map((n) => ({ ...at(n), width: n.width ?? 0, height: n.height ?? 0 }));
   });
-  const shownEdges = $derived(
-    decorateEdges(flowEdges, { reach, curved: edgeShape === 'curved', still: prefersReducedMotion.current, avoid: cards })
-  );
+  // Curved maps bundle a hub's edges; hovering a bundle's count opens it.
+  let openJoin = $state<string | null>(null);
+  setContext('c4-onjoin', (key: string | null) => (openJoin = key));
+  const shownEdges = $derived.by(() => {
+    const curved = edgeShape === 'curved';
+    const look = decorateEdges(flowEdges, { reach, curved, still: prefersReducedMotion.current, avoid: cards });
+    return curved ? bundleEdges(look, openJoin) : look;
+  });
+  // Quiet (curved) maps: data-c4-hot (a DOM write) on an edge and label while it or an end is hovered.
+  let hot = $state<{ edge?: string; node?: string }>({});
+  $effect(() => {
+    const { edge, node } = hot;
+    const ends = new Map(shownEdges.map((e) => [e.id, [e.source, e.target]]));
+    if (!canvas) return;
+    for (const el of canvas.querySelectorAll<Element>('.svelte-flow__edge[data-id], [data-c4-edge]')) {
+      const id = el.getAttribute('data-c4-edge') ?? el.getAttribute('data-id') ?? '';
+      const on = id === edge || (!!node && !!ends.get(id)?.includes(node));
+      if (on !== el.hasAttribute('data-c4-hot')) el.toggleAttribute('data-c4-hot', on);
+    }
+  });
 
   // Live status and the highlight's dim as data attributes on each node wrapper, written to the
   // DOM: neither may hand SvelteFlow a new nodes array (it re-lays every edge). Re-run when nodes mount.
@@ -587,6 +605,7 @@
     bind:this={canvas}
     class={semanticInfo ? 'c4-canvas c4-semantic' : 'c4-canvas'}
     data-c4-moving={moving ? '' : undefined}
+    data-c4-quiet={edgeShape === 'curved' ? '' : undefined}
     onpointerdowncapture={onCanvasGesture}
     onwheelcapture={onCanvasGesture}
     onkeydown={onCanvasKeydown}
@@ -627,6 +646,10 @@
         proOptions={{ hideAttribution: true }}
         onmovestart={onMoveStart}
         onmove={onMove}
+        onedgepointerenter={({ edge }) => (hot = { edge: edge.id })}
+        onedgepointerleave={() => (hot = {})}
+        onnodepointerenter={({ node }) => (hot = { node: node.id })}
+        onnodepointerleave={() => (hot = {})}
       >
         <C4LiveLayer ids={nodeIds} {focusId} {follow} markers={shownMarkers} {frame} />
         <Background
@@ -1146,8 +1169,31 @@
     white-space: normal;
     text-align: center;
   }
-  .c4-canvas :global(.svelte-flow[data-c4-far] .c4-wrap-label) {
+  .c4-canvas :global(.svelte-flow[data-c4-far] .c4-wrap-label:not([data-c4-hot], [data-c4-reach])) {
     display: none;
+  }
+
+  /* Quiet edges (curved): out of the reach and unhovered, lighter and thinner, label shown near (1.2x+). */
+  .c4-canvas[data-c4-quiet] :global(.svelte-flow__edge:not(.c4-reach, [data-c4-hot], :hover)) {
+    opacity: 0.35;
+  }
+  .c4-canvas[data-c4-quiet] :global(.svelte-flow__edge:not(.c4-reach) .svelte-flow__edge-path) {
+    stroke-width: 1px !important;
+  }
+  .c4-canvas[data-c4-quiet] :global(.svelte-flow:not([data-c4-near]) .svelte-flow__edge-label[data-c4-edge]:not([data-c4-hot], [data-c4-reach])) {
+    display: none;
+  }
+
+  /* A bundle's count, where its edges join the trunk; hovering it opens the bundle. */
+  .c4-canvas :global(.c4-join-badge) {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 9999px;
+    border: 1px solid var(--ripple-border);
+    background: var(--c4-card);
+    color: var(--ripple-surface-foreground);
+    font-size: calc(10px / clamp(0.5, var(--c4-zoom, 1), 1));
+    font-weight: 600;
   }
 
   .c4-canvas :global(.svelte-flow__edge-label.c4-ghost-label),
