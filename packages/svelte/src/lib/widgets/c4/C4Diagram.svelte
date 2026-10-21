@@ -24,8 +24,10 @@
   meet card edges and labels sit in the space ELK reserved.
 
   SvelteFlow stays mounted across diagram swaps: only the first layout shows
-  the loading state, and C4LiveLayer refits when the node set changes. The
-  layout spinner stops under prefers-reduced-motion.
+  the loading state, and C4LiveLayer refits when the node set changes. Layout
+  is keyed on the diagram's content, so a host re-reading the same model (a new
+  object) runs no ELK and moves nothing. The layout spinner stops under
+  prefers-reduced-motion.
 
   Semantic zoom (pass `expanded`): one canvas for the whole tree. An expanded
   element opens in place as a boundary around its children (an expanded code
@@ -343,20 +345,24 @@
   let leaving = $state.raw<Node[]>([]);
   /** True while nodes glide between layouts: edges and markers sit it out. */
   let moving = $state(false);
-  /** The layout inputs (diagram, expanded, scope) of the last layout that landed or failed. */
+  /** The layout inputs (diagram content, expanded, scope) of the last layout that landed or failed. */
   let landedInputs = $state.raw<readonly unknown[] | null>(null);
   const MOVE_MS = 560;
   /** Alternates the resize animation's name, so each move restarts it (markResized). */
   let resizeTurn: 'a' | 'b' = 'a';
   let settleTimer: ReturnType<typeof setTimeout> | undefined;
 
-  // Keyed on strings: a host deriving `expanded` per frame must not re-run ELK per frame.
+  // Keyed on strings: a host deriving `expanded` per frame must not re-run ELK per frame, and a host
+  // that re-reads its model hands over a new `diagram` object with the same content, which must not
+  // re-run ELK or blank the edges for a move where nothing moves.
+  const diagramKey = $derived(JSON.stringify(diagram));
   const expandedKey = $derived(expanded === undefined ? null : expanded.join('\n'));
+  const scopeKey = $derived(expandedKey === null ? undefined : scopeId);
   /** True while a layout is computing: the camera holds until it lands, so it moves once. Derived
    *  from the props, so the camera sees it in the same flush that changed them, whichever effect
    *  runs first (set by the layout effect, a camera effect could still aim at the old layout). */
   const laying = $derived.by(() => {
-    const inputs = [diagram, expandedKey, expandedKey === null ? undefined : scopeId];
+    const inputs = [diagramKey, expandedKey, scopeKey];
     return !landedInputs || inputs.some((v, i) => v !== landedInputs![i]);
   });
 
@@ -380,17 +386,18 @@
     }, MOVE_MS + 60);
   }
 
-  // Run ELK layout whenever the diagram (or, in semantic zoom, the expanded set
-  // or scope) changes. After the first layout the previous graph stays on
-  // screen until the next one is ready.
+  // Run ELK layout whenever the diagram's content (or, in semantic zoom, the
+  // expanded set or scope) changes. After the first layout the previous graph
+  // stays on screen until the next one is ready.
   $effect(() => {
-    const currentDiagram = diagram;
+    const dk = diagramKey;
+    const currentDiagram = untrack(() => diagram);
     const ek = expandedKey;
-    const scope = ek === null ? undefined : scopeId;
+    const scope = scopeKey;
     let cancelled = false;
     if (!hasLayout) layoutReady = false;
     layoutError = null;
-    const inputs = [currentDiagram, ek, scope];
+    const inputs = [dk, ek, scope];
 
     // Handlers read the props when called, so the layout never tracks their identity. Without a
     // host ondrilldown a drillable card clicks instead, as in the non-semantic path.
