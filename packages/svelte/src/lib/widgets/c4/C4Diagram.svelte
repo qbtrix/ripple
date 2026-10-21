@@ -19,8 +19,9 @@
   one element's reach and animates the accent edges inside it (still under
   reduced motion).
 
-  Edges follow ELK's orthogonal routes (C4Edge) and every card fills its ELK
-  box, so routes meet card edges and labels sit in the space ELK reserved.
+  Edges follow ELK's orthogonal routes (C4Edge), or curves with arrowheads
+  along them (`edgeShape: 'curved'`); every card fills its ELK box, so routes
+  meet card edges and labels sit in the space ELK reserved.
 
   SvelteFlow stays mounted across diagram swaps: only the first layout shows
   the loading state, and C4LiveLayer refits when the node set changes. The
@@ -82,6 +83,7 @@
     C4Status,
     C4Marker,
     C4Highlight,
+    C4EdgeShape,
   } from './types.js';
 
   interface Props {
@@ -106,6 +108,8 @@
     scopeId?: string;
     /** Light this element's reach (in, out or both, to `depth`, default both and 3); dim the rest. */
     highlight?: C4Highlight;
+    /** How edges draw along ELK's routes. Default 'orthogonal'. */
+    edgeShape?: C4EdgeShape;
   }
 
   let {
@@ -122,6 +126,7 @@
     expanded,
     scopeId,
     highlight,
+    edgeShape = 'orthogonal',
   }: Props = $props();
 
   // Every C4 view as a SvelteFlow node type (the legacy diagram), plus semantic zoom's one type.
@@ -455,7 +460,21 @@
     hlId !== undefined && pathOf(hlId).length > 0 ? reachSet(diagram.relationships, hlId, hlReach, hlDepth) : null
   );
   const lit = $derived(reach ? litIds(reach.ids, pathOf) : null);
-  const shownEdges = $derived(decorateEdges(flowEdges, { reach, still: prefersReducedMotion.current }));
+  // Curved edges tighten a bend rather than cut a card: every drawn card's absolute box (not
+  // boundaries, which edges run inside).
+  const cards = $derived.by(() => {
+    if (edgeShape !== 'curved') return undefined;
+    const byId = new Map(flowNodes.map((n) => [n.id, n]));
+    const at = (n: Node): { x: number; y: number } => {
+      const p = n.parentId ? byId.get(n.parentId) : undefined;
+      const o = p ? at(p) : { x: 0, y: 0 };
+      return { x: o.x + n.position.x, y: o.y + n.position.y };
+    };
+    return flowNodes.filter((n) => viewOf(n) !== 'group').map((n) => ({ ...at(n), width: n.width ?? 0, height: n.height ?? 0 }));
+  });
+  const shownEdges = $derived(
+    decorateEdges(flowEdges, { reach, curved: edgeShape === 'curved', still: prefersReducedMotion.current, avoid: cards })
+  );
 
   // Live status and the highlight's dim as data attributes on each node wrapper, written to the
   // DOM: neither may hand SvelteFlow a new nodes array (it re-lays every edge). Re-run when nodes mount.

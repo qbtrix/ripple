@@ -5048,6 +5048,12 @@
     }
   };
 
+  // The same map with curved edges and the API's reach lit: its five edges fan out from one card.
+  const c4ReachSpec = {
+    version: '1.0' as const,
+    ui: { type: 'c4', props: { ...c4Spec.ui.props, highlight: { id: 'api', reach: 'both', depth: 1 }, edgeShape: 'curved' } },
+  };
+
   // ── Section data ────────────────────────────────────────────
 
   const sections = [
@@ -5159,6 +5165,7 @@
       { label: 'Tree', spec: treeSpec },
       { label: 'Kanban', spec: kanbanSpec },
       { label: 'C4 Diagram', spec: c4Spec },
+      { label: 'C4 Diagram · reach, curved', spec: c4ReachSpec },
     ]},
     { id: 'control', title: 'Control Flow', items: [
       { label: 'If / Each', spec: controlSpec },

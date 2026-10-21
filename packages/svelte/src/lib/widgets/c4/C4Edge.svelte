@@ -1,8 +1,10 @@
 <!--
   C4Edge.svelte — the SvelteFlow edge for a C4 relationship that ELK routed: an orthogonal polyline
-  through ELK's points with rounded corners, and the label at the box ELK reserved for it (beside
-  the line, clear of nodes). C4Diagram only uses it when a route exists; otherwise edges stay
-  smoothstep.
+  through ELK's points with rounded corners, the label at the box ELK reserved (beside the line,
+  clear of nodes). With `data.curved` it sweeps one cubic between the ports instead, label on its
+  midpoint, and follows the route only where the sweep would cross a card in `data.avoid`
+  (curveEdge). C4Diagram only uses it when a route exists; otherwise edges stay smoothstep (a
+  bezier when curved).
 
   `data.dim` (set while a highlight's reach leaves this edge out) dims its labels with it.
 
@@ -14,7 +16,7 @@
 <script lang="ts">
   import { BaseEdge, EdgeLabel, type EdgeProps } from '@xyflow/svelte';
   import C4PortBadge from './C4PortBadge.svelte';
-  import { roundedPath } from './live.js';
+  import { curveEdge, roundedPath } from './live.js';
   import type { C4PortView } from './types.js';
 
   type Point = { x: number; y: number };
@@ -30,14 +32,24 @@
   const head = $derived(data?.head as Badge | undefined);
   const ghost = $derived(!!data?.ghost);
   const dim = $derived(data?.dim ? '' : undefined);
-  // ELK's label box when it gave one, else the route's middle point.
+  const curve = $derived(
+    data?.curved
+      ? curveEdge(points, {
+          labelBox: box,
+          cards: (data.avoid as Box[] | undefined) ?? [],
+          badges: [tail?.box, head?.box].filter((b) => !!b),
+        })
+      : null
+  );
+  const path = $derived(curve ? curve.d : roundedPath(points, 8));
+  // On the sweep, its midpoint; else ELK's label box, else the route's middle point.
   const at = $derived(
-    box ? { x: box.x + box.width / 2, y: box.y + box.height / 2 } : points[Math.floor(points.length / 2)]
+    curve?.at ?? (box ? { x: box.x + box.width / 2, y: box.y + box.height / 2 } : points[Math.floor(points.length / 2)])
   );
   const centre = (b: Box) => ({ x: b.x + b.width / 2, y: b.y + b.height / 2 });
 </script>
 
-<BaseEdge {id} path={roundedPath(points, 8)} {style} {markerEnd} {interactionWidth} />
+<BaseEdge {id} {path} {style} {markerEnd} {interactionWidth} />
 
 {#if label && at}
   <EdgeLabel x={at.x} y={at.y} selectEdgeOnClick={!items} class={ghost ? 'c4-ghost-label' : undefined} data-c4-dim={dim}>
