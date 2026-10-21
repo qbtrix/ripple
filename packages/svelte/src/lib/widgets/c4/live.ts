@@ -15,8 +15,8 @@
 import type { Edge, EdgeMarker, MarkerType, Node, Position } from '@xyflow/svelte';
 import type { C4PortView, C4Reach, C4Relationship, C4Status } from './types.js';
 
-/** Legend order: what needs attention first; `removed` (gone), then `planned` and `future` (not built yet) last. */
-export const STATUS_ORDER: C4Status[] = ['failed', 'changing', 'drift', 'changed', 'landed', 'removed', 'planned', 'future'];
+/** Legend order: what needs attention first; `added` and `removed` (a comparison), then `planned` and `future` (not built yet) last. */
+export const STATUS_ORDER: C4Status[] = ['failed', 'changing', 'drift', 'changed', 'landed', 'added', 'removed', 'planned', 'future'];
 
 export const STATUS_LABELS: Record<C4Status, string> = {
   failed: 'Failed check',
@@ -24,6 +24,7 @@ export const STATUS_LABELS: Record<C4Status, string> = {
   drift: 'Drift',
   changed: 'Changed',
   landed: 'Landed',
+  added: 'Added',
   removed: 'Removed',
   planned: 'Planned',
   future: 'Future',

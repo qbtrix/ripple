@@ -14,9 +14,10 @@ export type C4Kind = 'person' | 'system' | 'container' | 'component' | 'code';
  *  pulse); the rest are static treatments. `planned` marks a blueprint node
  *  that does not exist in code yet (dashed outline, dimmed, no card fill);
  *  `future` is the same blueprint on a later horizon (dotted, fainter);
- *  `removed` is an element that is gone, drawn as a ghost (card kept, content
+ *  `added` is an element new since a comparison's base (a heavier double
+ *  success ring); `removed` is an element that is gone, drawn as a ghost (card kept, content
  *  faded, dashed error-toned outline) so a comparison can still show it. */
-export type C4Status = 'changing' | 'changed' | 'landed' | 'drift' | 'failed' | 'planned' | 'future' | 'removed';
+export type C4Status = 'changing' | 'changed' | 'landed' | 'drift' | 'failed' | 'planned' | 'future' | 'added' | 'removed';
 
 /** A small dot on a node: who (or what) is there right now. `color` is any CSS
  *  colour, including a `var(--…)` token. */

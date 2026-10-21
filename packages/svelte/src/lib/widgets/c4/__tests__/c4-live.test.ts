@@ -123,10 +123,10 @@ describe('statusesPresent', () => {
     expect(decorateNodes([node('a')], { status }).at(0)?.domAttributes).toEqual({ 'data-c4-status': 'planned' });
   });
 
-  it('lists removed after landed, and future after planned, each with its own label', () => {
-    const status = { a: 'future', b: 'planned', c: 'removed', d: 'landed' } as const;
-    expect(statusesPresent(status, ['a', 'b', 'c', 'd'])).toEqual(['landed', 'removed', 'planned', 'future']);
-    expect([STATUS_LABELS.removed, STATUS_LABELS.future]).toEqual(['Removed', 'Future']);
+  it('lists added and removed after landed, and future after planned, each with its own label', () => {
+    const status = { a: 'future', b: 'planned', c: 'removed', d: 'landed', e: 'added' } as const;
+    expect(statusesPresent(status, ['a', 'b', 'c', 'd', 'e'])).toEqual(['landed', 'added', 'removed', 'planned', 'future']);
+    expect([STATUS_LABELS.added, STATUS_LABELS.removed, STATUS_LABELS.future]).toEqual(['Added', 'Removed', 'Future']);
     expect(decorateNodes([node('c')], { status }).at(0)?.domAttributes).toEqual({ 'data-c4-status': 'removed' });
   });
 });

@@ -1,7 +1,7 @@
 {
   "schema": "ripple.manifest/v1",
   "version": "0.8.1",
-  "generatedAt": "2026-10-21T17:22:29.685Z",
+  "generatedAt": "2026-10-21T18:45:42.186Z",
   "spec": {
     "uiField": "ui",
     "stateField": "state",
@@ -1580,9 +1580,9 @@
           "description": "C4 diagram definition. `kind` sets the shape; without it the shape is inferred from the fields present. type \"database\" or \"queue\" draws those shapes. An empty title hides the header."
         },
         "status": {
-          "type": "Record<string, \"changing\" | \"changed\" | \"landed\" | \"drift\" | \"failed\" | \"planned\" | \"future\" | \"removed\">",
+          "type": "Record<string, \"changing\" | \"changed\" | \"landed\" | \"drift\" | \"failed\" | \"planned\" | \"future\" | \"added\" | \"removed\">",
           "required": false,
-          "description": "Live state per element id, drawn as a ring and listed in the legend. \"planned\" is a dashed blueprint for something not built yet, \"future\" a dotted one further out, and \"removed\" a ghost of an element that is gone (for a before/after comparison)."
+          "description": "Live state per element id, drawn as a ring and listed in the legend. \"planned\" is a dashed blueprint for something not built yet, \"future\" a dotted one further out, \"added\" a double success ring on a new element and \"removed\" a ghost of one that is gone (for a before/after comparison)."
         },
         "markers": {
           "type": "Record<string, Array<{ id: string; label: string; color: string }>>",
