@@ -15,7 +15,8 @@
   port badges where the edge meets an expanded boundary. A ghosted edge (both ends outside the
   scope) dims its labels with it. Without them the edge renders as it always did.
 
-  A played flow step (`data.flow`, markFlow) runs a marker along this edge's own path (SVG animateMotion on the ripple curve, the other way for
+  A played flow step (`data.flow`, markFlow) swaps the label for a badge with the step's label and
+  runs a marker along this edge's own path (SVG animateMotion on the ripple curve, the other way for
   a reply); under reduced motion the marker sits at the receiving end.
 -->
 <script lang="ts">
@@ -76,7 +77,10 @@
   </EdgeLabel>
 {/each}
 
-{#if mark}
+{#if mark && at}
+  <EdgeLabel x={at.x} y={at.y} class="c4-badge-label" data-c4-flow-label>
+    <C4PortBadge port={mark.port} />
+  </EdgeLabel>
   {#key mark.key}
     {#if mark.still}
       <circle class="c4-flow-marker" r="5" cx={landing?.x} cy={landing?.y} />
@@ -97,9 +101,7 @@
       </circle>
     {/if}
   {/key}
-{/if}
-
-{#if label && at}
+{:else if label && at}
   <EdgeLabel
     x={at.x}
     y={at.y}
@@ -133,6 +135,8 @@
 
 <style>
   .c4-flow-marker {
+    /* Counter-scaled like the labels, so the marker stays visible on a far map. */
+    r: calc(5px / clamp(0.5, var(--c4-zoom, 1), 1));
     fill: var(--ripple-accent);
     stroke: var(--ripple-surface);
     stroke-width: 2px;

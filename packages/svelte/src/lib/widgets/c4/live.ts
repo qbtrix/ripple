@@ -1,6 +1,7 @@
 // live.ts — the pure half of C4Diagram's live layer: how `status` and
 // `selectedId` decorate SvelteFlow nodes, which statuses the legend lists,
-// where the camera goes when the node set, the focus or follow mode changes,
+// where the camera goes when the node set, the focus or follow mode changes (and whether a flow
+// step's elements are on screen),
 // the rounded or curved path C4Edge draws (and how curved edges bundle at a hub), the stroke each
 // relationship style gets (both the plain and the semantic-zoom graph use it), and the reach
 // behind `highlight` (which elements and relationships light, how edges inside and outside it
@@ -12,7 +13,7 @@
 // before they existed.
 
 import type { Edge, EdgeMarker, MarkerType, Node, Position } from '@xyflow/svelte';
-import type { C4Reach, C4Relationship, C4Status } from './types.js';
+import type { C4PortView, C4Reach, C4Relationship, C4Status } from './types.js';
 
 /** Legend order: what needs attention first; `planned` (not built yet) last. */
 export const STATUS_ORDER: C4Status[] = ['failed', 'changing', 'drift', 'changed', 'landed', 'planned'];
@@ -90,6 +91,14 @@ export function planCamera(prev: CameraState | null, next: CameraState): CameraM
   if (!next.follow) return null;
   if (prev.follow && prev.focusId === next.focusId) return null;
   return { nodeId: target, animate: true };
+}
+
+/** True when every box (flow coordinates) lies inside a `width` x `height` view at `vp`: a flow
+ *  step's elements are framed only when this is false, so playback never moves a camera it need not. */
+export function onScreen(boxes: readonly Rect[], vp: { x: number; y: number; zoom: number }, width: number, height: number): boolean {
+  return boxes.every(
+    (b) => b.x * vp.zoom + vp.x >= 0 && b.y * vp.zoom + vp.y >= 0 && (b.x + b.width) * vp.zoom + vp.x <= width && (b.y + b.height) * vp.zoom + vp.y <= height
+  );
 }
 
 /**
@@ -304,10 +313,11 @@ export function curveEdge(points: readonly Pt[], { labelBox, cards = [], from, t
   return { d, at: cards.some((c) => boxesMeet(there, c)) ? reserved : at };
 }
 
-/** A message step as C4Edge draws it: a marker running the route (`back`: target to source). A new
- *  `key` restarts the marker; `still` puts it at the end. */
+/** A message step as C4Edge draws it: its label as a badge at the label box, and a marker running
+ *  the route (`back`: target to source). A new `key` restarts the marker; `still` puts it at the end. */
 export interface FlowMark {
   key: number;
+  port: C4PortView;
   back: boolean;
   still: boolean;
 }
