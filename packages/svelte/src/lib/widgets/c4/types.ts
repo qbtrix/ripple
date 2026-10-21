@@ -1,9 +1,9 @@
 // C4 Model diagram widget types — the data model for all 4 C4 levels, the
 // SvelteFlow node payload, and the optional live-state shapes (status, crew
-// markers) a host passes to show work happening on the map.
+// markers, a highlighted reach) a host passes to show work happening on the map.
 //
 // Every live field is optional: a diagram without `kind`, `drillable`,
-// `status` or `markers` renders exactly as it did before they existed.
+// `status`, `markers` or `highlight` renders exactly as it did before they existed.
 
 /** The C4 abstraction an element is. When absent, the shape is inferred from
  *  which fields are present (see getNodeType) — the legacy behaviour. */
@@ -20,6 +20,17 @@ export interface C4Marker {
   id: string;
   label: string;
   color: string;
+}
+
+/** Which way a highlight follows relationships: upstream callers, downstream callees, or both
+ *  (in plus out; a co-caller of the same element is not reached). */
+export type C4Reach = 'in' | 'out' | 'both';
+
+/** Light one element's reach and dim the rest: `reach` defaults to both, `depth` (hops) to 3. */
+export interface C4Highlight {
+  id: string;
+  reach?: C4Reach;
+  depth?: number;
 }
 
 /** An excerpt of a code element's file, shown in-map when the element is

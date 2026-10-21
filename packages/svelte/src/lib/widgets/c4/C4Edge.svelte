@@ -4,6 +4,8 @@
   the line, clear of nodes). C4Diagram only uses it when a route exists; otherwise edges stay
   smoothstep.
 
+  `data.dim` (set while a highlight's reach leaves this edge out) dims its labels with it.
+
   Semantic zoom adds two things through `data`: `items` (the relationships an aggregated edge
   stands for), which turns the middle label into a hover target listing them, and `tail` / `head`
   port badges where the edge meets an expanded boundary. A ghosted edge (both ends outside the
@@ -27,6 +29,7 @@
   const tail = $derived(data?.tail as Badge | undefined);
   const head = $derived(data?.head as Badge | undefined);
   const ghost = $derived(!!data?.ghost);
+  const dim = $derived(data?.dim ? '' : undefined);
   // ELK's label box when it gave one, else the route's middle point.
   const at = $derived(
     box ? { x: box.x + box.width / 2, y: box.y + box.height / 2 } : points[Math.floor(points.length / 2)]
@@ -34,20 +37,15 @@
   const centre = (b: Box) => ({ x: b.x + b.width / 2, y: b.y + b.height / 2 });
 </script>
 
-<BaseEdge
-  {id}
-  path={roundedPath(points, 8)}
-  {style}
-  {markerEnd}
-  {interactionWidth}
-  label={items ? undefined : label}
-  labelX={at?.x}
-  labelY={at?.y}
-/>
+<BaseEdge {id} path={roundedPath(points, 8)} {style} {markerEnd} {interactionWidth} />
 
-{#if items && label && at}
-  <EdgeLabel x={at.x} y={at.y} class={ghost ? 'c4-ghost-label' : undefined}>
-    <C4PortBadge port={{ text: String(label), items }} plain />
+{#if label && at}
+  <EdgeLabel x={at.x} y={at.y} selectEdgeOnClick={!items} class={ghost ? 'c4-ghost-label' : undefined} data-c4-dim={dim}>
+    {#if items}
+      <C4PortBadge port={{ text: String(label), items }} plain />
+    {:else}
+      {label}
+    {/if}
   </EdgeLabel>
 {/if}
 
@@ -57,6 +55,7 @@
       x={centre(badge.box).x}
       y={centre(badge.box).y}
       class={ghost ? 'c4-badge-label c4-ghost-label' : 'c4-badge-label'}
+      data-c4-dim={dim}
     >
       <C4PortBadge port={{ text: badge.text, items }} />
     </EdgeLabel>

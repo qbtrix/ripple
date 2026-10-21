@@ -3,7 +3,7 @@ import type { WidgetManifestEntry } from '../index.js';
 export const c4Entry: WidgetManifestEntry = {
   type: 'c4',
   category: 'data',
-  description: 'C4 architecture diagram (Context / Container / Component / Code) with ELK auto-layout, drill-down, live status rings and an optional in-place zoom down to code.',
+  description: 'C4 architecture diagram (Context / Container / Component / Code): ELK auto-layout, drill-down, live status rings, reach highlighting and in-place zoom down to code.',
   props: {
     diagram: {
       type: '{ title: string; level: "context" | "container" | "component" | "code"; description?: string; elements: Array<{ id: string; name: string; kind?: "person" | "system" | "container" | "component" | "code"; type?: string; description?: string; technology?: string; external?: boolean; drillable?: boolean; children?: Element[]; code?: { startLine: number; before: string[]; after?: string[]; changed?: [number, number]; language?: string } }>; relationships: Array<{ from: string; to: string; label?: string; technology?: string; style?: "sync" | "async" | "event" }> }',
@@ -29,6 +29,11 @@ export const c4Entry: WidgetManifestEntry = {
       description: 'Element ids drawn open on one canvas (semantic zoom). Passing it, even empty, turns the mode on; a code element with `code` opens as a code panel.',
     },
     scopeId: { type: 'string', required: false, description: 'Semantic zoom: the element being looked inside; everything outside it is ghosted.' },
+    highlight: {
+      type: '{ id: string; reach?: "in" | "out" | "both"; depth?: number }',
+      required: false,
+      description: 'Light one element\'s reach and dim the rest. reach follows relationships upstream (in), downstream (out) or both (default), up to depth hops (default 3); edges inside it take the accent and animate, still under reduced motion. An id not on the map changes nothing.',
+    },
   },
   example: {
     type: 'c4',

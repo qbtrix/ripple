@@ -1,16 +1,17 @@
 // live.ts — the pure half of C4Diagram's live layer: how `status` and
 // `selectedId` decorate SvelteFlow nodes, which statuses the legend lists,
 // where the camera goes when the node set, the focus or follow mode changes,
-// the rounded path C4Edge draws through an ELK route, and the stroke each
-// relationship style gets (both the plain and the semantic-zoom graph use it). No DOM, no Svelte:
-// C4Diagram, C4LiveLayer and C4Edge call these, tests call them direct.
+// the rounded path C4Edge draws through an ELK route, the stroke each
+// relationship style gets (both the plain and the semantic-zoom graph use it), and the reach
+// behind `highlight` (which elements and relationships light, how edges inside and outside it
+// draw). No DOM, no Svelte: C4Diagram, C4LiveLayer and C4Edge call these, tests call them direct.
 //
-// Invariant: with no live input, decorateNodes returns the SAME array and node
-// objects it was given, so a diagram without the live props renders exactly as
-// it did before they existed.
+// Invariant: with no live input, decorateNodes and decorateEdges return the SAME array and
+// objects they were given, so a diagram without the live props renders exactly as it did
+// before they existed.
 
-import type { Node, Position } from '@xyflow/svelte';
-import type { C4Relationship, C4Status } from './types.js';
+import type { Edge, Node, Position } from '@xyflow/svelte';
+import type { C4Reach, C4Relationship, C4Status } from './types.js';
 
 /** Legend order: what needs attention first; `planned` (not built yet) last. */
 export const STATUS_ORDER: C4Status[] = ['failed', 'changing', 'drift', 'changed', 'landed', 'planned'];
@@ -127,6 +128,84 @@ export function edgeLook(style?: C4Relationship['style']): { style: string; anim
 export function sharedStyle(styles: readonly (C4Relationship['style'] | undefined)[]): C4Relationship['style'] {
   const first = styles[0] ?? 'sync';
   return styles.every((s) => (s ?? 'sync') === first) ? first : 'sync';
+}
+
+/** A relationship's key in a reach's `links`; semantic edges carry the keys of everything they lift. */
+export const linkKey = (from: string, to: string) => `${from}\n${to}`;
+
+export interface ReachSet {
+  /** Elements reached, the start included. */
+  ids: Set<string>;
+  /** Relationships walked (linkKey). */
+  links: Set<string>;
+}
+
+/**
+ * What a highlight on `id` reaches: relationships followed upstream (`in`), downstream (`out`) or
+ * both (in plus out, never sideways to a co-caller), up to `depth` hops. Breadth-first, so each
+ * element counts at its shortest distance and a cycle ends.
+ */
+export function reachSet(
+  relationships: readonly Pick<C4Relationship, 'from' | 'to'>[],
+  id: string,
+  reach: C4Reach = 'both',
+  depth = 3
+): ReachSet {
+  const out: ReachSet = { ids: new Set([id]), links: new Set() };
+  const walk = (near: 'from' | 'to', far: 'from' | 'to') => {
+    const seen = new Set([id]);
+    let front = [id];
+    for (let d = 0; d < depth && front.length; d++) {
+      const at = new Set(front);
+      front = [];
+      for (const r of relationships) {
+        if (!at.has(r[near])) continue;
+        out.links.add(linkKey(r.from, r.to));
+        if (!seen.has(r[far])) (seen.add(r[far]), front.push(r[far]));
+      }
+    }
+    for (const s of seen) out.ids.add(s);
+  };
+  if (reach !== 'in') walk('from', 'to');
+  if (reach !== 'out') walk('to', 'from');
+  return out;
+}
+
+/** Drawn ids a reach lights: each reached element and every element above it (`pathOf`), so a
+ *  lit card's boundaries stay lit and a hidden element lights its drawn ancestor. */
+export function litIds(reached: Iterable<string>, pathOf: (id: string) => readonly string[]): Set<string> {
+  const lit = new Set<string>();
+  for (const id of reached) for (const p of pathOf(id)) lit.add(p);
+  return lit;
+}
+
+export const REACH_STROKE = 'var(--ripple-accent)';
+
+export interface EdgeDecoration {
+  /** The highlight's reach: edges inside it light and animate, the rest dim and hold still. */
+  reach?: ReachSet | null;
+  /** Reduced motion: nothing animates; the accent stays. */
+  still?: boolean;
+}
+
+export function decorateEdges(edges: Edge[], { reach, still }: EdgeDecoration): Edge[] {
+  if (!reach) return edges;
+  return edges.map((e) => {
+    const links = (e.data?.links as string[] | undefined) ?? [linkKey(e.source, e.target)];
+    const inside = links.some((k) => reach.links.has(k));
+    const next: Edge = { ...e, data: { ...e.data } };
+    if (inside) {
+      next.animated = !still;
+      next.class = typeof e.class === 'string' && e.class ? `${e.class} c4-reach` : 'c4-reach';
+      // Swap the colour and weight only, so a dashed (async, event) edge keeps its dash.
+      next.style = `${e.style ?? ''} stroke: ${REACH_STROKE}; stroke-width: 2px;`.trim();
+    } else {
+      next.animated = false;
+      next.data!.dim = true;
+      next.domAttributes = { ...e.domAttributes, 'data-c4-dim': '' };
+    }
+    return next;
+  });
 }
 
 /** A CSS cubic-bezier() as a function of progress t in [0, 1]: Newton steps, bisection fallback. */

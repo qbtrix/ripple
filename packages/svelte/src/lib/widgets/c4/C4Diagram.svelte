@@ -15,6 +15,10 @@
   drop follow mode. Enter or Space on a focused node runs exactly what a click
   on it runs (activate.ts), for every node type.
 
+  `highlight` dims (`data-c4-dim`, a DOM write like status) everything outside
+  one element's reach and animates the accent edges inside it (still under
+  reduced motion).
+
   Edges follow ELK's orthogonal routes (C4Edge) and every card fills its ELK
   box, so routes meet card edges and labels sit in the space ELK reserved.
 
@@ -49,8 +53,11 @@
   import { prefersReducedMotion } from 'svelte/motion';
   import { computeElkGraph, edgeLabelText, getNodeType, isGroupNode, type LayoutPosition } from './elk-layout.js';
   import {
+    decorateEdges,
     decorateNodes,
+    litIds,
     markResized,
+    reachSet,
     presized,
     nodeSetKey,
     statusesPresent,
@@ -59,7 +66,7 @@
     EDGE_STROKE,
     edgeLook,
   } from './live.js';
-  import { liftMarkers, representative, type C4Tree, type Visibility } from './semantic.js';
+  import { liftMarkers, pathTo, representative, type C4Tree, type Visibility } from './semantic.js';
   import { buildSemanticFlow, VIEW_NODE } from './semantic-flow.js';
   import { activateNode } from './activate.js';
   // From types.ts, NOT the barrel, and aliased: this component is itself named
@@ -74,6 +81,7 @@
     C4NodeData,
     C4Status,
     C4Marker,
+    C4Highlight,
   } from './types.js';
 
   interface Props {
@@ -96,6 +104,8 @@
     expanded?: string[];
     /** Semantic zoom: the element being looked inside; everything outside it is ghosted. */
     scopeId?: string;
+    /** Light this element's reach (in, out or both, to `depth`, default both and 3); dim the rest. */
+    highlight?: C4Highlight;
   }
 
   let {
@@ -111,6 +121,7 @@
     onmanualcamera,
     expanded,
     scopeId,
+    highlight,
   }: Props = $props();
 
   // Every C4 view as a SvelteFlow node type (the legacy diagram), plus semantic zoom's one type.
@@ -427,11 +438,31 @@
   // SvelteFlow rebuilds every node and edge. Bound, the write lands here raw, so only the nodes it
   // changed are new. The next layout or decoration replaces it (a writable derived).
   let boundNodes = $derived(shownNodes);
-  // Live status as a data attribute on each node wrapper, written to the DOM: a status change
-  // must not hand SvelteFlow a new nodes array (it re-lays every edge). Re-run when nodes mount.
+  // Highlight: keyed on its fields, so a host passing a fresh object each render re-derives
+  // nothing. An element's path runs through the semantic tree (a hidden element lights its drawn
+  // ancestor), else up the drawn nodes' parents; an id with no path is not on the map.
+  const hlId = $derived(highlight?.id);
+  const hlReach = $derived(highlight?.reach);
+  const hlDepth = $derived(highlight?.depth);
+  const parentOf = $derived(new Map(flowNodes.map((n) => [n.id, n.parentId])));
+  function pathOf(id: string): string[] {
+    if (semanticInfo) return pathTo(semanticInfo.tree, id);
+    const out: string[] = [];
+    for (let at: string | undefined = id; at !== undefined && parentOf.has(at); at = parentOf.get(at)) out.unshift(at);
+    return out;
+  }
+  const reach = $derived(
+    hlId !== undefined && pathOf(hlId).length > 0 ? reachSet(diagram.relationships, hlId, hlReach, hlDepth) : null
+  );
+  const lit = $derived(reach ? litIds(reach.ids, pathOf) : null);
+  const shownEdges = $derived(decorateEdges(flowEdges, { reach, still: prefersReducedMotion.current }));
+
+  // Live status and the highlight's dim as data attributes on each node wrapper, written to the
+  // DOM: neither may hand SvelteFlow a new nodes array (it re-lays every edge). Re-run when nodes mount.
   let canvas = $state<HTMLElement>();
   $effect(() => {
     const st = status ?? {};
+    const on = lit;
     void shownNodes;
     if (!canvas) return;
     for (const el of canvas.querySelectorAll<HTMLElement>('.svelte-flow__node')) {
@@ -439,6 +470,8 @@
       if (s) {
         if (el.dataset.c4Status !== s) el.dataset.c4Status = s;
       } else if (el.dataset.c4Status) delete el.dataset.c4Status;
+      const dim = !!on && !on.has(el.dataset.id ?? '');
+      if (dim !== el.hasAttribute('data-c4-dim')) el.toggleAttribute('data-c4-dim', dim);
     }
   });
   const nodeIds = $derived(nodeSetKey(flowNodes));
@@ -555,7 +588,7 @@
     {:else}
       <SvelteFlow
         bind:nodes={() => boundNodes, (written) => (boundNodes = written)}
-        edges={flowEdges}
+        edges={shownEdges}
         {nodeTypes}
         {edgeTypes}
         fitView
@@ -1056,7 +1089,8 @@
     from { opacity: 0; }
   }
 
-  .c4-semantic :global(.svelte-flow__node[data-c4-ghost]) {
+  .c4-semantic :global(.svelte-flow__node[data-c4-ghost]),
+  .c4-canvas :global(.svelte-flow__node[data-c4-dim]) {
     opacity: 0.38;
   }
 
@@ -1078,11 +1112,13 @@
     transition-duration: 120ms;
   }
 
-  .c4-semantic :global(.svelte-flow__edge.c4-ghost) {
+  .c4-semantic :global(.svelte-flow__edge.c4-ghost),
+  .c4-canvas :global(.svelte-flow__edge[data-c4-dim]) {
     opacity: 0.35;
   }
 
-  .c4-canvas :global(.svelte-flow__edge-label.c4-ghost-label) {
+  .c4-canvas :global(.svelte-flow__edge-label.c4-ghost-label),
+  .c4-canvas :global(.svelte-flow__edge-label[data-c4-dim]) {
     opacity: 0.45;
   }
 
