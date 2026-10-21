@@ -14,6 +14,10 @@
 // each label, which ELK reserves space for, so edges go around nodes and labels
 // do not stack. ELK reports an edge's points relative to its `container` (the
 // lowest common ancestor of its ends); they are offset back to absolute here.
+//
+// A level that comes out far wider than tall (peers sharing a layer, a fan-in of
+// long labels) is laid out once more for reading (runReadable): layers capped,
+// placement compact, middle labels wrapped. A level that fits keeps its first layout.
 
 import ELK, { type ElkNode, type ElkExtendedEdge } from 'elkjs/lib/elk.bundled.js';
 // From types.ts, NOT the barrel: `index.ts` also exports a COMPONENT named
@@ -133,6 +137,44 @@ export async function runElk(graph: ElkNode): Promise<ElkNode> {
     }
   }
   return new ELK().layout(graph);
+}
+
+/** Wider than this (width / height) and than WIDE_PX, a level is laid out again by runReadable. */
+export const WIDE = 2.5;
+/** Narrower than this, a fit into a usual canvas stays above FIT_MIN_ZOOM, so the first layout stands. */
+export const WIDE_PX = 2000;
+/** The widest a middle label is laid out (and drawn) on a level laid out again. */
+export const LABEL_CAP = 180;
+
+/** `graph` with every layer capped at five nodes, compact placement and middle labels wrapped at LABEL_CAP. */
+export function readable(graph: ElkNode): ElkNode {
+  const opts = {
+    'elk.layered.layering.strategy': 'COFFMAN_GRAHAM',
+    'elk.layered.layering.coffmanGraham.layerBound': '5',
+    'elk.layered.nodePlacement.strategy': 'SIMPLE',
+  };
+  const walk = (n: ElkNode): ElkNode => ({
+    ...n,
+    ...(n.children?.length ? { layoutOptions: { ...n.layoutOptions, ...opts }, children: n.children.map(walk) } : {}),
+    ...(n.edges ? {
+      edges: n.edges.map((e) => ({
+        ...e,
+        labels: e.labels?.map((l) => {
+          if (l.layoutOptions?.['elk.edgeLabels.placement'] || (l.width ?? 0) <= LABEL_CAP) return l;
+          const lines = Math.ceil(((l.width ?? 0) - 16) / (LABEL_CAP - 16));
+          return { ...l, width: LABEL_CAP, height: 20 + (lines - 1) * 14 };
+        }),
+      })),
+    } : {}),
+  });
+  return walk(graph);
+}
+
+/** runElk, then once more through `readable` when the result is wider than WIDE and WIDE_PX. */
+export async function runReadable(graph: ElkNode): Promise<ElkNode> {
+  const out = await runElk(graph);
+  const w = out.width ?? 0;
+  return w > WIDE_PX && w > WIDE * (out.height ?? 0) ? runElk(readable(graph)) : out;
 }
 
 /** Determine ELK node dimensions for a given C4 element */
@@ -269,7 +311,7 @@ export async function computeElkGraph(
   };
 
   try {
-    const read = readLayout(await runElk(graph));
+    const read = readLayout(await runReadable(graph));
     for (const [id, box] of read.positions) positions.set(id, box);
     for (const [id, e] of read.edges) {
       const index = Number(id.slice('edge-'.length));
@@ -431,7 +473,7 @@ export async function computeSemanticLayout(
     edges: elkEdges,
   };
 
-  const read = readLayout(await runElk(graph));
+  const read = readLayout(await runReadable(graph));
   const routes = new Map<string, SemanticRoute>();
   for (const [key, e] of read.edges) {
     const route: SemanticRoute = { points: e.points };

@@ -57,6 +57,8 @@
   }
 
   :global(.c4-port.c4-port-plain) {
+    /* The edge label decides: one line, or wrapped where the layout wrapped it (C4Edge). */
+    white-space: inherit;
     padding: 0;
     border: none;
     background: none;

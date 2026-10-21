@@ -358,6 +358,10 @@ export function zoomVar(zoom: number): string {
   return String(Math.round(Math.min(1, Math.max(0.5, zoom)) * 100) / 100);
 }
 
+/** The lowest zoom a fit goes to: names counter-scale down to here (zoomVar), so cards stay legible; a
+ *  map bigger than that is framed at this zoom and panned. */
+export const FIT_MIN_ZOOM = 0.5;
+
 /** The camera's curve: the same as --ripple-ease-out, so camera and layout move as one. */
 export const rippleEase = cubicBezier(0.23, 1, 0.32, 1);
 
