@@ -46,13 +46,21 @@
   const at = $derived(
     curve?.at ?? (box ? { x: box.x + box.width / 2, y: box.y + box.height / 2 } : points[Math.floor(points.length / 2)])
   );
+  // A label the layout wrapped (taller than one line, on a dense level) keeps its laid-out size.
+  const wrap = $derived(!!box && box.height > 20);
   const centre = (b: Box) => ({ x: b.x + b.width / 2, y: b.y + b.height / 2 });
 </script>
 
 <BaseEdge {id} {path} {style} {markerEnd} {interactionWidth} />
 
 {#if label && at}
-  <EdgeLabel x={at.x} y={at.y} selectEdgeOnClick={!items} class={ghost ? 'c4-ghost-label' : undefined} data-c4-dim={dim}>
+  <EdgeLabel
+    x={at.x}
+    y={at.y}
+    selectEdgeOnClick={!items}
+    class={[ghost && 'c4-ghost-label', wrap && 'c4-wrap-label']}
+    data-c4-dim={dim}
+  >
     {#if items}
       <C4PortBadge port={{ text: String(label), items }} plain />
     {:else}

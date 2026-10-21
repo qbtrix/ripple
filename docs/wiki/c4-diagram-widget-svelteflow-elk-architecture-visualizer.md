@@ -66,6 +66,8 @@ ELK lays out every element, with an element's non-empty `containers` nested insi
 
 `edgeShape: 'curved'` draws each edge as one sweeping cubic from the source port to the target port (`curveEdge`): it leaves and enters along ELK's end segments with each control point 45% of the gap out, so the arrowhead every curved edge gets points the way it enters, and its label sits on the curve's midpoint. Where that sweep would cross a card the edge follows ELK's route instead as a smooth curve through the segment midpoints (`routeCurve`), whose bends tighten rather than cut a card or the edge's own label; where a card sits under the midpoint the label keeps the box ELK reserved. A routeless fallback becomes a bezier. Orthogonal edges carry no arrowheads. ELK fans the ends of edges that share a node apart and keeps their label boxes from overlapping; a test pins this on a five-edge node, curved labels included.
 
+A level that ELK lays out far wider than tall (more than 2.5:1 and over 2000px: peers sharing one layer, or a fan-in of long labels) is laid out once more for reading (`runReadable` in `elk-layout.ts`). Layers are capped at five nodes (Coffman-Graham layering), placement is compact, and middle labels wrap at 180px. A wrapped label keeps its laid-out size instead of counter-scaling, and is hidden below 0.9x like a card's secondary lines. paw-enterprise's own model, 18 components fanning into one API client, goes from 7211x884 to about 1920x2020. A level that fits keeps its first layout untouched.
+
 ## Canvas, header and legend
 
 The canvas is styled only with `--ripple-*` tokens, every xyflow colour variable included, so it follows the host's light or dark theme; cards sit on an opaque ground derived from the ink so translucent hosts do not show edges through them. The canvas fills a parent that gives it a height and falls back to 480px. An empty `title` hides the header, for hosts that draw their own chrome. The legend lists the statuses present when `status` is passed, otherwise the C4 shapes. Connection handles are hidden: nothing is connectable.
@@ -91,7 +93,7 @@ SvelteFlow stays mounted across diagram swaps. Only the first layout shows the l
 
 ## Legibility at any zoom
 
-`C4LiveLayer` writes the zoom into `--c4-zoom`; names and edge labels counter-scale below 1x. Below 0.9x (`data-c4-far`) cards keep only name and technology. Fits never zoom past 1x. The variable is inherited by every node, so it is written only when the value the cards read changes (clamped to 0.5–1, two decimals), and not while a camera move the layer started is flying; the final zoom lands with the move.
+`C4LiveLayer` writes the zoom into `--c4-zoom`; names and edge labels counter-scale below 1x. Below 0.9x (`data-c4-far`) cards keep only name and technology. Fits never zoom past 1x, nor below 0.5x (`FIT_MIN_ZOOM`, where names stop counter-scaling): a map bigger than that is framed at 0.5x and panned. The variable is inherited by every node, so it is written only when the value the cards read changes (clamped to 0.5–1, two decimals), and not while a camera move the layer started is flying; the final zoom lands with the move.
 
 ## Semantic zoom
 

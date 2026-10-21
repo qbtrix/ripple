@@ -65,6 +65,7 @@
     unionRect,
     STATUS_LABELS,
     EDGE_STROKE,
+    FIT_MIN_ZOOM,
     edgeLook,
   } from './live.js';
   import { liftMarkers, pathTo, representative, type C4Tree, type Visibility } from './semantic.js';
@@ -611,7 +612,7 @@
         {nodeTypes}
         {edgeTypes}
         fitView
-        fitViewOptions={{ padding: 0.25 }}
+        fitViewOptions={{ padding: 0.25, minZoom: FIT_MIN_ZOOM }}
         colorMode="dark"
         panOnDrag
         zoomOnScroll
@@ -1134,6 +1135,19 @@
   .c4-semantic :global(.svelte-flow__edge.c4-ghost),
   .c4-canvas :global(.svelte-flow__edge[data-c4-dim]) {
     opacity: 0.35;
+  }
+
+  /* A label wrapped on a dense level keeps its laid-out size (counter-scaled it would cover its
+     neighbours) and, like a card's secondary lines, is dropped when the map is far out. */
+  .c4-canvas :global(.svelte-flow__edge-label.c4-wrap-label) {
+    /* LABEL_CAP in elk-layout.ts: every wrapped label was laid out this wide. */
+    max-width: 180px;
+    font-size: 11px;
+    white-space: normal;
+    text-align: center;
+  }
+  .c4-canvas :global(.svelte-flow[data-c4-far] .c4-wrap-label) {
+    display: none;
   }
 
   .c4-canvas :global(.svelte-flow__edge-label.c4-ghost-label),

@@ -32,7 +32,7 @@
     useViewportInitialized,
   } from '@xyflow/svelte';
   import { prefersReducedMotion } from 'svelte/motion';
-  import { planCamera, rippleEase, zoomVar, type CameraState, type Rect } from './live.js';
+  import { FIT_MIN_ZOOM, planCamera, rippleEase, zoomVar, type CameraState, type Rect } from './live.js';
   import type { C4Marker } from './types.js';
 
   interface Props {
@@ -102,8 +102,8 @@
     fly(duration);
     void flow.fitView(
       move.nodeId
-        ? { nodes: [{ id: move.nodeId }], padding: 0.35, maxZoom: 1, duration }
-        : { padding: 0.1, maxZoom: 1, duration }
+        ? { nodes: [{ id: move.nodeId }], padding: 0.35, minZoom: FIT_MIN_ZOOM, maxZoom: 1, duration }
+        : { padding: 0.1, minZoom: FIT_MIN_ZOOM, maxZoom: 1, duration }
     );
   });
 
@@ -117,7 +117,7 @@
     const same = prevFrame?.key === key;
     prevFrame = { key, follow: following };
     if (!rect || (!first && (letGo || same))) return;
-    const vp = getViewportForBounds(rect, store.width, store.height, 0.15, 1, 0.08);
+    const vp = getViewportForBounds(rect, store.width, store.height, FIT_MIN_ZOOM, 1, 0.08);
     const duration = first || prefersReducedMotion.current ? 0 : MOVE_MS;
     fly(duration);
     void flow.setViewport(vp, { duration, ease: rippleEase });
