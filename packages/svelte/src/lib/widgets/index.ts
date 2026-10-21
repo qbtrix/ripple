@@ -58,6 +58,7 @@ export type {
   C4Marker,
   C4Highlight,
   C4Reach,
+  C4EdgeShape,
   C4Code,
   C4PortView,
 } from './c4/index.js';

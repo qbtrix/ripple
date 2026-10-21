@@ -12,6 +12,7 @@ export type {
   C4Marker,
   C4Highlight,
   C4Reach,
+  C4EdgeShape,
   C4Code,
   C4PortView,
   C4Person,

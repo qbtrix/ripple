@@ -3,18 +3,20 @@
 // camera plan behind `focusId`/`follow`, ELK's edge routes with the rounded
 // path drawn through them, and what keeps a live map cheap to redraw (the
 // zoom variable's value, the size handed to SvelteFlow up front, the resize
-// marks), and the reach behind `highlight` (which elements and edges light, which dim). Pure
-// functions, no DOM.
+// marks), the reach behind `highlight` (which elements and edges light, which dim), the curve
+// behind `edgeShape: 'curved'`, and ELK's fan-out on a five-edge node. Pure functions, no DOM.
 
 import { describe, it, expect } from 'vitest';
 import type { Edge, Node } from '@xyflow/svelte';
 import { getNodeType, computeElkLayout, computeElkGraph } from '../elk-layout.js';
 import {
+  curveEdge,
   decorateEdges,
   decorateNodes,
   linkKey,
   markResized,
   reachSet,
+  routeCurve,
   nodeSetKey,
   planCamera,
   presized,
@@ -323,5 +325,165 @@ describe('decorateEdges', () => {
     expect(decorateEdges([lifted], { reach })[0].class).toContain('c4-reach');
     const other = edge('pe', 'rp', { data: { links: [linkKey('q', 'z')] } });
     expect(decorateEdges([other], { reach })[0].domAttributes).toEqual({ 'data-c4-dim': '' });
+  });
+  it('marks curved edges, adds arrowheads and swaps the routeless fallback for a bezier', () => {
+    const out = decorateEdges(edges, { curved: true });
+    expect(out[0].data?.curved).toBe(true);
+    expect(out[0].markerEnd).toBeTruthy();
+    expect(out[3].type).toBe('default');
+    const lit = decorateEdges(edges, { curved: true, reach });
+    expect(lit[0].markerEnd).not.toEqual(out[0].markerEnd);
+  });
+});
+
+describe('routeCurve', () => {
+  it('draws straight between two points and through segment midpoints around bends', () => {
+    expect(routeCurve([])).toBe('');
+    expect(routeCurve([{ x: 0, y: 0 }, { x: 0, y: 50 }])).toBe('M 0 0 L 0 50');
+    expect(routeCurve([{ x: 0, y: 0 }, { x: 0, y: 50 }, { x: 40, y: 50 }])).toBe('M 0 0 L 0 25 Q 0 50 20 50 L 40 50');
+    expect(routeCurve([{ x: 0, y: 0 }, { x: 0, y: 30 }, { x: 100, y: 30 }, { x: 100, y: 60 }])).toBe(
+      'M 0 0 L 0 15 Q 0 30 50 30 Q 100 30 100 45 L 100 60'
+    );
+  });
+
+  it('tightens a bend that would cut into a box beside the line', () => {
+    // A label just left of the first leg, ending 10px above the bend: the midpoint curve clips it.
+    const box = { x: 0, y: 40, width: 98, height: 50 };
+    const route = [{ x: 100, y: 0 }, { x: 100, y: 100 }, { x: 0, y: 100 }];
+    expect(routeCurve(route)).toBe('M 100 0 L 100 50 Q 100 100 50 100 L 0 100');
+    expect(routeCurve(route, [box])).toBe('M 100 0 L 100 75 Q 100 100 75 100 L 0 100');
+  });
+});
+
+describe('curveEdge', () => {
+  // Down from (0,0), across, down into (200,200): the ports face down and up.
+  const route = [{ x: 0, y: 0 }, { x: 0, y: 100 }, { x: 200, y: 100 }, { x: 200, y: 200 }];
+  const label = { x: 10, y: 60, width: 60, height: 20 };
+
+  it('sweeps one cubic between the ports, tangents along them, 45% of the gap out', () => {
+    expect(curveEdge(route, { labelBox: label })).toEqual({ d: 'M 0 0 C 0 90 200 110 200 200', at: { x: 100, y: 100 } });
+  });
+
+  it('follows a port that faces sideways', () => {
+    const side = [{ x: 0, y: 0 }, { x: 0, y: 50 }, { x: 100, y: 50 }];
+    expect(curveEdge(side, {}).d).toBe('M 0 0 C 0 22.5 55 50 100 50');
+  });
+
+  it('falls back to the route when the sweep would cross a card', () => {
+    const card = { x: 80, y: 80, width: 40, height: 40 };
+    const out = curveEdge(route, { labelBox: label, cards: [card] });
+    expect(out.d).toBe(routeCurve(route, [label, card]));
+    expect(out.at).toEqual({ x: 40, y: 70 });
+  });
+
+  it('keeps the label where the layout put it when a card sits on the midpoint', () => {
+    // Above and right of the midpoint (100,100): clear of the sweep, under a label centred there.
+    const card = { x: 110, y: 76, width: 30, height: 18 };
+    expect(curveEdge(route, { labelBox: label, cards: [card] })).toEqual({ d: 'M 0 0 C 0 90 200 110 200 200', at: { x: 40, y: 70 } });
+  });
+});
+
+/** Points along an M/L/Q/C path, so a test can check where a drawn curve actually goes. */
+function sample(d: string, steps = 16): { x: number; y: number }[] {
+  const tok = d.split(' ');
+  const pts: { x: number; y: number }[] = [];
+  let at = { x: 0, y: 0 };
+  for (let i = 0; i < tok.length; ) {
+    const c = tok[i++];
+    const num = () => Number(tok[i++]);
+    if (c === 'M') (at = { x: num(), y: num() }), pts.push(at);
+    else if (c === 'L') {
+      const to = { x: num(), y: num() };
+      for (let s = 1; s <= steps; s++) pts.push({ x: at.x + ((to.x - at.x) * s) / steps, y: at.y + ((to.y - at.y) * s) / steps });
+      at = to;
+    } else if (c === 'Q') {
+      const [k, to] = [{ x: num(), y: num() }, { x: num(), y: num() }];
+      for (let s = 1; s <= steps; s++) {
+        const t = s / steps;
+        const m = (a: number, b: number, e: number) => (1 - t) ** 2 * a + 2 * (1 - t) * t * b + t ** 2 * e;
+        pts.push({ x: m(at.x, k.x, to.x), y: m(at.y, k.y, to.y) });
+      }
+      at = to;
+    } else if (c === 'C') {
+      const [k1, k2, to] = [{ x: num(), y: num() }, { x: num(), y: num() }, { x: num(), y: num() }];
+      for (let s = 1; s <= steps; s++) {
+        const t = s / steps;
+        const m = (a: number, b: number, c2: number, e: number) => (1 - t) ** 3 * a + 3 * (1 - t) ** 2 * t * b + 3 * (1 - t) * t ** 2 * c2 + t ** 3 * e;
+        pts.push({ x: m(at.x, k1.x, k2.x, to.x), y: m(at.y, k1.y, k2.y, to.y) });
+      }
+      at = to;
+    }
+  }
+  return pts;
+}
+
+describe('a five-edge node', { timeout: 30000 }, () => {
+  // The showcase's banking containers: the API has five relationships, two in and three out.
+  const banking: C4Diagram = {
+    level: 'container',
+    title: '',
+    elements: [
+      { id: 'customer', name: 'Personal Banking Customer', external: true },
+      {
+        id: 'bank', name: 'Internet Banking System',
+        containers: [
+          { id: 'web-app', name: 'Web Application', technology: 'Java + Spring MVC', type: 'webapp' },
+          { id: 'spa', name: 'Single-Page App', technology: 'JavaScript + Angular', type: 'webapp' },
+          { id: 'mobile-app', name: 'Mobile App', technology: 'Xamarin', type: 'mobile' },
+          { id: 'api', name: 'API Application', technology: 'Java + Spring MVC', type: 'api' },
+          { id: 'db', name: 'Database', technology: 'Oracle', type: 'database' },
+        ],
+      },
+      { id: 'mainframe', name: 'Mainframe Banking System', external: true },
+      { id: 'email', name: 'E-mail System', external: true },
+    ],
+    relationships: [
+      { from: 'customer', to: 'web-app', label: 'Visits bigbank.com', technology: 'HTTPS' },
+      { from: 'customer', to: 'spa', label: 'Uses' },
+      { from: 'customer', to: 'mobile-app', label: 'Uses' },
+      { from: 'web-app', to: 'spa', label: 'Delivers to browser' },
+      { from: 'spa', to: 'api', label: 'Calls', technology: 'JSON/HTTPS' },
+      { from: 'mobile-app', to: 'api', label: 'Calls', technology: 'JSON/HTTPS' },
+      { from: 'api', to: 'db', label: 'Reads/writes', technology: 'JDBC' },
+      { from: 'api', to: 'mainframe', label: 'Calls', technology: 'XML/HTTPS' },
+      { from: 'api', to: 'email', label: 'Sends e-mail', style: 'async' },
+    ],
+  };
+  const hub = [4, 5, 6, 7, 8];
+  type Box = { x: number; y: number; width: number; height: number };
+  const overlaps = (a: Box, b: Box) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+
+  it('fans the ends apart on the node and keeps the label boxes from overlapping', async () => {
+    const { routes } = await computeElkGraph(banking);
+    const ends = hub.map((i) => {
+      const pts = routes.get(i)!.points;
+      const p = banking.relationships[i].from === 'api' ? pts[0] : pts.at(-1)!;
+      return `${Math.round(p.x)},${Math.round(p.y)}`;
+    });
+    expect(new Set(ends).size).toBe(5);
+    const boxes = [...routes.values()].map((r) => r.label!).filter(Boolean);
+    expect(boxes).toHaveLength(9);
+    for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) expect(overlaps(boxes[i], boxes[j]), `${i}/${j}`).toBe(false);
+  });
+
+  it('sweeps most edges, keeps every curve out of every card and every label clear', async () => {
+    const { routes, positions } = await computeElkGraph(banking);
+    // C4Diagram hands every curved edge the cards on the map (boundaries excluded: edges run inside them).
+    const cards = [...positions].filter(([id]) => id !== 'bank').map(([, r]) => r);
+    const inset = (b: Box): Box => ({ x: b.x + 1, y: b.y + 1, width: b.width - 2, height: b.height - 2 });
+    const labels: Box[] = [];
+    let swept = 0;
+    for (const [i, r] of routes) {
+      const { d, at } = curveEdge(r.points, { labelBox: r.label, cards });
+      if (!d.includes(' L ')) swept++;
+      for (const p of sample(d, 32)) {
+        expect(cards.find((b) => overlaps(inset(b), { ...p, width: 0.01, height: 0.01 })), `edge ${i} at ${p.x},${p.y}`).toBeUndefined();
+      }
+      const box = { x: at!.x - r.label!.width / 2, y: at!.y - r.label!.height / 2, width: r.label!.width, height: r.label!.height };
+      expect(cards.find((b) => overlaps(inset(b), box)), `label ${i}`).toBeUndefined();
+      labels.push(box);
+    }
+    expect(swept).toBeGreaterThanOrEqual(6);
+    for (let i = 0; i < labels.length; i++) for (let j = i + 1; j < labels.length; j++) expect(overlaps(labels[i], labels[j]), `labels ${i}/${j}`).toBe(false);
   });
 });

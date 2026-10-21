@@ -1,7 +1,7 @@
 // live.ts — the pure half of C4Diagram's live layer: how `status` and
 // `selectedId` decorate SvelteFlow nodes, which statuses the legend lists,
 // where the camera goes when the node set, the focus or follow mode changes,
-// the rounded path C4Edge draws through an ELK route, the stroke each
+// the rounded or curved path C4Edge draws through an ELK route, the stroke each
 // relationship style gets (both the plain and the semantic-zoom graph use it), and the reach
 // behind `highlight` (which elements and relationships light, how edges inside and outside it
 // draw). No DOM, no Svelte: C4Diagram, C4LiveLayer and C4Edge call these, tests call them direct.
@@ -10,7 +10,7 @@
 // objects they were given, so a diagram without the live props renders exactly as it did
 // before they existed.
 
-import type { Edge, Node, Position } from '@xyflow/svelte';
+import type { Edge, EdgeMarker, MarkerType, Node, Position } from '@xyflow/svelte';
 import type { C4Reach, C4Relationship, C4Status } from './types.js';
 
 /** Legend order: what needs attention first; `planned` (not built yet) last. */
@@ -180,32 +180,139 @@ export function litIds(reached: Iterable<string>, pathOf: (id: string) => readon
 }
 
 export const REACH_STROKE = 'var(--ripple-accent)';
+// Plain token colours: xyflow builds a marker's id from its colour, so no spaces or color-mix().
+// Sized in user space, so a reach edge's heavier stroke does not grow its arrowhead.
+const ARROW = { type: 'arrowclosed' as MarkerType, width: 28, height: 28, markerUnits: 'userSpaceOnUse' };
+const EDGE_ARROW: EdgeMarker = { ...ARROW, color: 'var(--ripple-muted-foreground)' };
+const REACH_ARROW: EdgeMarker = { ...ARROW, color: REACH_STROKE };
 
 export interface EdgeDecoration {
   /** The highlight's reach: edges inside it light and animate, the rest dim and hold still. */
   reach?: ReachSet | null;
+  /** edgeShape 'curved': C4Edge draws a curve, every edge gets an arrowhead. */
+  curved?: boolean;
+  /** Curved only: the cards on the map (absolute), which a curve tightens its bends to clear. */
+  avoid?: readonly Rect[];
   /** Reduced motion: nothing animates; the accent stays. */
   still?: boolean;
 }
 
-export function decorateEdges(edges: Edge[], { reach, still }: EdgeDecoration): Edge[] {
-  if (!reach) return edges;
+export function decorateEdges(edges: Edge[], { reach, curved, still, avoid }: EdgeDecoration): Edge[] {
+  if (!reach && !curved) return edges;
   return edges.map((e) => {
     const links = (e.data?.links as string[] | undefined) ?? [linkKey(e.source, e.target)];
-    const inside = links.some((k) => reach.links.has(k));
+    const inside = reach ? links.some((k) => reach.links.has(k)) : undefined;
     const next: Edge = { ...e, data: { ...e.data } };
+    if (curved) {
+      next.data!.curved = true;
+      if (avoid) next.data!.avoid = avoid;
+      next.markerEnd = inside ? REACH_ARROW : EDGE_ARROW;
+      if (e.type === 'smoothstep') next.type = 'default';
+    }
     if (inside) {
       next.animated = !still;
       next.class = typeof e.class === 'string' && e.class ? `${e.class} c4-reach` : 'c4-reach';
       // Swap the colour and weight only, so a dashed (async, event) edge keeps its dash.
       next.style = `${e.style ?? ''} stroke: ${REACH_STROKE}; stroke-width: 2px;`.trim();
-    } else {
+    } else if (inside === false) {
       next.animated = false;
       next.data!.dim = true;
       next.domAttributes = { ...e.domAttributes, 'data-c4-dim': '' };
     }
     return next;
   });
+}
+
+type Pt = { x: number; y: number };
+
+/**
+ * A smooth curve along an ELK route (curveEdge's fallback): straight to the middle of the first segment, then a
+ * quadratic through each bend to the next segment's middle, then straight to the end. It stays
+ * inside the route's corners, and its ends run along the first and last segments, so an
+ * arrowhead points the way the route enters the node. A bend whose curve would cut into one of
+ * the `avoid` boxes (the label ELK set beside the line, often just short of a bend; a card the
+ * route passes close by) tightens until it clears, down to a near-square corner.
+ */
+export function routeCurve(points: readonly Pt[], avoid: readonly Rect[] = []): string {
+  if (points.length === 0) return '';
+  const n = (v: number) => Math.round(v * 100) / 100;
+  const at = (p: Pt) => `${n(p.x)} ${n(p.y)}`;
+  const toward = (a: Pt, b: Pt, f: number) => ({ x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f });
+  const hits = (a: Pt, k: Pt, b: Pt) => {
+    for (let i = 1; i < 16; i++) {
+      const p = toward(toward(a, k, i / 16), toward(k, b, i / 16), i / 16);
+      if (avoid.some((r) => p.x > r.x + 1 && p.x < r.x + r.width - 1 && p.y > r.y + 1 && p.y < r.y + r.height - 1)) return true;
+    }
+    return false;
+  };
+  let d = `M ${at(points[0])}`;
+  let pen = points[0];
+  for (let i = 1; i < points.length - 1; i++) {
+    const [a, k, b] = [points[i - 1], points[i], points[i + 1]];
+    let s = 0.5;
+    let [from, to] = [toward(k, a, s), toward(k, b, s)];
+    while (s > 0.02 && hits(from, k, to)) {
+      s /= 2;
+      [from, to] = [toward(k, a, s), toward(k, b, s)];
+    }
+    if (at(from) !== at(pen)) d += ` L ${at(from)}`;
+    d += ` Q ${at(k)} ${at(to)}`;
+    pen = to;
+  }
+  return `${d} L ${at(points[points.length - 1])}`;
+}
+
+const inBox = (p: Pt, r: Rect) => p.x > r.x + 1 && p.x < r.x + r.width - 1 && p.y > r.y + 1 && p.y < r.y + r.height - 1;
+const boxesMeet = (a: Rect, b: Rect) => a.x < b.x + b.width - 1 && b.x + 1 < a.x + a.width && a.y < b.y + b.height - 1 && b.y + 1 < a.y + a.height;
+
+export interface CurveInput {
+  /** The label box the layout reserved beside the route. */
+  labelBox?: Rect;
+  /** Cards on the map (absolute): the sweep may not cross one, nor its label sit on one. */
+  cards?: readonly Rect[];
+  /** Port badges at the route's ends, kept clear when the route is followed. */
+  badges?: readonly Rect[];
+}
+
+/**
+ * edgeShape 'curved': one cubic from the source port to the target port, leaving and entering
+ * along the route's end segments with each control point 45% of the gap out, the arc of a
+ * hand-drawn arrow; the label sits on its midpoint. If the sweep would cross a card it follows
+ * ELK's route instead (routeCurve), and if a card sits under the midpoint the label keeps the box
+ * the layout reserved.
+ */
+export function curveEdge(points: readonly Pt[], { labelBox, cards = [], badges = [] }: CurveInput): { d: string; at?: Pt } {
+  const reserved = labelBox && { x: labelBox.x + labelBox.width / 2, y: labelBox.y + labelBox.height / 2 };
+  const n = (v: number) => Math.round(v * 100) / 100;
+  if (points.length < 2) return { d: routeCurve(points), at: reserved };
+  const [a, a1, b0, b] = [points[0], points[1], points[points.length - 2], points[points.length - 1]];
+  const unit = (p: Pt, q: Pt) => {
+    const len = Math.hypot(q.x - p.x, q.y - p.y) || 1;
+    return { x: (q.x - p.x) / len, y: (q.y - p.y) / len };
+  };
+  const [u, v] = [unit(a, a1), unit(b0, b)];
+  const out = 0.45 * Math.abs(u.x * (b.x - a.x) + u.y * (b.y - a.y));
+  const into = 0.45 * Math.abs(v.x * (b.x - a.x) + v.y * (b.y - a.y));
+  const k1 = { x: a.x + u.x * out, y: a.y + u.y * out };
+  const k2 = { x: b.x - v.x * into, y: b.y - v.y * into };
+  const on = (t: number) => {
+    const [p, q, r, s] = [(1 - t) ** 3, 3 * (1 - t) ** 2 * t, 3 * (1 - t) * t ** 2, t ** 3];
+    return { x: p * a.x + q * k1.x + r * k2.x + s * b.x, y: p * a.y + q * k1.y + r * k2.y + s * b.y };
+  };
+  // ponytail: every sample scans every card (edges x cards); a spatial index if a large curved map lags.
+  for (let i = 1; i < 32; i++) {
+    const p = on(i / 32);
+    if (cards.some((c) => inBox(p, c))) {
+      return { d: routeCurve(points, [...(labelBox ? [labelBox] : []), ...badges, ...cards]), at: reserved };
+    }
+  }
+  const pt = (p: Pt) => `${n(p.x)} ${n(p.y)}`;
+  const d = `M ${pt(a)} C ${pt(k1)} ${pt(k2)} ${pt(b)}`;
+  const mid = on(0.5);
+  const at = { x: n(mid.x), y: n(mid.y) };
+  if (!labelBox) return { d, at };
+  const there = { x: at.x - labelBox.width / 2, y: at.y - labelBox.height / 2, width: labelBox.width, height: labelBox.height };
+  return { d, at: cards.some((c) => boxesMeet(there, c)) ? reserved : at };
 }
 
 /** A CSS cubic-bezier() as a function of progress t in [0, 1]: Newton steps, bisection fallback. */

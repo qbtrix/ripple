@@ -33,6 +33,9 @@ export interface C4Highlight {
   depth?: number;
 }
 
+/** How edges draw along ELK's route: orthogonal with rounded corners, or a smooth curve with arrowheads. */
+export type C4EdgeShape = 'orthogonal' | 'curved';
+
 /** An excerpt of a code element's file, shown in-map when the element is
  *  expanded (semantic zoom). Line numbers are the file's own. */
 export interface C4Code {

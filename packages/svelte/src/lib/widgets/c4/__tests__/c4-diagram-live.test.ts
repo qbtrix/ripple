@@ -3,7 +3,8 @@
 // wrappers (planned included), the status legend, marker dots, controlled selection, the
 // zoom-button report, the kind labels, keyboard activation doing exactly what a click does for
 // every node type, `highlight` dimming what lies outside its reach and animating the edges inside
-// it (still under reduced motion, in plain and semantic zoom), and an untouched legacy render.
+// it (still under reduced motion, in plain and semantic zoom), curved edges with arrowheads, and an
+// untouched legacy render.
 
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, waitFor, fireEvent } from '@testing-library/svelte';
@@ -320,5 +321,18 @@ describe('C4Diagram highlight', { timeout: 30000 }, () => {
     expect(['pe', 'rp', 'kb'].map((id) => dimmed(wrapper(container, id)))).toEqual([false, false, true]);
     expect(edgeOf(container, 'pe', 'rp')!.classList.contains('animated')).toBe(true);
     expect(dimmed(edgeOf(container, 'kb', 'pe'))).toBe(true);
+  });
+});
+
+describe('C4Diagram edgeShape', { timeout: 30000 }, () => {
+  it('draws curved edges with an arrowhead, and none by default', async () => {
+    const { container, rerender } = render(C4Diagram, { diagram: chain, edgeShape: 'curved' });
+    await waitFor(() => expect(edgeOf(container, 'a', 'b')).toBeTruthy());
+    const path = () => edgeOf(container, 'a', 'b')!.querySelector('.svelte-flow__edge-path')!;
+    expect(path().getAttribute('marker-end')).toMatch(/^url\(/);
+    // One cubic between the ports, not the route's rounded corners.
+    expect(path().getAttribute('d')).toMatch(/^M [\d.-]+ [\d.-]+ C /);
+    await rerender({ diagram: chain, edgeShape: 'orthogonal' });
+    await waitFor(() => expect(path().hasAttribute('marker-end')).toBe(false));
   });
 });

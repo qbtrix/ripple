@@ -1,7 +1,7 @@
 ---
 {
   "title": "C4 Diagram Widget — SvelteFlow + ELK Architecture Visualizer",
-  "summary": "C4Diagram is the C4 model widget: SvelteFlow renders it, ELK.js lays it out. It draws all four C4 levels with drill-down, pan/zoom and a minimap, and adds an optional live layer (status rings, crew markers, a following camera, a highlighted reach) and an optional semantic zoom that opens elements in place down to code.",
+  "summary": "C4Diagram is the C4 model widget: SvelteFlow renders it, ELK.js lays it out. It draws all four C4 levels with drill-down, pan/zoom and a minimap, and adds an optional live layer (status rings, crew markers, a following camera, a highlighted reach), curved or orthogonal edges and an optional semantic zoom that opens elements in place down to code.",
   "concepts": [
     "C4 model",
     "C4Diagram",
@@ -16,7 +16,8 @@
     "code panel",
     "ripple tokens",
     "legend",
-    "highlight reach"
+    "highlight reach",
+    "curved edges"
   ],
   "categories": [
     "widget",
@@ -57,10 +58,13 @@
 | `expanded` | `string[]` | Turns on semantic zoom: these ids are drawn open |
 | `scopeId` | `string` | Semantic zoom: the element being looked inside |
 | `highlight` | `{ id, reach?, depth? }` | Light one element's reach, dim the rest |
+| `edgeShape` | `'orthogonal' \| 'curved'` | How edges draw along ELK's routes; default orthogonal |
 
 ## Layout and edges
 
-ELK lays out every element, with an element's non-empty `containers` nested inside a dashed boundary (with `kind` set, `containers` can hold any lower level: a container's components, a component's code). `children` is read only by semantic zoom. Every card is fixed to its ELK box, and edges follow ELK's orthogonal routes with rounded corners (`C4Edge`), labels in the space ELK reserved. If ELK returns no route the edge falls back to a smoothstep. `async` relationships are dashed and animated, `event` relationships dashed in the warning tone (`edgeLook` in `live.ts`, used by both the plain and the semantic graph). Layer spacing is 56px. ELK fans the ends of edges that share a node apart and keeps their label boxes from overlapping; a test pins this on a five-edge node.
+ELK lays out every element, with an element's non-empty `containers` nested inside a dashed boundary (with `kind` set, `containers` can hold any lower level: a container's components, a component's code). `children` is read only by semantic zoom. Every card is fixed to its ELK box, and edges follow ELK's orthogonal routes with rounded corners (`C4Edge`), labels in the space ELK reserved. If ELK returns no route the edge falls back to a smoothstep. `async` relationships are dashed and animated, `event` relationships dashed in the warning tone (`edgeLook` in `live.ts`, used by both the plain and the semantic graph). Layer spacing is 56px.
+
+`edgeShape: 'curved'` draws each edge as one sweeping cubic from the source port to the target port (`curveEdge`): it leaves and enters along ELK's end segments with each control point 45% of the gap out, so the arrowhead every curved edge gets points the way it enters, and its label sits on the curve's midpoint. Where that sweep would cross a card the edge follows ELK's route instead as a smooth curve through the segment midpoints (`routeCurve`), whose bends tighten rather than cut a card or the edge's own label; where a card sits under the midpoint the label keeps the box ELK reserved. A routeless fallback becomes a bezier. Orthogonal edges carry no arrowheads. ELK fans the ends of edges that share a node apart and keeps their label boxes from overlapping; a test pins this on a five-edge node, curved labels included.
 
 ## Canvas, header and legend
 
