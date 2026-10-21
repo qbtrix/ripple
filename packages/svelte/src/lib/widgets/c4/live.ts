@@ -1,7 +1,7 @@
 // live.ts — the pure half of C4Diagram's live layer: how `status` and
 // `selectedId` decorate SvelteFlow nodes, which statuses the legend lists,
 // where the camera goes when the node set, the focus or follow mode changes,
-// the rounded or curved path C4Edge draws through an ELK route, the stroke each
+// the rounded or curved path C4Edge draws (and how curved edges bundle at a hub), the stroke each
 // relationship style gets (both the plain and the semantic-zoom graph use it), and the reach
 // behind `highlight` (which elements and relationships light, how edges inside and outside it
 // draw). No DOM, no Svelte: C4Diagram, C4LiveLayer and C4Edge call these, tests call them direct.
@@ -210,6 +210,7 @@ export function decorateEdges(edges: Edge[], { reach, curved, still, avoid }: Ed
       if (e.type === 'smoothstep') next.type = 'default';
     }
     if (inside) {
+      next.data!.reach = true;
       next.animated = !still;
       next.class = typeof e.class === 'string' && e.class ? `${e.class} c4-reach` : 'c4-reach';
       // Swap the colour and weight only, so a dashed (async, event) edge keeps its dash.
@@ -225,94 +226,133 @@ export function decorateEdges(edges: Edge[], { reach, curved, still, avoid }: Ed
 
 type Pt = { x: number; y: number };
 
-/**
- * A smooth curve along an ELK route (curveEdge's fallback): straight to the middle of the first segment, then a
- * quadratic through each bend to the next segment's middle, then straight to the end. It stays
- * inside the route's corners, and its ends run along the first and last segments, so an
- * arrowhead points the way the route enters the node. A bend whose curve would cut into one of
- * the `avoid` boxes (the label ELK set beside the line, often just short of a bend; a card the
- * route passes close by) tightens until it clears, down to a near-square corner.
- */
-export function routeCurve(points: readonly Pt[], avoid: readonly Rect[] = []): string {
-  if (points.length === 0) return '';
-  const n = (v: number) => Math.round(v * 100) / 100;
-  const at = (p: Pt) => `${n(p.x)} ${n(p.y)}`;
-  const toward = (a: Pt, b: Pt, f: number) => ({ x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f });
-  const hits = (a: Pt, k: Pt, b: Pt) => {
-    for (let i = 1; i < 16; i++) {
-      const p = toward(toward(a, k, i / 16), toward(k, b, i / 16), i / 16);
-      if (avoid.some((r) => p.x > r.x + 1 && p.x < r.x + r.width - 1 && p.y > r.y + 1 && p.y < r.y + r.height - 1)) return true;
-    }
-    return false;
-  };
-  let d = `M ${at(points[0])}`;
-  let pen = points[0];
-  for (let i = 1; i < points.length - 1; i++) {
-    const [a, k, b] = [points[i - 1], points[i], points[i + 1]];
-    let s = 0.5;
-    let [from, to] = [toward(k, a, s), toward(k, b, s)];
-    while (s > 0.02 && hits(from, k, to)) {
-      s /= 2;
-      [from, to] = [toward(k, a, s), toward(k, b, s)];
-    }
-    if (at(from) !== at(pen)) d += ` L ${at(from)}`;
-    d += ` Q ${at(k)} ${at(to)}`;
-    pen = to;
-  }
-  return `${d} L ${at(points[points.length - 1])}`;
-}
-
 const inBox = (p: Pt, r: Rect) => p.x > r.x + 1 && p.x < r.x + r.width - 1 && p.y > r.y + 1 && p.y < r.y + r.height - 1;
 const boxesMeet = (a: Rect, b: Rect) => a.x < b.x + b.width - 1 && b.x + 1 < a.x + a.width && a.y < b.y + b.height - 1 && b.y + 1 < a.y + a.height;
+const unit = (p: Pt, q: Pt) => {
+  const len = Math.hypot(q.x - p.x, q.y - p.y) || 1;
+  return { x: (q.x - p.x) / len, y: (q.y - p.y) / len };
+};
+type Cubic = [Pt, Pt, Pt, Pt];
+const onCubic = ([p0, p1, p2, p3]: Cubic, t: number): Pt => {
+  const [a, b, c, d] = [(1 - t) ** 3, 3 * (1 - t) ** 2 * t, 3 * (1 - t) * t ** 2, t ** 3];
+  return { x: a * p0.x + b * p1.x + c * p2.x + d * p3.x, y: a * p0.y + b * p1.y + c * p2.y + d * p3.y };
+};
+/** A cubic from `a` leaving along `u` to `b` arriving along `v`, each control point 45% of the gap out. */
+const sweep = (a: Pt, u: Pt, b: Pt, v: Pt): Cubic => {
+  const out = 0.45 * Math.abs(u.x * (b.x - a.x) + u.y * (b.y - a.y));
+  const into = 0.45 * Math.abs(v.x * (b.x - a.x) + v.y * (b.y - a.y));
+  return [a, { x: a.x + u.x * out, y: a.y + u.y * out }, { x: b.x - v.x * into, y: b.y - v.y * into }, b];
+};
+/** The point a fraction `f` of the way along a polyline. */
+function along(points: readonly Pt[], f: number): Pt {
+  const lens = points.slice(1).map((p, i) => Math.hypot(p.x - points[i].x, p.y - points[i].y));
+  let left = lens.reduce((a, b) => a + b, 0) * f;
+  for (let i = 0; i < lens.length; i++) {
+    if (left <= lens[i]) return { x: points[i].x + (points[i + 1].x - points[i].x) * (left / (lens[i] || 1)), y: points[i].y + (points[i + 1].y - points[i].y) * (left / (lens[i] || 1)) };
+    left -= lens[i];
+  }
+  return points[points.length - 1];
+}
 
 export interface CurveInput {
   /** The label box the layout reserved beside the route. */
   labelBox?: Rect;
   /** Cards on the map (absolute): the sweep may not cross one, nor its label sit on one. */
   cards?: readonly Rect[];
-  /** Port badges at the route's ends, kept clear when the route is followed. */
-  badges?: readonly Rect[];
+  /** A bundle join standing in for the route's start or end: the edge leaves or arrives there along `dir`. */
+  from?: { at: Pt; dir: Pt };
+  to?: { at: Pt; dir: Pt };
 }
 
 /**
- * edgeShape 'curved': one cubic from the source port to the target port, leaving and entering
- * along the route's end segments with each control point 45% of the gap out, the arc of a
- * hand-drawn arrow; the label sits on its midpoint. If the sweep would cross a card it follows
- * ELK's route instead (routeCurve), and if a card sits under the midpoint the label keeps the box
- * the layout reserved.
+ * edgeShape 'curved': one cubic from the source port to the target port (or a bundle's join), leaving
+ * and entering along the route's end segments with each control point 45% of the gap out, the arc of
+ * a hand-drawn arrow; the label sits on its midpoint. If that sweep would cross a card, the curve bends
+ * once instead, through a point of the route (ELK kept it clear; the middle first), with one smooth
+ * tangent there: an S with one bump at most. If a card sits under the label's spot, the label keeps
+ * the box the layout reserved.
  */
-export function curveEdge(points: readonly Pt[], { labelBox, cards = [], badges = [] }: CurveInput): { d: string; at?: Pt } {
+export function curveEdge(points: readonly Pt[], { labelBox, cards = [], from, to }: CurveInput): { d: string; at?: Pt } {
   const reserved = labelBox && { x: labelBox.x + labelBox.width / 2, y: labelBox.y + labelBox.height / 2 };
+  if (points.length < 2) return { d: '', at: reserved };
   const n = (v: number) => Math.round(v * 100) / 100;
-  if (points.length < 2) return { d: routeCurve(points), at: reserved };
-  const [a, a1, b0, b] = [points[0], points[1], points[points.length - 2], points[points.length - 1]];
-  const unit = (p: Pt, q: Pt) => {
-    const len = Math.hypot(q.x - p.x, q.y - p.y) || 1;
-    return { x: (q.x - p.x) / len, y: (q.y - p.y) / len };
-  };
-  const [u, v] = [unit(a, a1), unit(b0, b)];
-  const out = 0.45 * Math.abs(u.x * (b.x - a.x) + u.y * (b.y - a.y));
-  const into = 0.45 * Math.abs(v.x * (b.x - a.x) + v.y * (b.y - a.y));
-  const k1 = { x: a.x + u.x * out, y: a.y + u.y * out };
-  const k2 = { x: b.x - v.x * into, y: b.y - v.y * into };
-  const on = (t: number) => {
-    const [p, q, r, s] = [(1 - t) ** 3, 3 * (1 - t) ** 2 * t, 3 * (1 - t) * t ** 2, t ** 3];
-    return { x: p * a.x + q * k1.x + r * k2.x + s * b.x, y: p * a.y + q * k1.y + r * k2.y + s * b.y };
-  };
-  // ponytail: every sample scans every card (edges x cards); a spatial index if a large curved map lags.
-  for (let i = 1; i < 32; i++) {
-    const p = on(i / 32);
-    if (cards.some((c) => inBox(p, c))) {
-      return { d: routeCurve(points, [...(labelBox ? [labelBox] : []), ...badges, ...cards]), at: reserved };
-    }
+  const a = from?.at ?? points[0];
+  const b = to?.at ?? points[points.length - 1];
+  const u = from?.dir ?? unit(points[0], points[1]);
+  const v = to?.dir ?? unit(points[points.length - 2], points[points.length - 1]);
+  // ponytail: every sample scans every card (edges x cards x tries); a spatial index if a large curved map lags.
+  const crossings = (c: Cubic) => Array.from({ length: 31 }, (_, i) => onCubic(c, (i + 1) / 32)).filter((p) => cards.some((r) => inBox(p, r))).length;
+  let parts: Cubic[] = [sweep(a, u, b, v)];
+  let mid = onCubic(parts[0], 0.5);
+  if (crossings(parts[0])) {
+    // Through one point of the route, the middle first: the first that clears, else the one that crosses least.
+    const m = unit(a, b);
+    const tries = [0.5, 0.35, 0.65, 0.25, 0.75].map((f) => {
+      const w = along(points, f);
+      const c: Cubic[] = [sweep(a, u, w, m), sweep(w, m, b, v)];
+      return { w, c, n: crossings(c[0]) + crossings(c[1]) };
+    });
+    const best = tries.find((t) => t.n === 0) ?? tries.reduce((x, y) => (y.n < x.n ? y : x));
+    [parts, mid] = [best.c, best.w];
   }
   const pt = (p: Pt) => `${n(p.x)} ${n(p.y)}`;
-  const d = `M ${pt(a)} C ${pt(k1)} ${pt(k2)} ${pt(b)}`;
-  const mid = on(0.5);
+  const d = `M ${pt(a)}${parts.map((c) => ` C ${pt(c[1])} ${pt(c[2])} ${pt(c[3])}`).join('')}`;
   const at = { x: n(mid.x), y: n(mid.y) };
   if (!labelBox) return { d, at };
   const there = { x: at.x - labelBox.width / 2, y: at.y - labelBox.height / 2, width: labelBox.width, height: labelBox.height };
   return { d, at: cards.some((c) => boxesMeet(there, c)) ? reserved : at };
+}
+
+/** A bundle's meeting point: `at` is the join, `end` the hub's port, `dir` the way the trunk runs (into the hub for a fan-in). */
+export interface Join {
+  key: string; at: Pt; end: Pt; dir: Pt;
+  /** Edges joined (all of them once open). */
+  count: number;
+  /** The edge that draws the trunk and the count. */
+  lead: boolean;
+  /** This edge drawn whole: the count is hovered, the whole bundle is inside the reach, or this edge is. */
+  open: boolean;
+}
+export const BUNDLE_MIN = 4;
+export const JOIN_GAP = 70;
+
+/**
+ * Curved maps: four or more routed edges entering one node from the same side (or leaving one) meet a
+ * trunk JOIN_GAP from it (less when the edges are short), so they arrive as one arrow with a count.
+ * Each edge carries `joinIn` / `joinOut`; nothing bundles, the same array comes back.
+ */
+export function bundleEdges(edges: Edge[], open?: string | null): Edge[] {
+  const side = (p: Pt, q: Pt) => (Math.abs(q.x - p.x) > Math.abs(q.y - p.y) ? (q.x > p.x ? 'r' : 'l') : q.y > p.y ? 'd' : 'u');
+  const groups = new Map<string, { kind: 'joinIn' | 'joinOut'; members: { e: Edge; end: Pt; far: Pt; dir: Pt }[] }>();
+  for (const e of edges) {
+    const pts = e.data?.points as Pt[] | undefined;
+    if (!pts || pts.length < 2) continue;
+    const [first, second, before, last] = [pts[0], pts[1], pts[pts.length - 2], pts[pts.length - 1]];
+    for (const [kind, key, end, far, dir] of [
+      ['joinIn', `in ${e.target} ${side(before, last)}`, last, first, unit(before, last)],
+      ['joinOut', `out ${e.source} ${side(first, second)}`, first, last, unit(first, second)],
+    ] as const) {
+      const g = groups.get(key) ?? { kind, members: [] };
+      g.members.push({ e, end, far, dir });
+      groups.set(key, g);
+    }
+  }
+  const joins = new Map<Edge, Partial<Record<'joinIn' | 'joinOut', Join>>>();
+  for (const [key, { kind, members }] of groups) {
+    if (members.length < BUNDLE_MIN) continue;
+    const dir = members[0].dir;
+    const end = { x: members.reduce((s, m) => s + m.end.x, 0) / members.length, y: members.reduce((s, m) => s + m.end.y, 0) / members.length };
+    const gap = Math.min(JOIN_GAP, ...members.map((m) => Math.abs(dir.x * (m.end.x - m.far.x) + dir.y * (m.end.y - m.far.y)) / 2));
+    const sign = kind === 'joinIn' ? -1 : 1;
+    const at = { x: end.x + sign * dir.x * gap, y: end.y + sign * dir.y * gap };
+    const isOpen = open === key || members.every((m) => !!m.e.data?.reach);
+    const rest = isOpen ? members : members.filter((m) => !m.e.data?.reach);
+    members.forEach((m) =>
+      joins.set(m.e, { ...joins.get(m.e), [kind]: { key, at, end, dir, count: rest.length, lead: m === (rest[0] ?? members[0]), open: isOpen || !!m.e.data?.reach } })
+    );
+  }
+  if (joins.size === 0) return edges;
+  return edges.map((e) => (joins.has(e) ? { ...e, data: { ...e.data, ...joins.get(e) } } : e));
 }
 
 /** A CSS cubic-bezier() as a function of progress t in [0, 1]: Newton steps, bisection fallback. */

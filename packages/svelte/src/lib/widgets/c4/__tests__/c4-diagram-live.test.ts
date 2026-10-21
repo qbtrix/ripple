@@ -336,3 +336,44 @@ describe('C4Diagram edgeShape', { timeout: 30000 }, () => {
     await waitFor(() => expect(path().hasAttribute('marker-end')).toBe(false));
   });
 });
+
+// Five callers of one hub, plus a pair that stays a plain edge.
+const fan: C4DiagramData = {
+  level: 'container',
+  title: '',
+  elements: ['s1', 's2', 's3', 's4', 's5', 'hub', 'x', 'y'].map((id) => ({ id, name: id.toUpperCase(), kind: 'container' as const })),
+  relationships: [...['s1', 's2', 's3', 's4', 's5'].map((from) => ({ from, to: 'hub', label: `${from} calls` })), { from: 'x', to: 'y', label: 'x calls' }],
+};
+const arrows = (container: HTMLElement) => container.querySelectorAll('.svelte-flow__edge [marker-end]').length;
+
+describe('C4Diagram curved edges, bundled and quiet', { timeout: 30000 }, () => {
+  it('joins a five-edge fan-in into one arrow with a count, opened by hovering the count', async () => {
+    const { container, findByText } = render(C4Diagram, { diagram: fan, edgeShape: 'curved' });
+    const badge = await findByText('5');
+    expect(badge.closest('.c4-join-badge')).not.toBeNull();
+    // One arrow for the bundle, one for x → y.
+    expect(arrows(container)).toBe(2);
+    await fireEvent.pointerEnter(badge.closest('.c4-join-badge')!);
+    await waitFor(() => expect(arrows(container)).toBe(6));
+  });
+
+  it('opens the bundle when the hub is highlighted', async () => {
+    const { container, findByText } = render(C4Diagram, { diagram: fan, edgeShape: 'curved', highlight: { id: 'hub' } });
+    await findByText('5');
+    // Each caller's own arrow, plus x → y.
+    await waitFor(() => expect(arrows(container)).toBe(6));
+  });
+
+  it('keeps labels quiet until their edge or one of its ends is hovered', async () => {
+    const { container } = render(C4Diagram, { diagram: fan, edgeShape: 'curved' });
+    await waitFor(() => expect(labelOf(container, 'x calls')).toBeTruthy());
+    expect(container.querySelector('.c4-canvas')!.hasAttribute('data-c4-quiet')).toBe(true);
+    expect(labelOf(container, 'x calls')!.hasAttribute('data-c4-hot')).toBe(false);
+    await fireEvent.pointerEnter(edgeOf(container, 'x', 'y')!);
+    await waitFor(() => expect(labelOf(container, 'x calls')!.hasAttribute('data-c4-hot')).toBe(true));
+    await fireEvent.pointerLeave(edgeOf(container, 'x', 'y')!);
+    await fireEvent.pointerEnter(wrapper(container, 'y')!);
+    await waitFor(() => expect(labelOf(container, 'x calls')!.hasAttribute('data-c4-hot')).toBe(true));
+    expect(labelOf(container, 's1 calls')!.hasAttribute('data-c4-hot')).toBe(false);
+  });
+});

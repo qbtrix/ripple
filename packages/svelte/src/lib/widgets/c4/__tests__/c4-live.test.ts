@@ -15,8 +15,8 @@ import {
   decorateNodes,
   linkKey,
   markResized,
+  bundleEdges,
   reachSet,
-  routeCurve,
   nodeSetKey,
   planCamera,
   presized,
@@ -336,25 +336,6 @@ describe('decorateEdges', () => {
   });
 });
 
-describe('routeCurve', () => {
-  it('draws straight between two points and through segment midpoints around bends', () => {
-    expect(routeCurve([])).toBe('');
-    expect(routeCurve([{ x: 0, y: 0 }, { x: 0, y: 50 }])).toBe('M 0 0 L 0 50');
-    expect(routeCurve([{ x: 0, y: 0 }, { x: 0, y: 50 }, { x: 40, y: 50 }])).toBe('M 0 0 L 0 25 Q 0 50 20 50 L 40 50');
-    expect(routeCurve([{ x: 0, y: 0 }, { x: 0, y: 30 }, { x: 100, y: 30 }, { x: 100, y: 60 }])).toBe(
-      'M 0 0 L 0 15 Q 0 30 50 30 Q 100 30 100 45 L 100 60'
-    );
-  });
-
-  it('tightens a bend that would cut into a box beside the line', () => {
-    // A label just left of the first leg, ending 10px above the bend: the midpoint curve clips it.
-    const box = { x: 0, y: 40, width: 98, height: 50 };
-    const route = [{ x: 100, y: 0 }, { x: 100, y: 100 }, { x: 0, y: 100 }];
-    expect(routeCurve(route)).toBe('M 100 0 L 100 50 Q 100 100 50 100 L 0 100');
-    expect(routeCurve(route, [box])).toBe('M 100 0 L 100 75 Q 100 100 75 100 L 0 100');
-  });
-});
-
 describe('curveEdge', () => {
   // Down from (0,0), across, down into (200,200): the ports face down and up.
   const route = [{ x: 0, y: 0 }, { x: 0, y: 100 }, { x: 200, y: 100 }, { x: 200, y: 200 }];
@@ -369,11 +350,19 @@ describe('curveEdge', () => {
     expect(curveEdge(side, {}).d).toBe('M 0 0 C 0 22.5 55 50 100 50');
   });
 
-  it('falls back to the route when the sweep would cross a card', () => {
-    const card = { x: 80, y: 80, width: 40, height: 40 };
-    const out = curveEdge(route, { labelBox: label, cards: [card] });
-    expect(out.d).toBe(routeCurve(route, [label, card]));
-    expect(out.at).toEqual({ x: 40, y: 70 });
+  it('bends once through the route midpoint when the sweep would cross a card', () => {
+    // The route runs down to y=150, across, and down; the sweep would cut the card at the middle.
+    const low = [{ x: 0, y: 0 }, { x: 0, y: 150 }, { x: 200, y: 150 }, { x: 200, y: 200 }];
+    const card = { x: 70, y: 85, width: 60, height: 30 };
+    expect(curveEdge(low, { labelBox: label, cards: [card] })).toEqual({
+      d: 'M 0 0 C 0 67.5 5 105 50 150 C 95 195 200 177.5 200 200',
+      at: { x: 50, y: 150 },
+    });
+  });
+
+  it('runs to and from a bundle join along its direction', () => {
+    const out = curveEdge(route, { from: { at: { x: 0, y: 40 }, dir: { x: 0, y: 1 } }, to: { at: { x: 200, y: 130 }, dir: { x: 0, y: 1 } } });
+    expect(out.d).toBe('M 0 40 C 0 80.5 200 89.5 200 130');
   });
 
   it('keeps the label where the layout put it when a card sits on the midpoint', () => {
@@ -416,6 +405,36 @@ function sample(d: string, steps = 16): { x: number; y: number }[] {
   }
   return pts;
 }
+
+describe('bundleEdges', () => {
+  const down = (sx: number, tx: number) => [{ x: sx, y: 0 }, { x: sx, y: 100 }, { x: tx, y: 100 }, { x: tx, y: 300 }];
+  const into = (i: number, extra: Record<string, unknown> = {}): Edge => ({
+    id: `s${i}-hub`, source: `s${i}`, target: 'hub', type: 'c4', data: { points: down(i * 100, 190 + i * 5), curved: true, ...extra },
+  });
+  const four = [0, 1, 2, 3].map((i) => into(i));
+  const joinIn = (e: Edge) => e.data?.joinIn as { key: string; at: { x: number; y: number }; end: { x: number; y: number }; count: number; lead: boolean; open: boolean };
+
+  it('joins four or more edges into one hub 70px before it, one of them leading', () => {
+    const out = bundleEdges(four);
+    expect(out.map((e) => joinIn(e).count)).toEqual([4, 4, 4, 4]);
+    expect(out.map((e) => joinIn(e).lead)).toEqual([true, false, false, false]);
+    expect(joinIn(out[0])).toMatchObject({ end: { x: 197.5, y: 300 }, at: { x: 197.5, y: 230 }, open: false });
+    expect(new Set(out.map((e) => joinIn(e).key)).size).toBe(1);
+  });
+
+  it('leaves fewer than four alone and returns the same array when nothing bundles', () => {
+    const three = four.slice(0, 3);
+    expect(bundleEdges(three)).toBe(three);
+  });
+
+  it('opens a bundle when hovered or wholly inside the reach; an edge inside it alone draws whole', () => {
+    const key = joinIn(bundleEdges(four)[0]).key;
+    expect(bundleEdges(four, key).every((e) => joinIn(e).open)).toBe(true);
+    expect(bundleEdges(four.map((e) => ({ ...e, data: { ...e.data, reach: true } }))).every((e) => joinIn(e).open)).toBe(true);
+    const one = bundleEdges([into(0, { reach: true }), ...four.slice(1)]);
+    expect(one.map((e) => [joinIn(e).open, joinIn(e).lead, joinIn(e).count])).toEqual([[true, false, 3], [false, true, 3], [false, false, 3], [false, false, 3]]);
+  });
+});
 
 describe('a five-edge node', { timeout: 30000 }, () => {
   // The showcase's banking containers: the API has five relationships, two in and three out.
@@ -475,7 +494,7 @@ describe('a five-edge node', { timeout: 30000 }, () => {
     let swept = 0;
     for (const [i, r] of routes) {
       const { d, at } = curveEdge(r.points, { labelBox: r.label, cards });
-      if (!d.includes(' L ')) swept++;
+      if (d.split(' C ').length === 2) swept++;
       for (const p of sample(d, 32)) {
         expect(cards.find((b) => overlaps(inset(b), { ...p, width: 0.01, height: 0.01 })), `edge ${i} at ${p.x},${p.y}`).toBeUndefined();
       }
