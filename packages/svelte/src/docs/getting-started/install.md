@@ -18,12 +18,12 @@ The rest of this page is the same setup by hand.
 
 ## Add the package
 
-The packages are not on the npm registry yet, so install them from the [GitHub release](https://github.com/qbtrix/ripple-iui/releases/tag/v0.8.0). `@ripple-ui/svelte` depends on `@ripple-ui/core`, and a package manager would look for that on the registry, so point it at the release tarball too.
+The packages are not on the npm registry yet, so install them from the [GitHub release](https://github.com/qbtrix/ripple-iui/releases/tag/v0.8.1). `@ripple-ui/svelte` depends on `@ripple-ui/core`, and a package manager would look for that on the registry, so point it at the release tarball too.
 
 With npm, install both in one command:
 
 ```bash
-npm install https://github.com/qbtrix/ripple-iui/releases/download/v0.8.0/ripple-ui-core-0.6.0.tgz https://github.com/qbtrix/ripple-iui/releases/download/v0.8.0/ripple-ui-svelte-0.8.0.tgz
+npm install https://github.com/qbtrix/ripple-iui/releases/download/v0.8.1/ripple-ui-core-0.6.0.tgz https://github.com/qbtrix/ripple-iui/releases/download/v0.8.1/ripple-ui-svelte-0.8.1.tgz
 ```
 
 With Bun, add an override for core to `package.json` first:
@@ -31,7 +31,7 @@ With Bun, add an override for core to `package.json` first:
 ```json
 {
   "overrides": {
-    "@ripple-ui/core": "https://github.com/qbtrix/ripple-iui/releases/download/v0.8.0/ripple-ui-core-0.6.0.tgz"
+    "@ripple-ui/core": "https://github.com/qbtrix/ripple-iui/releases/download/v0.8.1/ripple-ui-core-0.6.0.tgz"
   }
 }
 ```
@@ -39,7 +39,7 @@ With Bun, add an override for core to `package.json` first:
 Then add the Svelte package:
 
 ```bash
-bun add https://github.com/qbtrix/ripple-iui/releases/download/v0.8.0/ripple-ui-svelte-0.8.0.tgz
+bun add https://github.com/qbtrix/ripple-iui/releases/download/v0.8.1/ripple-ui-svelte-0.8.1.tgz
 ```
 
 The only peer dependency is Svelte 5 (`^5.0.0`).

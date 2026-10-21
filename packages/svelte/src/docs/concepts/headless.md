@@ -11,7 +11,7 @@ Nothing in the package imports Svelte or touches `document`, so it runs in Node,
 Core is not on the npm registry yet. Install it from the GitHub release tarball:
 
 ```bash
-npm install https://github.com/qbtrix/ripple-iui/releases/download/v0.8.0/ripple-ui-core-0.6.0.tgz
+npm install https://github.com/qbtrix/ripple-iui/releases/download/v0.8.1/ripple-ui-core-0.6.0.tgz
 ```
 
 If you already depend on `@ripple-ui/svelte`, core comes with it.

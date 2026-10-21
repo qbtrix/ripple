@@ -11,13 +11,8 @@
  *   (scripts/build-manifest.ts) — unlike a Vite `define`, which would be
  *   undefined under bun. version.test.ts asserts this stays in lockstep with
  *   package.json so a release bump can't silently drift.
- * @created 2026-06-28 (SP-1c-b — feat/ripple-editor-sp1cb)
- * @updated 2026-09-17 — 0.7.0, the first release on the packages/ workspace
- *   layout (ripple #119). v0.6.0 was tagged at 0.5.0; this brings them back in step.
- * @updated 2026-09-27 — 0.8.0 (core 0.6.0): slim headless runtime, slim
- *   manifest, loop variables in headless handlers (#142, #143).
- * @updated 2026-09-27 — v0.8.0 was re-released the same day to add
- *   SLIM_WIDGETS and manifest.slim.json; the version numbers did not change.
+ * Released versions: svelte 0.8.1 with core 0.6.0. A bump changes this constant and
+ *   packages/svelte/package.json together.
  */
 
-export const RIPPLE_VERSION = '0.8.0';
+export const RIPPLE_VERSION = '0.8.1';
