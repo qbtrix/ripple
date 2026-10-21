@@ -19,6 +19,12 @@
   one element's reach and animates the accent edges inside it (still under
   reduced motion).
 
+  `flow` + a controlled `step` play a data flow over the map; while a step is current it
+  replaces `highlight`. A message lights its two ends and its relationship (the reach path) and
+  runs a marker along the edge (C4Edge), or along a dashed hop when no relationship carries it
+  (markFlow); a process pulses its element; a note dims nothing. The host draws the transport.
+  Stepping only re-decorates the laid-out graph: no ELK.
+
   Edges follow ELK's orthogonal routes (C4Edge), or curves with arrowheads
   along them (`edgeShape: 'curved'`); every card fills its ELK box, so routes
   meet card edges and labels sit in the space ELK reserved.
@@ -70,6 +76,12 @@
     EDGE_STROKE,
     FIT_MIN_ZOOM,
     edgeLook,
+    linkKey,
+    markFlow,
+    MOVE_MS,
+    type FlowMark,
+    type ReachSet,
+    type Rect,
   } from './live.js';
   import { liftMarkers, pathTo, representative, type C4Tree, type Visibility } from './semantic.js';
   import { buildSemanticFlow, VIEW_NODE } from './semantic-flow.js';
@@ -88,6 +100,7 @@
     C4Marker,
     C4Highlight,
     C4EdgeShape,
+    C4Flow,
   } from './types.js';
 
   interface Props {
@@ -114,6 +127,10 @@
     highlight?: C4Highlight;
     /** How edges draw along ELK's routes. Default 'orthogonal'. */
     edgeShape?: C4EdgeShape;
+    /** A data flow to play over the map, one step at a time. */
+    flow?: C4Flow;
+    /** Controlled: the index of the flow's current step. Out of range, no step is shown. */
+    step?: number;
   }
 
   let {
@@ -131,6 +148,8 @@
     scopeId,
     highlight,
     edgeShape = 'orthogonal',
+    flow,
+    step,
   }: Props = $props();
 
   // Every C4 view as a SvelteFlow node type (the legacy diagram), plus semantic zoom's one type.
@@ -347,7 +366,6 @@
   let moving = $state(false);
   /** The layout inputs (diagram content, expanded, scope) of the last layout that landed or failed. */
   let landedInputs = $state.raw<readonly unknown[] | null>(null);
-  const MOVE_MS = 560;
   /** Alternates the resize animation's name, so each move restarts it (markResized). */
   let resizeTurn: 'a' | 'b' = 'a';
   let settleTimer: ReturnType<typeof setTimeout> | undefined;
@@ -465,29 +483,55 @@
     for (let at: string | undefined = id; at !== undefined && parentOf.has(at); at = parentOf.get(at)) out.unshift(at);
     return out;
   }
+  // Flow playback (see the header). A message rides the relationship the model draws; a reply's
+  // (`reverse`) runs `to` → `from`. An end that is not on the map shows no step.
+  const current = $derived(flow && step !== undefined ? flow.steps[step] : undefined);
+  const msg = $derived(current && 'from' in current ? current : undefined);
+  const rideKey = (m: { from: string; to: string; reverse?: boolean }) => (m.reverse ? linkKey(m.to, m.from) : linkKey(m.from, m.to));
+  const flowReach = $derived.by((): ReachSet | null => {
+    if (!current || 'note' in current) return null;
+    const ids = 'at' in current ? [current.at] : [current.from, current.to];
+    if (!ids.every((id) => pathOf(id).length > 0)) return null;
+    return { ids: new Set(ids), links: new Set(msg ? [rideKey(msg)] : []) };
+  });
   const reach = $derived(
-    hlId !== undefined && pathOf(hlId).length > 0 ? reachSet(diagram.relationships, hlId, hlReach, hlDepth) : null
+    current
+      ? flowReach
+      : hlId !== undefined && pathOf(hlId).length > 0
+        ? reachSet(diagram.relationships, hlId, hlReach, hlDepth)
+        : null
   );
   const lit = $derived(reach ? litIds(reach.ids, pathOf) : null);
   // Curved edges tighten a bend rather than cut a card: every drawn card's absolute box (not
   // boundaries, which edges run inside).
-  const cards = $derived.by(() => {
-    if (edgeShape !== 'curved') return undefined;
-    const byId = new Map(flowNodes.map((n) => [n.id, n]));
-    const at = (n: Node): { x: number; y: number } => {
-      const p = n.parentId ? byId.get(n.parentId) : undefined;
-      const o = p ? at(p) : { x: 0, y: 0 };
-      return { x: o.x + n.position.x, y: o.y + n.position.y };
-    };
-    return flowNodes.filter((n) => viewOf(n) !== 'group').map((n) => ({ ...at(n), width: n.width ?? 0, height: n.height ?? 0 }));
+  const nodeById = $derived(new Map(flowNodes.map((n) => [n.id, n])));
+  /** A drawn node's absolute box. */
+  function boxOf(n: Node): Rect {
+    const p = n.parentId ? nodeById.get(n.parentId) : undefined;
+    const o = p ? boxOf(p) : { x: 0, y: 0 };
+    return { x: o.x + n.position.x, y: o.y + n.position.y, width: n.width ?? 0, height: n.height ?? 0 };
+  }
+  const cards = $derived(edgeShape === 'curved' ? flowNodes.filter((n) => viewOf(n) !== 'group').map(boxOf) : undefined);
+  /** The node an element is drawn as: itself, or under semantic zoom its drawn ancestor. */
+  const drawnOf = (id: string) => (semanticInfo ? representative(semanticInfo.tree, semanticInfo.vis, id) : id);
+  const flowMark = $derived<FlowMark | null>(
+    msg && flowReach
+      ? { key: step!, back: !!msg.reverse, still: prefersReducedMotion.current }
+      : null
+  );
+  // The hop an implied message draws, between its two drawn ends (none when they are one node).
+  const hop = $derived.by(() => {
+    const [s, t] = msg ? [msg.from, msg.to].map((id) => nodeById.get(drawnOf(id) ?? '')) : [];
+    return s && t && s !== t ? { source: s.id, target: t.id, a: boxOf(s), b: boxOf(t) } : undefined;
   });
+  const pulseId = $derived(current && 'at' in current && flowReach && !prefersReducedMotion.current ? drawnOf(current.at) : undefined);
   // Curved maps bundle a hub's edges; hovering a bundle's count opens it.
   let openJoin = $state<string | null>(null);
   setContext('c4-onjoin', (key: string | null) => (openJoin = key));
   const shownEdges = $derived.by(() => {
     const curved = edgeShape === 'curved';
     const look = decorateEdges(flowEdges, { reach, curved, still: prefersReducedMotion.current, avoid: cards });
-    return curved ? bundleEdges(look, openJoin) : look;
+    return markFlow(curved ? bundleEdges(look, openJoin) : look, flowMark, hop);
   });
   // Quiet (curved) maps: data-c4-hot (a DOM write) on an edge and label while it or an end is hovered.
   let hot = $state<{ edge?: string; node?: string }>({});
@@ -502,12 +546,14 @@
     }
   });
 
-  // Live status and the highlight's dim as data attributes on each node wrapper, written to the
-  // DOM: neither may hand SvelteFlow a new nodes array (it re-lays every edge). Re-run when nodes mount.
+  // Live status, the highlight's dim and a process step's pulse as data attributes on each node
+  // wrapper, written to the DOM: none may hand SvelteFlow a new nodes array (it re-lays every edge).
+  // Re-run when nodes mount.
   let canvas = $state<HTMLElement>();
   $effect(() => {
     const st = status ?? {};
     const on = lit;
+    const pulse = pulseId;
     void shownNodes;
     if (!canvas) return;
     for (const el of canvas.querySelectorAll<HTMLElement>('.svelte-flow__node')) {
@@ -517,6 +563,8 @@
       } else if (el.dataset.c4Status) delete el.dataset.c4Status;
       const dim = !!on && !on.has(el.dataset.id ?? '');
       if (dim !== el.hasAttribute('data-c4-dim')) el.toggleAttribute('data-c4-dim', dim);
+      const beat = !!pulse && el.dataset.id === pulse;
+      if (beat !== el.hasAttribute('data-c4-pulse')) el.toggleAttribute('data-c4-pulse', beat);
     }
   });
   const nodeIds = $derived(nodeSetKey(flowNodes));
@@ -1285,6 +1333,20 @@
   }
   .c4-canvas :global(.svelte-flow__node[data-c4-status='changing'])::after {
     animation: c4-breathe 2.4s ease-in-out infinite;
+  }
+
+  /* A process step's element pulses (C4Diagram sets data-c4-pulse; never under reduced motion). */
+  .c4-canvas :global(.svelte-flow__node[data-c4-pulse])::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: var(--c4-r);
+    pointer-events: none;
+    animation: c4-pulse 1.6s var(--ripple-ease-out) infinite;
+  }
+  @keyframes c4-pulse {
+    from { box-shadow: 0 0 0 0 color-mix(in oklab, var(--ripple-accent) 45%, transparent); }
+    to { box-shadow: 0 0 0 12px transparent; }
   }
 
   @keyframes c4-breathe {

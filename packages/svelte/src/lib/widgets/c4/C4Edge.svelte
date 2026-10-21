@@ -14,12 +14,15 @@
   stands for), which turns the middle label into a hover target listing them, and `tail` / `head`
   port badges where the edge meets an expanded boundary. A ghosted edge (both ends outside the
   scope) dims its labels with it. Without them the edge renders as it always did.
+
+  A played flow step (`data.flow`, markFlow) runs a marker along this edge's own path (SVG animateMotion on the ripple curve, the other way for
+  a reply); under reduced motion the marker sits at the receiving end.
 -->
 <script lang="ts">
   import { getContext } from 'svelte';
   import { BaseEdge, EdgeLabel, type EdgeProps } from '@xyflow/svelte';
   import C4PortBadge from './C4PortBadge.svelte';
-  import { curveEdge, roundedPath, EDGE_STROKE, type Join } from './live.js';
+  import { curveEdge, roundedPath, EDGE_STROKE, MOVE_MS, RIPPLE_CURVE, type FlowMark, type Join } from './live.js';
   import type { C4PortView } from './types.js';
 
   type Point = { x: number; y: number };
@@ -57,6 +60,9 @@
   // A label the layout wrapped (taller than one line, on a dense level) keeps its laid-out size.
   const wrap = $derived(!!box && box.height > 20);
   const centre = (b: Box) => ({ x: b.x + b.width / 2, y: b.y + b.height / 2 });
+  const mark = $derived(data?.flow as FlowMark | undefined);
+  // A reply's marker ends at the route's start; reach edges are never joined, so these are the path's ends.
+  const landing = $derived(mark?.back ? points[0] : points.at(-1));
 </script>
 
 <BaseEdge {id} {path} {style} markerEnd={jin ? undefined : markerEnd} {interactionWidth} />
@@ -69,6 +75,29 @@
     <span class="c4-join-badge" role="note" aria-label="{j.count} connections" onpointerenter={() => onjoin(j.key)} onpointerleave={() => onjoin(null)}>{j.count}</span>
   </EdgeLabel>
 {/each}
+
+{#if mark}
+  {#key mark.key}
+    {#if mark.still}
+      <circle class="c4-flow-marker" r="5" cx={landing?.x} cy={landing?.y} />
+    {:else}
+      <circle class="c4-flow-marker" r="5">
+        <!-- begin="indefinite" + beginElement: an animation inserted later with begin 0 has already ended. -->
+        <animateMotion
+          dur="{MOVE_MS}ms"
+          begin="indefinite"
+          fill="freeze"
+          {path}
+          calcMode="spline"
+          keyTimes="0;1"
+          keyPoints={mark.back ? '1;0' : '0;1'}
+          keySplines={RIPPLE_CURVE.join(' ')}
+          {@attach (el: SVGAnimationElement) => el.beginElement?.()}
+        />
+      </circle>
+    {/if}
+  {/key}
+{/if}
 
 {#if label && at}
   <EdgeLabel
@@ -101,3 +130,12 @@
     </EdgeLabel>
   {/if}
 {/each}
+
+<style>
+  .c4-flow-marker {
+    fill: var(--ripple-accent);
+    stroke: var(--ripple-surface);
+    stroke-width: 2px;
+    pointer-events: none;
+  }
+</style>

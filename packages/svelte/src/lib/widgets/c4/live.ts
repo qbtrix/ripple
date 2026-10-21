@@ -4,9 +4,10 @@
 // the rounded or curved path C4Edge draws (and how curved edges bundle at a hub), the stroke each
 // relationship style gets (both the plain and the semantic-zoom graph use it), and the reach
 // behind `highlight` (which elements and relationships light, how edges inside and outside it
-// draw). No DOM, no Svelte: C4Diagram, C4LiveLayer and C4Edge call these, tests call them direct.
+// draw), and where a played flow step lands on the edges (markFlow). No DOM, no Svelte: C4Diagram,
+// C4LiveLayer and C4Edge call these, tests call them direct.
 //
-// Invariant: with no live input, decorateNodes and decorateEdges return the SAME array and
+// Invariant: with no live input, decorateNodes, decorateEdges and markFlow return the SAME array and
 // objects they were given, so a diagram without the live props renders exactly as it did
 // before they existed.
 
@@ -303,6 +304,57 @@ export function curveEdge(points: readonly Pt[], { labelBox, cards = [], from, t
   return { d, at: cards.some((c) => boxesMeet(there, c)) ? reserved : at };
 }
 
+/** A message step as C4Edge draws it: a marker running the route (`back`: target to source). A new
+ *  `key` restarts the marker; `still` puts it at the end. */
+export interface FlowMark {
+  key: number;
+  back: boolean;
+  still: boolean;
+}
+
+export const FLOW_HOP = 'c4-flow-hop';
+
+/** A straight hop between two boxes, from where the centre line leaves one to where it meets the other. */
+export function hopPoints(a: Rect, b: Rect): Pt[] {
+  const [ca, cb] = [a, b].map((r) => ({ x: r.x + r.width / 2, y: r.y + r.height / 2 }));
+  const [dx, dy] = [cb.x - ca.x, cb.y - ca.y];
+  const out = (r: Rect) => Math.min(0.5, r.width / 2 / Math.abs(dx), r.height / 2 / Math.abs(dy));
+  const [ta, tb] = [out(a), out(b)];
+  return [{ x: ca.x + dx * ta, y: ca.y + dy * ta }, { x: cb.x - dx * tb, y: cb.y - dy * tb }];
+}
+
+/**
+ * A message step on the map: on the first routed edge inside the step's reach (decorateEdges marked
+ * it), else on a dashed hop appended between the step's two drawn ends (an implied hop, or a pair
+ * with no routed edge), its marker running from the step's sender. No mark: the same array.
+ */
+export function markFlow(
+  edges: Edge[],
+  mark: FlowMark | null,
+  hop?: { source: string; target: string; a: Rect; b: Rect }
+): Edge[] {
+  if (!mark) return edges;
+  const i = edges.findIndex((e) => e.type === 'c4' && e.data?.reach);
+  if (i >= 0) return edges.map((e, j) => (j === i ? { ...e, data: { ...e.data, flow: mark } } : e));
+  if (!hop) return edges;
+  const points = hopPoints(hop.a, hop.b);
+  const mid = { x: (points[0].x + points[1].x) / 2, y: (points[0].y + points[1].y) / 2 };
+  return [
+    ...edges,
+    {
+      id: FLOW_HOP,
+      source: hop.source,
+      target: hop.target,
+      type: 'c4',
+      selectable: false,
+      class: 'c4-reach c4-flow-hop',
+      style: `stroke: ${REACH_STROKE}; stroke-width: 2px; stroke-dasharray: 6 5;`,
+      // A zero-size label box at the middle: without one the label would sit on the hop's end.
+      data: { points, labelBox: { ...mid, width: 0, height: 0 }, reach: true, flow: { ...mark, back: false } },
+    },
+  ];
+}
+
 /** A bundle's meeting point: `at` is the join, `end` the hub's port, `dir` the way the trunk runs (into the hub for a fan-in). */
 export interface Join {
   key: string; at: Pt; end: Pt; dir: Pt;
@@ -402,8 +454,12 @@ export function zoomVar(zoom: number): string {
  *  map bigger than that is framed at this zoom and panned. */
 export const FIT_MIN_ZOOM = 0.5;
 
+/** --ripple-ease-out's control points: the camera, the layout and a flow's marker all move on it. */
+export const RIPPLE_CURVE = [0.23, 1, 0.32, 1] as const;
 /** The camera's curve: the same as --ripple-ease-out, so camera and layout move as one. */
-export const rippleEase = cubicBezier(0.23, 1, 0.32, 1);
+export const rippleEase = cubicBezier(...RIPPLE_CURVE);
+/** How long a layout move, a camera move and a flow marker's run take. */
+export const MOVE_MS = 560;
 
 export type Rect = { x: number; y: number; width: number; height: number };
 
