@@ -10,6 +10,8 @@ export type {
   C4Kind,
   C4Status,
   C4Marker,
+  C4Highlight,
+  C4Reach,
   C4Code,
   C4PortView,
   C4Person,

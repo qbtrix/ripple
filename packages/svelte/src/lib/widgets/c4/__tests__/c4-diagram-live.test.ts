@@ -2,9 +2,10 @@
 // jsdom and checks the live props reach the DOM: status rings on the node
 // wrappers (planned included), the status legend, marker dots, controlled selection, the
 // zoom-button report, the kind labels, keyboard activation doing exactly what a click does for
-// every node type, and an untouched legacy render.
+// every node type, `highlight` dimming what lies outside its reach and animating the edges inside
+// it (still under reduced motion, in plain and semantic zoom), and an untouched legacy render.
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, waitFor, fireEvent } from '@testing-library/svelte';
 import C4Diagram from '../C4Diagram.svelte';
 import type { C4Diagram as C4DiagramData } from '$lib/widgets/c4/types.js';
@@ -36,6 +37,19 @@ const legacy: C4DiagramData = {
   ],
   relationships: [{ from: 'user', to: 'bank', label: 'Uses' }],
 };
+
+const motion = vi.hoisted(() => ({ reduce: false }));
+vi.mock('svelte/motion', async (orig) => ({
+  ...(await orig<typeof import('svelte/motion')>()),
+  prefersReducedMotion: {
+    get current() {
+      return motion.reduce;
+    },
+  },
+}));
+afterEach(() => {
+  motion.reduce = false;
+});
 
 function wrapper(container: HTMLElement, id: string) {
   return container.querySelector(`.svelte-flow__node[data-id="${id}"]`);
@@ -155,6 +169,8 @@ describe('C4Diagram live props', { timeout: 30000 }, () => {
     expect(getByText('Banking')).toBeInTheDocument();
     expect(getByText('Person')).toBeInTheDocument();
     expect(container.querySelector('[data-c4-status]')).toBeNull();
+    expect(container.querySelector('[data-c4-dim]')).toBeNull();
+    expect(container.querySelector('[marker-end]')).toBeNull();
     expect(container.querySelector('.svelte-flow__node-toolbar')).toBeNull();
     expect(wrapper(container, 'user')?.classList.contains('svelte-flow__node-person')).toBe(true);
   });
@@ -226,4 +242,83 @@ describe('C4Diagram keyboard activation', { timeout: 60000 }, () => {
       });
     });
   }
+});
+
+// a → b → c → d in a line, plus z off to the side calling c.
+const chain: C4DiagramData = {
+  level: 'container',
+  title: '',
+  elements: ['a', 'b', 'c', 'd', 'z'].map((id) => ({ id, name: id.toUpperCase(), kind: 'container' as const })),
+  relationships: [
+    { from: 'a', to: 'b', label: 'ab' },
+    { from: 'b', to: 'c', label: 'bc' },
+    { from: 'c', to: 'd', label: 'cd' },
+    { from: 'z', to: 'c', label: 'zc', style: 'async' },
+  ],
+};
+const edgeOf = (container: HTMLElement, from: string, to: string) =>
+  [...container.querySelectorAll<SVGGElement>('.svelte-flow__edge')].find((g) => g.getAttribute('aria-label') === `Edge from ${from} to ${to}`);
+const labelOf = (container: HTMLElement, text: string) =>
+  [...container.querySelectorAll('.svelte-flow__edge-label')].find((l) => l.textContent?.trim() === text);
+const dimmed = (el: Element | null | undefined) => !!el?.hasAttribute('data-c4-dim');
+
+describe('C4Diagram highlight', { timeout: 30000 }, () => {
+  it('dims what lies outside the reach and animates the edges inside it', async () => {
+    const { container } = render(C4Diagram, { diagram: chain, highlight: { id: 'b', reach: 'out', depth: 1 } });
+    await waitFor(() => expect(edgeOf(container, 'b', 'c')).toBeTruthy());
+    expect(['a', 'b', 'c', 'd', 'z'].map((id) => dimmed(wrapper(container, id)))).toEqual([true, false, false, true, true]);
+    expect(edgeOf(container, 'b', 'c')!.classList.contains('animated')).toBe(true);
+    expect(dimmed(edgeOf(container, 'b', 'c'))).toBe(false);
+    for (const [f, t] of [['a', 'b'], ['c', 'd'], ['z', 'c']]) {
+      expect(dimmed(edgeOf(container, f, t)), `${f}→${t}`).toBe(true);
+      // An async edge outside the reach stops moving too: only reach edges animate.
+      expect(edgeOf(container, f, t)!.classList.contains('animated'), `${f}→${t}`).toBe(false);
+    }
+    expect(dimmed(labelOf(container, 'ab'))).toBe(true);
+    expect(dimmed(labelOf(container, 'bc'))).toBe(false);
+  });
+
+  it('follows the reach direction and moves with the prop', async () => {
+    const { container, rerender } = render(C4Diagram, { diagram: chain, highlight: { id: 'c', reach: 'in' } });
+    await waitFor(() => expect(wrapper(container, 'a')).not.toBeNull());
+    await waitFor(() => expect(dimmed(wrapper(container, 'd'))).toBe(true));
+    expect(['a', 'b', 'c', 'z'].map((id) => dimmed(wrapper(container, id)))).toEqual([false, false, false, false]);
+    await rerender({ diagram: chain, highlight: undefined });
+    await waitFor(() => expect(container.querySelector('[data-c4-dim]')).toBeNull());
+    expect(container.querySelector('.svelte-flow__edge.c4-reach')).toBeNull();
+    // Without a highlight the async edge animates as it always did; an id not on the map is no highlight.
+    expect(edgeOf(container, 'z', 'c')!.classList.contains('animated')).toBe(true);
+    await rerender({ diagram: chain, highlight: { id: 'gone' } });
+    expect(container.querySelector('[data-c4-dim]')).toBeNull();
+  });
+
+  it('animates nothing under reduced motion but keeps the accent', async () => {
+    motion.reduce = true;
+    const { container } = render(C4Diagram, { diagram: chain, highlight: { id: 'b', reach: 'out', depth: 1 } });
+    await waitFor(() => expect(edgeOf(container, 'b', 'c')).toBeTruthy());
+    expect(dimmed(wrapper(container, 'a'))).toBe(true);
+    expect(container.querySelector('.svelte-flow__edge.animated')).toBeNull();
+    expect(edgeOf(container, 'b', 'c')!.querySelector('.svelte-flow__edge-path')?.getAttribute('style')).toContain('var(--ripple-accent)');
+  });
+
+  it('lights the drawn ancestor of a hidden element and the aggregated edge it rides', async () => {
+    const nested: C4DiagramData = {
+      level: 'context',
+      title: '',
+      elements: [
+        { id: 'pe', name: 'Paw Enterprise', kind: 'system', children: [{ id: 'craft', name: 'Craft', kind: 'component' }] },
+        { id: 'rp', name: 'Ripple', kind: 'system', children: [{ id: 'ui', name: 'Editor parts', kind: 'component' }] },
+        { id: 'kb', name: 'Knowledge base', kind: 'system' },
+      ],
+      relationships: [
+        { from: 'craft', to: 'ui', label: 'uses parts' },
+        { from: 'kb', to: 'pe', label: 'indexes' },
+      ],
+    };
+    const { container } = render(C4Diagram, { diagram: nested, expanded: [], highlight: { id: 'craft', reach: 'out' } });
+    await waitFor(() => expect(edgeOf(container, 'pe', 'rp')).toBeTruthy());
+    expect(['pe', 'rp', 'kb'].map((id) => dimmed(wrapper(container, id)))).toEqual([false, false, true]);
+    expect(edgeOf(container, 'pe', 'rp')!.classList.contains('animated')).toBe(true);
+    expect(dimmed(edgeOf(container, 'kb', 'pe'))).toBe(true);
+  });
 });

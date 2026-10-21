@@ -1,7 +1,7 @@
 ---
 {
   "title": "C4 Diagram Widget — SvelteFlow + ELK Architecture Visualizer",
-  "summary": "C4Diagram is the C4 model widget: SvelteFlow renders it, ELK.js lays it out. It draws all four C4 levels with drill-down, pan/zoom and a minimap, and adds an optional live layer (status rings, crew markers, a following camera) and an optional semantic zoom that opens elements in place down to code.",
+  "summary": "C4Diagram is the C4 model widget: SvelteFlow renders it, ELK.js lays it out. It draws all four C4 levels with drill-down, pan/zoom and a minimap, and adds an optional live layer (status rings, crew markers, a following camera, a highlighted reach) and an optional semantic zoom that opens elements in place down to code.",
   "concepts": [
     "C4 model",
     "C4Diagram",
@@ -15,7 +15,8 @@
     "semantic zoom",
     "code panel",
     "ripple tokens",
-    "legend"
+    "legend",
+    "highlight reach"
   ],
   "categories": [
     "widget",
@@ -55,10 +56,11 @@
 | `onmanualcamera` | `() => void` | The user panned or zoomed (zoom buttons and minimap included) |
 | `expanded` | `string[]` | Turns on semantic zoom: these ids are drawn open |
 | `scopeId` | `string` | Semantic zoom: the element being looked inside |
+| `highlight` | `{ id, reach?, depth? }` | Light one element's reach, dim the rest |
 
 ## Layout and edges
 
-ELK lays out every element, with an element's non-empty `containers` nested inside a dashed boundary (with `kind` set, `containers` can hold any lower level: a container's components, a component's code). `children` is read only by semantic zoom. Every card is fixed to its ELK box, and edges follow ELK's orthogonal routes with rounded corners (`C4Edge`), labels in the space ELK reserved. If ELK returns no route the edge falls back to a smoothstep. `async` relationships are dashed and animated, `event` relationships dashed in the warning tone (`edgeLook` in `live.ts`, used by both the plain and the semantic graph). Layer spacing is 56px.
+ELK lays out every element, with an element's non-empty `containers` nested inside a dashed boundary (with `kind` set, `containers` can hold any lower level: a container's components, a component's code). `children` is read only by semantic zoom. Every card is fixed to its ELK box, and edges follow ELK's orthogonal routes with rounded corners (`C4Edge`), labels in the space ELK reserved. If ELK returns no route the edge falls back to a smoothstep. `async` relationships are dashed and animated, `event` relationships dashed in the warning tone (`edgeLook` in `live.ts`, used by both the plain and the semantic graph). Layer spacing is 56px. ELK fans the ends of edges that share a node apart and keeps their label boxes from overlapping; a test pins this on a five-edge node.
 
 ## Canvas, header and legend
 
@@ -78,6 +80,8 @@ SvelteFlow stays mounted across diagram swaps. Only the first layout shows the l
 | `changed` | Soft accent ring |
 | `landed` | Success ring |
 | `planned` | Dashed muted outline, no card fill, content dimmed: a blueprint for something not in code yet |
+
+`highlight: { id, reach, depth }` lights one element's reach: relationships followed upstream (`in`), downstream (`out`) or both (`in` plus `out`, so a second caller of the same element stays dim), breadth-first to `depth` hops (default `both`, 3; `reachSet` in `live.ts`). Elements outside it get `data-c4-dim` on their wrapper, written to the DOM beside the status write, and fade to the ghost level; a lit element keeps its boundaries lit, and under semantic zoom a hidden element lights its drawn ancestor. Edges whose relationships lie inside the reach take the accent stroke (dashes kept) and animate a flow; all other edges dim and hold still, async ones included. Under reduced motion nothing animates and the accent stays. An aggregated semantic edge is inside when any relationship behind it is. A highlight on an id not on the map changes nothing, and without `highlight` the nodes and edges arrays are the same objects as before (`decorateEdges`).
 
 `planned` is distinct from the scope ghost (the whole node faded, outline unchanged) and the two compose. Markers are drawn in screen space (`C4LiveLayer`), so dots keep their size at every zoom. With `follow`, the camera eases to `focusId`; a user gesture calls `onmanualcamera` so the host can drop follow mode. Enter or Space on a focused node runs exactly what a click on it runs (`activateNode` in `activate.ts`): cards drill when drillable, boundaries, databases, queues and code panels only click.
 

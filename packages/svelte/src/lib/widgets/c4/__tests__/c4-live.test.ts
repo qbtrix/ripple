@@ -3,14 +3,18 @@
 // camera plan behind `focusId`/`follow`, ELK's edge routes with the rounded
 // path drawn through them, and what keeps a live map cheap to redraw (the
 // zoom variable's value, the size handed to SvelteFlow up front, the resize
-// marks). Pure functions, no DOM.
+// marks), and the reach behind `highlight` (which elements and edges light, which dim). Pure
+// functions, no DOM.
 
 import { describe, it, expect } from 'vitest';
-import type { Node } from '@xyflow/svelte';
+import type { Edge, Node } from '@xyflow/svelte';
 import { getNodeType, computeElkLayout, computeElkGraph } from '../elk-layout.js';
 import {
+  decorateEdges,
   decorateNodes,
+  linkKey,
   markResized,
+  reachSet,
   nodeSetKey,
   planCamera,
   presized,
@@ -245,5 +249,79 @@ describe('markResized', () => {
     const [out] = markResized([n], new Map([['g', box(200, 110)]]), new Map([['g', box(400, 300)]]), 'b');
     expect(out.style).toBe('width: 400px; height: 300px;--c4-from-w: 200px; --c4-from-h: 110px;');
     expect(out.domAttributes).toEqual({ 'data-c4-ghost': '', 'data-c4-resized': 'b' });
+  });
+});
+
+// A diamond (a fans out to b and c, both feed d), a tail past it (d → e → f → g), and x, a second
+// caller of b: a co-caller that `both` must not reach, since both is in ∪ out, not undirected.
+const graph = [
+  ['a', 'b'], ['a', 'c'], ['b', 'd'], ['c', 'd'], ['d', 'e'], ['e', 'f'], ['f', 'g'], ['x', 'b'],
+].map(([from, to]) => ({ from, to }));
+const sorted = (s: Set<string>) => [...s].sort();
+
+describe('reachSet', () => {
+  it('follows relationships downstream for out, to the depth cap', () => {
+    expect(sorted(reachSet(graph, 'a', 'out', 1).ids)).toEqual(['a', 'b', 'c']);
+    expect(sorted(reachSet(graph, 'a', 'out', 3).ids)).toEqual(['a', 'b', 'c', 'd', 'e']);
+    expect(sorted(reachSet(graph, 'a', 'out', 1).links)).toEqual([linkKey('a', 'b'), linkKey('a', 'c')].sort());
+  });
+
+  it('follows relationships upstream for in', () => {
+    expect(sorted(reachSet(graph, 'd', 'in', 1).ids)).toEqual(['b', 'c', 'd']);
+    expect(sorted(reachSet(graph, 'd', 'in', 3).ids)).toEqual(['a', 'b', 'c', 'd', 'x']);
+  });
+
+  it('takes both as in plus out, so a co-caller sibling stays out', () => {
+    expect(sorted(reachSet(graph, 'b', 'both', 1).ids)).toEqual(['a', 'b', 'd', 'x']);
+    expect(sorted(reachSet(graph, 'b', 'both', 3).ids)).toEqual(['a', 'b', 'd', 'e', 'f', 'x']);
+    expect(reachSet(graph, 'b', 'both', 3).links.has(linkKey('a', 'c'))).toBe(false);
+  });
+
+  it('defaults to both at depth 3 and stops on a cycle', () => {
+    expect(sorted(reachSet(graph, 'b').ids)).toEqual(['a', 'b', 'd', 'e', 'f', 'x']);
+    const loop = [{ from: 'p', to: 'q' }, { from: 'q', to: 'r' }, { from: 'r', to: 'p' }];
+    expect(sorted(reachSet(loop, 'p', 'out', 50).ids)).toEqual(['p', 'q', 'r']);
+    expect(reachSet(loop, 'p', 'out', 50).links.size).toBe(3);
+  });
+});
+
+describe('decorateEdges', () => {
+  const edge = (source: string, target: string, extra: Partial<Edge> = {}): Edge => ({
+    id: `${source}-${target}`, source, target, type: 'c4', style: 'stroke: x;', animated: false, data: { points: [] }, ...extra,
+  });
+  const edges = [edge('a', 'b'), edge('b', 'd', { animated: true }), edge('x', 'b'), edge('c', 'd', { type: 'smoothstep', data: undefined })];
+  const reach = reachSet(graph, 'a', 'out', 2);
+
+  it('returns the same array with no reach and the default shape', () => {
+    expect(decorateEdges(edges, {})).toBe(edges);
+    expect(decorateEdges(edges, { reach: null })).toBe(edges);
+  });
+
+  it('lights and animates the edges inside the reach, dims and stills the rest', () => {
+    const out = decorateEdges(edges, { reach });
+    const [ab, bd, xb, cd] = out;
+    for (const e of [ab, bd, cd]) {
+      expect(e.animated, e.id).toBe(true);
+      expect(e.class, e.id).toContain('c4-reach');
+      expect(e.style, e.id).toContain('var(--ripple-accent)');
+      expect(e.domAttributes, e.id).toBeUndefined();
+    }
+    expect(xb.animated).toBe(false);
+    expect(xb.domAttributes).toEqual({ 'data-c4-dim': '' });
+    expect(xb.data?.dim).toBe(true);
+  });
+
+  it('keeps the accent, and a dash, but animates nothing when still', () => {
+    const out = decorateEdges([...edges, edge('a', 'c', { style: 'stroke: x; stroke-dasharray: 4 4;' })], { reach, still: true });
+    expect(out.some((e) => e.animated)).toBe(false);
+    expect(out[0].style).toContain('var(--ripple-accent)');
+    expect(out[4].style).toContain('stroke-dasharray: 4 4');
+  });
+
+  it('reads an aggregated edge as inside when any relationship behind it is', () => {
+    const lifted = edge('pe', 'rp', { data: { links: [linkKey('q', 'z'), linkKey('a', 'b')] } });
+    expect(decorateEdges([lifted], { reach })[0].class).toContain('c4-reach');
+    const other = edge('pe', 'rp', { data: { links: [linkKey('q', 'z')] } });
+    expect(decorateEdges([other], { reach })[0].domAttributes).toEqual({ 'data-c4-dim': '' });
   });
 });

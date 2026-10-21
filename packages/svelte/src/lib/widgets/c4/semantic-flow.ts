@@ -12,7 +12,7 @@
 
 import type { Edge, Node } from '@xyflow/svelte';
 import { BOUNDARY_TOP, computeSemanticLayout, getNodeDimensions, getNodeType, type LayoutPosition } from './elk-layout.js';
-import { edgeLook, presized, sharedStyle } from './live.js';
+import { edgeLook, linkKey, presized, sharedStyle } from './live.js';
 import {
   childrenOf,
   codePanelSize,
@@ -151,6 +151,7 @@ export async function buildSemanticFlow(
         points: route?.points,
         labelBox: route?.label,
         items,
+        links: e.items.map((it) => linkKey(it.from, it.to)),
         ghost,
         tail: e.fromBadge && route?.tail ? { box: route.tail, text: e.fromBadge } : undefined,
         head: e.toBadge && route?.head ? { box: route.head, text: e.toBadge } : undefined,
