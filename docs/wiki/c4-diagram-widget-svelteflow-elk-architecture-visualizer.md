@@ -1,7 +1,7 @@
 ---
 {
   "title": "C4 Diagram Widget — SvelteFlow + ELK Architecture Visualizer",
-  "summary": "C4Diagram is the C4 model widget: SvelteFlow renders it, ELK.js lays it out. It draws all four C4 levels with drill-down, pan/zoom and a minimap, and adds an optional live layer (status rings, crew markers, a following camera, a highlighted reach), curved or orthogonal edges and an optional semantic zoom that opens elements in place down to code.",
+  "summary": "C4Diagram is the C4 model widget: SvelteFlow renders it, ELK.js lays it out. It draws all four C4 levels with drill-down, pan/zoom and a minimap, and adds an optional live layer (status rings, crew markers, a following camera, a highlighted reach), curved or orthogonal edges, step-by-step flow playback, and an optional semantic zoom that opens elements in place down to code.",
   "concepts": [
     "C4 model",
     "C4Diagram",
@@ -17,7 +17,8 @@
     "ripple tokens",
     "legend",
     "highlight reach",
-    "curved edges"
+    "curved edges",
+    "flow playback"
   ],
   "categories": [
     "widget",
@@ -59,6 +60,9 @@
 | `scopeId` | `string` | Semantic zoom: the element being looked inside |
 | `highlight` | `{ id, reach?, depth? }` | Light one element's reach, dim the rest |
 | `edgeShape` | `'orthogonal' \| 'curved'` | How edges draw along ELK's routes; default orthogonal |
+| `flow` | `C4Flow` | A data flow to play over the map, one step at a time |
+| `step` | `number` | Controlled: the flow's current step; out of range shows none |
+| `onstep` | `(n) => void` | A connection was clicked: the next step that travels it |
 
 ## Layout and edges
 
@@ -90,6 +94,18 @@ SvelteFlow stays mounted across diagram swaps. Only the first layout shows the l
 `highlight: { id, reach, depth }` lights one element's reach: relationships followed upstream (`in`), downstream (`out`) or both (`in` plus `out`, so a second caller of the same element stays dim), breadth-first to `depth` hops (default `both`, 3; `reachSet` in `live.ts`). Elements outside it get `data-c4-dim` on their wrapper, written to the DOM beside the status write, and fade to the ghost level; a lit element keeps its boundaries lit, and under semantic zoom a hidden element lights its drawn ancestor. Edges whose relationships lie inside the reach take the accent stroke (dashes kept) and animate a flow; all other edges dim and hold still, async ones included. Under reduced motion nothing animates and the accent stays. An aggregated semantic edge is inside when any relationship behind it is. A highlight on an id not on the map changes nothing, and without `highlight` the nodes and edges arrays are the same objects as before (`decorateEdges`).
 
 `planned` is distinct from the scope ghost (the whole node faded, outline unchanged) and the two compose. Markers are drawn in screen space (`C4LiveLayer`), so dots keep their size at every zoom. With `follow`, the camera eases to `focusId`; a user gesture calls `onmanualcamera` so the host can drop follow mode. Enter or Space on a focused node runs exactly what a click on it runs (`activateNode` in `activate.ts`): cards drill when drillable, boundaries, databases, queues and code panels only click.
+
+## Flow playback
+
+`flow: { id, name, description?, steps }` plays a data flow over the map; the host owns `step` and draws the transport (back, play, next, the step's text). A step is one of:
+
+| Step | Shape | On the map |
+|------|-------|------------|
+| message | `{ from, to, label, technology?, reverse?, implied? }` | Both ends and the relationship light through the `highlight` path, the rest dims. The label sits in a port badge at the edge's label box, and a marker runs the edge's drawn path (orthogonal or curved, an SVG `animateMotion`) over 560ms on the ripple curve. `reverse`: the model draws the relationship `to` → `from` and the marker runs back along it. `implied` (no relationship): a dashed hop between the two drawn ends carries the badge and marker |
+| process | `{ at, label }` | The element pulses, the rest dims, no edge |
+| note | `{ note }` | Nothing dims |
+
+While a step is current it replaces `highlight`. The camera frames the step's elements only when one is off screen (`onScreen` in `live.ts`); the step showing at mount keeps the first fit. Each step is announced through a polite live region ("Storefront to Orders API: POST /orders"); the host shows a note's text itself. Clicking a connection calls `onstep` with the next step that travels it. Under reduced motion the marker sits at the receiving end, the camera cuts and nothing pulses. Stepping only re-decorates the laid-out graph, so ELK never runs, and without `flow` (or with `step` out of range) the map renders exactly as it did before (`markFlow` returns the same edges). An unlisted bench at `/labs/c4-flow` plays a sample flow.
 
 ## Legibility at any zoom
 
