@@ -20,10 +20,13 @@
   reduced motion).
 
   `flow` + a controlled `step` play a data flow over the map; while a step is current it
-  replaces `highlight`. A message lights its two ends and its relationship (the reach path) and
-  runs a marker along the edge (C4Edge), or along a dashed hop when no relationship carries it
-  (markFlow); a process pulses its element; a note dims nothing. The host draws the transport.
-  Stepping only re-decorates the laid-out graph: no ELK.
+  replaces `highlight`. A message lights its two ends and its relationship (the reach path),
+  shows its label in a port badge and runs a marker along the edge (C4Edge), or along a dashed
+  hop when no relationship carries it (markFlow); a process pulses its element; a note dims
+  nothing. The camera frames a step's elements only when one is off screen (C4LiveLayer). The
+  step is announced through a polite live region; the host draws the transport and the note
+  text, and a click on a connection asks for the next step on it (`onstep`). Stepping only
+  re-decorates the laid-out graph: no ELK.
 
   Edges follow ELK's orthogonal routes (C4Edge), or curves with arrowheads
   along them (`edgeShape: 'curved'`); every card fills its ELK box, so routes
@@ -131,6 +134,8 @@
     flow?: C4Flow;
     /** Controlled: the index of the flow's current step. Out of range, no step is shown. */
     step?: number;
+    /** A connection was clicked: the index of the next step that travels it. */
+    onstep?: (n: number) => void;
   }
 
   let {
@@ -150,6 +155,7 @@
     edgeShape = 'orthogonal',
     flow,
     step,
+    onstep,
   }: Props = $props();
 
   // Every C4 view as a SvelteFlow node type (the legacy diagram), plus semantic zoom's one type.
@@ -514,9 +520,16 @@
   const cards = $derived(edgeShape === 'curved' ? flowNodes.filter((n) => viewOf(n) !== 'group').map(boxOf) : undefined);
   /** The node an element is drawn as: itself, or under semantic zoom its drawn ancestor. */
   const drawnOf = (id: string) => (semanticInfo ? representative(semanticInfo.tree, semanticInfo.vis, id) : id);
+  const nameOf = (id: string) =>
+    semanticInfo?.tree.byId.get(id)?.name ?? (nodeById.get(id)?.data as unknown as C4NodeData | undefined)?.name ?? id;
   const flowMark = $derived<FlowMark | null>(
     msg && flowReach
-      ? { key: step!, back: !!msg.reverse, still: prefersReducedMotion.current }
+      ? {
+          key: step!,
+          port: { text: msg.label, items: [{ from: nameOf(msg.from), to: nameOf(msg.to), label: msg.technology }] },
+          back: !!msg.reverse,
+          still: prefersReducedMotion.current,
+        }
       : null
   );
   // The hop an implied message draws, between its two drawn ends (none when they are one node).
@@ -525,6 +538,30 @@
     return s && t && s !== t ? { source: s.id, target: t.id, a: boxOf(s), b: boxOf(t) } : undefined;
   });
   const pulseId = $derived(current && 'at' in current && flowReach && !prefersReducedMotion.current ? drawnOf(current.at) : undefined);
+  const flowStep = $derived.by(() => {
+    if (!current || 'note' in current || !flowReach) return undefined;
+    const ends = 'at' in current ? [current.at] : [current.from, current.to];
+    return { key: `${flow!.id}:${step}`, ids: [...new Set(ends.map(drawnOf).filter((id): id is string => !!id))] };
+  });
+  const stepText = $derived(
+    !current
+      ? ''
+      : 'note' in current
+        ? current.note
+        : 'at' in current
+          ? `${nameOf(current.at)}: ${current.label}`
+          : `${nameOf(current.from)} to ${nameOf(current.to)}: ${current.label}`
+  );
+  function onEdgeClick({ edge }: { edge: Edge }) {
+    if (!flow || !onstep) return;
+    const keys = (edge.data?.links as string[] | undefined) ?? [linkKey(edge.source, edge.target)];
+    const n = flow.steps.length;
+    for (let k = 0; k < n; k++) {
+      const i = ((step ?? -1) + 1 + k) % n;
+      const s = flow.steps[i];
+      if ('from' in s && keys.includes(rideKey(s))) return onstep(i);
+    }
+  }
   // Curved maps bundle a hub's edges; hovering a bundle's count opens it.
   let openJoin = $state<string | null>(null);
   setContext('c4-onjoin', (key: string | null) => (openJoin = key));
@@ -705,8 +742,9 @@
         onedgepointerleave={() => (hot = {})}
         onnodepointerenter={({ node }) => (hot = { node: node.id })}
         onnodepointerleave={() => (hot = {})}
+        onedgeclick={flow && onstep ? onEdgeClick : undefined}
       >
-        <C4LiveLayer ids={nodeIds} {focusId} {follow} markers={shownMarkers} {frame} />
+        <C4LiveLayer ids={nodeIds} {focusId} {follow} markers={shownMarkers} {frame} {flowStep} />
         <Background
           gap={24}
         />
@@ -746,6 +784,10 @@
         </div>
       {/each}
     </div>
+  {/if}
+
+  {#if flow}
+    <p class="c4-flow-live" aria-live="polite">{stepText}</p>
   {/if}
 </div>
 
@@ -1347,6 +1389,17 @@
   @keyframes c4-pulse {
     from { box-shadow: 0 0 0 0 color-mix(in oklab, var(--ripple-accent) 45%, transparent); }
     to { box-shadow: 0 0 0 12px transparent; }
+  }
+
+  /* The current flow step, for assistive tech only: the host draws the transport. */
+  .c4-flow-live {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   @keyframes c4-breathe {

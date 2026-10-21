@@ -3,7 +3,7 @@ import type { WidgetManifestEntry } from '../index.js';
 export const c4Entry: WidgetManifestEntry = {
   type: 'c4',
   category: 'data',
-  description: 'C4 architecture diagram (Context / Container / Component / Code): ELK auto-layout, drill-down, live status rings, reach highlighting, curved edges and in-place zoom down to code.',
+  description: 'C4 architecture diagram (Context / Container / Component / Code): ELK auto-layout, drill-down, live status rings, reach highlighting, curved edges, flow playback and in-place zoom down to code.',
   props: {
     diagram: {
       type: '{ title: string; level: "context" | "container" | "component" | "code"; description?: string; elements: Array<{ id: string; name: string; kind?: "person" | "system" | "container" | "component" | "code"; type?: string; description?: string; technology?: string; external?: boolean; drillable?: boolean; children?: Element[]; code?: { startLine: number; before: string[]; after?: string[]; changed?: [number, number]; language?: string } }>; relationships: Array<{ from: string; to: string; label?: string; technology?: string; style?: "sync" | "async" | "event" }> }',
@@ -38,6 +38,19 @@ export const c4Entry: WidgetManifestEntry = {
       type: '"orthogonal" | "curved"',
       required: false,
       description: 'How edges draw along the layout\'s routes: orthogonal with rounded corners (default), or smooth curves with arrowheads.',
+    },
+    flow: {
+      type: '{ id: string; name: string; description?: string; steps: Array<{ from: string; to: string; label: string; technology?: string; reverse?: boolean; implied?: boolean } | { at: string; label: string } | { note: string }> }',
+      required: false,
+      description: 'A data flow played over the map one step at a time (pair with step). A message lights its two ends and relationship and runs a marker along it; reverse means the model draws the relationship to → from; implied (no relationship) draws a dashed hop. A process pulses its element; a note dims nothing.',
+    },
+    step: { type: 'number', required: false, description: 'Index of the flow\'s current step. Out of range, or without flow, no step is shown.' },
+  },
+  events: {
+    on_step: {
+      type: 'EventAction',
+      required: false,
+      description: 'Fires with the index of the next step on a clicked connection (the onstep prop), e.g. { action: "set", target: "step", value: "{event}" }.',
     },
   },
   example: {

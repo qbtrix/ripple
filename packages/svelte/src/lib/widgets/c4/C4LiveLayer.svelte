@@ -14,6 +14,10 @@
   C4Diagram keeps SvelteFlow mounted across diagram swaps, so its `fitView`
   prop only fires once.
 
+  A played flow step (`flowStep`: a key per step, its drawn element ids) frames those elements when
+  one is off screen (onScreen), on the ripple curve or as a cut under reduced motion; on screen, or
+  for the step already showing when the map first settles, the camera stays put.
+
   Semantic zoom passes `frame` instead: a box from ELK's final layout and a
   signature. The camera eases (the ripple curve, instant under reduced motion)
   to that box whenever the signature changes, except when follow has just
@@ -31,8 +35,9 @@
     useSvelteFlow,
     useViewportInitialized,
   } from '@xyflow/svelte';
+  import { untrack } from 'svelte';
   import { prefersReducedMotion } from 'svelte/motion';
-  import { FIT_MIN_ZOOM, MOVE_MS, planCamera, rippleEase, zoomVar, type CameraState, type Rect } from './live.js';
+  import { FIT_MIN_ZOOM, MOVE_MS, onScreen, planCamera, rippleEase, zoomVar, type CameraState, type Rect } from './live.js';
   import type { C4Marker } from './types.js';
 
   interface Props {
@@ -43,9 +48,11 @@
     markers?: Record<string, C4Marker[]>;
     /** Semantic zoom's camera: frame `rect` when `key` changes. */
     frame?: { key: string; rect: Rect | null; follow: boolean };
+    /** The current flow step: framed when its elements are off screen. */
+    flowStep?: { key: string; ids: string[] };
   }
 
-  let { ids, focusId, follow, markers, frame }: Props = $props();
+  let { ids, focusId, follow, markers, frame, flowStep }: Props = $props();
 
   /** Below this zoom the cards keep only name and technology (data-c4-far):
    *  the 11px lines would read under 10px, and the counter-scaled name needs
@@ -123,6 +130,28 @@
     const duration = first || prefersReducedMotion.current ? 0 : MOVE_MS;
     fly(duration);
     void flow.setViewport(vp, { duration, ease: rippleEase });
+  });
+
+  // Flow step camera (see the header). null: not yet observed.
+  let seenStep: string | undefined | null = null;
+  $effect(() => {
+    const s = flowStep;
+    if (!initialized.current) return;
+    const first = seenStep === null;
+    if (!first && s?.key === seenStep) return;
+    seenStep = s?.key;
+    if (first || !s?.ids.length) return;
+    const visible = untrack(() => {
+      const boxes = s.ids.flatMap((id) => {
+        const n = flow.getInternalNode(id);
+        return n ? [{ ...n.internals.positionAbsolute, width: n.measured.width ?? 0, height: n.measured.height ?? 0 }] : [];
+      });
+      return onScreen(boxes, store.viewport, store.width, store.height);
+    });
+    if (visible) return;
+    const duration = prefersReducedMotion.current ? 0 : MOVE_MS;
+    fly(duration);
+    void flow.fitView({ nodes: s.ids.map((id) => ({ id })), padding: 0.35, minZoom: FIT_MIN_ZOOM, maxZoom: 1, duration, ease: rippleEase });
   });
 
   const onMap = $derived.by(() => {
