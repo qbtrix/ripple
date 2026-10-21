@@ -1,6 +1,6 @@
 // c4-diagram-live.test.ts — mounts the real C4Diagram (SvelteFlow + ELK) in
 // jsdom and checks the live props reach the DOM: status rings on the node
-// wrappers (planned included), the status legend, marker dots, controlled selection, the
+// wrappers (planned, removed and future included, each its own outline), the status legend, marker dots, controlled selection, the
 // zoom-button report, the kind labels, keyboard activation doing exactly what a click does for
 // every node type, `highlight` dimming what lies outside its reach and animating the edges inside
 // it (still under reduced motion, in plain and semantic zoom), curved edges with arrowheads, and an
@@ -9,6 +9,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, waitFor, fireEvent } from '@testing-library/svelte';
 import C4Diagram from '../C4Diagram.svelte';
+import source from '../C4Diagram.svelte?raw';
 import type { C4Diagram as C4DiagramData } from '$lib/widgets/c4/types.js';
 
 const diagram: C4DiagramData = {
@@ -84,6 +85,41 @@ describe('C4Diagram live props', { timeout: 30000 }, () => {
     expect(items.map((li) => li.textContent?.trim())).toEqual(['Landed', 'Planned']);
     expect(items[1].querySelector('[data-c4-swatch="planned"]')).not.toBeNull();
     expect(getByText('Planned')).toBeInTheDocument();
+  });
+
+  it('marks removed and future nodes on their wrappers with their own legend entries', async () => {
+    const { container } = render(C4Diagram, {
+      diagram,
+      status: { 'f.curve': 'removed', 'f.index': 'future', ui: 'planned' },
+    });
+    await waitFor(() => expect(wrapper(container, 'f.curve')).not.toBeNull());
+    expect(wrapper(container, 'f.curve')?.getAttribute('data-c4-status')).toBe('removed');
+    expect(wrapper(container, 'f.index')?.getAttribute('data-c4-status')).toBe('future');
+    const items = [...container.querySelectorAll('[aria-label="Status legend"] [role="listitem"]')];
+    expect(items.map((li) => li.textContent?.trim())).toEqual(['Removed', 'Planned', 'Future']);
+    expect(items.map((li) => li.querySelector('[data-c4-swatch]')?.getAttribute('data-c4-swatch'))).toEqual([
+      'removed',
+      'planned',
+      'future',
+    ]);
+  });
+
+  it('gives removed, planned and future outlines that read apart', () => {
+    // jsdom applies no component CSS, so read the rules: each status sets its own tone and
+    // outline style, and only the blueprints (planned, future) drop the card fill.
+    const css = source;
+    const rule = (sel: string) => css.match(new RegExp(`${sel.replace(/[[\]()'.=]/g, '\\$&')}[^{]*\\{([^}]*)\\}`))?.[1] ?? '';
+    const ring = (st: string) => rule(`.svelte-flow__node[data-c4-status='${st}'])::after`);
+    const tone = (st: string) => rule(`.svelte-flow__node[data-c4-status='${st}']),`);
+    expect([ring('planned'), ring('future'), ring('removed')].map((r) => r.match(/border-style: (\w+)/)?.[1])).toEqual([
+      'dashed',
+      'dotted',
+      'dashed',
+    ]);
+    expect(new Set([tone('planned'), tone('future'), tone('removed'), tone('drift')]).size).toBe(4);
+    expect(tone('removed')).toContain('--ripple-error');
+    expect(css).toContain(".svelte-flow__node[data-c4-status='future'] .c4-node)");
+    expect(css).not.toContain(".svelte-flow__node[data-c4-status='removed'] .c4-node)");
   });
 
   it('draws marker dots on the nodes they name, skipping ids not on the map', async () => {

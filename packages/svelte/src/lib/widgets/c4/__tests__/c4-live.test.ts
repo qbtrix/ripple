@@ -122,6 +122,13 @@ describe('statusesPresent', () => {
     expect(STATUS_LABELS.planned).toBe('Planned');
     expect(decorateNodes([node('a')], { status }).at(0)?.domAttributes).toEqual({ 'data-c4-status': 'planned' });
   });
+
+  it('lists removed after landed, and future after planned, each with its own label', () => {
+    const status = { a: 'future', b: 'planned', c: 'removed', d: 'landed' } as const;
+    expect(statusesPresent(status, ['a', 'b', 'c', 'd'])).toEqual(['landed', 'removed', 'planned', 'future']);
+    expect([STATUS_LABELS.removed, STATUS_LABELS.future]).toEqual(['Removed', 'Future']);
+    expect(decorateNodes([node('c')], { status }).at(0)?.domAttributes).toEqual({ 'data-c4-status': 'removed' });
+  });
 });
 
 describe('planCamera', () => {
