@@ -7,6 +7,9 @@
   `status` paints a node's state through a `data-c4-status` attribute on its
   SvelteFlow wrapper (ring colours are ripple tokens; only `changing` moves;
   `planned` draws a blueprint: dashed outline, no fill, content dimmed;
+  `future` the same blueprint dotted and fainter; `added` a heavier double
+  success ring (landed is a thin single one); `removed` a ghost: card kept,
+  content faded, dashed error-toned outline;
   written straight to the wrappers, since a new nodes array makes SvelteFlow
   re-lay every edge),
   `markers` pins dots to nodes, `selectedId` controls selection, and
@@ -1449,5 +1452,60 @@
   .c4-status-swatch[data-c4-swatch='planned'] {
     border-style: dashed;
     background: transparent;
+  }
+
+  /* Future: a blueprint further out than planned. The same no-fill card, but a
+     dotted outline and fainter content, so the two read apart side by side. */
+  .c4-canvas :global(.svelte-flow__node[data-c4-status='future']),
+  .c4-status-swatch[data-c4-swatch='future'] {
+    --c4-tone: color-mix(in oklab, var(--ripple-muted-foreground) 55%, transparent);
+  }
+  .c4-canvas :global(.svelte-flow__node[data-c4-status='future'])::after {
+    border-style: dotted;
+  }
+  .c4-canvas :global(.svelte-flow__node[data-c4-status='future'] > :not(.c4-handle)) {
+    opacity: 0.45;
+  }
+  .c4-canvas :global(.svelte-flow__node[data-c4-status='future'] .c4-node) {
+    background: transparent;
+    border-color: transparent;
+  }
+  .c4-status-swatch[data-c4-swatch='future'] {
+    border-style: dotted;
+    background: transparent;
+  }
+
+  /* Added: an element new since a comparison's base. Success-toned like landed,
+     but a heavier double outline, so it does not rest on colour alone (landed is
+     a thin single ring, changed a thin accent one). */
+  .c4-canvas :global(.svelte-flow__node[data-c4-status='added']),
+  .c4-status-swatch[data-c4-swatch='added'] {
+    --c4-tone: var(--ripple-success);
+  }
+  .c4-canvas :global(.svelte-flow__node[data-c4-status='added'])::after {
+    border-style: double;
+    border-width: 4px;
+  }
+  .c4-status-swatch[data-c4-swatch='added'] {
+    border-style: double;
+    border-width: 3px;
+  }
+
+  /* Removed: an element that is gone, kept on the map so a comparison can show
+     it. Unlike planned it keeps its card, so it reads as something that was
+     there; the content fades harder and the dashed outline takes the error tone
+     (drift's dash is warning-toned over a full-strength card). */
+  .c4-canvas :global(.svelte-flow__node[data-c4-status='removed']),
+  .c4-status-swatch[data-c4-swatch='removed'] {
+    --c4-tone: color-mix(in oklab, var(--ripple-error) 60%, transparent);
+  }
+  .c4-canvas :global(.svelte-flow__node[data-c4-status='removed'])::after {
+    border-style: dashed;
+  }
+  .c4-canvas :global(.svelte-flow__node[data-c4-status='removed'] > :not(.c4-handle)) {
+    opacity: 0.4;
+  }
+  .c4-status-swatch[data-c4-swatch='removed'] {
+    border-style: dashed;
   }
 </style>

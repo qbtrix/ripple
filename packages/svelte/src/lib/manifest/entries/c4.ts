@@ -11,9 +11,9 @@ export const c4Entry: WidgetManifestEntry = {
       description: 'C4 diagram definition. `kind` sets the shape; without it the shape is inferred from the fields present. type "database" or "queue" draws those shapes. An empty title hides the header.',
     },
     status: {
-      type: 'Record<string, "changing" | "changed" | "landed" | "drift" | "failed" | "planned">',
+      type: 'Record<string, "changing" | "changed" | "landed" | "drift" | "failed" | "planned" | "future" | "added" | "removed">',
       required: false,
-      description: 'Live state per element id, drawn as a ring and listed in the legend. "planned" is a dashed blueprint for something not built yet.',
+      description: 'Live state per element id, drawn as a ring and listed in the legend. "planned" is a dashed blueprint for something not built yet, "future" a dotted one further out, "added" a double success ring on a new element and "removed" a ghost of one that is gone (for a before/after comparison).',
     },
     markers: {
       type: 'Record<string, Array<{ id: string; label: string; color: string }>>',
