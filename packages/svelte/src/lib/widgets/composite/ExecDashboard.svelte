@@ -22,7 +22,8 @@
   reads the widget's own width through container queries (KPI tiles two a
   row below 480px; four tiles stay two by two until all four fit in a row).
   The title is an h2: a card never takes its page's h1.
-  KPI values, their notes and activity labels wrap instead of cutting, and
+  KPI values wrap at spaces (the sparkline narrows to 44px, then drops under
+  the value), their notes and activity labels wrap instead of cutting, and
   the KPI-mode table footer stacks into a list below 480px. The refresh icon's
   spin stops under prefers-reduced-motion.
 -->
@@ -1158,11 +1159,13 @@
     /* Keep room for the hover arrow */
     padding-right: 20px;
   }
+  /* The sparkline drops under the value when both do not fit side by side. */
   .rdash-kpi-row {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: 6px 12px;
     min-width: 0;
   }
   .rdash-kpi-value-wrap {
@@ -1178,7 +1181,6 @@
     color: var(--foreground);
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.02em;
-    overflow-wrap: break-word;
   }
   .rdash-kpi-unit {
     font-size: 13px;
@@ -1186,8 +1188,8 @@
     color: var(--muted-foreground);
   }
   .rdash-kpi-spark {
-    width: 72px;
-    flex-shrink: 0;
+    flex: 1 1 44px;
+    max-width: 72px;
   }
   /* Four tiles never leave one orphan: two a row until four fit in one. */
   @container (min-width: 481px) and (max-width: 759px) {
@@ -1316,9 +1318,13 @@
   }
 
   /* Activity: a rail beside the chart scrolls inside its 380px; stacked
-     under the chart (narrower than 920px) it shows every item. */
+     under the chart (narrower than 920px) it shows up to 8 items in full,
+     and a longer feed scrolls inside 640px. */
   @container (min-width: 920px) {
     .rdash-activity { max-height: 380px; }
+  }
+  @container (max-width: 919px) {
+    .rdash-activity:has(.rdash-activity-item:nth-child(9)) { max-height: 640px; }
   }
   .rdash-activity {
     overflow-y: auto;

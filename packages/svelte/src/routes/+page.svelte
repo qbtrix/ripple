@@ -293,7 +293,7 @@
 
 	<section class="closer" aria-labelledby="closer-title">
 		<h2 id="closer-title">Try it with your own agent</h2>
-		<p>Add the Ripple skill with <code>npx skills add qbtrix/ripple-iui --skill ripple</code>, then ask your agent for a card. Or try it in Paw OS.</p>
+		<p>Add the Ripple skill with <code>npx skills add qbtrix/ripple-iui --skill ripple</code>, then ask your agent for a card.</p>
 		<div class="closer-actions">
 			<a class="btn primary" href="/docs/guides/coding-agents">Set up your agent</a>
 			<a class="link" href={EARLY_ACCESS_URL}>Open Paw OS</a>
