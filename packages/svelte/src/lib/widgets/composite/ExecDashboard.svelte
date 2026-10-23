@@ -20,7 +20,10 @@
   A visitor's chip picks (range, granularity, activity filter) hold across a
   re-sent spec and give way only to a different value from the spec. Layout
   reads the widget's own width through container queries (KPI tiles two a
-  row below 480px). The refresh icon's
+  row below 480px; four tiles stay two by two until all four fit in a row).
+  The title is an h2: a card never takes its page's h1.
+  KPI values, their notes and activity labels wrap instead of cutting, and
+  the KPI-mode table footer stacks into a list below 480px. The refresh icon's
   spin stops under prefers-reduced-motion.
 -->
 <script lang="ts">
@@ -544,7 +547,7 @@
   {#if title || subtitle || dateRange || dateRanges || granularities || actions.length > 0 || showRefresh || lastUpdated}
     <header class="rdash-header">
       <div class="rdash-header-main">
-        {#if title}<h1 class="rdash-title">{title}</h1>{/if}
+        {#if title}<h2 class="rdash-title">{title}</h2>{/if}
         {#if subtitle}<p class="rdash-subtitle">{subtitle}</p>{/if}
       </div>
       <div class="rdash-header-tools">
@@ -701,9 +704,9 @@
                   </span>
                 {/if}
                 {#if k.compareLabel}
-                  <span class="rdash-kpi-sub rdash-truncate">{k.compareLabel}</span>
+                  <span class="rdash-kpi-sub">{k.compareLabel}</span>
                 {:else if k.sublabel}
-                  <span class="rdash-kpi-sub rdash-truncate">{k.sublabel}</span>
+                  <span class="rdash-kpi-sub">{k.sublabel}</span>
                 {/if}
               </div>
             {/if}
@@ -845,7 +848,7 @@
         {#if table.title}<div class="rdash-card-title">{table.title}</div>{/if}
         {#if resolvedTableRows.length > 0}
           <div class="rdash-scroll-x rdash-table-wrap">
-            <Table columns={table.columns ?? []} rows={resolvedTableRows} />
+            <Table columns={table.columns ?? []} rows={resolvedTableRows} layout="stack" />
           </div>
         {:else}
           <div class="rdash-section-empty rdash-section-empty-flat">
@@ -1175,9 +1178,7 @@
     color: var(--foreground);
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.02em;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: break-word;
   }
   .rdash-kpi-unit {
     font-size: 13px;
@@ -1187,6 +1188,13 @@
   .rdash-kpi-spark {
     width: 72px;
     flex-shrink: 0;
+  }
+  /* Four tiles never leave one orphan: two a row until four fit in one. */
+  @container (min-width: 481px) and (max-width: 759px) {
+    .rdash-kpis:has(> :nth-child(4):last-child) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @container (min-width: 760px) {
+    .rdash-kpis:has(> :nth-child(4):last-child) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   }
   /* A phone-width card: two tiles a row (auto-fit at 150px gives one), an odd
      last tile spans both, and the sparkline drops under the value. */
@@ -1198,8 +1206,9 @@
   }
   .rdash-kpi-meta {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 8px;
+    gap: 2px 8px;
     font-size: 11.5px;
     min-width: 0;
   }
@@ -1306,9 +1315,12 @@
     border-color: color-mix(in oklab, var(--rdash-accent) 30%, transparent);
   }
 
-  /* Activity */
+  /* Activity: a rail beside the chart scrolls inside its 380px; stacked
+     under the chart (narrower than 920px) it shows every item. */
+  @container (min-width: 920px) {
+    .rdash-activity { max-height: 380px; }
+  }
   .rdash-activity {
-    max-height: 380px;
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: color-mix(in oklab, var(--muted-foreground) 25%, transparent) transparent;
@@ -1379,7 +1391,7 @@
   }
   .rdash-activity-row {
     display: flex;
-    align-items: baseline;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 10px;
     min-width: 0;
@@ -1391,9 +1403,7 @@
     align-items: center;
     gap: 4px;
     min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: break-word;
   }
   .rdash-activity-time {
     font-size: 11px;

@@ -297,7 +297,9 @@ describe('exec-dashboard: KPI mode (existing specs)', () => {
 		expect(screen.getByText('Q2 performance')).toBeTruthy();
 		expect(screen.getByText('$2.4M')).toBeTruthy();
 		expect(screen.getByText('Top accounts')).toBeTruthy();
-		expect(screen.getByText('Globex')).toBeTruthy();
+		// The footer is a table and, below 480px of width, a stacked list: both in the DOM.
+		expect(screen.getAllByText('Globex')).toHaveLength(2);
+		expect(document.querySelector('[data-slot="table-stack"]')).toBeTruthy();
 		expect(screen.getByRole('button', { name: 'Refresh' })).toBeTruthy();
 		await fireEvent.click(screen.getByRole('tab', { name: '30d' }));
 		expect(screen.getByText('$780k')).toBeTruthy();
