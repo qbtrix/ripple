@@ -1,7 +1,7 @@
 {
   "schema": "ripple.manifest/v1",
   "version": "0.8.1",
-  "generatedAt": "2026-10-21T18:45:42.186Z",
+  "generatedAt": "2026-10-23T19:41:29.878Z",
   "spec": {
     "uiField": "ui",
     "stateField": "state",
@@ -15261,6 +15261,11 @@
           "type": "boolean",
           "required": false,
           "description": "Allow multiple selections."
+        },
+        "allowEmpty": {
+          "type": "boolean",
+          "required": false,
+          "description": "Single mode: an empty value stays unselected until the user picks, instead of auto-selecting the first option. Use for a real \"not chosen yet\" choice."
         },
         "size": {
           "type": "\"sm\" | \"md\"",

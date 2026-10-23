@@ -2,8 +2,10 @@
      A track of mutually exclusive (radiogroup/radio) or toggled
      (group/checkbox, `multiple`) options on the shared chip track. A selected
      segment paints its own raised chip (components/ui/chip.ts, as tabs do). In
-     single mode an empty value selects the first enabled option, so the
-     control never shows nothing.
+     single mode an empty value selects the first enabled option and commits it
+     through onchange once, so a filter or view toggle never shows nothing.
+     `allowEmpty` opts out for a real "not chosen yet" choice: an empty value
+     paints no option and nothing is committed until the user picks one.
      Options take an optional icon (Lucide slug), `badge` (a small accent count
      pill), `class` and `disabled`; the `leading` snippet renders before each
      option's icon so a host can mark one (a category dot).
@@ -37,6 +39,9 @@
     /** Selected value (single) or array of values (multiple). */
     value?: string | number | (string | number)[] | null;
     multiple?: boolean;
+    /** Single mode: an empty value stays unselected instead of auto-selecting
+     *  (and committing) the first enabled option. Default false. */
+    allowEmpty?: boolean;
     size?: 'sm' | 'md';
     disabled?: boolean;
     onchange?: (value: unknown) => void;
@@ -52,6 +57,7 @@
     options = [],
     value = null,
     multiple = false,
+    allowEmpty = false,
     size = 'md',
     disabled = false,
     onchange,
@@ -66,11 +72,13 @@
 
   // Single mode never shows an empty control: with no bound value the first
   // enabled option is selected, and committed to state once so the two agree.
+  // allowEmpty skips both, leaving the choice unset until the user picks.
   const firstEnabled = $derived(normalized.find((o) => !(o as any).disabled));
   const isEmpty = $derived(value === null || value === undefined || value === '');
-  const current = $derived(!multiple && isEmpty ? firstEnabled?.value : value);
+  const autoSelect = $derived(!multiple && !allowEmpty && isEmpty);
+  const current = $derived(autoSelect ? firstEnabled?.value : value);
   $effect(() => {
-    if (!multiple && !disabled && isEmpty && firstEnabled) onchange?.(firstEnabled.value);
+    if (autoSelect && !disabled && firstEnabled) onchange?.(firstEnabled.value);
   });
 
   function isSelected(v: string | number): boolean {

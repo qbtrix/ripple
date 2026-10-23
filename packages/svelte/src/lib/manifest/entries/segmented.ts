@@ -10,6 +10,7 @@ export const segmentedEntry: WidgetManifestEntry = {
     value: { type: 'string | number | (string | number)[]', required: false, description: 'Selected value (or array if multiple).' },
     options: { type: 'string[] | Array<{ value: string | number; label: string; icon?: string; disabled?: boolean }>', required: true, description: 'Segment options.' },
     multiple: { type: 'boolean', required: false, description: 'Allow multiple selections.' },
+    allowEmpty: { type: 'boolean', required: false, description: 'Single mode: an empty value stays unselected until the user picks, instead of auto-selecting the first option. Use for a real "not chosen yet" choice.' },
     size: { type: '"sm" | "md"', required: false, description: 'Button size.' },
     disabled: { type: 'boolean', required: false, description: 'Disable all buttons.' },
   },
