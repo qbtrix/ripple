@@ -201,7 +201,7 @@ test('a handoff chip opens Paw OS with its prompt like typed text, marked as suc
 		]
 	});
 	const chip = view.getByRole('button', { name: 'Book a table step by step' });
-	expect(document.getElementById(chip.getAttribute('aria-describedby')!)?.textContent).toBe('Opens in Paw OS, free early-access credits');
+	expect(document.getElementById(chip.getAttribute('aria-describedby')!)?.textContent).toBe('Opens in Paw OS');
 	expect(chip.getAttribute('title')).toContain('Opens in Paw OS');
 	expect(chip.querySelector('.chip-out')).toBeTruthy();
 	const plain = view.getByRole('button', { name: 'Split the bill' });
@@ -275,7 +275,7 @@ test('typed text opens Paw OS with the prompt in the fragment, never the Paw Bar
 	expect(url.search).not.toContain('habit');
 	expect(sent).toEqual([]);
 	expect(view.getByText('Build me a habit tracker & more?')).toBeTruthy();
-	expect(view.getByText(/Opened in Paw OS\. Sign in to get your free early-access credits and your Ripple agent picks this up\./)).toBeTruthy();
+	expect(view.getByText(/Opened in Paw OS\. Sign in and your Ripple agent picks this up\./)).toBeTruthy();
 	const again = view.getByRole('link', { name: 'Open it again' });
 	expect(again.getAttribute('target')).toBe('_blank');
 	expect(again.classList.contains('prominent')).toBe(false);

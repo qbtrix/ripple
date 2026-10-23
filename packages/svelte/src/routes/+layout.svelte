@@ -7,10 +7,10 @@
     where every item is an icon with an aria-label and a tooltip and the
     current one is PE's liquid-glass pill carrying its icon and label; on the
     right the docs search as a ⌘K chip, the GitHub, sound and theme icon buttons, and a
-    blue "Get early access" pill in PlanBadge's paid style. The strip is PE's frosted
+    blue "Add to your agent" pill in PlanBadge's paid style. The strip is PE's frosted
     shade over the warm ground with its faint cool tint, mirrored in light.
     Below 640px the nav sits between the mark and the tools, GitHub and the
-    early-access pill leave the bar (the footer carries both), and on small phones a long
+    agent pill leave the bar (the footer carries both), and on small phones a long
     active label (Design system) shows its short form so 375px never scrolls sideways.
     Below 400px every tab is icon-only, the active one included, so five tabs
     and the tools fit a 320px phone.
@@ -19,10 +19,10 @@
     fonts come from ./site.css. Theme: static/theme-init.js sets `dark` on
     <html> before paint; this reads and flips that class and remembers it.
     Sound: the speaker button flips $lib/sound's on/off flag (widget cues).
-    Labs and dev routes stay reachable by URL, unlinked. The pill says "Get
-    early access" (its accessible name names Paw OS and the free credits), and
-    the footer links "Paw OS early access"; both open EARLY_ACCESS_URL, the
-    build's PUBLIC_PAWOS_URL with ?ref=ripple. It points the model-viewer library at the
+    Labs and dev routes stay reachable by URL, unlinked. The pill says "Add
+    to your agent" and opens the coding-agents guide (the ripple skill); the
+    footer's quiet "Paw OS" link opens EARLY_ACCESS_URL, the build's
+    PUBLIC_PAWOS_URL with ?ref=ripple. It points the model-viewer library at the
     site's own /models/ so 3D cards load same-origin, and defaults maps to OSM
     tiles (the CSP also admits CARTO's, for specs that pick a carto preset).
 -->
@@ -150,7 +150,7 @@
 				>
 					{#if dark}<Sun size={14} strokeWidth={2} aria-hidden="true" />{:else}<Moon size={14} strokeWidth={2} aria-hidden="true" />{/if}
 				</button>
-				<a href={EARLY_ACCESS_URL} class="try wide" aria-label="Get early access to Paw OS, free credits included">Get early access</a>
+				<a href="/docs/guides/coding-agents" class="try wide" aria-label="Add Ripple to your coding agent">Add to your agent</a>
 			</div>
 		</div>
 	</header>
@@ -160,7 +160,7 @@
 	<footer class="foot">
 		<p>
 			<span>MIT</span><a href={RELEASES_URL}>Releases</a><a href={GITHUB_URL}>GitHub</a><a href="/playground">Playground</a><a href={EARLY_ACCESS_URL}
-				>Paw OS early access</a
+				>Paw OS</a
 			>
 		</p>
 	</footer>

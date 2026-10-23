@@ -73,7 +73,9 @@ describe.each([...scenarios, ...figureRuns, ...businessScenarios].map((s) => [s.
 			(controls.includes(n.type ?? '') && (n.type === 'button' || 'bind' in n)) ||
 			(DATA_WIDGETS.includes(n.type ?? '') && 'bind' in n) ||
 			// A 3D model's labels are buttons that open their notes.
-			(n.type === 'model-viewer' && Array.isArray(n.props?.annotations) && n.props.annotations.length > 0);
+			(n.type === 'model-viewer' && Array.isArray(n.props?.annotations) && n.props.annotations.length > 0) ||
+			// A KPI dashboard's attention list turns two or more categories into filter pills.
+			(n.type === 'exec-dashboard' && Array.isArray(n.props?.activity) && new Set(n.props.activity.map((a: { category?: string }) => a.category).filter(Boolean)).size > 1);
 		expect(specHas(finalSpec, interactive)).toBe(true);
 	});
 
@@ -327,26 +329,22 @@ describe('tokyo-trip (itinerary)', () => {
 	});
 });
 
-describe('sales-dashboard (exec-dashboard rows)', () => {
-	// 15 orders, $1,498.78 (avg $99.92). North is 3 orders: $42.50 + $104.75 +
-	// $88.20 = $235.45 (avg $78.48). The chart redraw is checked in the browser
-	// (jsdom has no canvas); here the filter must move the KPIs and the table.
-	const kpi = (container: HTMLElement, label: string) =>
-		[...container.querySelectorAll('[data-slot="kpis"] > div')].find((el) => el.textContent?.includes(label))?.textContent ?? '';
-
-	test('after streaming, the region filter narrows the KPIs and the table and writes the filter to state', async () => {
-		const { container, onStateChange } = await mountStreamed(scenario('sales-dashboard'));
-		expect(kpi(container, 'Revenue')).toContain('$1,499');
-		expect(kpi(container, 'Orders')).toContain('15');
-		expect(slot(container, 'totals')).toContain('$1,498.78'); // the table pages at 10 rows
-
-		await fireEvent.click(within(container).getByRole('button', { name: 'North' }));
-		await waitFor(() => expect(kpi(container, 'Revenue')).toContain('$235'));
-		expect(kpi(container, 'Avg order')).toContain('$78');
-		expect(container.querySelectorAll('[data-slot="table"] tbody tr')).toHaveLength(3);
-		expect(slot(container, 'totals')).toContain('Total (North)');
-		expect(slot(container, 'totals')).toContain('$235.45');
-		expect(lastWrite(onStateChange, 'salesFilter')).toEqual({ region: 'North' });
+describe('sales-dashboard (exec-dashboard KPI mode)', () => {
+	// The landing's opener: Q4 to date for a fictional company. Four KPI tiles,
+	// a weekly chart, two breakdowns, five attention items and five deals. The
+	// attention list's category pills are the card's control: Pipeline keeps 3.
+	test('after streaming, the KPIs and deals render and a category pill narrows the attention list', async () => {
+		const { container } = await mountStreamed(scenario('sales-dashboard'));
+		const ui = within(container);
+		const tiles = [...container.querySelectorAll('.rdash-kpi')].map((el) => el.textContent ?? '');
+		expect(tiles).toHaveLength(4);
+		expect(tiles[0]).toContain('$3.1M');
+		expect(tiles[2]).toContain('19 mo');
+		expect(ui.getAllByText('Halvorsen Freight').length).toBeGreaterThan(0);
+		const items = () => container.querySelectorAll('.rdash-activity-item').length;
+		expect(items()).toBe(5);
+		await fireEvent.click(ui.getByRole('tab', { name: 'Pipeline' }));
+		await waitFor(() => expect(items()).toBe(3));
 	});
 });
 

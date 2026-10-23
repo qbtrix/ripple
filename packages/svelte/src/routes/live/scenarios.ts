@@ -72,7 +72,7 @@ export const scenarios: Scenario[] = [
 	{ id: 'bill-splitter', title: 'Split the bill', category: 'Everyday', fixture: billSplitter, group: 'Do' },
 	{ id: 'savings-calculator', title: 'Watch savings grow', category: 'Money', fixture: savingsCalculator, group: 'Learn' },
 	{ id: 'tokyo-trip', title: 'Plan 5 days in Tokyo', category: 'Travel', fixture: tokyoTrip, group: 'Do' },
-	{ id: 'sales-dashboard', title: 'Quarterly sales', category: 'Work', fixture: salesDashboard, group: 'Track' },
+	{ id: 'sales-dashboard', title: 'Executive dashboard', category: 'Work', fixture: salesDashboard, group: 'Track' },
 	{ id: 'flashcards', title: 'Spanish flashcards', category: 'Learning', fixture: flashcards, group: 'Learn' },
 	{ id: 'hiit-workout', title: '20-minute HIIT', category: 'Fitness', fixture: hiitWorkout, group: 'Track' },
 	{ id: 'meal-plan', title: 'High-protein week', category: 'Food', fixture: mealPlan, group: 'Track' },
@@ -185,7 +185,7 @@ export const suggestionGroups: { label: string; chips: GroupChip[] }[] = [
 		chips: [
 			['health-summary', 'heart'],
 			['expense-breakdown', 'chart-pie'],
-			['sales-dashboard', 'trending-up', 'Sales dashboard'],
+			['sales-dashboard', 'trending-up'],
 			['create-invoice', 'receipt'],
 			['financial-summary', 'dollar-sign'],
 			['review-nda', 'file-search'],

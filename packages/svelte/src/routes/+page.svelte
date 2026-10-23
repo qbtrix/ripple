@@ -11,7 +11,7 @@
     sections below. Under the composer a one-line strip: the install command
     with a copy button (it selects the command when the clipboard is blocked),
     Docs and Gallery, then the Paw OS hint while it fits. The chat opens on one
-    finished recorded exchange (the bill splitter, seeded synchronously with a
+    finished recorded exchange (the executive dashboard, seeded synchronously with a
     fixed intro, so it is in the prerendered HTML and hydrates without a
     re-render). The chips are the grouped suggestion panel (live/scenarios.ts
     suggestionGroups), collapsed to one row until expanded; after the visitor's
@@ -19,7 +19,7 @@
     card gets that height (foldChips). Live, every chip
     shows (the store ones only with a store). In replay mode every chip shows
     too: one with a recorded or hand-written answer replays it, any other opens
-    Paw OS with its prompt like typed text (marked "Opens in Paw OS, free early-access credits"), and the
+    Paw OS with its prompt like typed text (marked "Opens in Paw OS"), and the
     replayable chips sort first, so the collapsed row leads with them and
     groups with none sink to the end. The chat calls the Paw Bar API only when
     PUBLIC_PAWBAR_LIVE=1 with PUBLIC_PAWBAR_ENDPOINT / _WIDGET_ID / _SITE_KEY
@@ -30,7 +30,7 @@
     Below: how it works (spec, engine, UI, with a live card), the streaming code
     sample, the blue band (install command and the coding-agent setup prompt
     from lib/site/setup-prompt.ts, falling back to its Install docs section),
-    the recorded runs linking /live, and the bring-your-own-key closer.
+    the recorded runs linking /live, and a closer that points to the ripple skill (and, quietly, Paw OS).
 
   Creative Direction Declaration
     Scene: a developer at night, comparing generative UI tools with a terminal
@@ -94,9 +94,9 @@
 	// Live cards also post their audit counts (session.auditCard).
 	const live = LIVE ? pawbarTransport({ endpoint: ENDPOINT, widgetId: WIDGET_ID, siteKey: SITE_KEY }) : null;
 	const session = live ? new ChatSession(live.send, recorded('Here is a saved answer that fits.'), store, live.audit) : new ChatSession(recorded());
-	// The seeded opener answers no request, so its intro says what it is.
-	const bill = chatScenarios.find((s) => s.id === 'bill-splitter');
-	if (bill) session.seed(bill.fixture.prompt, recordedExchange(bill, SEED_INTRO));
+	// The seeded opener (the executive dashboard) answers no request, so its intro says what it is.
+	const opener = chatScenarios.find((s) => s.id === 'sales-dashboard');
+	if (opener) session.seed(opener.fixture.prompt, recordedExchange(opener, SEED_INTRO));
 	// The suggestion panel's chips, grouped and ordered by suggestionGroups. Live:
 	// the store chips (with a store), the chat-only prompts and the recordings.
 	// Replay: every chip, store ones included; those with no answer here hand
@@ -210,7 +210,7 @@
 					<h1 id="hero-title">Ask for a tool. <span>Ripple builds it while the model is still typing.</span></h1>
 					<p class="lede">
 						Ripple is the open-source generative UI engine. A model writes a small JSON spec, and Ripple turns it into a
-						working interface as the spec streams in. {TYPED_LOCAL ? 'Ask for something below.' : 'Tap a suggestion below; a typed request opens in Paw OS.'}
+						working interface as the spec streams in. {TYPED_LOCAL ? 'Ask for something below.' : 'Tap a suggestion below to watch one build, or try it with your own agent.'}
 					</p>
 				</header>
 			{/snippet}
@@ -292,10 +292,11 @@
 	</section>
 
 	<section class="closer" aria-labelledby="closer-title">
-		<h2 id="closer-title">Paw OS is in early access</h2>
-		<p>Sign up and get free credits to keep building.</p>
+		<h2 id="closer-title">Try it with your own agent</h2>
+		<p>Add the Ripple skill with <code>npx skills add qbtrix/ripple-iui --skill ripple</code>, then ask your agent for a card. Or try it in Paw OS.</p>
 		<div class="closer-actions">
-			<a class="btn primary" href={EARLY_ACCESS_URL}>Get early access</a>
+			<a class="btn primary" href="/docs/guides/coding-agents">Set up your agent</a>
+			<a class="link" href={EARLY_ACCESS_URL}>Open Paw OS</a>
 			<a class="link" href={GITHUB_URL}>Read the source</a>
 		</div>
 	</section>
@@ -366,6 +367,16 @@
 	.app :global(.chat) {
 		flex: 1;
 		min-height: 0;
+	}
+	/* Desktop: the chat's scrollbar moves out into the page gutter with 16px
+	   of air before it, so bubbles and cards never touch it and the column
+	   keeps its width. Phones use overlay scrollbars and keep the default. */
+	@media (min-width: 768px) {
+		.app :global(.scroller) {
+			scrollbar-gutter: stable;
+			margin-right: -16px;
+			padding-right: 16px;
+		}
 	}
 	/* PE's room header: 44px, 6px 12px, a bottom hairline; name 13px/500,
 	   topic 12px muted. Full bleed. */
@@ -765,6 +776,11 @@
 		margin: 14px 0 26px;
 		font-size: 17px;
 		color: var(--site-soft);
+	}
+	.closer p code {
+		font-family: var(--font-mono);
+		font-size: 0.85em;
+		overflow-wrap: anywhere;
 	}
 	.closer-actions {
 		display: flex;
