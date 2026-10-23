@@ -1,485 +1,825 @@
 {
  "id": "sales-dashboard",
- "title": "Quarterly sales",
- "prompt": "Show me last quarter's sales for a small online shop: the headline numbers, revenue by month on a chart, and a table of orders I can filter by region, with totals for the region I pick.",
- "model": "sonnet",
- "recordedAt": "2026-10-09T06:44:07.483Z",
+ "title": "Executive dashboard",
+ "prompt": "Give me an executive dashboard for this quarter so far: revenue, margin, cash runway, pipeline, and what needs my attention.",
+ "model": "opus",
+ "recordedAt": "2026-10-23T18:07:16.053Z",
  "chunks": [
   {
    "t": 0,
-   "text": "{\"version\":\""
+   "text": "{\"version\":\"1.0"
   },
   {
-   "t": 349,
-   "text": "1.0\",\"state\":{\""
+   "t": 31,
+   "text": "\",\"state\":{},\"ui"
   },
   {
-   "t": 349,
-   "text": "salesFilter\":{}"
+   "t": 145,
+   "text": "\":{\"type\":\"exec"
   },
   {
-   "t": 350,
-   "text": "},\"ui\":{\"type"
+   "t": 145,
+   "text": "-dashboard\",\"props\":"
   },
   {
-   "t": 350,
-   "text": "\":\"exec-dashbo"
+   "t": 177,
+   "text": "{\"title\":\"Q4"
   },
   {
-   "t": 350,
-   "text": "ard\",\"b"
+   "t": 232,
+   "text": " 2026 to date\",\"sub"
   },
   {
-   "t": 351,
-   "text": "ind\":\"salesFilter"
+   "t": 277,
+   "text": "title\":\"Oct"
   },
   {
-   "t": 351,
-   "text": "\",\"props\":{\"title\":\""
+   "t": 329,
+   "text": " 1 to Oct "
   },
   {
-   "t": 352,
-   "text": "Q3 s"
+   "t": 376,
+   "text": "23 · day 23 of"
   },
   {
-   "t": 352,
-   "text": "ales\",\"subtitle\":\""
+   "t": 428,
+   "text": " 92 · sample data\",\""
   },
   {
-   "t": 352,
-   "text": "Online orders, July to September"
+   "t": 546,
+   "text": "verdict\":{\"text\":"
   },
   {
-   "t": 374,
-   "text": " 2026\",\"verdict\":"
+   "t": 546,
+   "text": "\"Revenue is ah"
   },
   {
-   "t": 412,
-   "text": "{\"text\":\"September"
+   "t": 578,
+   "text": "ead of pace at $3."
   },
   {
-   "t": 748,
-   "text": " was the str"
+   "t": 741,
+   "text": "1M (32% of target),"
   },
   {
-   "t": 748,
-   "text": "ongest month; East leads on"
+   "t": 741,
+   "text": " but margin is 1.6"
   },
   {
-   "t": 748,
-   "text": " revenue.\",\"status\":\""
+   "t": 741,
+   "text": " pts under goal and two"
   },
   {
-   "t": 748,
-   "text": "good\"},\"currency\":\""
+   "t": 778,
+   "text": " large deals slipped.\",\""
   },
   {
-   "t": 748,
-   "text": "USD\",\"x\":\""
+   "t": 879,
+   "text": "status\":\"warn\"},\""
   },
   {
-   "t": 748,
-   "text": "date\",\"split\":\"channel\",\""
+   "t": 879,
+   "text": "showRefresh\":false,"
   },
   {
-   "t": 749,
-   "text": "measures\":[{\"key\":"
+   "t": 935,
+   "text": "\"kpis\":[{\""
   },
   {
-   "t": 749,
-   "text": "\"amount\",\"label\":\""
+   "t": 1335,
+   "text": "label\":\"Revenue Q"
   },
   {
-   "t": 749,
-   "text": "Revenue\",\"format\":\"money"
+   "t": 1335,
+   "text": "TD\",\"value\":\"$3"
   },
   {
-   "t": 750,
-   "text": "\"},{\"label\":\""
+   "t": 1372,
+   "text": ".1M\",\"delta\":\""
   },
   {
-   "t": 775,
-   "text": "Orders\",\"agg\":\"count"
+   "t": 1372,
+   "text": "+12%\",\"trend\":\""
   },
   {
-   "t": 808,
-   "text": "\"},{\"key\":\"am"
+   "t": 1372,
+   "text": "up\",\"compareLabel\":"
   },
   {
-   "t": 1102,
-   "text": "ount\",\"label\":\"Avg"
+   "t": 1373,
+   "text": "\"vs Q3 day"
   },
   {
-   "t": 1102,
-   "text": " order\",\"format\":\"money\",\""
+   "t": 1373,
+   "text": " 23 · p"
   },
   {
-   "t": 1102,
-   "text": "agg\":\"avg\"},"
+   "t": 1373,
+   "text": "ace 25%\",\"status\":\""
   },
   {
-   "t": 1103,
-   "text": "{\"key\":\"items\",\"label"
+   "t": 1373,
+   "text": "success\",\"target\":\"$9."
   },
   {
-   "t": 1103,
-   "text": "\":\"Items sold\"}"
+   "t": 1373,
+   "text": "6M\",\"progress\":32,"
   },
   {
-   "t": 1104,
-   "text": "],\"dimensions\":["
+   "t": 1373,
+   "text": "\"sparkline\":[0"
   },
   {
-   "t": 1104,
-   "text": "{\"key\":\"region\",\"label"
+   "t": 1373,
+   "text": ".52,1.43,2"
   },
   {
-   "t": 1104,
-   "text": "\":\"Region\"}],\""
+   "t": 1374,
+   "text": ".41,3.1]},"
   },
   {
-   "t": 1111,
-   "text": "table\":{\"title\":\""
+   "t": 1374,
+   "text": "{\"label\":\"Gross"
   },
   {
-   "t": 1142,
-   "text": "Orders\"},\"rows\":"
+   "t": 1374,
+   "text": " margin\",\"value\":\"61."
   },
   {
-   "t": 1179,
-   "text": "[{\"id\":\"1"
+   "t": 1375,
+   "text": "4%\",\"delta\":\"-"
   },
   {
-   "t": 1208,
-   "text": "041\",\"date\":\"2026-"
+   "t": 1375,
+   "text": "1.2 pts\",\"tr"
   },
   {
-   "t": 1446,
-   "text": "07-01\",\"region\":\"West"
+   "t": 1376,
+   "text": "end\":\"down\",\"compareL"
   },
   {
-   "t": 1446,
-   "text": "\",\"channel\":\"Market"
+   "t": 1376,
+   "text": "abel\":\"vs Q"
   },
   {
-   "t": 1447,
-   "text": "place\",\"items\":3,\""
+   "t": 1376,
+   "text": "3 · goal 63."
   },
   {
-   "t": 1447,
-   "text": "amount\":133.38},{"
+   "t": 1392,
+   "text": "0%\",\"status\":\"warning"
   },
   {
-   "t": 1447,
-   "text": "\"id\":\"1046\",\"date"
+   "t": 1439,
+   "text": "\",\"target\":\"63.0%"
   },
   {
-   "t": 1447,
-   "text": "\":\"2026-07-09"
+   "t": 1489,
+   "text": "\",\"progress\":97,\"s"
   },
   {
-   "t": 1447,
-   "text": "\",\"region\":\"East\",\"channel"
+   "t": 1539,
+   "text": "parkline\":[62.6"
   },
   {
-   "t": 1492,
-   "text": "\":\"Web\",\"items\":2"
+   "t": 1590,
+   "text": ",62.1,61.8"
   },
   {
-   "t": 1509,
-   "text": ",\"amount\":98.4"
+   "t": 1640,
+   "text": ",61.4]},{\""
   },
   {
-   "t": 1541,
-   "text": "},{\"id\":\"1050"
+   "t": 1690,
+   "text": "label\":\"Cash runway"
   },
   {
-   "t": 1577,
-   "text": "\",\"date\":\"2026-07"
+   "t": 1739,
+   "text": "\",\"value\":\"19 mo"
   },
   {
-   "t": 1607,
-   "text": "-18\",\"region\":\"North\",\""
-  },
-  {
-   "t": 1800,
-   "text": "channel\":\"Social\",\"items"
-  },
-  {
-   "t": 1800,
-   "text": "\":1,\"amount\":42"
-  },
-  {
-   "t": 1800,
-   "text": ".5},{\"id\":\""
-  },
-  {
-   "t": 1800,
-   "text": "1055\",\"date\":\"2026"
-  },
-  {
-   "t": 1801,
-   "text": "-07-27\",\"region\":\""
-  },
-  {
-   "t": 1808,
-   "text": "South\",\"channel\":\"Web"
+   "t": 1789,
+   "text": "\",\"delta\":\"-1 "
   },
   {
    "t": 1841,
-   "text": "\",\"items\":2,\"amount"
+   "text": "mo\",\"trend\":\"down"
   },
   {
-   "t": 1874,
-   "text": "\":87.1},{\"id"
+   "t": 1890,
+   "text": "\",\"compareLabel\":\""
   },
   {
-   "t": 1908,
-   "text": "\":\"1058"
+   "t": 1940,
+   "text": "$18.4M cash ·"
   },
   {
-   "t": 1941,
-   "text": "\",\"date\":\"2026-07"
+   "t": 1990,
+   "text": " $970K burn/mo"
   },
   {
-   "t": 1976,
-   "text": "-30\",\"region\":\"East\",\""
+   "t": 2176,
+   "text": "\",\"status\":\"normal\",\"s"
   },
   {
-   "t": 2009,
-   "text": "channel\":\"Web"
+   "t": 2176,
+   "text": "parkline\":[21,20"
   },
   {
-   "t": 2145,
-   "text": "\",\"items\":1"
+   "t": 2182,
+   "text": ",20,19]},{\""
   },
   {
-   "t": 2145,
-   "text": ",\"amount\":54"
+   "t": 2193,
+   "text": "label\":\"Open pipe"
   },
   {
-   "t": 2145,
-   "text": ".2},{\"id\":\""
+   "t": 2240,
+   "text": "line\",\"value\":\"$14."
   },
   {
-   "t": 2145,
-   "text": "1061\",\"date\":\"2026"
+   "t": 2317,
+   "text": "2M\",\"delta\":\"+"
   },
   {
-   "t": 2175,
-   "text": "-08-04\",\"region\":\""
+   "t": 2343,
+   "text": "8%\",\"trend\":\"up"
   },
   {
-   "t": 2209,
-   "text": "East\",\"channel\":\"Web"
+   "t": 2392,
+   "text": "\",\"compareLabel\":\""
   },
   {
-   "t": 2243,
-   "text": "\",\"items\":3,\"amount"
+   "t": 2441,
+   "text": "2.2x coverage v"
   },
   {
-   "t": 2275,
-   "text": "\":151.2},{\"id"
-  },
-  {
-   "t": 2308,
-   "text": "\":\"1066\",\"date\":\""
-  },
-  {
-   "t": 2345,
-   "text": "2026-08-12\",\"region"
-  },
-  {
-   "t": 2375,
-   "text": "\":\"West\",\"channel\":\""
-  },
-  {
-   "t": 2409,
-   "text": "Social\",\"items\":1,\""
-  },
-  {
-   "t": 2498,
-   "text": "amount\":38.9},{"
-  },
-  {
-   "t": 2498,
-   "text": "\"id\":\"1070\",\"date"
-  },
-  {
-   "t": 2508,
-   "text": "\":\"2026-08-19"
+   "t": 2495,
+   "text": "s 3.0x goal"
   },
   {
    "t": 2544,
-   "text": "\",\"region\":\"South\",\"channel"
+   "text": "\",\"status\":\"warning\",\"target"
   },
   {
-   "t": 2576,
-   "text": "\":\"Marketplace\",\""
+   "t": 2595,
+   "text": "\":\"3.0x\",\"prog"
   },
   {
-   "t": 2609,
-   "text": "items\":2,\"amount\":"
+   "t": 2640,
+   "text": "ress\":73,\"spark"
   },
   {
-   "t": 2641,
-   "text": "76},{\"id\":\"1"
+   "t": 2694,
+   "text": "line\":[13.1,13"
   },
   {
-   "t": 2678,
-   "text": "074\",\"date\":\"2026-"
+   "t": 2742,
+   "text": ".6,14.4,14"
   },
   {
-   "t": 2708,
-   "text": "08-28\",\"region\":\"North"
+   "t": 2794,
+   "text": ".2]}],\"prima"
   },
   {
-   "t": 2743,
-   "text": "\",\"channel\":\"Web\",\""
+   "t": 2841,
+   "text": "ryChart\":{\"title\":"
   },
   {
-   "t": 2775,
-   "text": "items\":2,\"amount\":"
+   "t": 2891,
+   "text": "\"Weekly revenue"
   },
   {
-   "t": 2809,
-   "text": "104.75},{\"id\":"
+   "t": 2941,
+   "text": " vs target pace ($M"
   },
   {
-   "t": 2947,
-   "text": "\"1081\",\"date\":\"2"
-  },
-  {
-   "t": 2947,
-   "text": "026-09-03\",\"region\":"
-  },
-  {
-   "t": 2947,
-   "text": "\"East\",\"channel\":\""
-  },
-  {
-   "t": 2947,
-   "text": "Web\",\"items\":4,\"am"
-  },
-  {
-   "t": 2977,
-   "text": "ount\":212.6},{\""
-  },
-  {
-   "t": 3009,
-   "text": "id\":\"1086\",\"date\":"
+   "t": 2991,
+   "text": ")\",\"type\":\"bar\",\""
   },
   {
    "t": 3043,
-   "text": "\"2026-09-11\",\""
+   "text": "data\":[{\"label\":\""
   },
   {
-   "t": 3075,
-   "text": "region\":\"West\",\"channel\":"
-  },
-  {
-   "t": 3108,
-   "text": "\"Web\",\"items\":2,"
+   "t": 3095,
+   "text": "Oct 1–4\",\""
   },
   {
    "t": 3142,
-   "text": "\"amount\":95.3},"
+   "text": "series\":{\"Actual\":"
   },
   {
-   "t": 3174,
-   "text": "{\"id\":\"1090\",\""
+   "t": 3192,
+   "text": "0.52,\"Target p"
   },
   {
-   "t": 3208,
-   "text": "date\":\"2026-09-"
+   "t": 3242,
+   "text": "ace\":0.42}},{"
   },
   {
-   "t": 3295,
-   "text": "17\",\"region\":\"East\",\"chann"
-  },
-  {
-   "t": 3295,
-   "text": "el\":\"Social\",\"items\":"
-  },
-  {
-   "t": 3308,
-   "text": "1,\"amount\":49},"
+   "t": 3291,
+   "text": "\"label\":\"Oct "
   },
   {
    "t": 3341,
-   "text": "{\"id\":\"1095\",\""
+   "text": "5–11\",\"series\":{\""
   },
   {
-   "t": 3377,
-   "text": "date\":\"2026-09-"
+   "t": 3396,
+   "text": "Actual\":0.91,"
   },
   {
-   "t": 3408,
-   "text": "22\",\"region\":\"South\",\"chann"
+   "t": 3447,
+   "text": "\"Target pace\":0."
   },
   {
-   "t": 3442,
-   "text": "el\":\"Web\",\"items\":"
+   "t": 3493,
+   "text": "73}},{\"label\":\""
   },
   {
-   "t": 3476,
-   "text": "3,\"amount\":139."
+   "t": 3543,
+   "text": "Oct 12–18\",\""
   },
   {
-   "t": 3508,
-   "text": "45},{\"id\":\"1"
+   "t": 3595,
+   "text": "series\":{\"Actual\":"
   },
   {
-   "t": 3542,
-   "text": "099\",\"date\":\"2026-"
+   "t": 3651,
+   "text": "0.98,\"Target p"
   },
   {
-   "t": 3575,
-   "text": "09-29\",\"region\":\"North"
+   "t": 3699,
+   "text": "ace\":0.73}},{"
   },
   {
-   "t": 3608,
-   "text": "\",\"channel\":\"Market"
+   "t": 3744,
+   "text": "\"label\":\"Oct "
   },
   {
-   "t": 4008,
-   "text": "place\",\"items\":2,\""
+   "t": 3793,
+   "text": "19–23\",\"series\":{\""
   },
   {
-   "t": 4008,
-   "text": "amount\":88.2},"
+   "t": 3842,
+   "text": "Actual\":0.69,"
   },
   {
-   "t": 4008,
-   "text": "{\"id\":\"1102"
+   "t": 3894,
+   "text": "\"Target pace\":0."
   },
   {
-   "t": 4008,
-   "text": "\",\"date\":\"2026-09"
+   "t": 3941,
+   "text": "52}}]},\"charts"
   },
   {
-   "t": 4008,
-   "text": "-30\",\"region\":\"West"
+   "t": 3991,
+   "text": "\":[{\"title\":\""
   },
   {
-   "t": 4009,
-   "text": "\",\"channel\":\"Web\",\""
+   "t": 4042,
+   "text": "Pipeline by stage "
   },
   {
-   "t": 4009,
-   "text": "items\":3"
+   "t": 4092,
+   "text": "($M)\",\"type\":\"don"
   },
   {
-   "t": 4009,
-   "text": ",\"amount\":127"
+   "t": 4142,
+   "text": "ut\",\"data\":[{\"label"
   },
   {
-   "t": 4009,
-   "text": ".8"
+   "t": 4192,
+   "text": "\":\"Discovery\",\"value"
   },
   {
-   "t": 4009,
-   "text": "}]}}}"
+   "t": 4243,
+   "text": "\":4.8},{\"label"
+  },
+  {
+   "t": 4294,
+   "text": "\":\"Proposal\",\"value"
+  },
+  {
+   "t": 4341,
+   "text": "\":5.1},{\"label"
+  },
+  {
+   "t": 4398,
+   "text": "\":\"Negotiation\",\""
+  },
+  {
+   "t": 4445,
+   "text": "value\":3},{\"label\":"
+  },
+  {
+   "t": 4493,
+   "text": "\"Commit\",\"value\":1"
+  },
+  {
+   "t": 4543,
+   "text": ".3}]},{\"title"
+  },
+  {
+   "t": 4592,
+   "text": "\":\"Revenue QT"
+  },
+  {
+   "t": 4643,
+   "text": "D by segment ($M)"
+  },
+  {
+   "t": 4692,
+   "text": "\",\"type\":\"bar\",\"data"
+  },
+  {
+   "t": 4744,
+   "text": "\":[{\"label\":\""
+  },
+  {
+   "t": 4794,
+   "text": "Enterprise\",\"value\":1"
+  },
+  {
+   "t": 4844,
+   "text": ".86},{\"label\":\""
+  },
+  {
+   "t": 4893,
+   "text": "Mid-market\",\"value\":"
+  },
+  {
+   "t": 4943,
+   "text": "0.87},{\"label\":"
+  },
+  {
+   "t": 4993,
+   "text": "\"SMB\",\"value\":0"
+  },
+  {
+   "t": 5043,
+   "text": ".37}]}],\"activ"
+  },
+  {
+   "t": 5091,
+   "text": "ityTitle\":\"Need"
+  },
+  {
+   "t": 5143,
+   "text": "s your attention\",\"activity\":"
+  },
+  {
+   "t": 5198,
+   "text": "[{\"time\":\"O"
+  },
+  {
+   "t": 5255,
+   "text": "ct 23\",\"label\":\""
+  },
+  {
+   "t": 5293,
+   "text": "Halvorsen Freight"
+  },
+  {
+   "t": 5351,
+   "text": " ($1.2M) sl"
+  },
+  {
+   "t": 5392,
+   "text": "ipped from Commit to"
+  },
+  {
+   "t": 5443,
+   "text": " Negotiation: legal w"
+  },
+  {
+   "t": 5495,
+   "text": "ants a revised liability cap"
+  },
+  {
+   "t": 5644,
+   "text": "\",\"actor\":\"Dana"
+  },
+  {
+   "t": 5644,
+   "text": " Ruiz, VP"
+  },
+  {
+   "t": 5644,
+   "text": " Sales\",\"category\":\""
+  },
+  {
+   "t": 5692,
+   "text": "Pipeline\",\"severity\":"
+  },
+  {
+   "t": 5742,
+   "text": "\"destructive\"},{\""
+  },
+  {
+   "t": 5798,
+   "text": "time\":\"Oct 17"
+  },
+  {
+   "t": 5852,
+   "text": "\",\"label\":\"Two senior"
+  },
+  {
+   "t": 5909,
+   "text": " engineering offers await"
+  },
+  {
+   "t": 5942,
+   "text": " your sign-off; adds"
+  },
+  {
+   "t": 5995,
+   "text": " $40K a month to burn"
+  },
+  {
+   "t": 6042,
+   "text": "\",\"actor\":\"Priya"
+  },
+  {
+   "t": 6094,
+   "text": " Nair, CPO\",\""
+  },
+  {
+   "t": 6145,
+   "text": "category\":\"Cash\",\"sever"
+  },
+  {
+   "t": 6194,
+   "text": "ity\":\"warning\"},{"
+  },
+  {
+   "t": 6244,
+   "text": "\"time\":\"Oct "
+  },
+  {
+   "t": 6293,
+   "text": "21\",\"label\":\"Bright"
+  },
+  {
+   "t": 6343,
+   "text": "water Health ($640K"
+  },
+  {
+   "t": 6395,
+   "text": ") pushed its signing to"
+  },
+  {
+   "t": 6442,
+   "text": " the January budget cycle\",\""
+  },
+  {
+   "t": 6495,
+   "text": "actor\":\"Dana"
+  },
+  {
+   "t": 6553,
+   "text": " Ruiz, VP"
+  },
+  {
+   "t": 6596,
+   "text": " Sales\",\"category\":\"P"
+  },
+  {
+   "t": 6645,
+   "text": "ipeline\",\"severity\":\""
+  },
+  {
+   "t": 6698,
+   "text": "warning\"},{\"time\":"
+  },
+  {
+   "t": 6744,
+   "text": "\"Oct 22\",\"label"
+  },
+  {
+   "t": 6793,
+   "text": "\":\"Cloud hos"
+  },
+  {
+   "t": 6843,
+   "text": "ting bill up 18% month"
+  },
+  {
+   "t": 6910,
+   "text": " over month, the main drag on"
+  },
+  {
+   "t": 6952,
+   "text": " gross margin\",\"actor\":"
+  },
+  {
+   "t": 7002,
+   "text": "\"Mateo Iq"
+  },
+  {
+   "t": 7055,
+   "text": "bal, CFO\",\"category"
+  },
+  {
+   "t": 7096,
+   "text": "\":\"Margin\",\"severity"
+  },
+  {
+   "t": 7142,
+   "text": "\":\"warning\"},{\""
+  },
+  {
+   "t": 7195,
+   "text": "time\":\"Oct 20"
+  },
+  {
+   "t": 7243,
+   "text": "\",\"label\":\"Pipe"
+  },
+  {
+   "t": 7303,
+   "text": "line coverage at 2."
+  },
+  {
+   "t": 7367,
+   "text": "2x against a 3x go"
+  },
+  {
+   "t": 7408,
+   "text": "al; 9 new enter"
+  },
+  {
+   "t": 7463,
+   "text": "prise opportunities needed"
+  },
+  {
+   "t": 7496,
+   "text": "\",\"actor\":\"Reven"
+  },
+  {
+   "t": 7543,
+   "text": "ue Ops\",\"category\":\""
+  },
+  {
+   "t": 7595,
+   "text": "Pipeline\",\"severity"
+  },
+  {
+   "t": 7644,
+   "text": "\":\"warning\"}],\""
+  },
+  {
+   "t": 7696,
+   "text": "table\":{\"title\":\""
+  },
+  {
+   "t": 7745,
+   "text": "Largest open deals\",\"columns"
+  },
+  {
+   "t": 7793,
+   "text": "\":[{\"header\":\""
+  },
+  {
+   "t": 7843,
+   "text": "Account\",\"accessorKey\":"
+  },
+  {
+   "t": 7893,
+   "text": "\"account\"},{\"header\":"
+  },
+  {
+   "t": 7944,
+   "text": "\"Stage\",\"accessor"
+  },
+  {
+   "t": 7995,
+   "text": "Key\":\"stage\"},"
+  },
+  {
+   "t": 8052,
+   "text": "{\"header\":\"Value\",\""
+  },
+  {
+   "t": 8140,
+   "text": "accessorKey\":\"value"
+  },
+  {
+   "t": 8143,
+   "text": "\",\"align\":\"right\"},{"
+  },
+  {
+   "t": 8193,
+   "text": "\"header\":\"Close\",\"acc"
+  },
+  {
+   "t": 8244,
+   "text": "essorKey\":\"close\""
+  },
+  {
+   "t": 8295,
+   "text": "}],\"rows\":[{"
+  },
+  {
+   "t": 8347,
+   "text": "\"account\":\"Halvor"
+  },
+  {
+   "t": 8394,
+   "text": "sen Freight\",\"stage"
+  },
+  {
+   "t": 8448,
+   "text": "\":\"Negotiation\",\""
+  },
+  {
+   "t": 8493,
+   "text": "value\":\"$1.2M"
+  },
+  {
+   "t": 8543,
+   "text": "\",\"close\":\"Dec\""
+  },
+  {
+   "t": 8601,
+   "text": "},{\"account\":\"Br"
+  },
+  {
+   "t": 8662,
+   "text": "ightwater Health\",\"stage"
+  },
+  {
+   "t": 8698,
+   "text": "\":\"Proposal\",\"value"
+  },
+  {
+   "t": 8743,
+   "text": "\":\"$640K\",\"close\":"
+  },
+  {
+   "t": 8795,
+   "text": "\"Jan\"},{\""
+  },
+  {
+   "t": 8849,
+   "text": "account\":\"Ostrava"
+  },
+  {
+   "t": 8894,
+   "text": " Metals\",\"stage\":\""
+  },
+  {
+   "t": 8944,
+   "text": "Commit\",\"value\":\"$"
+  },
+  {
+   "t": 9002,
+   "text": "520K\",\"close\":\"N"
+  },
+  {
+   "t": 9052,
+   "text": "ov\"},{\"account\":\""
+  },
+  {
+   "t": 9093,
+   "text": "Linden & Marsh"
+  },
+  {
+   "t": 9148,
+   "text": "\",\"stage\":\"Negot"
+  },
+  {
+   "t": 9198,
+   "text": "iation\",\"value\":\"$480"
+  },
+  {
+   "t": 9247,
+   "text": "K\",\"close\":\"Nov"
+  },
+  {
+   "t": 9298,
+   "text": "\"},{\"account\":\""
+  },
+  {
+   "t": 9343,
+   "text": "Corvid Analytics\",\""
+  },
+  {
+   "t": 9395,
+   "text": "stage\":\"Commit\",\""
+  },
+  {
+   "t": 9444,
+   "text": "value\":\"$390K\",\"close"
+  },
+  {
+   "t": 9499,
+   "text": "\":\"Dec\"}]"
+  },
+  {
+   "t": 9543,
+   "text": "}}}}"
   }
  ]
 }

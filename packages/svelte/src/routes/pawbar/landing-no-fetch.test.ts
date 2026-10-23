@@ -22,7 +22,7 @@ test('a chip tap and a typed prompt never call fetch without the opt-in flag', a
 	const view = render(Landing, { props });
 	const send = () => view.getByRole('button', { name: 'Send' });
 
-	// The prerendered bill splitter exchange is already there.
+	// The prerendered opener exchange is already there.
 	expect(view.getByText('A recorded answer, replayed. Change something in the card.')).toBeTruthy();
 
 	// The panel starts collapsed; savings sits past the first row.

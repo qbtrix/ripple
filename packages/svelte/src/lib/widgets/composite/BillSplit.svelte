@@ -6,6 +6,8 @@
   chips plus a custom percent), one row per person with the share in a
   right-aligned column, and a totals foot whose amounts sit on that same
   right edge. The card shell is the only frame; hairlines separate the rest.
+  Unselected tip chips and the money fields wear the hairline --ripple-border,
+  like every other option chip; --ripple-control-border is for rims only.
   Below 480px of card width each person is a two-line block.
 
   Invariants:
@@ -214,7 +216,7 @@
 	const focusRing = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ripple-ring';
 	const label = 'text-footnote text-ripple-muted-foreground';
 	const box =
-		'flex h-8 min-w-0 items-center gap-1 rounded-md border border-ripple-control-border bg-ripple-input px-2 text-callout text-ripple-input-foreground transition-colors focus-within:outline-2 focus-within:outline-offset-1 focus-within:outline-ripple-ring motion-reduce:transition-none';
+		'flex h-8 min-w-0 items-center gap-1 rounded-md border border-ripple-border bg-ripple-input px-2 text-callout text-ripple-input-foreground transition-colors focus-within:outline-2 focus-within:outline-offset-1 focus-within:outline-ripple-ring motion-reduce:transition-none';
 	const field =
 		'w-full min-w-0 bg-transparent tabular-nums outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none';
 	const chip =
@@ -260,7 +262,7 @@
 								class={[
 									chip,
 									focusRing,
-									on ? 'border-ripple-accent bg-ripple-accent text-ripple-accent-foreground' : 'border-ripple-control-border bg-ripple-surface hover:bg-ripple-muted'
+									on ? 'border-ripple-accent bg-ripple-accent text-ripple-accent-foreground' : 'border-ripple-border bg-ripple-surface hover:bg-ripple-muted'
 								]}
 								aria-pressed={on}
 								onclick={() => current && commit({ ...current, tip_percent: t })}

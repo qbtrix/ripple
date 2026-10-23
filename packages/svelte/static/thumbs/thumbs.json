@@ -191,8 +191,8 @@
 	},
 	{
 		"id": "live-sales-dashboard",
-		"title": "Quarterly sales",
-		"caption": "Show me last quarter's sales for a small online shop: the headline numbers, revenue by month on a chart, and a table of orders I can filter by region, with totals for the region I pick.",
+		"title": "Executive dashboard",
+		"caption": "Give me an executive dashboard for this quarter so far: revenue, margin, cash runway, pipeline, and what needs my attention.",
 		"group": "Track",
 		"tag": "Recorded",
 		"href": "/live?s=sales-dashboard",

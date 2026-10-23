@@ -60,12 +60,12 @@ test('a chip with no recording hands its prompt to Paw OS; a recorded chip still
 	await fireEvent.click(view.getByRole('button', { name: 'Show all suggestions' }));
 
 	const table = view.getByRole('button', { name: 'Book a table step by step' });
-	expect(document.getElementById(table.getAttribute('aria-describedby')!)?.textContent).toBe('Opens in Paw OS, free early-access credits');
+	expect(document.getElementById(table.getAttribute('aria-describedby')!)?.textContent).toBe('Opens in Paw OS');
 	await fireEvent.click(table);
 	expect(open).toHaveBeenCalledOnce();
 	expect(open.mock.calls[0][0]).toBe(pawosHandoffUrl('Book a table for 4 on Saturday evening').url);
 	await waitFor(() => expect(view.getByRole('link', { name: /Continue in Paw OS/ })).toBeTruthy());
-	// No bill splitter fallback stood in for it.
+	// No fallback stood in for it.
 	expect(view.queryByText('No recording matches that yet, so here is the bill splitter.')).toBeNull();
 
 	await fireEvent.click(view.getByRole('button', { name: 'Show all suggestions' }));
@@ -79,7 +79,7 @@ test('a chip with no recording hands its prompt to Paw OS; a recorded chip still
 test('the first send folds the chip row into a toggle beside the composer; the seeded exchange does not', async () => {
 	const view = render(Landing, { props });
 	const rowChips = () => view.container.querySelectorAll('#ripple-suggestions button.chip');
-	// The seeded bill splitter is there and the row is still up.
+	// The seeded opener is there and the row is still up.
 	expect(view.getByText('A recorded answer, replayed. Change something in the card.')).toBeTruthy();
 	expect(rowChips().length).toBeGreaterThan(0);
 	expect(view.getByRole('button', { name: 'Show all suggestions' }).closest('.composer-row')).toBeNull();

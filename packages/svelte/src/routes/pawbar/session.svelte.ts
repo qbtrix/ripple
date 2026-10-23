@@ -61,7 +61,7 @@ import { CHAT_WIDGET_TYPES } from './widget-types.js';
 export const PAWOS_URL = 'https://os.pocketpaw.xyz';
 /** The most of a typed message that rides along to Paw OS, in characters. */
 export const HANDOFF_MAX = 500;
-export const HANDOFF_NOTE = 'Opened in Paw OS. Sign in to get your free early-access credits and your Ripple agent picks this up.';
+export const HANDOFF_NOTE = 'Opened in Paw OS. Sign in and your Ripple agent picks this up.';
 
 const httpsOrLocal = (raw: string): URL | null => {
 	try {
@@ -78,7 +78,7 @@ export function pawosBase(raw = ''): string {
 	return u ? `${u.origin}${u.pathname.replace(/\/+$/, '')}` : PAWOS_URL;
 }
 
-/** The early-access sign-up link (pill, footer, closer, limit notice): the build's PUBLIC_PAWOS_URL, with the ripple ref. */
+/** The Paw OS link (footer, closer, limit notice): the build's PUBLIC_PAWOS_URL, with the ripple ref. */
 export const EARLY_ACCESS_URL = `${pawosBase(import.meta.env.PUBLIC_PAWOS_URL ?? '')}/?ref=ripple`;
 
 /** Typed text stays on the Paw Bar only for a localhost endpoint with PUBLIC_TYPED_LOCAL=1 (mock and dev). */
@@ -796,7 +796,7 @@ export class ChatSession {
 						? {
 								kind: 'limit',
 								text: "You've used today's free demo answers.",
-								link: { href: EARLY_ACCESS_URL, label: 'Keep going in Paw OS with free early-access credits' },
+								link: { href: EARLY_ACCESS_URL, label: 'Keep going in Paw OS' },
 								...(st.replay ? { replay: true } : {})
 							}
 						: { kind: 'busy', text: 'The assistant is busy right now. Try again in a minute.', ...(st.replay ? { replay: true } : {}) };
