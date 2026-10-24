@@ -1,6 +1,10 @@
 <!--
-  Chart.svelte — 10 chart types: bar, line, area, pie, donut,
-  candlestick, sparkline, heatmap, gauge, radar, drawn with echarts.
+  Chart.svelte: 10 chart types (bar, line, area, pie, donut, candlestick,
+  sparkline, heatmap, gauge, radar) drawn with echarts. Colours, axis label fit
+  and the pie legend come from chart-layout.ts: series take the categorical
+  palette in order, one series is one colour, `reference` series draw muted and
+  dashed, the category axis rotates or evenly thins labels (keeping first and
+  last) to the measured width, and pie/donut legends carry value and percent.
   The instance is created once, when ResizeObserver first reports a size, and
   disposed on unmount. Every later prop change (data, type, title, colors,
   tooltip, themeOverrides) redraws it in place through the $effect below.
@@ -15,6 +19,7 @@
 	import { onMount } from 'svelte';
 	import { cn } from '$lib/utils.js';
 	import { safeArray, safeObject } from '$lib/utils/safe-props.js';
+	import { fitAxisLabels, pieLayout, pointColors, seriesColor, sliceColors, sliceLegendText } from './chart-layout.js';
 
 	interface DataPoint {
 		label: string;
@@ -40,6 +45,8 @@
 		bearColor?: string;
 		class?: string;
 		chartSlot?: Snippet<[{ data: DataPoint[]; type: string }]>;
+		/** Series keys drawn as a reference (target, plan, benchmark): muted and dashed. */
+		reference?: string | string[];
 	}
 
 	let {
@@ -54,7 +61,8 @@
 		bullColor = '#22c55e',
 		bearColor = '#ef4444',
 		class: className = '',
-		chartSlot
+		chartSlot,
+		reference
 	}: Props = $props();
 
 	// Defensive: LLM-generated specs may pass non-array `data` (e.g. an
@@ -66,7 +74,9 @@
 		safeObject<Record<string, unknown>>(rawThemeOverrides, { widget: 'chart', key: 'themeOverrides' })
 	);
 
-	const defaultColors = ['#3b82f6', '#ef4444', '#22c55e', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
+	const referenceKeys = $derived(
+		new Set(typeof reference === 'string' ? [reference] : safeArray<string>(reference ?? [], { widget: 'chart', key: 'reference' }))
+	);
 
 	function deepMerge<T extends Record<string, any>>(target: T, ...sources: Record<string, any>[]): T {
 		const result = { ...target };
@@ -92,12 +102,14 @@
 		return result;
 	}
 
-	/** In order: per series when points carry `series`, else per point. */
+	/** The i-th series colour, a `var(--x)` resolved for the canvas. */
 	function getColor(i: number): string {
-		return colors[i] || defaultColors[i % defaultColors.length];
+		return cssColor(seriesColor(i, colors));
 	}
 
 	let chartEl: HTMLDivElement | undefined = $state();
+	/** Measured width: label fit and pie layout are decided against it, so a resize redraws. */
+	let boxWidth = $state(0);
 	let chart: any = $state.raw(null);
 	let destroyed = false;
 	let echartsMod: any = null;
@@ -150,12 +162,42 @@
 		}
 	}
 
+	let measureCtx: CanvasRenderingContext2D | null | undefined;
+	/** Rendered width of an axis label at echarts' default 10px sans-serif. */
+	function measureLabel(text: string): number {
+		if (measureCtx === undefined) {
+			try { measureCtx = document.createElement('canvas').getContext('2d'); } catch { measureCtx = null; }
+			if (measureCtx) measureCtx.font = '10px sans-serif';
+		}
+		return measureCtx ? measureCtx.measureText(text).width : text.length * 6;
+	}
+
+	/** Palette slot per series key: reference series take none, so data series keep the order. */
+	function paletteSlots(keys: string[]): Record<string, number> {
+		const out: Record<string, number> = {};
+		let n = 0;
+		for (const k of keys) out[k] = referenceKeys.has(k) ? -1 : n++;
+		return out;
+	}
+
+	function gradient(color: string) {
+		return { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [
+			{ offset: 0, color: applyAlpha(color, 0.25) },
+			{ offset: 1, color: applyAlpha(color, 0.02) },
+		]}};
+	}
+
+	/** Px a pie/donut grows by when its legend moves below it (phone width). */
+	const pieExtra = $derived(
+		type === 'pie' || type === 'donut' ? pieLayout(boxWidth, height, [...sliceLegendText(data).values()]).extraHeight : 0
+	);
+
 	function buildOption() {
 		const tc = themeColors();
 		const labels = data.map(d => d.label);
 		const values = data.map(d => d.value ?? 0);
-		// One series: a single given colour paints every point (no rainbow bars).
-		const itemColors = data.map((_, i) => (colors.length === 1 && colors[0] ? colors[0] : getColor(i)));
+		// One series is one colour, unless the spec colours points itself.
+		const itemColors = pointColors(data, colors).map(cssColor);
 
 		// Detect multi-series: any point carries a `series` map → one ECharts series per key.
 		const seriesKeys: string[] = (() => {
@@ -190,13 +232,22 @@
 			};
 		}
 
+		// Plot width: the box less the y-axis labels and grid insets.
+		const fit = fitAxisLabels(labels.map(String), boxWidth - 36, 10, measureLabel);
 		const xAxisBase = {
 			type: 'category' as const,
 			data: labels,
-			axisLabel: { color: tc.fgSoft, fontSize: 10 },
+			axisLabel: { color: tc.fgSoft, fontSize: 10, hideOverlap: false, ...(fit ?? {}) },
 			axisLine: { lineStyle: { color: tc.line } },
 			axisTick: { show: false },
 			splitLine: { show: false },
+		};
+
+		// Lines run edge to edge: pin the end labels inside so the last one is not cut ("Ma").
+		const lineXAxis = {
+			...xAxisBase,
+			boundaryGap: false,
+			axisLabel: { ...xAxisBase.axisLabel, ...(fit?.rotate ? {} : { alignMinLabel: 'left', alignMaxLabel: 'right' }) },
 		};
 
 		const yAxisBase = {
@@ -209,11 +260,14 @@
 
 		if (type === 'bar') {
 			if (isMulti) {
-				const series = seriesKeys.map((key, i) => ({
+				const slot = paletteSlots(seriesKeys);
+				const series = seriesKeys.map((key) => ({
 					name: key,
 					type: 'bar',
 					data: data.map(d => d.series?.[key] ?? 0),
-					itemStyle: { borderRadius: [3, 3, 0, 0], color: getColor(i) },
+					itemStyle: referenceKeys.has(key)
+						? { borderRadius: [3, 3, 0, 0], color: applyAlpha(tc.fg, 0.12), borderColor: applyAlpha(tc.fg, 0.45), borderType: 'dashed', borderWidth: 1 }
+						: { borderRadius: [3, 3, 0, 0], color: getColor(slot[key]) },
 					barMaxWidth: 32,
 				}));
 				option = {
@@ -245,20 +299,19 @@
 			}
 		} else if (type === 'line' || type === 'area') {
 			if (isMulti) {
-				const series = seriesKeys.map((key, i) => {
-					const color = getColor(i);
+				const slot = paletteSlots(seriesKeys);
+				const series = seriesKeys.map((key) => {
+					const ref = referenceKeys.has(key);
+					const color = ref ? applyAlpha(tc.fg, 0.5) : getColor(slot[key]);
 					return {
 						name: key,
 						type: 'line',
 						data: data.map(d => d.series?.[key] ?? 0),
-						smooth: true,
-						lineStyle: { color, width: 2 },
+						smooth: !ref,
+						lineStyle: { color, width: ref ? 1.5 : 2, type: ref ? 'dashed' : 'solid' },
 						itemStyle: { color },
-						areaStyle: type === 'area' ? { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [
-							{ offset: 0, color: color + '40' },
-							{ offset: 1, color: color + '05' },
-						]}} : undefined,
-						symbol: 'circle', symbolSize: 4,
+						areaStyle: type === 'area' && !ref ? gradient(color) : undefined,
+						symbol: ref ? 'none' : 'circle', symbolSize: 4,
 					};
 				});
 				option = {
@@ -269,43 +322,46 @@
 						textStyle: { color: tc.fgSoft, fontSize: 11 },
 						icon: 'roundRect', itemWidth: 10, itemHeight: 10,
 					},
-					xAxis: { ...xAxisBase, boundaryGap: false },
+					xAxis: lineXAxis,
 					yAxis: yAxisBase,
 					series,
 				};
 			} else {
 				option = {
 					...base,
-					xAxis: { ...xAxisBase, boundaryGap: false },
+					xAxis: lineXAxis,
 					yAxis: yAxisBase,
 					series: [{
 						type: 'line', data: values,
 						smooth: true,
 						lineStyle: { color: itemColors[0], width: 2 },
 						itemStyle: { color: itemColors[0] },
-						areaStyle: type === 'area' ? { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [
-							{ offset: 0, color: itemColors[0] + '40' },
-							{ offset: 1, color: itemColors[0] + '05' },
-						]}} : undefined,
+						areaStyle: type === 'area' ? gradient(itemColors[0]) : undefined,
 						symbol: 'circle', symbolSize: 4,
 					}],
 				};
 			}
 		} else if (type === 'pie' || type === 'donut') {
+			const slices = sliceColors(data, colors).map(cssColor);
+			const legendText = sliceLegendText(data);
+			const pie = pieLayout(boxWidth, height, [...legendText.values()]);
+			const r = pie.radius;
 			option = {
 				...base,
 				grid: undefined,
 				series: [{
 					type: 'pie',
-					radius: type === 'donut' ? ['40%', '70%'] : ['0%', '70%'],
-					center: ['40%', '50%'],
-					data: data.map((d, i) => ({ name: d.label, value: d.value, itemStyle: { color: getColor(i) } })),
+					radius: type === 'donut' ? [Math.round(r * 0.57), r] : [0, r],
+					center: pie.center,
+					data: data.map((d, i) => ({ name: d.label, value: d.value, itemStyle: { color: slices[i] } })),
 					label: { show: false },
 					emphasis: { label: { show: true, fontSize: 12, color: tc.fg } },
 				}],
 				legend: {
-					orient: 'vertical', right: 0, top: 'center',
-					textStyle: { color: tc.fgSoft, fontSize: 11 },
+					orient: 'vertical',
+					...(pie.legend === 'right' ? { right: 0, top: 'center' } : { left: 'center', top: height }),
+					formatter: (name: string) => legendText.get(name) ?? name,
+					textStyle: { color: tc.fgSoft, fontSize: 11, ...(pie.textWidth ? { width: pie.textWidth, overflow: 'break' } : {}) },
 					icon: 'roundRect', itemWidth: 10, itemHeight: 10,
 				},
 			};
@@ -388,7 +444,7 @@
 				visualMap: {
 					min: minHeat, max: maxHeat,
 					calculable: true, orient: 'horizontal', left: 'center', bottom: 0,
-					inRange: { color: [itemColors[0] + '20', itemColors[0]] },
+					inRange: { color: [applyAlpha(itemColors[0], 0.12), itemColors[0]] },
 					textStyle: { color: tc.fgSoft, fontSize: 10 },
 				},
 				series: [{
@@ -443,7 +499,7 @@
 					type: 'radar',
 					data: [{
 						value: values, name: title || '',
-						areaStyle: { color: itemColors[0] + '30' },
+							areaStyle: { color: applyAlpha(itemColors[0], 0.19) },
 						lineStyle: { color: itemColors[0], width: 2 },
 						itemStyle: { color: itemColors[0] },
 						symbol: 'circle', symbolSize: 4,
@@ -477,6 +533,7 @@
 			for (const entry of entries) {
 				const { width, height: h } = entry.contentRect;
 				if (width > 0 && h > 0) {
+					boxWidth = Math.round(width);
 					if (!chart) {
 						initChart();
 					} else {
@@ -509,6 +566,6 @@
 	{#if chartSlot}
 		{@render chartSlot({ data, type })}
 	{:else}
-		<div bind:this={chartEl} style={safeStyle(`width:100%;height:${height}px`)}></div>
+		<div bind:this={chartEl} style={safeStyle(`width:100%;height:${height + pieExtra}px`)}></div>
 	{/if}
 </div>

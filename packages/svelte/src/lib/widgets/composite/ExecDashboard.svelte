@@ -136,6 +136,8 @@
     data: ChartData;
     height?: number;
     colors?: string[];
+    /** Series keys drawn as a reference (target, plan): muted and dashed. */
+    reference?: string | string[];
   }
 
   interface ActivityItem {
@@ -748,6 +750,7 @@
                 type={primaryChart.type ?? 'line'}
                 height={primaryChart.height ?? 260}
                 colors={primaryChart.colors}
+                reference={primaryChart.reference}
               />
             {:else}
               <div class="rdash-section-empty" style={safeStyle(`height: ${primaryChart.height ?? 260}px;`)}>
@@ -832,7 +835,7 @@
           <div class="rdash-card">
             {#if c.title}<div class="rdash-card-title">{c.title}</div>{/if}
             {#if c._data.length > 0}
-              <Chart data={c._data} type={c.type ?? 'bar'} height={c.height ?? 180} colors={c.colors} />
+              <Chart data={c._data} type={c.type ?? 'bar'} height={c.height ?? 180} colors={c.colors} reference={c.reference} />
             {:else}
               <div class="rdash-section-empty" style={safeStyle(`height: ${c.height ?? 180}px;`)}>
                 <Icon name="bar-chart-3" size={18} />

@@ -9,7 +9,8 @@ export const chartEntry: WidgetManifestEntry = {
     type: { type: '"bar" | "line" | "area" | "pie" | "donut" | "candlestick" | "sparkline" | "heatmap" | "gauge" | "radar"', required: false, description: 'Chart type. Default "bar".' },
     title: { type: 'string', required: false, description: 'Chart title.' },
     height: { type: 'number', required: false, description: 'Height in px. Default 200.' },
-    colors: { type: 'string[]', required: false, description: 'Palette in order: one per series when points carry `series`, else one per point (bar, pie). A single colour paints every point of one series.' },
+    colors: { type: 'string[]', required: false, description: 'Palette in order: one per series when points carry `series`, one per slice on pie/donut. On one series (bar, line) every point wears the first colour; give two or more to colour points individually. Default palette is categorical, no status colours.' },
+    reference: { type: 'string | string[]', required: false, description: 'Series keys that are a reference, not data (a target, plan or benchmark): drawn muted and dashed, outside the palette order.' },
     tooltip: { type: 'boolean', required: false, description: 'Show tooltip on hover. Default true.' },
   },
   example: {
