@@ -23,17 +23,24 @@ export function seriesColor(i: number, colors: readonly string[]): string {
  * One series is one colour. Points differ only when the spec says so: a point's
  * own `color`, or a `colors` list longer than one (read as per point).
  */
-export function pointColors(data: readonly { color?: unknown }[], colors: readonly string[]): string[] {
+export function pointColors(data: readonly object[], colors: readonly string[]): string[] {
 	return data.map((d, i) => {
-		if (typeof d.color === 'string' && d.color) return d.color;
+		const own = ownColor(d);
+		if (own) return own;
 		if (colors.length > 1) return colors[i % colors.length];
 		return seriesColor(0, colors);
 	});
 }
 
 /** Slice colours for pie and donut: every slice is its own category. */
-export function sliceColors(data: readonly { color?: unknown }[], colors: readonly string[]): string[] {
-	return data.map((d, i) => (typeof d.color === 'string' && d.color ? d.color : seriesColor(i, colors)));
+export function sliceColors(data: readonly object[], colors: readonly string[]): string[] {
+	return data.map((d, i) => ownColor(d) ?? seriesColor(i, colors));
+}
+
+/** A point's own `color`, when it names one. */
+function ownColor(d: object): string | undefined {
+	const c = (d as { color?: unknown }).color;
+	return typeof c === 'string' && c ? c : undefined;
 }
 
 export interface AxisLabelFit {
