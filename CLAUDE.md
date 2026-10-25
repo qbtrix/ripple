@@ -10,6 +10,8 @@ A **monorepo** holding Ripple's spec engine and its renderers. An LLM produces a
 |---|---|---|
 | `@ripple-ui/core` | `packages/core/` | The engine: schema, expressions, state, event dispatcher, motion compiler, headless runtime. **Zero framework dependency.** Built with plain `tsc`. |
 | `@ripple-ui/svelte` | `packages/svelte/` | The Svelte 5 renderer: 215 widgets, editor, intents, streaming. Depends on core via `file:../core`. |
+| `@ripple-ui/embed` | `packages/embed/` | The Svelte renderer compiled from `../svelte/src` into one framework-free ES module with per-widget lazy chunks. Build-only plugins in its `vite.config.ts` swap in a lazy registry; the Svelte package itself is unchanged. |
+| `@ripple-ui/react` | `packages/react/` | A thin React `<Ripple>` over the embed. Depends on embed via `file:../embed`. |
 
 **Which package does a change belong in?** If it needs the Svelte compiler
 (a `.svelte` file, a `$state` rune, a `use:` action) or a DOM, it is
@@ -19,6 +21,12 @@ belong there.
 
 Root scripts fan out with bun workspaces: `bun run build|check|test` run
 every package. Per-package: `cd packages/core && bun run test`.
+
+**The embed build reads the widget registry's source.** `packages/svelte/scripts/widget-sources.ts`
+parses `widgets/index.ts` and its barrels to give the embed one lazy chunk per
+widget type. Register widgets in the existing shape (`type: Component,` per
+line, components from `./<dir>/index.js` barrels); `widget-sources.test.ts`
+fails if the parser and the registry disagree.
 
 **Never use `workspace:*` in `packages/svelte`'s dependencies.** It resolves
 here and resolves against nothing for a consumer linking

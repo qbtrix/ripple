@@ -93,9 +93,12 @@ covers the loop and the options.
 |---|---|
 | [`@ripple-ui/core`](packages/core) | The engine: schema, expressions, state, events, motion compilation, and a headless runtime that resolves a spec into a plain tree. **No framework dependency.** |
 | [`@ripple-ui/svelte`](packages/svelte) | The Svelte 5 renderer: 215 widgets, the visual editor, streaming, intents. Depends on core. |
+| [`@ripple-ui/embed`](packages/embed) | The renderer compiled into one ES module for any page: `mount(el, spec)` renders in a shadow root and loads only the widgets the spec uses. Needs no Svelte or Tailwind. |
+| [`@ripple-ui/react`](packages/react) | `<Ripple spec={...} />` for React, a thin wrapper over the embed. |
 
-Most people installing Ripple to build a UI want `@ripple-ui/svelte`; core
-comes with it. Reach for core directly when you want the engine without a
+Most people installing Ripple to build a UI in Svelte want
+`@ripple-ui/svelte`; core comes with it. In React, Vue or a plain page, use
+`@ripple-ui/react` or `@ripple-ui/embed` (see [`examples/`](examples)). Reach for core directly when you want the engine without a
 renderer — resolving specs on a server, testing them without a DOM, or
 building a renderer for another framework.
 

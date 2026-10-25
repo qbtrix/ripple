@@ -8,6 +8,8 @@
 import { describe, expect, it } from 'vitest';
 import corePkg from '../../core/package.json' with { type: 'json' };
 import sveltePkg from '../package.json' with { type: 'json' };
+import embedPkg from '../../embed/package.json' with { type: 'json' };
+import reactPkg from '../../react/package.json' with { type: 'json' };
 import { publishProblems, publishShape, REQUIRED } from '../../../scripts/pack-release.mjs';
 
 type Pkg = { name: string; exports?: unknown; dependencies?: Record<string, string> };
@@ -24,16 +26,27 @@ function filesFor(pkg: Pkg): string[] {
 }
 
 describe('npm publish shape', () => {
-	const shaped = publishShape(corePkg, sveltePkg);
+	const shaped = publishShape({ core: corePkg, svelte: sveltePkg, embed: embedPkg, react: reactPkg });
 
 	it('pins svelte to the core version instead of file:../core', () => {
 		expect(sveltePkg.dependencies['@ripple-ui/core']).toBe('file:../core');
 		expect(shaped.svelte.dependencies?.['@ripple-ui/core']).toBe(`^${corePkg.version}`);
 	});
 
-	it('leaves both shaped manifests with nothing the tarball check rejects', () => {
-		expect(publishProblems(shaped.core, filesFor(shaped.core))).toEqual([]);
-		expect(publishProblems(shaped.svelte, filesFor(shaped.svelte))).toEqual([]);
+	it('pins react to the embed version, and leaves no file: link even in devDependencies', () => {
+		expect(shaped.react.dependencies?.['@ripple-ui/embed']).toBe(`^${embedPkg.version}`);
+		for (const pkg of Object.values(shaped)) {
+			expect(JSON.stringify(pkg)).not.toContain('"file:');
+		}
+	});
+
+	it('ships the embed with no runtime dependencies, so consumers install no Svelte', () => {
+		expect(shaped.embed).not.toHaveProperty('dependencies');
+		expect(shaped.embed).not.toHaveProperty('peerDependencies');
+	});
+
+	it('leaves every shaped manifest with nothing the tarball check rejects', () => {
+		for (const pkg of Object.values(shaped)) expect(publishProblems(pkg, filesFor(pkg))).toEqual([]);
 	});
 
 	it('rejects a file: dependency, a source condition and a missing export target', () => {

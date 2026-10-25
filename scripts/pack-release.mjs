@@ -1,5 +1,5 @@
-// scripts/pack-release.mjs: packs @ripple-ui/core and @ripple-ui/svelte into
-// npm-publishable tarballs and checks every tarball before it is trusted.
+// scripts/pack-release.mjs: packs @ripple-ui/core, svelte, embed and react
+// into npm-publishable tarballs and checks every tarball before it is trusted.
 //
 //   node scripts/pack-release.mjs [outDir]     (default outDir: release/)
 //
@@ -9,12 +9,14 @@
 // Invariants:
 // - package.json in git stays workspace-shaped. Only for the length of the pack,
 //   core loses its `source` export conditions (they point at src/, which is not
-//   shipped) and svelte's `@ripple-ui/core: file:../core` becomes `^<core
-//   version>`. The original text is written back byte for byte in `finally` and
-//   on SIGINT/SIGTERM; consumers linking a ripple checkout rely on `file:`.
+//   shipped) and every `file:../<pkg>` dependency on a sibling (svelte on core,
+//   react on embed, embed's dev links) becomes `^<that package's version>`. The
+//   original text is written back byte for byte in `finally` and on
+//   SIGINT/SIGTERM; consumers linking a ripple checkout rely on `file:`.
 // - Lifecycle scripts never run (`--ignore-scripts`), so the result does not
 //   depend on the packer's npm config. That is why this script copies
-//   THIRD_PARTY_NOTICES.md into core itself instead of trusting core's prepack.
+//   THIRD_PARTY_NOTICES.md into core (and it plus svelte's NOTICE into embed,
+//   which bundles that code) itself instead of trusting a prepack.
 // - A tarball fails the run if its package.json declares a file:, link: or
 //   workspace: dependency, keeps a `source` condition, or names an export or
 //   required file the tarball does not contain.
@@ -24,17 +26,23 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const CORE = join(ROOT, 'packages/core');
-const SVELTE = join(ROOT, 'packages/svelte');
+/** Pack order: a package comes after everything it depends on. */
+export const PACKAGES = ['core', 'svelte', 'embed', 'react'];
+const dir = (k) => join(ROOT, 'packages', k);
 
 /** Files each tarball must carry beyond its export targets. */
 export const REQUIRED = {
 	'@ripple-ui/core': ['LICENSE', 'THIRD_PARTY_NOTICES.md', 'README.md'],
-	'@ripple-ui/svelte': ['LICENSE', 'NOTICE', 'README.md', 'dist/manifest.json', 'dist/manifest.slim.json']
+	'@ripple-ui/svelte': ['LICENSE', 'NOTICE', 'README.md', 'dist/manifest.json', 'dist/manifest.slim.json'],
+	'@ripple-ui/embed': ['LICENSE', 'NOTICE', 'THIRD_PARTY_NOTICES.md', 'README.md', 'dist/THIRD_PARTY_LICENSES.txt'],
+	'@ripple-ui/react': ['LICENSE', 'README.md']
 };
+/** A file each package's build leaves behind; packing without it means `bun run build` was skipped. */
+const BUILT = { core: 'dist/index.js', svelte: 'dist/manifest.json', embed: 'dist/ripple-embed.js', react: 'dist/index.js' };
 
 const LOCAL_PROTOCOL = /^(file|link|workspace|portal):/;
 const DEP_FIELDS = ['dependencies', 'peerDependencies', 'optionalDependencies'];
+const ALL_DEP_FIELDS = [...DEP_FIELDS, 'devDependencies'];
 
 function stripSource(exp) {
 	if (exp && typeof exp === 'object') {
@@ -43,14 +51,25 @@ function stripSource(exp) {
 	}
 }
 
-/** The publish shape of both manifests. Pure: takes parsed package.json objects, returns new ones. */
-export function publishShape(core, svelte) {
-	const c = structuredClone(core);
-	const s = structuredClone(svelte);
-	stripSource(c.exports);
-	if (!s.dependencies?.['@ripple-ui/core']) throw new Error('svelte has no @ripple-ui/core dependency');
-	s.dependencies['@ripple-ui/core'] = `^${c.version}`;
-	return { core: c, svelte: s };
+/**
+ * The publish shape of every manifest. Pure: takes `{ core, svelte, ... }` parsed
+ * package.json objects, returns new ones under the same keys.
+ */
+export function publishShape(pkgs) {
+	const out = structuredClone(pkgs);
+	stripSource(out.core.exports);
+	const versions = Object.fromEntries(Object.values(out).map((p) => [p.name, p.version]));
+	for (const pkg of Object.values(out)) {
+		for (const field of ALL_DEP_FIELDS) {
+			for (const [name, range] of Object.entries(pkg[field] ?? {})) {
+				if (!range.startsWith('file:')) continue;
+				if (!versions[name]) throw new Error(`${pkg.name} ${field}.${name} is ${range}, not a sibling being packed`);
+				pkg[field][name] = `^${versions[name]}`;
+			}
+		}
+	}
+	if (out.svelte.dependencies?.['@ripple-ui/core'] !== `^${out.core.version}`) throw new Error('svelte has no @ripple-ui/core dependency');
+	return out;
 }
 
 function exportTargets(exp, out = []) {
@@ -89,15 +108,16 @@ export function verifyTarball(tgz) {
 }
 
 function main(outDir) {
-	for (const built of [join(CORE, 'dist/index.js'), join(SVELTE, 'dist/manifest.json')]) {
+	for (const k of PACKAGES) {
+		const built = join(dir(k), BUILT[k]);
 		if (!existsSync(built)) throw new Error(`${built} is missing. Run \`bun run build\` first.`);
 	}
 	mkdirSync(outDir, { recursive: true });
 
-	const paths = { core: join(CORE, 'package.json'), svelte: join(SVELTE, 'package.json') };
-	const original = { core: readFileSync(paths.core, 'utf8'), svelte: readFileSync(paths.svelte, 'utf8') };
+	const paths = Object.fromEntries(PACKAGES.map((k) => [k, join(dir(k), 'package.json')]));
+	const original = Object.fromEntries(PACKAGES.map((k) => [k, readFileSync(paths[k], 'utf8')]));
 	const restore = () => {
-		for (const k of ['core', 'svelte']) writeFileSync(paths[k], original[k]);
+		for (const k of PACKAGES) writeFileSync(paths[k], original[k]);
 	};
 	const onSignal = (sig) => {
 		restore();
@@ -108,14 +128,15 @@ function main(outDir) {
 
 	const packed = [];
 	try {
-		const shaped = publishShape(JSON.parse(original.core), JSON.parse(original.svelte));
-		writeFileSync(paths.core, JSON.stringify(shaped.core, null, 2) + '\n');
-		writeFileSync(paths.svelte, JSON.stringify(shaped.svelte, null, 2) + '\n');
-		// Gitignored copy; core's own prepack does the same when scripts are allowed.
-		copyFileSync(join(ROOT, 'THIRD_PARTY_NOTICES.md'), join(CORE, 'THIRD_PARTY_NOTICES.md'));
-		for (const dir of [CORE, SVELTE]) {
+		const shaped = publishShape(Object.fromEntries(PACKAGES.map((k) => [k, JSON.parse(original[k])])));
+		for (const k of PACKAGES) writeFileSync(paths[k], JSON.stringify(shaped[k], null, 2) + '\n');
+		// Gitignored copies; core's own prepack does the same when scripts are allowed.
+		copyFileSync(join(ROOT, 'THIRD_PARTY_NOTICES.md'), join(dir('core'), 'THIRD_PARTY_NOTICES.md'));
+		copyFileSync(join(ROOT, 'THIRD_PARTY_NOTICES.md'), join(dir('embed'), 'THIRD_PARTY_NOTICES.md'));
+		copyFileSync(join(dir('svelte'), 'NOTICE'), join(dir('embed'), 'NOTICE'));
+		for (const cwd of PACKAGES.map(dir)) {
 			const out = execFileSync('npm', ['pack', '--json', '--ignore-scripts', '--pack-destination', outDir], {
-				cwd: dir,
+				cwd,
 				encoding: 'utf8',
 				maxBuffer: 64 * 1024 * 1024
 			});
@@ -126,7 +147,7 @@ function main(outDir) {
 		process.removeListener('SIGINT', onSignal);
 		process.removeListener('SIGTERM', onSignal);
 	}
-	for (const k of ['core', 'svelte']) {
+	for (const k of PACKAGES) {
 		if (readFileSync(paths[k], 'utf8') !== original[k]) throw new Error(`${paths[k]} was not restored`);
 	}
 

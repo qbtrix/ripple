@@ -59,3 +59,6 @@ packages/svelte/static/page-audit.js
 # examples/react build output and its local install
 /examples/react/dist/
 /examples/react/node_modules/
+# Copied from the repo root and packages/svelte by pack-release.
+/packages/embed/THIRD_PARTY_NOTICES.md
+/packages/embed/NOTICE

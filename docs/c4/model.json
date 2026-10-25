@@ -10,7 +10,7 @@
       {
         "id": "ripple",
         "name": "Ripple",
-        "description": "Generative-UI runtime published as two packages: @ripple-ui/core (framework-agnostic spec engine: schema, expressions, state, events, a headless runtime) and @ripple-ui/svelte (Svelte 5 renderer with ~220 widget types across marketing, premium, data, research, craft and motion packs). Renders declarative JSON specs (UISpec / UniversalSpec) into interactive UIs.",
+        "description": "Generative-UI runtime published as four packages: @ripple-ui/core (framework-agnostic spec engine: schema, expressions, state, events, a headless runtime), @ripple-ui/svelte (Svelte 5 renderer with ~220 widget types across marketing, premium, data, research, craft and motion packs), @ripple-ui/embed (that renderer compiled into one framework-free ES module) and @ripple-ui/react (a React component over the embed). Renders declarative JSON specs (UISpec / UniversalSpec) into interactive UIs.",
         "tags": ["internal"],
         "containers": [
           {
@@ -139,6 +139,40 @@
             ]
           },
           {
+            "id": "ripple-embed",
+            "name": "@ripple-ui/embed",
+            "description": "The Svelte renderer compiled from source into one ES module plus lazy chunks (packages/embed). mount(el, spec) renders inside a shadow root; consumers need no Svelte or Tailwind. Embed-only build plugins swap in a lazy widget registry (one chunk per widget type), defer the intent, flow and organism renderers, load lucide icons and echarts by need, and put side-effect CSS into each shadow root.",
+            "technology": "Svelte 5 (compiled in), Vite lib build",
+            "tags": ["internal"],
+            "kb_article": "",
+            "components": [
+              {
+                "id": "embed-mount",
+                "name": "Embed Mount",
+                "description": "mount() and its handle (ready, update, setTheme, finish, destroy) in src/index.ts, the lazy widget registry in src/registry.ts, and the per-root stylesheet set in src/shadow-css.ts. packages/embed/src.",
+                "technology": "TypeScript, Svelte 5",
+                "kb_article": ""
+              }
+            ]
+          },
+          {
+            "id": "ripple-react",
+            "name": "@ripple-ui/react",
+            "description": "A thin <Ripple spec theme onEvent streaming /> component that mounts @ripple-ui/embed into a div (packages/react). SSR-safe: the embed is imported inside an effect.",
+            "technology": "React, TypeScript",
+            "tags": ["internal"],
+            "kb_article": "",
+            "components": [
+              {
+                "id": "react-component",
+                "name": "React Component",
+                "description": "The Ripple component. packages/react/src/index.tsx.",
+                "technology": "React",
+                "kb_article": ""
+              }
+            ]
+          },
+          {
             "id": "ripple-site",
             "name": "Ripple Site",
             "description": "The public docs and demo site built from packages/svelte/src/routes: home, docs, playground, showcase, the live landing, design-system and editor labs, llms.txt files, and the Paw Bar landing chat with its pay flow. Built with build:site and served as a static site.",
@@ -201,7 +235,9 @@
       {"source": "ripple-site", "target": "ripple-svelte", "description": "renders docs, playground, showcase and live demos with the library", "technology": "", "style": "sync"},
       {"source": "ripple-site", "target": "paw-bar", "description": "landing chat calls the Paw Bar API when the live flag is on", "technology": "HTTP / SSE", "style": "async"},
       {"source": "ripple-skill", "target": "iso-build", "description": "build.mjs runs the core build loop and renders each round", "technology": "", "style": "sync"},
-      {"source": "pocketpaw", "target": "iso-build", "description": "the worker runs the build loop to craft specs", "technology": "", "style": "sync"}
+      {"source": "pocketpaw", "target": "iso-build", "description": "the worker runs the build loop to craft specs", "technology": "", "style": "sync"},
+      {"source": "embed-mount", "target": "renderer", "description": "compiles Ripple.svelte in, with the widget registry swapped for a lazy one", "technology": "Vite build", "style": "sync"},
+      {"source": "react-component", "target": "embed-mount", "description": "mounts the embed in a div and drives its handle", "technology": "", "style": "sync"}
     ]
   }
 }
