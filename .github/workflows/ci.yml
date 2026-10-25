@@ -31,7 +31,9 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # The embed build compiles the whole renderer (about 3 min) on top of the
+    # 12-13 min the job already took.
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
