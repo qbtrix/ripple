@@ -54,6 +54,8 @@ Measured in Chromium (gzip of the JS fetched; fonts are separate woff2 files):
 | Engine alone | 147 KB |
 | Overlays: tooltip, dropdown, alert | 178 KB |
 | Attention explainer: markdown, heatmap, table | 182 KB |
+| Same, once markdown renders math and mermaid (ripple-iui#268) | 445 KB |
+| Workflow diagram (xyflow) | 267 KB |
 | Simple card: chart, text, input, button | 367 KB (echarts is about 200 KB of it) |
 | Fonts (Inter, plus JetBrains Mono when code shows) | 47 to 87 KB |
 
@@ -61,9 +63,9 @@ Measured in Chromium (gzip of the JS fetched; fonts are separate woff2 files):
 
 ## Notes
 
-- In a Vite app the package works as is. If a dev build ever shows unstyled
-  text or missing chunks, add `optimizeDeps: { exclude: ['@ripple-ui/embed'] }`
-  so Vite serves the files unbundled.
+- In a Vite app it works as is, in dev and build (checked with Vite 7 against
+  the packed tarball). If another bundler's dev server mangles the chunk or
+  font URLs, exclude the package from its dependency pre-bundling.
 - The Chart widget's echarts build includes the series it draws (bar, line,
   pie, candlestick, heatmap, gauge, radar). A `themeOverrides` option that
   needs another echarts component is ignored here.
