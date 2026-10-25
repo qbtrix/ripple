@@ -20,7 +20,7 @@
 	{#if portal}
 		<BitsConfig defaultPortalTo={portal}>
 			{#if ctl.stream}
-				<Ripple streaming={ctl.stream} onEvent={ctl.onEvent} />
+				<Ripple streaming={ctl.stream as never} onEvent={ctl.onEvent} />
 			{:else}
 				<Ripple spec={ctl.spec as never} onEvent={ctl.onEvent} />
 			{/if}

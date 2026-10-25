@@ -4,9 +4,9 @@
   layouts and widgets it imports statically load only when a spec needs them.
 -->
 <script lang="ts">
-	let props: Record<string, unknown> = $props();
+	let props: Record<string, any> = $props();
 </script>
 
 {#await import('$lib/intent/IntentRenderer.svelte') then m}
-	<m.default {...props as never} />
+	<m.default {...props as any} />
 {/await}

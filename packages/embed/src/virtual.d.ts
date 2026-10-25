@@ -11,3 +11,11 @@ declare module '*?embed-file' {
 	const url: string;
 	export default url;
 }
+declare module 'virtual:ripple-lucide-icons' {
+	import type { Component } from 'svelte';
+	export const icons: Record<string, () => Promise<{ default: Component<any> }>>;
+}
+declare module '*?raw' {
+	const text: string;
+	export default text;
+}

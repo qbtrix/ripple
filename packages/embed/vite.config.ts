@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 // vite.config.ts: the @ripple-ui/embed build, and the vitest config for its tests.
 // Compiles the Svelte renderer straight from ../svelte/src (and the engine from
 // ../core/src) into dist/ripple-embed.js plus lazy chunks under dist/chunks/,
@@ -86,6 +87,44 @@ const embedFile: Plugin = {
 		if (this.meta.watchMode || !('emitFile' in this)) return `export default ${JSON.stringify('/@fs' + file)};`;
 		const ref = this.emitFile({ type: 'asset', name: file.split('/').pop(), source: readFileSync(file) });
 		return `export default import.meta.ROLLUP_FILE_URL_${ref};`;
+	}
+};
+
+// Namespace and dynamic imports of the lucide barrel become src/lucide.ts, whose
+// icons each load on first render; `virtual:ripple-lucide-icons` maps every
+// lucide export name to a dynamic import of its .svelte file. Every name,
+// canonical or alias, has a dist/icons/<kebab>.js that re-exports one .svelte.
+const LUCIDE_ID = 'virtual:ripple-lucide-icons';
+const LUCIDE_NS = /import\s*\*\s*as\s+([A-Za-z_$][\w$]*)\s+from\s*(['"])@lucide\/svelte\2/g;
+const LUCIDE_DYNAMIC = /\bimport\(\s*(['"])@lucide\/svelte\1\s*\)/g;
+const pascal = (kebab: string) => kebab.split('-').map((p) => p[0].toUpperCase() + p.slice(1)).join('');
+const lucideLazy: Plugin = {
+	name: 'ripple-embed-lucide',
+	enforce: 'post',
+	resolveId: (source) => (source === LUCIDE_ID ? '\0' + LUCIDE_ID : null),
+	async load(id) {
+		if (id !== '\0' + LUCIDE_ID) return null;
+		const barrel = await this.resolve('@lucide/svelte', join(SVELTE_LIB, 'index.ts'));
+		const dir = join(dirname(barrel!.id.split('?')[0]), 'icons');
+		const files: string[] = [];
+		const map: string[] = [];
+		for (const f of readdirSync(dir).filter((f) => f.endsWith('.js')).sort()) {
+			const target = readFileSync(join(dir, f), 'utf8').match(/from\s*["']\.\/([^"']+\.svelte)["']/)?.[1];
+			if (!target) continue;
+			let i = files.indexOf(target);
+			if (i < 0) i = files.push(target) - 1;
+			map.push(`${pascal(f.slice(0, -3))}:L${i}`);
+		}
+		const lines = files.map((f, i) => `const L${i}=()=>import(${JSON.stringify(join(dir, f))});`);
+		return `${lines.join('\n')}\nexport const icons={${map.join(',')}};\n`;
+	},
+	transform(code, id) {
+		if (id.startsWith(EMBED_SRC) || id.includes('?') || !code.includes('@lucide/svelte')) return null;
+		const lucide = JSON.stringify(join(EMBED_SRC, 'lucide.ts'));
+		const out = code
+			.replace(LUCIDE_NS, (_, name) => `import ${name} from ${lucide}`)
+			.replace(LUCIDE_DYNAMIC, () => `import(${lucide}).then((m) => m.default)`);
+		return out === code ? null : { code: out, map: null };
 	}
 };
 
@@ -188,10 +227,17 @@ const analyze: Plugin = {
 export default defineConfig({
 	base: './',
 	publicDir: false,
-	plugins: [lazyRegistry, embedFile, tailwindcss(), svelte({ emitCss: false, compilerOptions: { css: 'injected' } }), shadowCss, minifyAfter, licenses, analyze],
+	plugins: [lazyRegistry, embedFile, tailwindcss(), svelte({ emitCss: false, compilerOptions: { css: 'injected' } }), lucideLazy, shadowCss, minifyAfter, licenses, analyze],
 	resolve: {
-		alias: [{ find: '$lib', replacement: SVELTE_LIB }, ...coreAlias],
-		dedupe: ['svelte']
+		alias: [
+			{ find: '$lib', replacement: SVELTE_LIB },
+			// Chart's import('echarts') gets only the series it draws (src/echarts.ts).
+			{ find: /^echarts$/, replacement: join(EMBED_SRC, 'echarts.ts') },
+			...coreAlias
+		],
+		dedupe: ['svelte'],
+		// vitest resolves for node by default; the card needs Svelte's client build.
+		conditions: process.env.VITEST ? ['browser'] : undefined
 	},
 	define: { 'process.env.NODE_ENV': JSON.stringify('production') },
 	build: {
