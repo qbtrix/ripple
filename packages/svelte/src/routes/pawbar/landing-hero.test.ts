@@ -23,7 +23,7 @@ test('the hero leads the chat column, above the first message', () => {
 	const h1 = view.getByRole('heading', { level: 1 });
 	expect(h1.textContent).toBe('Ask for a tool. Ripple builds it while the model is still typing.');
 	expect(view.getByText(/Ripple is an open-source generative UI engine\./)).toBeTruthy();
-	expect(view.getByText('Svelte 5 today. The core engine is framework-free.')).toBeTruthy();
+	expect(view.getByText('Svelte, or any framework through @ripple-ui/embed.')).toBeTruthy();
 	expect(view.container.querySelector('.context')?.textContent?.trim()).toBe('Recorded demo');
 	expect(view.queryByText('The card is live now. Change something and see.')).toBeNull();
 	const firstMessage = view.getByText('A recorded answer, replayed. Change something in the card.');

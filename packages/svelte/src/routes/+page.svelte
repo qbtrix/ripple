@@ -195,7 +195,7 @@
 	<title>Ripple: ask for a tool, watch it build</title>
 	<meta
 		name="description"
-		content="Ripple is the open-source generative UI engine from Paw OS by PocketPaw. A model writes a small JSON spec and Ripple renders it as a working interface while the spec streams in."
+		content="Ripple is an open-source generative UI engine. A model writes a small JSON spec and Ripple renders it as a working interface while the spec streams in."
 	/>
 </svelte:head>
 
@@ -230,7 +230,7 @@
 					<a href="/docs">Docs</a>
 					<a href="/live">Gallery</a>
 				</p>
-				<p class="strip-note">Svelte 5 today. The core engine is framework-free.</p>
+				<p class="strip-note">Svelte, or any framework through @ripple-ui/embed.</p>
 			{/snippet}
 		</Chat>
 	</section>
