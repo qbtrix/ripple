@@ -13,6 +13,9 @@
     (scripts/capture-thumbs.ts), cropped top-anchored into the 16:9 frame and
     lazy-loaded. `onopen` lets a page handle a plain click in place (/live
     opens the item there); modified clicks keep the browser's default.
+    The landing's "Recorded runs" uses it too, untitled, with `lines` 2 (the
+    caption's clamp, default 1) and its own --tile-line (the picture's border,
+    default --site-line) and column width.
     DiscoverTile and ItemArt are not used: ItemArt takes only absolute http(s)
     pictures, and the tile carries remix and usage controls a gallery has no
     use for.
@@ -33,8 +36,9 @@
 		label,
 		title,
 		blurb,
+		lines = 1,
 		onopen
-	}: { items: Item[]; label: string; title?: string; blurb?: string; onopen?: (item: Item) => void } = $props();
+	}: { items: Item[]; label: string; title?: string; blurb?: string; lines?: number; onopen?: (item: Item) => void } = $props();
 
 	const W = 800;
 	const H = 600;
@@ -47,7 +51,7 @@
 	}
 </script>
 
-<section class="section" aria-labelledby={title ? headId : undefined}>
+<section class="section" aria-labelledby={title ? headId : undefined} style:--lines={lines}>
 	{#if title}
 		<header class="section-head">
 			<h2 id={headId}>{title}</h2>
@@ -127,7 +131,7 @@
 		aspect-ratio: 16 / 9;
 		margin-bottom: 12px;
 		overflow: hidden;
-		border: 1px solid var(--site-line);
+		border: 1px solid var(--tile-line, var(--site-line));
 		border-radius: 10px;
 		background: var(--site-inset, var(--code-bg));
 		transition:
@@ -165,8 +169,8 @@
 		line-height: 1.45;
 		color: var(--site-soft);
 		display: -webkit-box;
-		-webkit-line-clamp: 1;
-		line-clamp: 1;
+		-webkit-line-clamp: var(--lines);
+		line-clamp: var(--lines);
 		-webkit-box-orient: vertical;
 		overflow: hidden;
 	}

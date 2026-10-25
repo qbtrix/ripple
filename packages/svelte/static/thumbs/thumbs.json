@@ -1,11 +1,11 @@
 [
 	{
-		"id": "live-order-burger",
-		"title": "Order a burger",
-		"caption": "Order dinner from Tasty Bites: two Classic Cheeseburgers and a Fresh Lemonade to start. Show me the burgers plus a couple of sides and drinks so I can change quantities, keep a running total, and let me pick pickup or delivery and check out.",
+		"id": "menu-order",
+		"title": "Menu order",
+		"caption": "A cafe menu with a cart.",
 		"group": "Do",
-		"tag": "Recorded",
-		"href": "/live?s=order-burger",
+		"tag": "Widget demo",
+		"href": "/live?s=demo-menu-order",
 		"w": 800,
 		"h": 600
 	},
@@ -66,16 +66,6 @@
 		"group": "Do",
 		"tag": "Widget demo",
 		"href": "/live?s=demo-booking",
-		"w": 800,
-		"h": 600
-	},
-	{
-		"id": "menu-order",
-		"title": "Menu order",
-		"caption": "A cafe menu with a cart.",
-		"group": "Do",
-		"tag": "Widget demo",
-		"href": "/live?s=demo-menu-order",
 		"w": 800,
 		"h": 600
 	},

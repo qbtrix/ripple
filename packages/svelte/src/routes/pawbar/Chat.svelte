@@ -12,7 +12,7 @@
     composer, giving the log that height.
     Sending: a chip runs here (session.send); typed text goes to Paw OS
     (session.handoff, opened from the send gesture) unless `typedLocal` keeps it
-    on the Paw Bar (mock and dev only), as the hint under the composer says. A
+    on the Paw Bar (mock and dev only), as the composer's label says. A
     `handoff` chip takes the typed path and says "Opens in Paw OS"
     (one hidden note shared through aria-describedby).
     Look: Paw OS. ChatPill's glass composer (send turns into stop while a turn
@@ -41,7 +41,7 @@
     only while the visitor is at the bottom; their own message always jumps
     there; scrolled up, growth shows a "New" pill. Until the first turn it stays
     at its top. The dock: the panel, the composer with `more` to its right, a
-    foot row (`foot`, then the hint). The log is role="log", aria-busy while
+    foot row (`foot`). The log is role="log", aria-busy while
     streaming; one polite region says "Building" and "Done" per turn. DOM ids
     are positional, never Card.id. Playground props: `chips`, `onspec`; exports
     `ask`, `focus`.
@@ -109,7 +109,7 @@
 		top?: Snippet;
 		/** Rendered to the right of the composer (the landing's "More"). */
 		more?: Snippet;
-		/** Rendered at the left of the dock's foot row, before the hint (the landing's install strip). */
+		/** Rendered at the left of the dock's foot row, (the landing's install strip). */
 		foot?: Snippet;
 		/** Cards show as chips that pick them into the host's own preview (the playground). */
 		chips?: Chips | null;
@@ -648,7 +648,6 @@
 					id="ripple-ask"
 					rows="1"
 					maxlength="2000"
-					aria-describedby={typedLocal ? undefined : 'ripple-ask-hint'}
 					placeholder={typedLocal ? 'Ask for a tool, like a tip splitter' : 'Type a request for Paw OS'}
 					bind:value={draft}
 					bind:this={field}
@@ -666,7 +665,6 @@
 		</div>
 		<div class="dock-foot">
 			{@render foot?.()}
-			{#if !typedLocal}<p class="hint" id="ripple-ask-hint">Typed requests open in Paw OS.</p>{/if}
 			{#if note}<p class="chat-note">{note}</p>{/if}
 		</div>
 	</div>
@@ -1271,7 +1269,7 @@
 		flex: 1;
 		min-width: 0;
 	}
-	/* One line: the foot snippet, then the hint while it fits. */
+	/* One line: the foot snippet. A container, so the snippet can drop parts that no longer fit. */
 	.dock-foot {
 		container-type: inline-size;
 		display: flex;
@@ -1280,11 +1278,6 @@
 		gap: 4px 12px;
 		min-height: 28px;
 		min-width: 0;
-	}
-	@container (max-width: 640px) {
-		.hint {
-			display: none;
-		}
 	}
 
 	/* PE's ChatPill: a liquid-glass pill. */
@@ -1389,17 +1382,6 @@
 	}
 	.send.stop:hover .disc {
 		background: var(--site-hover);
-	}
-	.hint {
-		flex: 1;
-		min-width: 0;
-		margin: 0;
-		padding: 0;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		font-size: 13px;
-		color: var(--site-soft);
 	}
 
 	/* Collapsed, the chips sit on ONE row that scrolls sideways at every

@@ -30,7 +30,7 @@
     Below: how it works (spec, engine, UI, with a live card), the streaming code
     sample, the blue band (install command and the coding-agent setup prompt
     from lib/site/setup-prompt.ts, falling back to its Install docs section),
-    the recorded runs linking /live, and a closer that points to the ripple skill (and, quietly, Paw OS).
+    the recorded runs (the /live gallery's thumbnail tiles, GalleryGrid) linking /live, and a closer that points to the ripple skill (and, quietly, Paw OS).
 
   Creative Direction Declaration
     Scene: a developer at night, comparing generative UI tools with a terminal
@@ -53,6 +53,7 @@
 	import { EARLY_ACCESS_URL, ChatSession, pawbarTransport, pawosBase, typedStaysLocal, type Transport } from './pawbar/session.svelte.js';
 	import { answerPool, findScenario, pickScenario, recordedEvents, recordedExchange } from './pawbar/recorded.js';
 	import { chatPrompts, groupedSuggestions, scenarios } from './live/scenarios.js';
+	import GalleryGrid from './live/GalleryGrid.svelte';
 
 	// Opt-in: vite.config.ts defines these only when PUBLIC_PAWBAR_LIVE=1.
 	const ENDPOINT: string = import.meta.env.PUBLIC_PAWBAR_ENDPOINT ?? '';
@@ -70,9 +71,8 @@
 	const INSTALL = 'bun add @ripple-ui/svelte';
 	const SETUP_DOC = '/docs/getting-started/install#set-up-with-a-coding-agent';
 
-	// The recorded order demo checks out with an `api` action, which the chat's card
-	// policy refuses, so the recorded answers exclude it; live, its chip asks the
-	// model, whose menu card checks out through the store host event.
+	// A store-backed chip has no recording: live, it asks the model, whose card
+	// checks out through the store host event; replayed, it hands off to Paw OS.
 	const chatScenarios = answerPool.filter((s) => !s.needsStore);
 	// The intro says what is replaying: a matching recording, or (when no
 	// recording overlaps the request) the bill splitter, said plainly. Live, the
@@ -98,17 +98,21 @@
 	const opener = chatScenarios.find((s) => s.id === 'sales-dashboard');
 	if (opener) session.seed(opener.fixture.prompt, recordedExchange(opener, SEED_INTRO));
 	// The suggestion panel's chips, grouped and ordered by suggestionGroups. Live:
-	// the store chips (with a store), the chat-only prompts and the recordings.
+	// the chat-only prompts (store ones only with a store) and the recordings.
 	// Replay: every chip, store ones included; those with no answer here hand
 	// their prompt to Paw OS, as typed text does, and sort last (a stable sort,
 	// so the collapsed row leads with chips that replay on this page).
-	const liveChips = LIVE ? [...scenarios.filter((s) => s.needsStore), ...chatPrompts].filter((c) => !c.needsStore || STORE_URL) : [];
+	const liveChips = LIVE ? chatPrompts.filter((c) => !c.needsStore || STORE_URL) : [];
 	const replayable = new Set(chatScenarios.map((s) => s.id));
 	const suggestions = LIVE
 		? groupedSuggestions([...liveChips, ...chatScenarios])
 		: groupedSuggestions([...answerPool, ...chatPrompts])
 				.map((c) => ({ ...c, handoff: !replayable.has(c.id) }))
 				.sort((a, b) => Number(a.handoff) - Number(b.handoff));
+
+	// "Recorded runs": the /live gallery's tiles and thumbs (static/thumbs/live-<id>.webp,
+	// scripts/capture-thumbs.ts); gallery.test.ts fails if a run here has no thumb.
+	const runs = scenarios.map((s) => ({ id: `live-${s.id}`, title: s.title, caption: s.fixture.prompt, tag: s.category, href: `/live?s=${s.id}` }));
 
 	// Step 3 of "how it works": a small spec, rendered for real.
 	const demoSpec = {
@@ -200,7 +204,7 @@
 		<!-- PE's chat room header: name, topic, actions on the right (none here). -->
 		<div class="context">
 			<div class="context-info">
-				<p>{LIVE ? 'Live demo' : 'Recorded demo'} <span aria-hidden="true">·</span> Paw OS by PocketPaw</p>
+				<p>{LIVE ? 'Live demo' : 'Recorded demo'}</p>
 			</div>
 		</div>
 		<Chat {session} {suggestions} pawosUrl={PAWOS_URL} typedLocal={TYPED_LOCAL} foldChips>
@@ -209,7 +213,7 @@
 				<header class="hero">
 					<h1 id="hero-title">Ask for a tool. <span>Ripple builds it while the model is still typing.</span></h1>
 					<p class="lede">
-						Ripple is the open-source generative UI engine. A model writes a small JSON spec, and Ripple turns it into a
+						Ripple is an open-source generative UI engine. A model writes a small JSON spec, and Ripple turns it into a
 						working interface as the spec streams in. {TYPED_LOCAL ? 'Ask for something below.' : 'Tap a suggestion below to watch one build, or try it with your own agent.'}
 					</p>
 				</header>
@@ -226,6 +230,7 @@
 					<a href="/docs">Docs</a>
 					<a href="/live">Gallery</a>
 				</p>
+				<p class="strip-note">Svelte 5 today. The core engine is framework-free.</p>
 			{/snippet}
 		</Chat>
 	</section>
@@ -279,16 +284,9 @@
 			<h2 id="examples-title">Recorded runs</h2>
 			<p>Real model output on its original timing.</p>
 		</div>
-		<ul class="runs">
-			{#each scenarios as s (s.id)}
-				<li>
-					<a href="/live?s={s.id}" class="run">
-						<span class="run-line"><span class="run-title">{s.title}</span><span class="run-cat">{s.category}</span></span>
-						<span class="run-prompt">{s.fixture.prompt}</span>
-					</a>
-				</li>
-			{/each}
-		</ul>
+		<div class="runs">
+			<GalleryGrid items={runs} label="Recorded runs" lines={2} />
+		</div>
 	</section>
 
 	<section class="closer" aria-labelledby="closer-title">
@@ -511,6 +509,23 @@
 		outline: 2px solid var(--ring);
 		outline-offset: 2px;
 	}
+	/* Fills the rest of the strip's row; dropped where it would truncate. */
+	.strip-note {
+		flex: 1;
+		min-width: 0;
+		margin: 0;
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+		font-size: 12.5px;
+		line-height: 1;
+		color: var(--site-soft);
+	}
+	@container (max-width: 640px) {
+		.strip-note {
+			display: none;
+		}
+	}
 	@media (prefers-reduced-transparency: reduce) {
 		.context {
 			background: var(--site-ground);
@@ -696,8 +711,8 @@
 		text-underline-offset: 3px;
 	}
 
-	/* Recorded runs: a divided list; title and category on one line, the
-	   prompt under them in muted ink, two lines at most. */
+	/* Recorded runs: the /live gallery tiles, four across on a desktop,
+	   one column on a phone. */
 	.examples {
 		padding: 72px 0;
 	}
@@ -715,59 +730,15 @@
 		color: var(--site-soft);
 	}
 	.runs {
-		list-style: none;
-		margin: 32px 0 0;
-		padding: 0;
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
-		column-gap: 32px;
-		border-top: 1px solid var(--site-line);
+		--tile-line: var(--ripple-border);
+		margin-top: 32px;
 	}
-	.run {
-		display: flex;
-		flex-direction: column;
-		gap: 6px;
-		height: 100%;
-		box-sizing: border-box;
-		padding: 18px 0;
-		border-bottom: 1px solid var(--site-line);
-		color: var(--site-ink);
-		text-decoration: none;
-	}
-	.run-line {
-		display: flex;
-		align-items: baseline;
-		justify-content: space-between;
-		gap: 12px;
-	}
-	.run:hover .run-title {
-		color: var(--primary-ink);
-	}
-	.run:focus-visible {
-		outline: 2px solid var(--ring);
-		outline-offset: 2px;
-	}
-	.run-title {
-		font-weight: 600;
-		transition: color 0.15s;
-	}
-	.run-cat {
-		flex: none;
-		font-size: 13px;
-		color: var(--site-soft);
-	}
-	.run-prompt {
-		font-size: 14px;
-		line-height: 1.5;
-		color: var(--site-soft);
-		display: -webkit-box;
-		-webkit-line-clamp: 2;
-		line-clamp: 2;
-		-webkit-box-orient: vertical;
-		overflow: hidden;
+	.runs :global(.tiles) {
+		grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+		gap: 32px 24px;
 	}
 
-	/* Closer: one primary button, the secondary is a link. */
+	/* Closer: one primary button; the other two are quiet links. */
 	.closer {
 		padding: 80px 0 96px;
 		border-top: 1px solid var(--site-line);
@@ -806,13 +777,20 @@
 	.btn.primary:hover {
 		background: color-mix(in oklch, var(--primary) 88%, black);
 	}
+	/* The secondary actions stay quiet: soft ink, no fill, ink on hover. */
 	.link {
 		display: inline-flex;
 		align-items: center;
 		min-height: 44px;
-		font-weight: 600;
+		font-weight: 500;
 		font-size: 15px;
+		color: var(--site-soft);
+		text-decoration: none;
 		text-underline-offset: 3px;
+	}
+	.link:hover {
+		color: var(--site-ink);
+		text-decoration: underline;
 	}
 	.btn:focus-visible,
 	.link:focus-visible,
