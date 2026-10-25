@@ -1,12 +1,18 @@
-<!-- docs/publishing.md: how @ripple-ui/core and @ripple-ui/svelte get to npm.
+<!-- docs/publishing.md: how the four @ripple-ui packages get to npm.
      The manual first publish (owner steps, exact commands) and the CI path
      both pack through scripts/pack-release.mjs, so this doc and that script's
      header must agree on the publish shape. -->
-# Publishing `@ripple-ui/core` and `@ripple-ui/svelte`
+# Publishing the `@ripple-ui` packages
 
-Two packages, always in this order: `@ripple-ui/core` first, then
-`@ripple-ui/svelte`, which depends on it. Current versions: core `0.6.0`,
-svelte `0.8.1`. On 2026-10-15 both names were 404 on npm.
+Four packages, always in this order, each after what it depends on:
+
+1. `@ripple-ui/core` `0.6.0`
+2. `@ripple-ui/svelte` `0.8.1` (depends on core)
+3. `@ripple-ui/embed` `0.1.0` (bundles svelte and core, so it has no runtime
+   dependencies; it still goes after them so the release is consistent)
+4. `@ripple-ui/react` `0.1.0` (depends on embed)
+
+On 2026-10-15 core and svelte were 404 on npm; embed and react are new.
 
 ## Why you publish a tarball, not the package folder
 
@@ -20,11 +26,13 @@ nothing and every outside install fails.
 time only. It:
 
 1. rewrites core's exports without the `source` conditions (they point at
-   `src/`, which is not shipped) and sets svelte's core dependency to
-   `^<core version>`,
-2. copies `THIRD_PARTY_NOTICES.md` into core,
-3. runs `npm pack --ignore-scripts` for core, then svelte,
-4. writes both `package.json` files back byte for byte (also on Ctrl-C),
+   `src/`, which is not shipped) and turns every `file:../<sibling>`
+   dependency into `^<sibling version>` (svelte on core, react on embed, and
+   embed's dev-only links),
+2. copies `THIRD_PARTY_NOTICES.md` into core and embed, and svelte's
+   `NOTICE` into embed (embed bundles that code),
+3. runs `npm pack --ignore-scripts` for core, svelte, embed and react,
+4. writes every `package.json` back byte for byte (also on Ctrl-C),
 5. opens each tarball and fails if its `package.json` has a `file:`,
    `link:` or `workspace:` dependency, keeps a `source` condition, or names an
    export or required file (LICENSE, notices, `dist/manifest.json`, ...) that
@@ -32,8 +40,8 @@ time only. It:
 
 Lifecycle scripts are skipped on purpose, so the result is the same whatever
 your npm config says (`ignore-scripts=true` would otherwise silently drop
-core's notices file). Never run `npm publish` inside `packages/svelte`: that
-publishes the `file:` dependency.
+core's notices file). Never run `npm publish` inside `packages/svelte` or
+`packages/react`: that publishes the `file:` dependency.
 
 `packages/svelte/scripts/pack-release.test.ts` runs the rewrite and the
 tarball check against the real manifests in CI.
@@ -43,9 +51,11 @@ tarball check against the real manifests in CI.
 From the repo root on an up-to-date `main`:
 
 ```bash
-# 0. Names still free? Both should print a 404.
+# 0. Names still free? Each should print a 404.
 npm view @ripple-ui/core
 npm view @ripple-ui/svelte
+npm view @ripple-ui/embed
+npm view @ripple-ui/react
 ```
 
 A 404 means no package exists, not that the scope is yours. Create the
@@ -58,12 +68,14 @@ and the skill says `@ripple-ui`.
 npm login
 npm whoami
 
-# 2. Build, pack and check both tarballs into release/.
+# 2. Build, pack and check every tarball into release/.
 bun install --frozen-lockfile
 bun run build
 bun run pack:release
 #   ok  @ripple-ui/core@0.6.0    .../release/ripple-ui-core-0.6.0.tgz    228 files, ~263 kB packed
-#   ok  @ripple-ui/svelte@0.8.1  .../release/ripple-ui-svelte-0.8.1.tgz  1812 files, ~1.6 MB packed
+#   ok  @ripple-ui/svelte@0.8.1  .../release/ripple-ui-svelte-0.8.1.tgz  1814 files, ~1.6 MB packed
+#   ok  @ripple-ui/embed@0.1.0   .../release/ripple-ui-embed-0.1.0.tgz   2025 files, ~3.2 MB packed
+#   ok  @ripple-ui/react@0.1.0   .../release/ripple-ui-react-0.1.0.tgz   5 files, ~3 kB packed
 git status --short   # package.json files unchanged; the build always bumps the
                      # generatedAt stamp in packages/svelte/static/manifest.json,
                      # git checkout that file to clear it
@@ -71,15 +83,20 @@ git status --short   # package.json files unchanged; the build always bumps the
 # 3. Optional rehearsal, no upload.
 npm publish --dry-run --access public ./release/ripple-ui-core-0.6.0.tgz
 
-# 4. Publish, core first. Keep the ./ prefix: without it npm reads
+# 4. Publish in order. Keep the ./ prefix: without it npm reads
 #    release/x.tgz as a GitHub repo shorthand.
 npm publish --access public ./release/ripple-ui-core-0.6.0.tgz
 npm publish --access public ./release/ripple-ui-svelte-0.8.1.tgz
+npm publish --access public ./release/ripple-ui-embed-0.1.0.tgz
+npm publish --access public ./release/ripple-ui-react-0.1.0.tgz
 
 # 5. Verify.
 npm view @ripple-ui/core version            # 0.6.0
 npm view @ripple-ui/svelte version          # 0.8.1
 npm view @ripple-ui/svelte dependencies     # '@ripple-ui/core': '^0.6.0', no file:
+npm view @ripple-ui/embed version           # 0.1.0
+npm view @ripple-ui/embed dependencies      # nothing: the renderer is bundled
+npm view @ripple-ui/react dependencies      # '@ripple-ui/embed': '^0.1.0'
 ```
 
 Clean-room check after publishing (any empty folder outside the repo):
@@ -87,7 +104,13 @@ Clean-room check after publishing (any empty folder outside the repo):
 ```bash
 npm init -y && npm install @ripple-ui/svelte svelte@5
 node -e "import('@ripple-ui/core').then(m => console.log(Object.keys(m).length))"
+
+# React, in a fresh Vite app: no svelte, echarts or bits-ui should appear.
+npm install @ripple-ui/react react react-dom && ls node_modules | grep -i svelte
 ```
+
+The embed also loads straight from a CDN once published:
+`https://cdn.jsdelivr.net/npm/@ripple-ui/embed@0.1.0/dist/ripple-embed.js`.
 
 npm never lets a version be published twice. A mistake means bumping the
 version and publishing again; `npm unpublish` within 72 hours frees nothing,
@@ -96,10 +119,12 @@ the version number stays burned.
 ## Later releases
 
 1. Bump `version` in the package(s) that changed. If core changes, bump core
-   and publish it before svelte; svelte's `^` range then picks it up.
+   and publish it before svelte; svelte's `^` range then picks it up. The
+   embed bundles svelte and core at build time, so a renderer fix reaches
+   embed (and react) users only when embed is bumped and published too.
 2. Same commands as above, or run the `release-manifest` workflow by hand with
    `publish_npm: true`. The workflow packs through the same script, publishes
-   whichever version is not on npm yet, and attaches both tarballs and the
+   whichever version is not on npm yet in the order above, and attaches every tarball and the
    manifests to a GitHub release. It needs an `NPM_TOKEN` repo secret: a
    granular access token, read and write on the `@ripple-ui` scope only, with
    an expiry. A plain tag push builds the release but does not publish to npm.

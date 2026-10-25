@@ -1,0 +1,26 @@
+{
+  "version": "1.0",
+  "ui": {
+    "type": "card",
+    "props": { "title": "Refund flow", "description": "A workflow diagram, drawn with xyflow inside the shadow root" },
+    "children": [
+      {
+        "type": "workflow",
+        "props": {
+          "interactive": true,
+          "nodes": [
+            { "id": "1", "type": "trigger", "label": "Refund requested", "icon": "play", "status": "done" },
+            { "id": "2", "type": "action", "label": "Check order", "icon": "search", "status": "running" },
+            { "id": "3", "type": "condition", "label": "Under $50?", "icon": "check", "status": "idle" },
+            { "id": "4", "type": "action", "label": "Refund now", "icon": "credit-card", "status": "idle" }
+          ],
+          "edges": [
+            { "from": "1", "to": "2" },
+            { "from": "2", "to": "3" },
+            { "from": "3", "to": "4" }
+          ]
+        }
+      }
+    ]
+  }
+}

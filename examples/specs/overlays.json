@@ -1,0 +1,62 @@
+{
+  "version": "1.0",
+  "ui": {
+    "type": "card",
+    "props": {
+      "title": "Overlays and theme in a shadow root"
+    },
+    "children": [
+      {
+        "type": "flex",
+        "props": {
+          "gap": "12px",
+          "align": "center",
+          "wrap": true
+        },
+        "children": [
+          {
+            "type": "tooltip",
+            "props": {
+              "trigger": "Hover me",
+              "content": "Tooltip from inside the shadow root.",
+              "side": "bottom"
+            }
+          },
+          {
+            "type": "dropdown-menu",
+            "props": {
+              "label": "Actions",
+              "items": [
+                {
+                  "label": "Edit",
+                  "icon": "pencil",
+                  "value": "edit"
+                },
+                {
+                  "label": "Duplicate",
+                  "icon": "copy",
+                  "value": "duplicate"
+                }
+              ]
+            },
+            "on_change": {
+              "action": "emit",
+              "event": "menu_pick",
+              "payload": {
+                "value": "{event}"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "type": "alert",
+        "props": {
+          "title": "Theme follows the option",
+          "description": "This icon's colour comes from a dark: utility, so it tracks theme, not the OS.",
+          "variant": "info"
+        }
+      }
+    ]
+  }
+}

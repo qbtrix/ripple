@@ -1,0 +1,39 @@
+{
+  "version": "1.0",
+  "state": { "email": "", "sent": false },
+  "ui": {
+    "type": "card",
+    "props": { "title": "Weekly signups", "description": "Northwind Labs, last four weeks" },
+    "children": [
+      {
+        "type": "flex",
+        "props": { "direction": "column", "gap": "12px" },
+        "children": [
+          {
+            "type": "chart",
+            "props": {
+              "type": "bar",
+              "data": [
+                { "label": "Wk 1", "value": 120 },
+                { "label": "Wk 2", "value": 184 },
+                { "label": "Wk 3", "value": 167 },
+                { "label": "Wk 4", "value": 241 }
+              ],
+              "height": 200
+            }
+          },
+          { "type": "text", "props": { "text": "Signups are up 42% since the pricing page went live.", "size": "sm" } },
+          { "type": "input", "props": { "label": "Send the report to", "type": "email", "placeholder": "you@example.com" }, "bind": "state.email" },
+          {
+            "type": "button",
+            "props": { "label": "Send report", "disabled": "{state.email == \"\"}" },
+            "on_click": [
+              { "action": "set", "target": "sent", "value": true },
+              { "action": "emit", "event": "report_sent", "payload": { "to": "{state.email}" } }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

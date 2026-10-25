@@ -1,0 +1,62 @@
+{
+  "name": "@ripple-ui/embed",
+  "version": "0.1.0",
+  "license": "MIT",
+  "description": "Ripple for any page: one ES module that renders a Ripple JSON spec inside a shadow root. Works from React, Vue or plain HTML; needs no Svelte or Tailwind.",
+  "keywords": [
+    "ui",
+    "json-spec",
+    "renderer",
+    "ai",
+    "generative-ui",
+    "web-component",
+    "shadow-dom",
+    "embed"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/qbtrix/ripple-iui.git",
+    "directory": "packages/embed"
+  },
+  "homepage": "https://github.com/qbtrix/ripple-iui#readme",
+  "bugs": {
+    "url": "https://github.com/qbtrix/ripple-iui/issues"
+  },
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
+  "module": "./dist/ripple-embed.js",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./dist/ripple-embed.js"
+    }
+  },
+  "files": [
+    "dist",
+    "index.d.ts",
+    "LICENSE",
+    "NOTICE",
+    "THIRD_PARTY_NOTICES.md",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "check": "svelte-check --tsconfig ./tsconfig.json --threshold error",
+    "test": "vitest --run"
+  },
+  "devDependencies": {
+    "@ripple-ui/core": "file:../core",
+    "@ripple-ui/svelte": "file:../svelte",
+    "@sveltejs/vite-plugin-svelte": "^6.2.4",
+    "@tailwindcss/vite": "^4.2.2",
+    "jsdom": "^29.0.2",
+    "svelte": "^5.51.0",
+    "tailwindcss": "^4.2.2",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
+    "vitest": "^4.1.0"
+  }
+}

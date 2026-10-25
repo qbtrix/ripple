@@ -1,0 +1,49 @@
+<!doctype html>
+<!--
+  examples/html/index.html: @ripple-ui/embed from a plain page, no build step.
+  Serve the repo root (e.g. `python3 -m http.server 8080`) after
+  `bun run build`, then open /examples/html/. ?theme=dark switches the theme.
+  From a CDN the import is
+  https://cdn.jsdelivr.net/npm/@ripple-ui/embed@0.1.0/dist/ripple-embed.js
+  The red rule below is the host's own CSS: it must not reach the cards.
+-->
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Ripple embed, plain HTML</title>
+	<style>
+		body { margin: 0; padding: 24px 16px; font: 16px/1.4 Georgia, serif; background: #e7e5df; }
+		body.dark { background: #1b1b18; color: #eee; }
+		h2, p, button, td { color: red !important; }
+		main { max-width: 760px; margin: 0 auto; display: grid; gap: 24px; }
+	</style>
+</head>
+<body>
+	<main>
+		<div id="simple"></div>
+		<div id="overlays"></div>
+		<div id="workflow"></div>
+		<div id="attention"></div>
+	</main>
+	<script type="module">
+		import { mount } from '../../packages/embed/dist/ripple-embed.js';
+
+		const theme = new URLSearchParams(location.search).get('theme') === 'dark' ? 'dark' : 'light';
+		document.body.classList.toggle('dark', theme === 'dark');
+		const events = (window.rippleEvents = []);
+		const onEvent = (e) => void events.push(e);
+		const load = (name) => fetch(`../specs/${name}.json`).then((r) => r.json());
+		const only = new URLSearchParams(location.search).get('only');
+
+		window.cards = {};
+		for (const name of ['simple', 'overlays', 'workflow', 'attention']) {
+			if (only && only !== name) continue;
+			const spec = await load(name === 'simple' ? 'simple-card' : name);
+			window.cards[name] = mount(document.getElementById(name), spec, { theme, onEvent });
+		}
+		await Promise.all(Object.values(window.cards).map((c) => c.ready));
+		document.documentElement.dataset.ready = '1';
+	</script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+{
+	"compilerOptions": {
+		"target": "ES2022",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"lib": [
+			"ESNext",
+			"DOM",
+			"DOM.Iterable"
+		],
+		"strict": true,
+		"skipLibCheck": true,
+		"noEmit": true,
+		"allowImportingTsExtensions": true,
+		"resolveJsonModule": true,
+		"paths": {
+			"$lib": [
+				"../svelte/src/lib"
+			],
+			"$lib/*": [
+				"../svelte/src/lib/*"
+			],
+			"@ripple-ui/core": [
+				"../core/src/index.ts"
+			],
+			"@ripple-ui/core/*": [
+				"../core/src/*"
+			]
+		},
+		"types": [
+			"vite/client"
+		]
+	},
+	"include": [
+		"src/**/*",
+		"index.d.ts",
+		"../svelte/src/lib/vendor-modules.d.ts"
+	]
+}
