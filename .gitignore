@@ -55,3 +55,7 @@ packages/svelte/static/page-audit.js
 
 # examples/smoke.mjs screenshots
 /smoke-out/
+
+# examples/react build output and its local install
+/examples/react/dist/
+/examples/react/node_modules/

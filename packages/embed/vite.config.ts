@@ -13,7 +13,10 @@
 //   it in every embed's shadow root. Lib mode would otherwise emit it as an
 //   assets/*.css nothing loads.
 // - minifyAfter: Vite's lib-mode minify breaks mermaid's elk chunk, so chunks are
-//   minified after import analysis instead. Drop it once Vite's lib minify survives.
+//   minified after import analysis instead. Whitespace and names only: syntax
+//   minification folds `var` lists into for-loop heads, which a consumer's
+//   Rollup then mis-renders when it tree-shakes one declarator (the React
+//   example's build failed on CodeMirror's keyname table).
 // - licenses: writes dist/THIRD_PARTY_LICENSES.txt for every npm package bundled.
 // Component CSS is compiled as injected, so Svelte appends it to the shadow root.
 import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
@@ -156,7 +159,7 @@ const minifyAfter: Plugin = {
 		async handler(_, bundle) {
 			for (const chunk of Object.values(bundle)) {
 				if (chunk.type === 'chunk') {
-					chunk.code = (await transform(chunk.code, { minify: true, format: 'esm', target: 'es2022', legalComments: 'none' })).code;
+					chunk.code = (await transform(chunk.code, { minifyWhitespace: true, minifyIdentifiers: true, format: 'esm', target: 'es2022', legalComments: 'none' })).code;
 				}
 			}
 		}
