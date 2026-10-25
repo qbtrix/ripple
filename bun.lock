@@ -20,9 +20,25 @@
         "vitest": "^4.1.0",
       },
     },
+    "packages/embed": {
+      "name": "@ripple-ui/embed",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@ripple-ui/core": "file:../core",
+        "@ripple-ui/svelte": "file:../svelte",
+        "@sveltejs/vite-plugin-svelte": "^6.2.4",
+        "@tailwindcss/vite": "^4.2.2",
+        "jsdom": "^29.0.2",
+        "svelte": "^5.51.0",
+        "tailwindcss": "^4.2.2",
+        "typescript": "^5.9.3",
+        "vite": "^7.3.1",
+        "vitest": "^4.1.0",
+      },
+    },
     "packages/svelte": {
       "name": "@ripple-ui/svelte",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "dependencies": {
         "@codemirror/lang-html": "^6.4.11",
         "@codemirror/lang-javascript": "^6.2.5",
@@ -347,6 +363,8 @@
     "@polka/url": ["@polka/url@1.0.0-next.29", "", {}, "sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww=="],
 
     "@ripple-ui/core": ["@ripple-ui/core@workspace:packages/core"],
+
+    "@ripple-ui/embed": ["@ripple-ui/embed@workspace:packages/embed"],
 
     "@ripple-ui/svelte": ["@ripple-ui/svelte@workspace:packages/svelte"],
 
@@ -1093,6 +1111,8 @@
     "@layerstack/tailwind/d3-array": ["d3-array@3.2.4", "", { "dependencies": { "internmap": "1 - 2" } }, "sha512-tdQAmyA18i4J7wprpYq8ClcxZy3SC31QMeByyCFyRt7BVHdREQZ5lpzoe5mFEYZUWe+oq8HBvk9JjpibyEV4Jg=="],
 
     "@layerstack/utils/d3-array": ["d3-array@3.2.4", "", { "dependencies": { "internmap": "1 - 2" } }, "sha512-tdQAmyA18i4J7wprpYq8ClcxZy3SC31QMeByyCFyRt7BVHdREQZ5lpzoe5mFEYZUWe+oq8HBvk9JjpibyEV4Jg=="],
+
+    "@ripple-ui/embed/@ripple-ui/core": ["@ripple-ui/core@file:packages/core", { "dependencies": { "esm-env": "^1.2.2", "zod": "^4.0.0" }, "devDependencies": { "typescript": "^5.9.3", "vitest": "^4.1.0" } }],
 
     "@ripple-ui/svelte/@ripple-ui/core": ["@ripple-ui/core@file:packages/core", { "dependencies": { "esm-env": "^1.2.2", "zod": "^4.0.0" }, "devDependencies": { "typescript": "^5.9.3", "vitest": "^4.1.0" } }],
 

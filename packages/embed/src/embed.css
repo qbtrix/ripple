@@ -1,0 +1,12 @@
+/* src/embed.css: the base sheet every embed's shadow root gets (imported with
+   ?inline by index.svelte.ts, so it is a string, never a document stylesheet).
+   The Svelte package's styles plus the site's widget tokens, so an embedded
+   card looks like the playground. shadow-css.ts rewrites :root to the wrapper
+   and lifts @property into document.head; the site's /fonts/ faces are dropped
+   there and re-declared against the bundled woff2 files.
+   `dark:` follows the host's data-theme attribute (set from the theme option),
+   not the OS: Tailwind's default dark variant is a prefers-color-scheme query. */
+@import "../../svelte/src/lib/styles.css";
+@import "../../svelte/src/routes/site.css";
+@source "../../svelte/src/lib";
+@custom-variant dark (&:where(:host([data-theme="dark"]) *));
