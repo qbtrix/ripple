@@ -3,21 +3,26 @@
 // Compiles the Svelte renderer straight from ../svelte/src (and the engine from
 // ../core/src) into dist/ripple-embed.js plus lazy chunks under dist/chunks/,
 // imported by relative URL (base './'), so the folder works from any CDN path.
-// Five plugins carry the embed-only behaviour; the Svelte package is unchanged:
+// The embed-only behaviour lives in plugins here; the Svelte package is unchanged:
 // - lazyRegistry: the eager widget registry (svelte/src/lib/widgets/index.ts)
-//   is swapped for src/registry.ts, and `virtual:ripple-widget-loaders` maps
-//   every widget type to a dynamic import of its own .svelte file (the map is
-//   read from the registry by ../svelte/scripts/widget-sources.ts at build time).
-// - shadowCss: a side-effect `import 'x.css'` anywhere in the graph (xyflow in
-//   Workflow and C4) becomes inline text handed to src/shadow-css.ts, which puts
-//   it in every embed's shadow root. Lib mode would otherwise emit it as an
-//   assets/*.css nothing loads.
-// - minifyAfter: Vite's lib-mode minify breaks mermaid's elk chunk, so chunks are
-//   minified after import analysis instead. Whitespace and names only: syntax
-//   minification folds `var` lists into for-loop heads, which a consumer's
-//   Rollup then mis-renders when it tree-shakes one declarator (the React
-//   example's build failed on CodeMirror's keyname table).
-// - licenses: writes dist/THIRD_PARTY_LICENSES.txt for every npm package bundled.
+//   becomes src/registry.ts, fed by `virtual:ripple-widget-loaders` (one dynamic
+//   import per widget file, read from the registry by
+//   ../svelte/scripts/widget-sources.ts), and the intent, dashboard, flow and
+//   organism renderers become on-demand stand-ins (src/deferred/).
+// - embedFile: `x?embed-file` emits x as its own file (lib mode would inline the
+//   fonts as base64).
+// - lucideLazy: namespace and dynamic imports of the lucide barrel become
+//   src/lucide.ts, one chunk per icon. The `echarts` alias trims Chart's echarts.
+// - shadowCss: side-effect CSS imports (xyflow, leaflet) become text handed to
+//   src/shadow-css.ts, which puts it in every embed's shadow root.
+// - minifyAfter: minifies chunks after import analysis (Vite's lib minify breaks
+//   mermaid's elk chunk), whitespace and names only: syntax minification folds
+//   `var` lists into for-loop heads, which a consumer's Rollup then mis-renders
+//   when it tree-shakes one declarator.
+// - licenses: writes dist/THIRD_PARTY_LICENSES.txt for every bundled package and font.
+// - analyze: RIPPLE_EMBED_ANALYZE=<file> writes what the first load is made of.
+// Core declares no sideEffects, so treeshake treats its modules as pure (it has
+// no import-time effects); otherwise its zod schemas ship in the first load.
 // Component CSS is compiled as injected, so Svelte appends it to the shadow root.
 import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -263,6 +268,6 @@ export default defineConfig({
 	test: {
 		environment: 'jsdom',
 		include: ['src/**/*.test.ts'],
-		testTimeout: 30_000
+		testTimeout: 90_000
 	}
 });

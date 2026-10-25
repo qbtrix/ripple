@@ -6,6 +6,7 @@
 // - measures each spec's first load (gzip of the JS/CSS fetched from dist/),
 // - hovers a tooltip and opens, picks from and dismisses a dropdown inside the
 //   shadow root, checking the pick reached onEvent,
+// - checks a Workflow diagram gets xyflow's CSS and layout inside the shadow root,
 // - checks `dark:` follows the theme option, not the OS (page forced to dark
 //   OS scheme, light theme),
 // - screenshots every page in light and dark to outDir (default ./smoke-out).
@@ -62,7 +63,7 @@ async function firstLoad(page) {
 }
 
 // 1. First-load size per spec, each on a fresh page.
-for (const only of ['simple', 'attention', 'overlays']) {
+for (const only of ['simple', 'attention', 'overlays', 'workflow']) {
 	const { page, errors } = await open(`/examples/html/?only=${only}`);
 	console.log(`size ${only}: ${await firstLoad(page)}`);
 	check(errors.length === 0, `${only} renders without page errors ${errors.join(' | ')}`);
@@ -100,7 +101,24 @@ for (const only of ['simple', 'attention', 'overlays']) {
 	await page.close();
 }
 
-// 3. dark: follows the theme option. The OS says dark, the card says light.
+// 3. Workflow: xyflow's own stylesheet (a side-effect CSS import) reached the
+// shadow root, and xyflow laid its nodes out there.
+{
+	const { page } = await open('/examples/html/?only=workflow');
+	await page.waitForTimeout(1500);
+	const flow = await page.evaluate(() => {
+		const root = document.getElementById('workflow').shadowRoot;
+		const nodes = [...root.querySelectorAll('.svelte-flow__node')];
+		const xs = new Set(nodes.map((n) => Math.round(n.getBoundingClientRect().x)));
+		return { count: nodes.length, position: nodes[0] && getComputedStyle(nodes[0]).position, spread: xs.size };
+	});
+	check(flow.count === 4, `workflow renders its 4 nodes (${flow.count})`);
+	check(flow.position === 'absolute', `xyflow CSS applies in the shadow root (node position: ${flow.position})`);
+	check(flow.spread > 1, `xyflow laid the nodes out (${flow.spread} distinct x positions)`);
+	await page.close();
+}
+
+// 4. dark: follows the theme option. The OS says dark, the card says light.
 {
 	const probe = async (path, colorScheme) => {
 		const { page } = await open(path, { colorScheme });
@@ -119,7 +137,7 @@ for (const only of ['simple', 'attention', 'overlays']) {
 	check(darkOnLightOs !== lightOnLightOs, `dark theme turns dark: on (${darkOnLightOs})`);
 }
 
-// 4. Screenshots, light and dark.
+// 5. Screenshots, light and dark.
 const pages = [['html', '/examples/html/']];
 if (existsSync(join(ROOT, 'examples/react/dist/index.html'))) pages.push(['react', '/examples/react/dist/']);
 for (const [name, path] of pages) {

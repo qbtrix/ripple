@@ -23,6 +23,7 @@
 	<main>
 		<div id="simple"></div>
 		<div id="overlays"></div>
+		<div id="workflow"></div>
 		<div id="attention"></div>
 	</main>
 	<script type="module">
@@ -36,7 +37,7 @@
 		const only = new URLSearchParams(location.search).get('only');
 
 		window.cards = {};
-		for (const name of ['simple', 'overlays', 'attention']) {
+		for (const name of ['simple', 'overlays', 'workflow', 'attention']) {
 			if (only && only !== name) continue;
 			const spec = await load(name === 'simple' ? 'simple-card' : name);
 			window.cards[name] = mount(document.getElementById(name), spec, { theme, onEvent });

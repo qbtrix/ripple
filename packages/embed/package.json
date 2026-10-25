@@ -23,7 +23,6 @@
     "url": "https://github.com/qbtrix/ripple-iui/issues"
   },
   "type": "module",
-  "sideEffects": false,
   "publishConfig": {
     "access": "public"
   },

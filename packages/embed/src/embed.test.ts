@@ -121,15 +121,14 @@ describe('mount', () => {
 		const events: unknown[] = [];
 		const spec = {
 			version: '1.0',
-			ui: { type: 'button', props: { label: 'Go' }, on_click: { action: 'emit', event: 'go', payload: { n: 1 } } }
+			ui: { type: 'switch', props: { label: 'Go' }, on_change: { action: 'emit', event: 'go', payload: { n: 1 } } }
 		};
 		const card = mount(host(), spec, { onEvent: (e) => void events.push(e) });
 		await card.ready;
 		await settle();
-		el.shadowRoot!.querySelector('button')!.click();
+		el.shadowRoot!.querySelector<HTMLElement>('[role=switch]')!.click();
 		await settle();
 		expect(events).toEqual([expect.objectContaining({ type: 'emit' })]);
 		card.destroy();
-		// Button imports Loader2 from the lucide barrel; unbundled, vitest transforms every icon.
-	}, 180_000);
+	});
 });
