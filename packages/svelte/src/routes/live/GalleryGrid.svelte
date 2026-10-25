@@ -15,7 +15,7 @@
     opens the item there); modified clicks keep the browser's default.
     The landing's "Recorded runs" uses it too, untitled, with `lines` 2 (the
     caption's clamp, default 1) and its own --tile-line (the picture's border,
-    default --site-line) and phone layout.
+    default --site-line) and column width.
     DiscoverTile and ItemArt are not used: ItemArt takes only absolute http(s)
     pictures, and the tile carries remix and usage controls a gallery has no
     use for.

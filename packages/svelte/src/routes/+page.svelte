@@ -711,8 +711,8 @@
 		text-underline-offset: 3px;
 	}
 
-	/* Recorded runs: the /live gallery tiles, four across on a desktop, a
-	   snap row that bleeds to the screen edge on a phone. */
+	/* Recorded runs: the /live gallery tiles, four across on a desktop,
+	   one column on a phone. */
 	.examples {
 		padding: 72px 0;
 	}
@@ -736,23 +736,6 @@
 	.runs :global(.tiles) {
 		grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
 		gap: 32px 24px;
-	}
-	@media (max-width: 639px) {
-		.runs :global(.tiles) {
-			display: flex;
-			gap: 16px;
-			/* Bleeds through the phone gutter (.landing's 16px below), tiles start on it. */
-			margin-inline: -16px;
-			padding: 0 16px 4px;
-			overflow-x: auto;
-			scroll-snap-type: x mandatory;
-			scroll-padding-inline: 16px;
-			scrollbar-width: none;
-		}
-		.runs :global(.tiles > li) {
-			flex: 0 0 78%;
-			scroll-snap-align: start;
-		}
 	}
 
 	/* Closer: one primary button; the other two are quiet links. */
