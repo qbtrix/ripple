@@ -9,7 +9,7 @@
 // spec) into the card wire shape `{state,ui}` on the fixture's own chunk
 // boundaries and timing. `mode` drives the mock's failure paths.
 // `recordedExchange` is the same normal answer as one untimed frame list, for
-// ChatSession.seed.
+// ChatSession.seed, ending at the card (the seed's intro already invites a change).
 
 import { replay } from '../live/replay.js';
 import { scenarios, type Scenario, type ScenarioFixture } from '../live/scenarios.js';
@@ -123,7 +123,6 @@ export function recordedExchange(scenario: Scenario, intro: string): SSEFrame[] 
 		{ event: 'card.start', data: { card_id: cardId, title: scenario.title } },
 		{ event: 'card.delta', data: { card_id: cardId, text } },
 		{ event: 'card.final', data: { card_id: cardId, card: JSON.parse(text) } },
-		chunk(DONE),
 		{ event: 'stream_end', data: { assistant_message_id: `msg_${scenario.id}`, cancelled: false } }
 	];
 }

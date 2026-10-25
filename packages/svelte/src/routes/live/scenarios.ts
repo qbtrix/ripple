@@ -12,7 +12,6 @@
 // dropping missing ids, so a group with nothing available never renders.
 // Prompts are visitor-facing: plain words, fictional products, no dashes.
 
-import orderBurger from './fixtures/order-burger.json';
 import billSplitter from './fixtures/bill-splitter.json';
 import savingsCalculator from './fixtures/savings-calculator.json';
 import tokyoTrip from './fixtures/tokyo-trip.json';
@@ -68,7 +67,6 @@ export interface ChatPrompt {
 }
 
 export const scenarios: Scenario[] = [
-	{ id: 'order-burger', title: 'Order a burger', category: 'Store', fixture: orderBurger, needsStore: true, prompt: 'I want to order a burger', steps: true, group: 'Do' },
 	{ id: 'bill-splitter', title: 'Split the bill', category: 'Everyday', fixture: billSplitter, group: 'Do' },
 	{ id: 'savings-calculator', title: 'Watch savings grow', category: 'Money', fixture: savingsCalculator, group: 'Learn' },
 	{ id: 'tokyo-trip', title: 'Plan 5 days in Tokyo', category: 'Travel', fixture: tokyoTrip, group: 'Do' },
@@ -199,7 +197,6 @@ export const suggestionGroups: { label: string; chips: GroupChip[] }[] = [
 	{
 		label: 'Lifestyle',
 		chips: [
-			['order-burger', 'hamburger'],
 			['pizza', 'pizza'],
 			['meal-plan', 'salad', 'Meal planning'],
 			['find-recipe', 'chef-hat'],

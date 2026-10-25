@@ -16,7 +16,7 @@
     prerendered, and browser Back returns to the grid (shallow pushState). No
     model is called at runtime. A return from the store's checkout (`?order=`
     or `?cancelled=1`, checkout.readReturn) shows OrderReceipt above and opens
-    the order run. Old /showcase URLs redirect here (routes/showcase). A
+    the menu-order demo. Old /showcase URLs redirect here (routes/showcase). A
     quiet credit to Anatomy sits under any section with an iso drawing and
     under an opened one.
 
@@ -123,7 +123,7 @@
 	onMount(() => {
 		group = groupIn(location.search);
 		receipt = readReturn(location.search);
-		show(keyIn(location.search) ?? (receipt ? 'order-burger' : null));
+		show(keyIn(location.search) ?? (receipt ? 'demo-menu-order' : null));
 	});
 </script>
 

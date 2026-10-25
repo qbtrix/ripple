@@ -16,7 +16,9 @@
 // demo (its thumb is that same heart) open by key only. A business run (For
 // business) is always its own card in its own group. Pruned items still open:
 // a pruned run or OFF_GRID demo by its key, any other pruned demo's key
-// resolves to the run that replaced it (resolveKey). Thumbs
+// resolves to the run that replaced it (resolveKey), and a retired run's key
+// (RETIRED: the older order-burger recording) opens what replaced it. LEAD is
+// pinned first in its group, so the menu-order demo leads Do and All. Thumbs
 // are static/thumbs/<id>.webp for grid items only, at THUMB_W x THUMB_H.
 // gallery.test.ts holds all of this. Old /showcase URLs redirect here
 // (routes/showcase/[...path]).
@@ -128,13 +130,22 @@ export const liveItems: GalleryItem[] = liveRuns.map((s) => {
 const shownRuns = liveItems.filter((r, i) => !OFF_GRID.has(r.key) && liveItems.findIndex((o) => o.widget === r.widget) === i);
 const runFor = (widget: string) => shownRuns.find((r) => r.widget === widget);
 
-/** The grid: one card per widget type, by group, runs before demos within each. */
+/** Pinned first in its group (and so in All). */
+const LEAD = demoKey('menu-order');
+
+/** The grid: one card per widget type, by group, LEAD first, then runs before demos within each. */
 export const galleryItems: GalleryItem[] = GROUPS.flatMap((g) =>
-	[...shownRuns, ...demoItems.filter((d) => !OFF_GRID.has(d.key) && !runFor(d.widget))].filter((i) => i.group === g)
+	[...shownRuns, ...demoItems.filter((d) => !OFF_GRID.has(d.key) && !runFor(d.widget))]
+		.filter((i) => i.group === g)
+		.sort((a, b) => Number(b.key === LEAD) - Number(a.key === LEAD))
 );
 
-/** A pruned demo's key gives way to the run that replaced it; any other key is itself. */
+/** Retired run keys and what opens in their place, so old links keep working. */
+const RETIRED: Record<string, string> = { 'order-burger': LEAD };
+
+/** A retired run's key opens its replacement; a pruned demo's key the run that replaced it; any other key is itself. */
 export const resolveKey = (key: string) => {
+	if (Object.hasOwn(RETIRED, key)) return RETIRED[key];
 	const demo = demoItems.find((d) => d.key === key);
 	return (demo && runFor(demo.widget)?.key) ?? key;
 };

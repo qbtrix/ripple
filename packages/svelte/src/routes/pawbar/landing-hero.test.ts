@@ -22,7 +22,10 @@ test('the hero leads the chat column, above the first message', () => {
 	const view = render(Landing, { props });
 	const h1 = view.getByRole('heading', { level: 1 });
 	expect(h1.textContent).toBe('Ask for a tool. Ripple builds it while the model is still typing.');
-	expect(view.getByText(/Ripple is the open-source generative UI engine\./)).toBeTruthy();
+	expect(view.getByText(/Ripple is an open-source generative UI engine\./)).toBeTruthy();
+	expect(view.getByText('Svelte 5 today. The core engine is framework-free.')).toBeTruthy();
+	expect(view.container.querySelector('.context')?.textContent?.trim()).toBe('Recorded demo');
+	expect(view.queryByText('The card is live now. Change something and see.')).toBeNull();
 	const firstMessage = view.getByText('A recorded answer, replayed. Change something in the card.');
 	expect(h1.compareDocumentPosition(firstMessage) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 	expect(view.container.querySelector('.hero')?.textContent).not.toContain('bun add');

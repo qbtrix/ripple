@@ -433,11 +433,6 @@ describe('ChatSession', () => {
 		);
 		await legacy.send('x');
 		expect(cardOf(legacy)?.reason).toBe('widget:embed');
-
-		const burger = scenarios.find((s) => s.needsStore)!;
-		const store = new ChatSession((_m, signal) => recordedEvents(burger, { speed: Infinity, signal }));
-		await store.send('order a burger');
-		expect(cardOf(store)?.status).toBe('rejected');
 	});
 
 	test('a repeated card_id closes the first card; an empty card_id still works; keys stay unique', async () => {
@@ -742,6 +737,6 @@ describe('ChatSession.seed', () => {
 		expect(card.status).toBe('final');
 		expect(card.title).toBe(bill.title);
 		expect(JSON.parse(card.text)).toEqual({ state: billSpec.state, ui: billSpec.ui });
-		expect(lastTurn(session).parts.map((p) => p.kind)).toEqual(['text', 'card', 'text']);
+		expect(lastTurn(session).parts.map((p) => p.kind)).toEqual(['text', 'card']);
 	});
 });

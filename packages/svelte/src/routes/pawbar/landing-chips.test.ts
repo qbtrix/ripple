@@ -51,7 +51,7 @@ test('replay mode renders every live chip, the ones that replay here first', asy
 	expect(shown).toEqual(expected);
 	// Groups with no chip that replays here (Browse & discover leads live) come last.
 	expect(shown.at(-1)?.[1].every((t) => !all.some((c) => c.title === t && local.has(c.id)))).toBe(true);
-	for (const t of ['Order a burger', 'Book a table', 'Help me pick a laptop', 'Plan a trip with me']) expect(shown.flatMap(([, ts]) => ts)).toContain(t);
+	for (const t of ['Book a table', 'Help me pick a laptop', 'Plan a trip with me']) expect(shown.flatMap(([, ts]) => ts)).toContain(t);
 });
 
 test('a chip with no recording hands its prompt to Paw OS; a recorded chip still replays', async () => {

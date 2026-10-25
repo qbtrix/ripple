@@ -4,7 +4,8 @@
 // show once as their figures (the weaker same-topic cards open by key only),
 // iso drawings are found for the Anatomy credit, every demo has its component
 // in ./demos, every grid id a committed thumb and nothing else in static/thumbs, thumbs.json lists the grid in order (run `bun run thumbs`
-// after a change), and every old /showcase URL redirects to what it showed.
+// after a change), every landing run is a grid item (so it has a thumb), and every
+// old /showcase URL redirects to what it showed.
 // Files are listed with Vite globs.
 import { expect, test } from 'vitest';
 import { demoItems, galleryItems, GROUPS, isoKeys, itemByKey, liveItems, liveRuns, resolveKey } from './gallery.js';
@@ -86,6 +87,21 @@ test('every item has a committed thumb, thumbs.json matches the grid, and no thu
 	for (const i of galleryItems) expect(thumbs, i.id).toContain(`/static/thumbs/${i.id}.webp`);
 	expect(manifest.map((m) => m.id)).toEqual(galleryItems.map((i) => i.id));
 	expect(thumbs.length).toBe(galleryItems.length);
+});
+
+test('the menu-order demo leads Do and All; the retired order-burger key opens it', () => {
+	expect(galleryItems[0].key).toBe('demo-menu-order');
+	expect(galleryItems.find((i) => i.group === 'Do')?.key).toBe('demo-menu-order');
+	expect(itemByKey('order-burger')?.key).toBe('demo-menu-order');
+	expect(liveItems.some((i) => i.key === 'order-burger')).toBe(false);
+});
+
+test('every landing "Recorded runs" tile is a grid item, so its thumb is captured and committed', () => {
+	for (const s of scenarios) {
+		const item = galleryItems.find((i) => i.id === `live-${s.id}`);
+		expect(item, s.id).toBeDefined();
+		expect(item?.href, s.id).toBe(`/live?s=${s.id}`);
+	}
 });
 
 test('old /showcase URLs redirect to /live, its items, or /ds', () => {
