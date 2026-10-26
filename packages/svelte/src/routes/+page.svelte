@@ -10,7 +10,8 @@
     it works", a ghost link right of the composer, moves the page to the
     sections below. Under the composer a one-line strip: the install command
     with a copy button (it selects the command when the clipboard is blocked),
-    Docs and Gallery, then the Paw OS hint while it fits. The chat opens on one
+    Docs and Gallery, then a link to the band's other frameworks while it
+    fits. The chat opens on one
     finished recorded exchange (the executive dashboard, seeded synchronously with a
     fixed intro, so it is in the prerendered HTML and hydrates without a
     re-render). The chips are the grouped suggestion panel (live/scenarios.ts
@@ -28,8 +29,11 @@
     store (PUBLIC_STORE_URL). Typed text opens Paw OS (PUBLIC_PAWOS_URL) unless
     PUBLIC_TYPED_LOCAL=1 with a localhost endpoint keeps it on the Paw Bar.
     Below: how it works (spec, engine, UI, with a live card), the streaming code
-    sample, the blue band (install command and the coding-agent setup prompt
-    from lib/site/setup-prompt.ts, falling back to its Install docs section),
+    sample, the blue band: a Svelte / React / HTML switch (FRAMEWORKS; the pick
+    is kept in localStorage, prerendered as Svelte) giving the install command,
+    a usage snippet and a styling note, and choosing the streaming sample
+    above (+page.server.ts codeSamples); then the coding-agent setup prompt
+    from lib/site/setup-prompt.ts (falling back to its Install docs section),
     the recorded runs (the /live gallery's thumbnail tiles, GalleryGrid) linking /live, and a closer that points to the ripple skill (and, quietly, Paw OS).
 
   Creative Direction Declaration
@@ -51,7 +55,17 @@
 	import { SETUP_PROMPT } from '$lib/site/setup-prompt.js';
 	import Chat from './pawbar/Chat.svelte';
 	import { EARLY_ACCESS_URL, ChatSession, pawbarTransport, pawosBase, typedStaysLocal, type Transport } from './pawbar/session.svelte.js';
-	import { answerPool, findScenario, pickScenario, recordedEvents, recordedExchange } from './pawbar/recorded.js';
+	import {
+		FALLBACK_INTRO,
+		MATCH_INTRO,
+		SAVED_INTRO,
+		SEED_INTRO,
+		answerPool,
+		findScenario,
+		pickScenario,
+		recordedEvents,
+		recordedExchange
+	} from './pawbar/recorded.js';
 	import { chatPrompts, groupedSuggestions, scenarios } from './live/scenarios.js';
 	import GalleryGrid from './live/GalleryGrid.svelte';
 
@@ -70,6 +84,51 @@
 	const GITHUB_URL = 'https://github.com/qbtrix/ripple-iui';
 	const INSTALL = 'bun add @ripple-ui/svelte';
 	const SETUP_DOC = '/docs/getting-started/install#set-up-with-a-coding-agent';
+	// The band's framework switch: each tab's install command, a short usage
+	// snippet, a line about styling, and the streaming sample's caption above.
+	// The keys match +page.server.ts's codeSamples.
+	const FRAMEWORKS = [
+		{
+			id: 'svelte',
+			label: 'Svelte',
+			install: INSTALL,
+			usage: "<script>\n  import { Ripple } from '@ripple-ui/svelte';\n<\/script>\n\n<Ripple {spec} />",
+			note: 'Needs Tailwind v4.',
+			link: { href: `${GITHUB_URL}/tree/main/packages/svelte#styling`, label: 'Styling setup' },
+			stream: 'parses partial JSON as it lands.'
+		},
+		{
+			id: 'react',
+			label: 'React',
+			install: 'npm i @ripple-ui/react',
+			usage: "import { Ripple } from '@ripple-ui/react';\n\n<Ripple spec={spec} />",
+			note: 'React 18 or later. No Tailwind: the card brings its own styles.',
+			link: { href: `${GITHUB_URL}/tree/main/packages/react#readme`, label: 'React package' },
+			stream: 'takes the text so far as spec while streaming is on.'
+		},
+		{
+			id: 'html',
+			label: 'HTML',
+			install: 'npm i @ripple-ui/embed',
+			usage: "import { mount } from '@ripple-ui/embed';\n\nmount(document.querySelector('#card'), spec);",
+			note: 'Plain HTML, Vue, Angular or any framework. No Tailwind: the card brings its own styles.',
+			link: { href: `${GITHUB_URL}/tree/main/packages/embed#readme`, label: 'Embed package' },
+			stream: 'card.update() takes the text so far, and finish() ends the stream.'
+		}
+	] as const;
+	type Framework = (typeof FRAMEWORKS)[number]['id'];
+	// The last tab picked, per browser. Prerendered HTML is always Svelte.
+	const FW_KEY = 'ripple-landing-framework';
+	let fw = $state<Framework>('svelte');
+	const current = $derived(FRAMEWORKS.find((f) => f.id === fw) ?? FRAMEWORKS[0]);
+	function pick(id: Framework) {
+		fw = id;
+		try {
+			localStorage.setItem(FW_KEY, id);
+		} catch {
+			// Storage blocked: the choice lasts until reload.
+		}
+	}
 
 	// A store-backed chip has no recording: live, it asks the model, whose card
 	// checks out through the store host event; replayed, it hands off to Paw OS.
@@ -77,11 +136,8 @@
 	// The intro says what is replaying: a matching recording, or (when no
 	// recording overlaps the request) the bill splitter, said plainly. Live, the
 	// fallback says it is a saved answer instead.
-	const SEED_INTRO = 'A recorded answer, replayed. Change something in the card.';
-	const intro = (message: string) =>
-		findScenario(message, chatScenarios)
-			? 'Replaying a recorded answer that matches.'
-			: 'No recording matches that yet, so here is the bill splitter.';
+	// (recorded.ts holds these lines, so the chat can show them as quiet meta.)
+	const intro = (message: string) => (findScenario(message, chatScenarios) ? MATCH_INTRO : FALLBACK_INTRO);
 	const recorded =
 		(fixed?: string): Transport =>
 		(message, signal) =>
@@ -93,7 +149,7 @@
 	// is unavailable. Default build: the recordings answer directly.
 	// Live cards also post their audit counts (session.auditCard).
 	const live = LIVE ? pawbarTransport({ endpoint: ENDPOINT, widgetId: WIDGET_ID, siteKey: SITE_KEY }) : null;
-	const session = live ? new ChatSession(live.send, recorded('Here is a saved answer that fits.'), store, live.audit) : new ChatSession(recorded());
+	const session = live ? new ChatSession(live.send, recorded(SAVED_INTRO), store, live.audit) : new ChatSession(recorded());
 	// The seeded opener (the executive dashboard) answers no request, so its intro says what it is.
 	const opener = chatScenarios.find((s) => s.id === 'sales-dashboard');
 	if (opener) session.seed(opener.fixture.prompt, recordedExchange(opener, SEED_INTRO));
@@ -135,10 +191,12 @@
 	// Pretty-printed the way the spec peek shows a card (JsonLines).
 	const specSnippet = JSON.stringify({ state: demoSpec.state, ui: demoSpec.ui });
 
-	// The dock's strip and the band each copy the install command; only the one tapped says so.
-	let copied = $state<'code' | 'strip' | 'prompt' | null>(null);
+	// The dock's strip copies the Svelte install command, the band the selected
+	// tab's command and usage snippet; only the one tapped says so.
+	let copied = $state<'code' | 'strip' | 'usage' | 'prompt' | null>(null);
 	let bandCmd = $state<HTMLElement>();
 	let stripCmd = $state<HTMLElement>();
+	let usageEl = $state<HTMLElement>();
 	// The band's second action: the setup prompt for a coding agent. If the
 	// clipboard is blocked, the Install page shows the same prompt to copy.
 	async function copyPrompt() {
@@ -150,14 +208,15 @@
 			location.assign(SETUP_DOC);
 		}
 	}
-	async function copyInstall(where: 'code' | 'strip') {
+	async function copyText(where: 'code' | 'strip' | 'usage') {
+		const text = where === 'strip' ? INSTALL : where === 'code' ? current.install : current.usage;
 		try {
-			await navigator.clipboard.writeText(INSTALL);
+			await navigator.clipboard.writeText(text);
 			copied = where;
 			setTimeout(() => (copied = null), 1600);
 		} catch {
-			// Clipboard missing or blocked: select the command so the visitor can copy it.
-			const el = { code: bandCmd, strip: stripCmd }[where];
+			// Clipboard missing or blocked: select the text so the visitor can copy it.
+			const el = { code: bandCmd, strip: stripCmd, usage: usageEl }[where];
 			const range = document.createRange();
 			if (el) range.selectNodeContents(el);
 			window.getSelection()?.removeAllRanges();
@@ -179,7 +238,13 @@
 	onMount(() => {
 		// A pay link that opened in this tab comes back here: bring its order back.
 		session.resume();
-		const vv = window.visualViewport;
+		try {
+			const saved = localStorage.getItem(FW_KEY);
+			if (FRAMEWORKS.some((f) => f.id === saved)) fw = saved as Framework;
+		} catch {
+			// Storage blocked: stay on Svelte.
+		}
+const vv = window.visualViewport;
 		vv?.addEventListener('resize', fitKeyboard);
 		vv?.addEventListener('scroll', fitKeyboard);
 		fitKeyboard();
@@ -224,13 +289,13 @@
 			{#snippet foot()}
 				<p class="strip">
 					<code bind:this={stripCmd}>{INSTALL}</code>
-					<button type="button" class="strip-copy" onclick={() => copyInstall('strip')} aria-label="Copy install command">
+					<button type="button" class="strip-copy" onclick={() => copyText('strip')} aria-label="Copy install command">
 						{#if copied === 'strip'}Copied{:else}<Copy size={12} strokeWidth={2} aria-hidden="true" />{/if}
 					</button>
 					<a href="/docs">Docs</a>
 					<a href="/live">Gallery</a>
 				</p>
-				<p class="strip-note">Svelte, or any framework through @ripple-ui/embed.</p>
+				<p class="strip-note"><a href="#install">Svelte, React or plain HTML</a></p>
 			{/snippet}
 		</Chat>
 	</section>
@@ -259,22 +324,35 @@
 		<div class="code-grid">
 			<div class="code-copy">
 				<h2 id="code-title">Stream a spec in a dozen lines</h2>
-				<p><code>streamSpec</code> parses partial JSON as it lands.</p>
+				<p>{#if fw === 'svelte'}<code>streamSpec</code> {:else if fw === 'react'}<code>&lt;Ripple&gt;</code> {/if}{current.stream}</p>
 			</div>
-			<pre class="sample"><code>{@html data.codeSample}</code></pre>
+			<pre class="sample"><code>{@html data.codeSamples[fw]}</code></pre>
 		</div>
 		<!-- The site's one Paw-blue band. -->
-		<div class="band">
+		<div class="band" id="install">
 			<div class="band-inner">
-				<div class="install">
-					<code bind:this={bandCmd}><span aria-hidden="true">$</span> {INSTALL}</code>
-					<button type="button" onclick={() => copyInstall('code')} aria-label="Copy install command">{copied === 'code' ? 'Copied' : 'Copy'}</button>
+				<div class="setup">
+					<div class="fw" role="group" aria-label="Framework">
+						{#each FRAMEWORKS as f (f.id)}
+							<button type="button" aria-pressed={fw === f.id} onclick={() => pick(f.id)}>{f.label}</button>
+						{/each}
+					</div>
+					<div class="install">
+						<code bind:this={bandCmd}><span aria-hidden="true">$</span> {current.install}</code>
+						<button type="button" onclick={() => copyText('code')} aria-label="Copy install command">{copied === 'code' ? 'Copied' : 'Copy'}</button>
+					</div>
+					<div class="install usage">
+						<pre bind:this={usageEl} aria-label="Usage">{current.usage}</pre>
+						<button type="button" onclick={() => copyText('usage')} aria-label="Copy usage snippet">{copied === 'usage' ? 'Copied' : 'Copy'}</button>
+					</div>
 				</div>
-				<div class="install agent">
-					<button type="button" onclick={copyPrompt}>{copied === 'prompt' ? 'Copied' : 'Copy setup prompt'}</button>
-					<p class="small">For your coding agent: it installs, wires streaming and checks its work. <a href={SETUP_DOC}>Read it</a></p>
+				<div class="aside">
+					<div class="install agent">
+						<button type="button" onclick={copyPrompt}>{copied === 'prompt' ? 'Copied' : 'Copy setup prompt'}</button>
+						<p class="small">For your coding agent: it finds your framework, installs, wires streaming and checks its work. <a href={SETUP_DOC}>Read it</a></p>
+					</div>
+					<p class="small">{current.note} <a href={current.link.href}>{current.link.label}</a></p>
 				</div>
-				<p class="small">Needs Tailwind v4. <a href="{GITHUB_URL}/tree/main/packages/svelte#styling">Styling setup</a></p>
 			</div>
 		</div>
 	</section>
@@ -495,17 +573,20 @@
 		background: var(--site-hover);
 		color: var(--site-ink);
 	}
-	.strip a {
+	.strip a,
+	.strip-note a {
 		color: var(--site-soft);
 		text-decoration: none;
 	}
-	.strip a:hover {
+	.strip a:hover,
+	.strip-note a:hover {
 		color: var(--site-ink);
 		text-decoration: underline;
 		text-underline-offset: 3px;
 	}
 	.strip-copy:focus-visible,
-	.strip a:focus-visible {
+	.strip a:focus-visible,
+	.strip-note a:focus-visible {
 		outline: 2px solid var(--ring);
 		outline-offset: 2px;
 	}
@@ -656,15 +737,58 @@
 		background: var(--primary);
 		color: var(--site-on-primary);
 	}
+	/* Two columns: the framework switch, its install line and usage snippet;
+	   then the setup prompt and the tab's styling note. One column under 860px. */
 	.band-inner {
 		max-width: var(--site-max);
 		margin-inline: auto;
-		padding: 28px var(--site-gutter);
+		padding: 32px var(--site-gutter);
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 26rem);
+		align-items: start;
+		gap: 24px 56px;
+	}
+	.setup,
+	.aside {
 		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		justify-content: space-between;
-		gap: 16px 40px;
+		flex-direction: column;
+		gap: 16px;
+		min-width: 0;
+	}
+	/* The framework switch: the site's segmented pattern (live/Player.svelte),
+	   in white on the band; the picked tab takes the band's darker blue. */
+	.fw {
+		display: inline-flex;
+		width: fit-content;
+		border: 1px solid var(--site-on-primary);
+		border-radius: var(--radius-control);
+		overflow: hidden;
+	}
+	.fw button {
+		min-height: 40px;
+		padding: 0 16px;
+		border: 0;
+		background: transparent;
+		color: var(--site-on-primary);
+		font: inherit;
+		font-family: var(--font-sans);
+		font-size: 14px;
+		font-weight: 500;
+		cursor: pointer;
+	}
+	.fw button + button {
+		border-left: 1px solid var(--site-on-primary);
+	}
+	.fw button:hover,
+	.fw button[aria-pressed='true'] {
+		background: color-mix(in oklch, var(--primary) 78%, black);
+	}
+	.fw button[aria-pressed='true'] {
+		font-weight: 650;
+	}
+	.fw button:focus-visible {
+		outline: 2px solid var(--site-on-primary);
+		outline-offset: -4px;
 	}
 	.install {
 		display: flex;
@@ -681,6 +805,22 @@
 	}
 	.install code span {
 		margin-right: 6px;
+	}
+	/* The usage snippet: a darker well, wrapped rather than scrolled. */
+	.usage {
+		align-items: start;
+	}
+	.usage pre {
+		flex: 1;
+		min-width: 0;
+		margin: 0;
+		padding: 12px 14px;
+		border-radius: var(--radius-control);
+		background: color-mix(in oklch, var(--primary) 78%, black);
+		font-size: 13px;
+		line-height: 1.55;
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
 	}
 	.install button {
 		flex: none;
@@ -806,7 +946,8 @@
 	}
 
 	@media (max-width: 860px) {
-		.code-grid {
+		.code-grid,
+		.band-inner {
 			grid-template-columns: minmax(0, 1fr);
 		}
 	}

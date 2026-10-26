@@ -1,10 +1,18 @@
 ---
 title: Install
-description: Add @ripple-ui/svelte to a Svelte 5 app and point Tailwind v4 at its widgets.
+description: Add Ripple to a Svelte 5 app with @ripple-ui/svelte, to a React app with @ripple-ui/react, or to any page with @ripple-ui/embed.
 order: 1
 ---
 
-Ripple renders a JSON UI spec as a live Svelte 5 interface. You render with `@ripple-ui/svelte`. The engine underneath, `@ripple-ui/core`, is its dependency. Until both are on the npm registry, you point your package manager at the core tarball too, as "Add the package" shows.
+Ripple renders a JSON UI spec as a live interface. Pick the package by your app:
+
+- **Svelte 5**: `@ripple-ui/svelte`, styled through your Tailwind v4. Most of this page.
+- **React 18 or later**: `@ripple-ui/react`. See [React](#react).
+- **Plain HTML, Vue, Angular or anything else**: `@ripple-ui/embed`. See [Any framework](#any-framework).
+
+The React and embed packages carry the Svelte renderer, its styles and its fonts compiled in, so they need no Svelte and no Tailwind in your app.
+
+For Svelte, the engine underneath, `@ripple-ui/core`, is a dependency. Until both are on the npm registry, you point your package manager at the core tarball too, as "Add the package" shows.
 
 ## Set up with a coding agent
 
@@ -100,3 +108,38 @@ Render a one-widget spec anywhere in a page:
 ```
 
 If the text shows up unstyled, Tailwind isn't scanning the package. Check the `@source` path against where your CSS file lives.
+
+## React
+
+```bash
+npm install @ripple-ui/react
+```
+
+React 18 or later is a peer dependency. A new `spec` updates the card in place, so what the user typed survives. It is SSR-safe: the server renders an empty div and the card mounts in the browser.
+
+```tsx
+import { Ripple } from '@ripple-ui/react';
+
+export function Answer({ spec, dark }) {
+  return <Ripple spec={spec} theme={dark ? 'dark' : 'light'} onEvent={(e) => console.log(e.type, e)} />;
+}
+```
+
+## Any framework
+
+`@ripple-ui/embed` is one ES module that renders a spec inside a shadow root on the element you pass, so your page's CSS can't reach the card and its styles can't leak out.
+
+```bash
+npm install @ripple-ui/embed
+```
+
+```js
+import { mount } from '@ripple-ui/embed';
+
+const card = mount(document.querySelector('#card'), spec, { theme: 'dark', onEvent: (e) => console.log(e) });
+await card.ready; // first paint is on screen
+card.update(nextSpec); // swaps in place; what the user typed survives
+card.destroy();
+```
+
+Like the Svelte package, these two are not on the npm registry yet, and the v0.8.1 release predates them. Until a release attaches their tarballs, build them from a clone of the repo (`bun install && bun run build` at its root) and install `packages/react` or `packages/embed` by path.

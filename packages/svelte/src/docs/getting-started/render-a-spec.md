@@ -1,6 +1,6 @@
 ---
 title: Render a spec
-description: Pass a JSON spec to the Ripple component and get a working, stateful UI.
+description: Pass a JSON spec to the Ripple component (Svelte or React) or to mount() on any page, and get a working, stateful UI.
 order: 2
 ---
 
@@ -64,7 +64,29 @@ Buttons fire action chains through `on_click`. Actions like `set`, `toggle`, `pu
 
 The spec never calls into your app directly. It sends a request, and your handler decides what to do with it.
 
+## React and plain HTML
+
+The spec and the events are the same. In React:
+
+```tsx
+import { Ripple } from '@ripple-ui/react';
+
+<Ripple spec={spec} onEvent={(event) => console.log(event.type, event)} />;
+```
+
+On any other page, through `@ripple-ui/embed`:
+
+```js
+import { mount } from '@ripple-ui/embed';
+
+const card = mount(document.querySelector('#card'), spec, { onEvent: (event) => console.log(event.type, event) });
+```
+
+Both take a `theme` (`'light'`, the default, or `'dark'`) and render inside a shadow root, so they need no Tailwind. A new spec (`card.update(next)` with the embed) swaps in place and keeps what the user typed. Setup is on [Install](/docs/getting-started/install#react).
+
 ## Props
+
+These are the Svelte component's props.
 
 | Prop | What it does |
 |---|---|

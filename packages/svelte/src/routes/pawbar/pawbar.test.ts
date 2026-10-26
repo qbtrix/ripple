@@ -8,7 +8,7 @@
 import { describe, expect, test, vi } from 'vitest';
 import type { RippleEvent, TerminalResult } from '$lib/index.js';
 import { hideSpecText, parseSSE, segments, type SSEFrame } from './sse.js';
-import { cardChunks, findScenario, pickScenario, recordedEvents, recordedExchange } from './recorded.js';
+import { RECORDED_LINES, cardChunks, findScenario, pickScenario, recordedEvents, recordedExchange } from './recorded.js';
 import { playScenarios } from './play-cards.js';
 import {
 	EARLY_ACCESS_URL,
@@ -231,6 +231,19 @@ describe('recorded scenarios', () => {
 			const { version: _v, ...rest } = JSON.parse(s.fixture.chunks.map((c) => c.text).join(''));
 			expect(card).toEqual(rest);
 		}
+	});
+
+	// The chat dims a paragraph only when it equals one of RECORDED_LINES, so every
+	// line a replay speaks around its card must be in that set.
+	test.each(['normal', 'reject'] as const)('every spoken line of a %s replay is a RECORDED_LINES entry', async (mode) => {
+		const bill = scenarios.find((s) => s.id === 'bill-splitter')!;
+		const spoken: string[] = [];
+		for await (const f of recordedEvents(bill, { mode, speed: Infinity })) {
+			const d = f.data as { content?: unknown };
+			if (f.event === 'chunk' && typeof d.content === 'string') spoken.push(d.content);
+		}
+		expect(spoken.length).toBe(2);
+		for (const line of spoken) expect(RECORDED_LINES.has(line), line).toBe(true);
 	});
 
 	test('pickScenario matches by keywords and defaults to the bill splitter', () => {
