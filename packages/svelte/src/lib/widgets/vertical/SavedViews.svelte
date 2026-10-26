@@ -218,7 +218,7 @@
         onclick={() => oncreate?.()}
         class={cn(
           foldable && 'sv__new--icon',
-          'sv__new inline-flex h-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap border border-ripple-control-border text-[13px] text-ripple-surface-foreground hover:bg-ripple-track',
+          'sv__new inline-flex h-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap border border-ripple-border text-[13px] text-ripple-surface-foreground hover:bg-ripple-track',
           CHIP_RADIUS,
           motion,
           focus

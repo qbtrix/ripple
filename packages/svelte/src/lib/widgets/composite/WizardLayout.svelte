@@ -370,7 +370,7 @@
         border-radius: 50%;
         background: var(--muted);
         color: var(--muted-foreground);
-        border: 2px solid var(--border);
+        border: 1px solid var(--border);
         display: inline-flex;
         align-items: center;
         justify-content: center;

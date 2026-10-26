@@ -222,7 +222,7 @@
 					<article
 						class={[
 							'group relative flex h-full gap-3 rounded-ripple border bg-ripple-surface p-3 transition-[border-color,box-shadow] duration-150 motion-reduce:transition-none',
-							on ? 'border-ripple-accent shadow-[0_0_0_3px_color-mix(in_oklab,var(--ripple-accent)_18%,transparent)]' : 'border-ripple-border hover:border-ripple-foreground/20'
+							on ? 'border-ripple-accent shadow-[0_0_0_3px_color-mix(in_oklab,var(--ripple-accent)_18%,transparent)]' : 'border-ripple-border hover:border-ripple-surface-foreground/20'
 						]}
 						data-place={p.key}
 						data-selected={on || undefined}

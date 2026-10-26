@@ -23,6 +23,9 @@
 //   5. --ripple-accent-text reaches 4.5:1 on every ground the accent atoms
 //      (badge, chip, link button, mention) sit on, at rest and on hover, and
 //      those atoms never paint the accent fill token as text.
+//   6. --ripple-control-border (the 3:1 rim) is painted only by the files in
+//      CONTROL_BORDER_OK: form-control rims and drawn lines. Option cards,
+//      answer tiles, number badges and outline buttons use --ripple-border.
 import { test, expect } from 'vitest';
 import { oklch, toRgb, mix, over, contrast, fromHex, type Lab } from './__fixtures__/contrast.js';
 
@@ -190,6 +193,39 @@ test('checkbox and radio rims use the control border, not the host --input', asy
     expect(src, f).toContain('border-ripple-control-border');
     expect(src, f).not.toMatch(/"border-input /);
   }
+});
+
+// The control border is a 50% ink wash: right for a checkbox rim, loud on an
+// option card, answer tile, number badge or outline button, which use the
+// subtle --ripple-border. Every file allowed to paint it is listed with why.
+// A new use goes in this list only if it is a form-control rim or a drawn line.
+const CONTROL_BORDER_OK: Record<string, string> = {
+  '../components/ui/checkbox/checkbox.svelte': 'checkbox rim',
+  '../components/ui/radio-group/radio-group-item.svelte': 'radio rim',
+  '../components/ui/slider/slider.svelte': 'slider thumb rim',
+  '../widgets/input/OtpInput.svelte': 'OTP input slots',
+  '../widgets/input/Switch.svelte': 'off switch thumb',
+  '../widgets/input/Rating.svelte': 'empty star outline',
+  '../widgets/composite/BillSplit.svelte': 'bill and tip input fields',
+  '../widgets/composite/Itinerary.svelte': 'stop checkbox and leg lines',
+  '../widgets/composite/OrderStatus.svelte': 'pending step pip and connector line',
+  '../widgets/Workflow.svelte': 'edges and handles',
+  '../widgets/workflow/WorkflowNode.svelte': 'node hover and edge anchors',
+  '../widgets/vertical/OrgChart.svelte': 'connector lines',
+  '../widgets/data/GanttChart.svelte': 'dependency arrows',
+};
+
+test('only form-control rims and drawn lines use the control border', () => {
+  const offenders: string[] = [];
+  for (const [rel, src] of Object.entries(ALL_SVELTE)) {
+    if (rel.includes('.test.') || rel in CONTROL_BORDER_OK) continue;
+    const code = src
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '');
+    if (/control-border/.test(code)) offenders.push(rel);
+  }
+  expect(offenders).toEqual([]);
 });
 
 // Treemap tiles: the accent mixed into the card on treemap.ts's RAMP (RAMP_DARK
