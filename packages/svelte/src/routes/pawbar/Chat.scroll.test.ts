@@ -117,12 +117,15 @@ test('without pageScroll the chat keeps its own scroll box', () => {
 });
 
 test('pageScroll: a DOM without scrollIntoView (jsdom) scrolls nothing and throws nothing', async () => {
-	const saved = Element.prototype.scrollIntoView;
-	// @ts-expect-error jsdom ships no scrollIntoView; model that DOM.
-	delete Element.prototype.scrollIntoView;
+	// jsdom ships no scrollIntoView (earlier tests stub one): model that DOM.
+	const saved = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollIntoView');
+	Reflect.deleteProperty(Element.prototype, 'scrollIntoView');
 	const rejections: unknown[] = [];
 	const onRejection = (e: unknown) => rejections.push(e);
-	process.on('unhandledRejection', onRejection);
+	// Node's process, untyped in this browser-typed project.
+	type Hook = (event: string, fn: (e: unknown) => void) => void;
+	const proc = (globalThis as unknown as { process: { on: Hook; off: Hook } }).process;
+	proc.on('unhandledRejection', onRejection);
 	try {
 		const session = new ChatSession(async function* () {
 			yield { event: 'stream_end', data: { cancelled: false } };
@@ -133,7 +136,7 @@ test('pageScroll: a DOM without scrollIntoView (jsdom) scrolls nothing and throw
 		await new Promise((r) => setTimeout(r, 20));
 		expect(rejections).toEqual([]);
 	} finally {
-		process.off('unhandledRejection', onRejection);
-		Element.prototype.scrollIntoView = saved;
+		proc.off('unhandledRejection', onRejection);
+		if (saved) Object.defineProperty(Element.prototype, 'scrollIntoView', saved);
 	}
 });
