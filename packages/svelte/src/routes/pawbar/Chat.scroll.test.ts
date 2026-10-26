@@ -115,3 +115,25 @@ test('without pageScroll the chat keeps its own scroll box', () => {
 	expect(view.container.querySelector('.chat')?.hasAttribute('data-page-scroll')).toBe(false);
 	expect(view.container.querySelector('.scroller')).toBeTruthy();
 });
+
+test('pageScroll: a DOM without scrollIntoView (jsdom) scrolls nothing and throws nothing', async () => {
+	const saved = Element.prototype.scrollIntoView;
+	// @ts-expect-error jsdom ships no scrollIntoView; model that DOM.
+	delete Element.prototype.scrollIntoView;
+	const rejections: unknown[] = [];
+	const onRejection = (e: unknown) => rejections.push(e);
+	process.on('unhandledRejection', onRejection);
+	try {
+		const session = new ChatSession(async function* () {
+			yield { event: 'stream_end', data: { cancelled: false } };
+		});
+		const view = render(Chat, { session, pageScroll: true, suggestions: [{ id: 'a', title: 'Try it', prompt: 'Go' }] });
+		await fireEvent.click(view.getByRole('button', { name: 'Try it' }));
+		await vi.waitFor(() => expect(view.container.querySelector('li.turn[data-role="user"]')).toBeTruthy());
+		await new Promise((r) => setTimeout(r, 20));
+		expect(rejections).toEqual([]);
+	} finally {
+		process.off('unhandledRejection', onRejection);
+		Element.prototype.scrollIntoView = saved;
+	}
+});
