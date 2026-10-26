@@ -6,6 +6,20 @@ import { createHeadlessStateManager } from '../headless/state.js';
 import { EventDispatcher } from '../core/event-dispatcher.js';
 import { WidgetRegistry } from '../core/widget-registry.js';
 
+// Fastest of a few runs: blowup is slow on every run, a busy CI runner only on some.
+function minMs(fn: () => void, runs = 3): number {
+	let best = Infinity;
+	for (let i = 0; i < runs; i++) {
+		const t0 = performance.now();
+		fn();
+		best = Math.min(best, performance.now() - t0);
+	}
+	return best;
+}
+// Linear code takes ~20ms at these sizes on a laptop; a naive quadratic takes ~850ms.
+// 250ms leaves room for a slow shared runner and still trips on any blowup.
+const LINEAR_CEILING_MS = 250;
+
 const BAD = [
 	'javascript:alert(1)',
 	'JavaScript:alert(1)',
@@ -118,18 +132,20 @@ describe('safeStyle', () => {
 	});
 	it('stays linear on adversarial comment input', () => {
 		const evil = '/*a'.repeat(34000);
-		const t0 = performance.now();
-		safeStyle({ width: evil });
-		safeStyle(`width: ${evil}`);
-		expect(performance.now() - t0).toBeLessThan(50);
+		const ms = minMs(() => {
+			safeStyle({ width: evil });
+			safeStyle(`width: ${evil}`);
+		});
+		expect(ms).toBeLessThan(LINEAR_CEILING_MS);
 	});
 	it('stays linear on deeply nested resource functions', () => {
-		const n = 20000;
+		const n = 40000;
 		const evil = 'src('.repeat(n) + ')'.repeat(n);
-		const t0 = performance.now();
-		expect(safeStyle({ 'background-image': evil })).toEqual({});
-		expect(safeStyle(`background-image: ${evil}`)).toBe('');
-		expect(performance.now() - t0).toBeLessThan(50);
+		const ms = minMs(() => {
+			expect(safeStyle({ 'background-image': evil })).toEqual({});
+			expect(safeStyle(`background-image: ${evil}`)).toBe('');
+		});
+		expect(ms).toBeLessThan(LINEAR_CEILING_MS);
 	});
 	it('refuses @import and comment-split script tokens', () => {
 		expect(safeStyle({ color: 'red; @import "//evil.example/x.css"' })).toEqual({});
