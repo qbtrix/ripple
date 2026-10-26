@@ -270,7 +270,7 @@
 		focusRing
 	];
 	const secondaryBtn = [
-		'inline-flex h-11 items-center justify-center gap-2 rounded-md border border-ripple-control-border bg-ripple-surface px-5 text-body-emph transition-colors hover:border-ripple-accent hover:bg-ripple-accent/6 motion-reduce:transition-none',
+		'inline-flex h-11 items-center justify-center gap-2 rounded-md border border-ripple-border bg-ripple-surface px-5 text-body-emph transition-colors hover:border-ripple-accent hover:bg-ripple-accent/6 motion-reduce:transition-none',
 		focusRing
 	];
 	const count = (n: number) => `${n} ${n === 1 ? 'question' : 'questions'}`;
@@ -462,7 +462,7 @@
 															? 'border-ripple-error bg-ripple-error/12'
 															: revealed
 																? 'border-ripple-border bg-ripple-surface-foreground/4 text-ripple-muted-foreground'
-																: 'cursor-pointer border-ripple-control-border bg-ripple-surface-foreground/4 hover:border-ripple-accent hover:bg-ripple-accent/6 has-[:focus-visible]:border-ripple-accent has-[:focus-visible]:bg-ripple-accent/6'
+																: 'cursor-pointer border-ripple-border bg-ripple-surface-foreground/4 hover:border-ripple-accent hover:bg-ripple-accent/6 has-[:focus-visible]:border-ripple-accent has-[:focus-visible]:bg-ripple-accent/6'
 												]}
 											>
 												<input
@@ -485,7 +485,7 @@
 															? 'bg-ripple-success text-ripple-success-foreground'
 															: isWrongPick
 																? 'bg-ripple-error text-ripple-error-foreground'
-																: 'text-ripple-muted-foreground ring-1 ring-ripple-control-border ring-inset'
+																: 'text-ripple-muted-foreground ring-1 ring-ripple-border ring-inset'
 													]}
 												>
 													{#if isRight}<Check size={14} strokeWidth={3} />{:else if isWrongPick}<X size={14} strokeWidth={3} />{:else}{pos + 1}{/if}

@@ -907,7 +907,7 @@
     background: color-mix(in oklab, var(--ripple-accent) 88%, var(--ripple-surface-foreground));
   }
   .rorder-btn-outline {
-    border-color: var(--ripple-control-border);
+    border-color: var(--ripple-border);
   }
   .rorder-btn-outline:hover,
   .rorder-btn-ghost:hover {
