@@ -37,12 +37,13 @@
     browser session. Clipped, never its own scroll container: 8 lines under
     1024px, beside the card from 1024px; Expand shows it all. Turns there at
     mount (the prerendered exchange) neither animate in nor open a peek.
-    Scrolling: the log (with the optional `top` snippet, the hero) is the chat's
-    own scroll container; nothing calls scrollIntoView. It follows new content
-    only while the visitor is at the bottom; their own message always jumps
-    there; scrolled up, growth shows a "New" pill. Until the first turn it stays
-    at its top. The dock: the panel, the composer with `more` to its right, a
-    foot row (`foot`). The log is role="log", aria-busy while
+    Scrolling: by default (the playground) the log, with the `top` snippet, is
+    the chat's own scroll box, following new content only while the visitor is
+    at the bottom (their own message jumps there; scrolled up, a "New" pill).
+    `pageScroll` (the landing): no inner box, the page scrolls, the dock sticks
+    to the viewport's bottom, and only the visitor's own action (a message, a
+    replay, a pay nudge) scrolls that turn under the site bar; streaming never
+    does. The dock: the panel, the composer with `more` right, a `foot` row. The log is role="log", aria-busy while
     streaming; one polite region says "Building" and "Done" per turn. DOM ids
     are positional, never Card.id. Playground props: `chips`, `onspec`; exports
     `ask`, `focus`.
@@ -96,7 +97,8 @@
 		foot,
 		chips = null,
 		onspec,
-		foldChips = false
+		foldChips = false,
+		pageScroll = false
 	}: {
 		session: ChatSession;
 		suggestions?: Suggestion[];
@@ -119,6 +121,8 @@
 		onspec?: (card: Card) => void;
 		/** After the visitor's first turn the chip row folds into a toggle beside the composer (the landing). */
 		foldChips?: boolean;
+		/** The page scrolls, not the chat: no inner scroll box, a sticky dock (the landing). */
+		pageScroll?: boolean;
 	} = $props();
 
 	// Chip rows in the order their groups first appear.
@@ -184,6 +188,11 @@
 	const motion = (): ScrollBehavior => (globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth');
 	const nearBottom = (el: HTMLElement) => el.scrollHeight - el.scrollTop - el.clientHeight < 16;
 
+	/** pageScroll: moves the window so turn `id`'s top sits under the sticky bar. Only from the visitor's own action. */
+	function showTurn(id: number) {
+		inner?.querySelector(`[data-turn="${id}"]`)?.scrollIntoView?.({ block: 'start', behavior: motion() });
+	}
+
 	/** Scrolls only the chat's own container, never the page. */
 	function toBottom(behavior: ScrollBehavior = 'auto') {
 		if (!scroller) return;
@@ -207,7 +216,7 @@
 	// Growth (a turn arriving, a card streaming and drawing) follows only while stuck,
 	// and only once there are turns: the `top` snippet growing (a note, an alert) keeps the top in view.
 	$effect(() => {
-		if (!scroller || !inner || typeof ResizeObserver === 'undefined') return;
+		if (pageScroll || !scroller || !inner || typeof ResizeObserver === 'undefined') return;
 		stuck = nearBottom(scroller);
 		const ro = new ResizeObserver(() => {
 			if (stuck && session.turns.length) toBottom();
@@ -287,7 +296,7 @@
 		shownAsk = id;
 		// A turn already there at mount stays put: the chat opens at its top.
 		if (seeded.has(id)) return;
-		void tick().then(() => toBottom());
+		void tick().then(() => (pageScroll ? showTurn(id) : toBottom()));
 	});
 
 	function onKey(e: KeyboardEvent) {
@@ -362,7 +371,8 @@
 			update(next: number) {
 				if (next <= nudge) return;
 				nudge = next;
-				if (scroller) {
+				if (pageScroll) node.scrollIntoView?.({ block: 'center', behavior: motion() });
+				else if (scroller) {
 					const r = node.getBoundingClientRect();
 					const box = scroller.getBoundingClientRect();
 					if (r.top < box.top || r.bottom > box.bottom) scroller.scrollTo?.({ top: scroller.scrollTop + r.top - box.top - 12, behavior: motion() });
@@ -510,7 +520,7 @@
 <svelte:window onkeydown={(e) => e.key === 'Escape' && closePanel()} onpagehide={() => session.reportSeen()} />
 <svelte:document onvisibilitychange={() => document.visibilityState === 'hidden' && session.reportSeen()} />
 
-<div class="chat">
+<div class="chat" data-page-scroll={pageScroll || undefined}>
 	<p class="sr-only" aria-live="polite">{announce}</p>
 	<div class="scroll-wrap">
 		<div class="scroller" bind:this={scroller} onscroll={onScroll}>
@@ -526,7 +536,7 @@
 				{#if session.turns.length}
 					<ol class="log" role="log" aria-label="Conversation" aria-busy={session.busy}>
 						{#each session.turns as turn, t (turn.id)}
-							<li class="turn" data-role={turn.role} data-seeded={seeded.has(turn.id) || undefined}>
+							<li class="turn" data-turn={turn.id} data-role={turn.role} data-seeded={seeded.has(turn.id) || undefined}>
 								{#if turn.role === 'user'}
 									<p class="ask">{turn.parts[0]?.kind === 'text' ? turn.parts[0].text : ''}</p>
 								{:else}
@@ -563,7 +573,10 @@
 												{:else if turn.notice.link}<a href={turn.notice.link.href}>{turn.notice.link.label}</a>{/if}
 											</span>
 											{#if turn.notice.replay}
-												<button type="button" class="replay" disabled={session.busy} onclick={() => session.replayRecorded(turn.id)}>
+												<button type="button" class="replay" disabled={session.busy} onclick={() => {
+														session.replayRecorded(turn.id);
+														if (pageScroll) void tick().then(() => showTurn(turn.id));
+													}}>
 													Play the closest saved answer here
 												</button>
 											{/if}
@@ -697,6 +710,10 @@
 		min-height: 0;
 		overflow-y: auto;
 		scrollbar-width: thin;
+	}
+	/* pageScroll: the page is the only scroll; the box just grows. */
+	.chat[data-page-scroll] .scroller {
+		overflow: visible;
 	}
 	.scroll-inner {
 		display: flex;
@@ -1433,6 +1450,25 @@
 	   bottom-anchored, so the toggle and composer stay put. */
 	.dock {
 		position: relative;
+	}
+	/* pageScroll: the dock sticks to the viewport's bottom while the chat is on
+	   screen, on the page ground with a short fade above so the log slides
+	   under it. z 1 keeps the open panel under the site bar. */
+	.chat[data-page-scroll] .dock {
+		position: sticky;
+		bottom: 0;
+		z-index: 1;
+		background: var(--site-ground);
+	}
+	.chat[data-page-scroll] .dock::before {
+		content: '';
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: 100%;
+		height: 16px;
+		background: linear-gradient(to top, var(--site-ground), transparent);
+		pointer-events: none;
 	}
 	.chip-groups[data-overlay] {
 		position: absolute;

@@ -2,13 +2,13 @@
   @file routes/+page.svelte
   @description Ripple's landing, chat-first, laid out like a Paw OS chat: under
     the site bar a thin context row says which demo this is (recorded or live),
-    then the chat fills exactly the first screen (100dvh less the bar; while
-    an iOS keyboard shrinks the visual viewport, its height instead, so the
-    composer stays above the keyboard). The page never scrolls on its own: the
-    chat's own container scrolls, with the hero (the h1 and a lede) at its top,
-    above the first message, and the chips and composer pinned below it. "How
-    it works", a ghost link right of the composer, moves the page to the
-    sections below. Under the composer a one-line strip: the install command
+    then the chat, at least the first screen tall. One scroll, the page's: the
+    chat (Chat pageScroll) has no scroll box of its own; the hero (the h1 and a
+    lede) sits above the first message, the transcript grows in the page, and
+    the chips and composer stick to the viewport's bottom while the chat is on
+    screen. A chip or replay scrolls the window to the new turn. "How it
+    works", a ghost link right of the composer, moves the page to the sections
+    below (html scroll-padding-top keeps anchors clear of the bar). Under the composer a one-line strip: the install command
     with a copy button (it selects the command when the clipboard is blocked),
     Docs and Gallery, then a link to the band's other frameworks while it
     fits. The chat opens on one
@@ -224,17 +224,6 @@
 		}
 	}
 
-	// iOS keeps the layout viewport under an on-screen keyboard and shrinks only
-	// the visual one, so 100dvh would put the composer under the keyboard. While
-	// the visual viewport is shorter than the layout's, the app is sized to it;
-	// otherwise (desktop, no keyboard, pinch zoom) the var is unset and 100dvh holds.
-	let visibleHeight = $state<string>();
-	function fitKeyboard() {
-		const vv = window.visualViewport;
-		const h = vv ? vv.height * vv.scale : 0;
-		visibleHeight = vv && h < document.documentElement.clientHeight - 1 ? `${h}px` : undefined;
-	}
-
 	onMount(() => {
 		// A pay link that opened in this tab comes back here: bring its order back.
 		session.resume();
@@ -244,15 +233,7 @@
 		} catch {
 			// Storage blocked: stay on Svelte.
 		}
-const vv = window.visualViewport;
-		vv?.addEventListener('resize', fitKeyboard);
-		vv?.addEventListener('scroll', fitKeyboard);
-		fitKeyboard();
-		return () => {
-			session.stop();
-			vv?.removeEventListener('resize', fitKeyboard);
-			vv?.removeEventListener('scroll', fitKeyboard);
-		};
+		return () => session.stop();
 	});
 </script>
 
@@ -265,16 +246,16 @@ const vv = window.visualViewport;
 </svelte:head>
 
 <main class="landing">
-	<section class="app" aria-labelledby="hero-title" style:--visible-height={visibleHeight}>
+	<section class="app" aria-labelledby="hero-title">
 		<!-- PE's chat room header: name, topic, actions on the right (none here). -->
 		<div class="context">
 			<div class="context-info">
 				<p>{LIVE ? 'Live demo' : 'Recorded demo'}</p>
 			</div>
 		</div>
-		<Chat {session} {suggestions} pawosUrl={PAWOS_URL} typedLocal={TYPED_LOCAL} foldChips>
+		<Chat {session} {suggestions} pawosUrl={PAWOS_URL} typedLocal={TYPED_LOCAL} foldChips pageScroll>
 			{#snippet top()}
-				<!-- The hero: top of the chat's scroll container, above the first message. -->
+				<!-- The hero: top of the chat, above the first message. -->
 				<header class="hero">
 					<h1 id="hero-title">Ask for a tool. <span>Ripple builds it while the model is still typing.</span></h1>
 					<p class="lede">
@@ -427,32 +408,18 @@ const vv = window.visualViewport;
 		color: var(--primary-ink);
 	}
 
-	/* The app view: exactly the first screen under the bar (dvh, or the
-	   visible height above an iOS keyboard, less the top safe area), so the
-	   page itself sits still at the top. The context row, then the chat,
-	   whose own container scrolls; its dock is pinned at the bottom. Only
-	   "How it works" moves the page. */
+	/* The app view: at least the first screen under the bar, so a short chat
+	   still puts its dock at the bottom. It grows with the transcript; the
+	   page is the only scroll. */
 	.app {
 		max-width: 880px !important;
 		box-sizing: border-box;
-		height: calc(var(--visible-height, 100dvh) - var(--site-topbar) - env(safe-area-inset-top, 0px));
-		min-height: 420px;
+		min-height: max(420px, calc(100dvh - var(--site-topbar) - env(safe-area-inset-top, 0px)));
 		display: flex;
 		flex-direction: column;
 	}
 	.app :global(.chat) {
 		flex: 1;
-		min-height: 0;
-	}
-	/* Desktop: the chat's scrollbar moves out into the page gutter with 16px
-	   of air before it, so bubbles and cards never touch it and the column
-	   keeps its width. Phones use overlay scrollbars and keep the default. */
-	@media (min-width: 768px) {
-		.app :global(.scroller) {
-			scrollbar-gutter: stable;
-			margin-right: -16px;
-			padding-right: 16px;
-		}
 	}
 	/* PE's room header: 44px, 6px 12px, a bottom hairline; name 13px/500,
 	   topic 12px muted. Full bleed. */
@@ -506,9 +473,9 @@ const vv = window.visualViewport;
 		color: var(--site-soft);
 		text-wrap: pretty;
 	}
-	/* "How it works": a compact ghost link right of the composer; the one thing
-	   that moves the page (smooth, or a jump under reduced motion: the
-	   layout's scroll-behavior). */
+	/* "How it works": a compact ghost link right of the composer to the
+	   sections below (smooth, or a jump under reduced motion: the layout's
+	   scroll-behavior). */
 	.more {
 		flex: none;
 		display: inline-flex;
