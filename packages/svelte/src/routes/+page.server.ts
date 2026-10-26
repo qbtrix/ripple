@@ -26,17 +26,22 @@ import { Ripple } from '@ripple-ui/react';
 
 export function Answer() {
   const [text, setText] = useState('');
-  const [done, setDone] = useState(false);
+  const [streaming, setStreaming] = useState(true);
 
   async function generate(prompt) {
     // your endpoint asks the model for a spec and streams the JSON back
     const res = await fetch('/api/ui', { method: 'POST', body: prompt });
     const chunks = res.body.pipeThrough(new TextDecoderStream());
-    for await (const part of chunks) setText((t) => t + part);
-    setDone(true);
+    const reader = chunks.getReader();
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      setText((t) => t + value);
+    }
+    setStreaming(false);
   }
 
-  return text ? <Ripple spec={text} streaming={!done} /> : null;
+  return text ? <Ripple spec={text} streaming={streaming} /> : null;
 }`;
 
 const html = `import { mount } from '@ripple-ui/embed';
@@ -47,8 +52,13 @@ async function generate(prompt) {
   const el = document.querySelector('#card');
   const card = mount(el, '', { streaming: true });
   const chunks = res.body.pipeThrough(new TextDecoderStream());
+  const reader = chunks.getReader();
   let text = '';
-  for await (const part of chunks) card.update((text += part));
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    card.update((text += value));
+  }
   card.finish();
 }`;
 

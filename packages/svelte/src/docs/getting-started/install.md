@@ -142,4 +142,4 @@ card.update(nextSpec); // swaps in place; what the user typed survives
 card.destroy();
 ```
 
-Like the Svelte package, these two are not on the npm registry yet, and the v0.8.1 release predates them. Until a release attaches their tarballs, build them from a clone of the repo (`bun install && bun run build` at its root) and install `packages/react` or `packages/embed` by path.
+Like the Svelte package, these two are not on the npm registry yet, and the v0.8.1 release predates them, so these commands work once they are published.

@@ -129,15 +129,20 @@ import { Ripple } from '@ripple-ui/react';
 
 export function Generated() {
   const [text, setText] = useState('');
-  const [done, setDone] = useState(false);
+  const [streaming, setStreaming] = useState(true);
 
   async function generate(prompt: string) {
     const res = await fetch('/api/ui', { method: 'POST', body: JSON.stringify({ prompt }) });
-    for await (const part of res.body!.pipeThrough(new TextDecoderStream())) setText((t) => t + part);
-    setDone(true);
+    const reader = res.body!.pipeThrough(new TextDecoderStream()).getReader();
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      setText((t) => t + value);
+    }
+    setStreaming(false);
   }
 
-  return text ? <Ripple spec={text} streaming={!done} /> : <button onClick={() => generate('A signup form')}>Generate</button>;
+  return text ? <Ripple spec={text} streaming={streaming} /> : <button onClick={() => generate('A signup form')}>Generate</button>;
 }
 ```
 
@@ -149,8 +154,13 @@ import { mount } from '@ripple-ui/embed';
 async function generate(prompt) {
   const res = await fetch('/api/ui', { method: 'POST', body: JSON.stringify({ prompt }) });
   const card = mount(document.querySelector('#card'), '', { streaming: true });
+  const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
   let text = '';
-  for await (const part of res.body.pipeThrough(new TextDecoderStream())) card.update((text += part));
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    card.update((text += value));
+  }
   card.finish();
 }
 ```

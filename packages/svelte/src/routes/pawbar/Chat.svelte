@@ -20,10 +20,8 @@
     with a hairline, typing dots and a shimmer label while waiting, shimmer bars
     while a card streams. Assistant text is markdown-lite (paragraphs, **bold**,
     `code`) from Svelte nodes, never {@html}, and never a card's raw spec
-    (hideSpecText; "Card hidden." when no card shows). Status reads quieter
-    than answers: a paragraph equal to a replay's spoken line (recorded.ts
-    RECORDED_LINES), the notes and the info and stopped notices take soft ink,
-    one step smaller; error, limit, busy and handoff notices stay full ink.
+    (hideSpecText; "Card hidden." when no card shows). A replay's spoken lines
+    (recorded.ts RECORDED_LINES) and info/stopped notices render as quiet meta.
     Cards: <Ripple streaming> while it arrives, remounted as <Ripple spec> on
     final. A map card's OSM tiles take TrackCard's dark filter; a spec rooted in
     a `card` widget gets a bare frame. Host events go to session.hostEvent

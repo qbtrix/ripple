@@ -236,11 +236,10 @@ describe('recorded scenarios', () => {
 	// The chat dims a paragraph only when it equals one of RECORDED_LINES, so every
 	// line a replay speaks around its card must be in that set.
 	test.each(['normal', 'reject'] as const)('every spoken line of a %s replay is a RECORDED_LINES entry', async (mode) => {
-		const bill = scenarios.find((s) => s.id === 'bill-splitter')!;
+		const splitter = scenarios.find((s) => s.id === 'bill-splitter')!;
 		const spoken: string[] = [];
-		for await (const f of recordedEvents(bill, { mode, speed: Infinity })) {
-			const d = f.data as { content?: unknown };
-			if (f.event === 'chunk' && typeof d.content === 'string') spoken.push(d.content);
+		for await (const { event, data } of recordedEvents(splitter, { mode, speed: Infinity })) {
+			if (event === 'chunk' && typeof data === 'object' && data !== null && 'content' in data && typeof data.content === 'string') spoken.push(data.content);
 		}
 		expect(spoken.length).toBe(2);
 		for (const line of spoken) expect(RECORDED_LINES.has(line), line).toBe(true);
