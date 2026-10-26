@@ -190,7 +190,7 @@
 
 	/** pageScroll: moves the window so turn `id`'s top sits under the sticky bar. Only from the visitor's own action. */
 	function showTurn(id: number) {
-		inner?.querySelector(`[data-turn="${id}"]`)?.scrollIntoView({ block: 'start', behavior: motion() });
+		inner?.querySelector(`[data-turn="${id}"]`)?.scrollIntoView?.({ block: 'start', behavior: motion() });
 	}
 
 	/** Scrolls only the chat's own container, never the page. */
@@ -371,7 +371,7 @@
 			update(next: number) {
 				if (next <= nudge) return;
 				nudge = next;
-				if (pageScroll) node.scrollIntoView({ block: 'center', behavior: motion() });
+				if (pageScroll) node.scrollIntoView?.({ block: 'center', behavior: motion() });
 				else if (scroller) {
 					const r = node.getBoundingClientRect();
 					const box = scroller.getBoundingClientRect();
