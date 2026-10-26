@@ -806,12 +806,14 @@ const vv = window.visualViewport;
 	.install code span {
 		margin-right: 6px;
 	}
-	/* The usage snippet: a darker well, wrapped rather than scrolled. */
+	/* The usage snippet: a darker well, wrapped at spaces rather than scrolled;
+	   on a phone its Copy drops below so the well gets the full width. */
 	.usage {
+		flex-wrap: wrap;
 		align-items: start;
 	}
 	.usage pre {
-		flex: 1;
+		flex: 1 1 20rem;
 		min-width: 0;
 		margin: 0;
 		padding: 12px 14px;
@@ -820,7 +822,7 @@ const vv = window.visualViewport;
 		font-size: 13px;
 		line-height: 1.55;
 		white-space: pre-wrap;
-		overflow-wrap: anywhere;
+		overflow-wrap: break-word;
 	}
 	.install button {
 		flex: none;
@@ -957,6 +959,9 @@ const vv = window.visualViewport;
 		}
 		.band-inner {
 			padding-inline: 16px;
+		}
+		.usage pre {
+			font-size: 12.5px;
 		}
 		.lede {
 			font-size: 16px;

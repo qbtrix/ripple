@@ -31,7 +31,8 @@ export function Answer() {
   async function generate(prompt) {
     // your endpoint asks the model for a spec and streams the JSON back
     const res = await fetch('/api/ui', { method: 'POST', body: prompt });
-    for await (const part of res.body.pipeThrough(new TextDecoderStream())) setText((t) => t + part);
+    const chunks = res.body.pipeThrough(new TextDecoderStream());
+    for await (const part of chunks) setText((t) => t + part);
     setDone(true);
   }
 
@@ -43,9 +44,11 @@ const html = `import { mount } from '@ripple-ui/embed';
 async function generate(prompt) {
   // your endpoint asks the model for a spec and streams the JSON back
   const res = await fetch('/api/ui', { method: 'POST', body: prompt });
-  const card = mount(document.querySelector('#card'), '', { streaming: true });
+  const el = document.querySelector('#card');
+  const card = mount(el, '', { streaming: true });
+  const chunks = res.body.pipeThrough(new TextDecoderStream());
   let text = '';
-  for await (const part of res.body.pipeThrough(new TextDecoderStream())) card.update((text += part));
+  for await (const part of chunks) card.update((text += part));
   card.finish();
 }`;
 
