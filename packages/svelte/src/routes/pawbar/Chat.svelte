@@ -20,7 +20,8 @@
     with a hairline, typing dots and a shimmer label while waiting, shimmer bars
     while a card streams. Assistant text is markdown-lite (paragraphs, **bold**,
     `code`) from Svelte nodes, never {@html}, and never a card's raw spec
-    (hideSpecText; "Card hidden." when no card shows).
+    (hideSpecText; "Card hidden." when no card shows). A replay's spoken lines
+    (recorded.ts RECORDED_LINES) and info/stopped notices render as quiet meta.
     Cards: <Ripple streaming> while it arrives, remounted as <Ripple spec> on
     final. A map card's OSM tiles take TrackCard's dark filter; a spec rooted in
     a `card` widget gets a bare frame. Host events go to session.hostEvent
@@ -61,6 +62,7 @@
 	import PayCard from './PayCard.svelte';
 	import { PAWOS_URL, type Card, type ChatSession, type Notice } from './session.svelte.js';
 	import { hideSpecText } from './sse.js';
+	import { RECORDED_LINES } from './recorded.js';
 
 	interface Chips {
 		/** The card the playground's panes are showing. */
@@ -396,7 +398,7 @@
 {#snippet prose(text: string, caret: boolean)}
 	{@const paras = paragraphs(text)}
 	{#each paras as para, i (i)}
-		<p class="say">
+		<p class="say" class:meta={RECORDED_LINES.has(para)}>
 			{#each inline(para) as tok, j (j)}{#if tok.kind === 'b'}<strong>{tok.v}</strong>{:else if tok.kind === 'c'}<code>{tok.v}</code>{:else}{tok.v}{/if}{/each}{#if caret && i === paras.length - 1}<span
 					class="caret"
 					aria-hidden="true"
@@ -517,7 +519,7 @@
 				{#if session.resumed && session.store}
 					{@const pay = session.resumed}
 					<section class="resumed" aria-label="Your order">
-						<p class="say">Your order from before:</p>
+						<p class="say meta">Your order from before:</p>
 						<PayCard {pay} storeUrl={session.store.storeUrl} fetch={session.store.fetch} onphase={(p) => session.notePhase(null, pay, p)} />
 					</section>
 				{/if}
@@ -803,7 +805,7 @@
 		margin: 0;
 		padding: 4px 0;
 		font-size: 13px;
-		font-weight: 500;
+		font-weight: 400;
 		line-height: 1.4;
 	}
 	.dots {
@@ -1164,10 +1166,16 @@
 		color: var(--primary-ink);
 	}
 
+	/* Status, not content: a replay's spoken lines (recorded.ts RECORDED_LINES),
+	   the notes, and the quieter notices. Soft ink, one step down, normal weight. */
 	.card-note,
-	.chat-note {
+	.chat-note,
+	.say.meta,
+	.notice[data-kind='info'],
+	.notice[data-kind='stopped'] {
 		margin: 0;
 		font-size: 13.5px;
+		font-weight: 400;
 		color: var(--site-soft);
 	}
 	.sent {

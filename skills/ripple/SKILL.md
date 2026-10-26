@@ -58,6 +58,7 @@ Paths are relative to this skill's folder (`<skill>` below: where this file live
 |---|---|
 | `references/widgets.md` | Before choosing. Intent to the best widget, with the props it really takes. |
 | `references/craft.md` | Before writing, and again when the audit or a screenshot shows a fault. |
+| `references/integrate.md` | When the card has to render in an app: Svelte, React, or any page through the embed. |
 | `references/examples/` | Open the closest one first. Five specs that render clean, each with one line on why. |
 | `scripts/render.mjs` | Every round. Renders, shoots, audits. `node <skill>/scripts/render.mjs --help` for options. |
 | `scripts/build.mjs` | For a kept card (a pocket, a saved widget, a gallery entry). Runs the whole loop below as one script. |

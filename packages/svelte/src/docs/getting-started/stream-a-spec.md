@@ -1,6 +1,6 @@
 ---
 title: Stream a spec
-description: Render a spec while the model is still writing it, from a SvelteKit endpoint to the Ripple component.
+description: Render a spec while the model is still writing it, from a SvelteKit endpoint to the Ripple component, in Svelte, React or plain HTML.
 order: 3
 ---
 
@@ -116,6 +116,56 @@ The button asks for "a signup form with name and email". A finished reply might 
 Hold the store in `$state.raw`. The store is already reactive, and a deep `$state` would wrap it in a proxy for nothing.
 
 When `streaming` is set, Ripple renders `store.current` and ignores `spec`. Until the first chunk parses, it shows the `skeleton` placeholder (`card` by default; pass `skeleton="none"` to draw your own).
+
+## React and plain HTML
+
+`@ripple-ui/react` and `@ripple-ui/embed` have no `streamSpec`. You hand them the text so far, as raw partial JSON (or a partial object), and say when the stream ends. Nodes that are still incomplete show a quiet placeholder. The endpoint above works unchanged; any server that streams the model's text back does.
+
+In React, pass the text as `spec` with `streaming`, and set `streaming={false}` when the model is done:
+
+```tsx
+import { useState } from 'react';
+import { Ripple } from '@ripple-ui/react';
+
+export function Generated() {
+  const [text, setText] = useState('');
+  const [streaming, setStreaming] = useState(true);
+
+  async function generate(prompt: string) {
+    const res = await fetch('/api/ui', { method: 'POST', body: JSON.stringify({ prompt }) });
+    const reader = res.body!.pipeThrough(new TextDecoderStream()).getReader();
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      setText((t) => t + value);
+    }
+    setStreaming(false);
+  }
+
+  return text ? <Ripple spec={text} streaming={streaming} /> : <button onClick={() => generate('A signup form')}>Generate</button>;
+}
+```
+
+With the embed, mount with `{ streaming: true }`, call `card.update()` as text arrives and `card.finish()` at the end:
+
+```js
+import { mount } from '@ripple-ui/embed';
+
+async function generate(prompt) {
+  const res = await fetch('/api/ui', { method: 'POST', body: JSON.stringify({ prompt }) });
+  const card = mount(document.querySelector('#card'), '', { streaming: true });
+  const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
+  let text = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    card.update((text += value));
+  }
+  card.finish();
+}
+```
+
+The rest of this page (the store, errors, limits) is about `streamSpec` in Svelte.
 
 ## The store
 

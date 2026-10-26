@@ -50,6 +50,11 @@ Widgets use Tailwind CSS v4 classes, so your app needs Tailwind v4 and an
 [Styling section](packages/svelte/README.md#styling) of the Svelte README has
 the setup.
 
+Not on Svelte? In React, `npm i @ripple-ui/react` and render
+`<Ripple spec={spec} />`. On any other page, `npm i @ripple-ui/embed` and call
+`mount(document.querySelector('#card'), spec)`. Neither needs Svelte or
+Tailwind. [Install](https://ripple.pocketpaw.xyz/docs/getting-started/install#react) has both.
+
 ## What a spec looks like
 
 ```json

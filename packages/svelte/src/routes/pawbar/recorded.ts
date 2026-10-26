@@ -10,6 +10,10 @@
 // boundaries and timing. `mode` drives the mock's failure paths.
 // `recordedExchange` is the same normal answer as one untimed frame list, for
 // ChatSession.seed, ending at the card (the seed's intro already invites a change).
+// Every line a replay speaks around its card (the intros, DONE, the rejected
+// line) is status, not an answer: RECORDED_LINES lists them all, and the chat
+// shows a paragraph that equals one as a quiet meta line. A new spoken line
+// goes in that set, or it reads as loud as a real answer.
 
 import { replay } from '../live/replay.js';
 import { scenarios, type Scenario, type ScenarioFixture } from '../live/scenarios.js';
@@ -19,6 +23,18 @@ import { FENCE_OPEN, type SSEFrame } from './sse.js';
 export type RecordedMode = 'normal' | 'reject' | 'truncate' | 'legacy';
 
 const DONE = 'The card is live now. Change something and see.';
+const DEFAULT_INTRO = 'Here is a card for that. It builds while I write it.';
+const REJECTED = 'That card did not come through, so I left it out.';
+/** The landing's seeded opener, which answers no request. */
+export const SEED_INTRO = 'A recorded answer, replayed. Change something in the card.';
+/** A visitor's chip found a recording that overlaps it. */
+export const MATCH_INTRO = 'Replaying a recorded answer that matches.';
+/** Nothing overlaps: the bill splitter plays instead. */
+export const FALLBACK_INTRO = 'No recording matches that yet, so here is the bill splitter.';
+/** Live, the Paw Bar was unavailable and a recording answers in its place. */
+export const SAVED_INTRO = 'Here is a saved answer that fits.';
+/** Every status line a replay speaks; the chat shows these as meta, never as an answer. */
+export const RECORDED_LINES: ReadonlySet<string> = new Set([DONE, DEFAULT_INTRO, REJECTED, SEED_INTRO, MATCH_INTRO, FALLBACK_INTRO, SAVED_INTRO]);
 const chunk = (content: string): SSEFrame => ({ event: 'chunk', data: { content, type: 'text' } });
 
 const STOP = new Set(['the', 'and', 'for', 'with', 'me', 'my', 'show', 'let', 'can', 'how', 'that', 'what', 'make', 'give']);
@@ -87,14 +103,14 @@ export async function* recordedEvents(
 	const stream = (upTo = pieces.length) => replay({ ...scenario.fixture, chunks: pieces.slice(0, upTo) }, { speed, signal });
 
 	yield { event: 'message.persisted', data: { run_id: `run_${Date.now()}`, client_message_id: `msg_${Date.now()}` } };
-	yield chunk(intro ?? "Here is a card for that. It builds while I write it.");
+	yield chunk(intro ?? DEFAULT_INTRO);
 
 	if (mode === 'legacy') {
 		yield chunk('\n\n``');
 		yield chunk(`${FENCE_OPEN.slice(2)}\n`);
 		for await (const text of stream()) yield chunk(text);
 		yield chunk('\n``');
-		yield chunk('`\n\nThe card is live now. Change something and see.');
+		yield chunk(`\`\n\n${DONE}`);
 	} else {
 		yield { event: 'card.start', data: { card_id: cardId, title: scenario.title } };
 		const cutoff = mode === 'normal' ? pieces.length : Math.ceil(pieces.length / 2);
@@ -106,7 +122,7 @@ export async function* recordedEvents(
 			yield chunk(DONE);
 		} else {
 			yield { event: 'card.rejected', data: { card_id: cardId, reason: mode === 'truncate' ? 'truncated' : 'invalid_widget' } };
-			yield chunk('That card did not come through, so I left it out.');
+			yield chunk(REJECTED);
 		}
 	}
 	yield { event: 'stream_end', data: { assistant_message_id: `msg_${scenario.id}`, cancelled: false } };

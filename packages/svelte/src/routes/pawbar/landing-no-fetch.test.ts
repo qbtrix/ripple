@@ -9,7 +9,7 @@ import { afterEach, expect, test, vi } from 'vitest';
 import Landing from '../+page.svelte';
 
 // The landing's server load output (+page.server.ts); the sample's markup is not under test here.
-const props = { data: { codeSample: '' } };
+const props = { data: { codeSamples: { svelte: '', react: '', html: '' } } };
 
 vi.setConfig({ testTimeout: 30_000 });
 const waitFor = <T>(fn: () => T | Promise<T>) => vi.waitFor(fn, { timeout: 15_000, interval: 50 });
