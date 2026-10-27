@@ -13,6 +13,9 @@ import { afterEach, expect, test, vi } from 'vitest';
 import Chat from './Chat.svelte';
 import { ChatSession } from './session.svelte.js';
 
+// A chip types its prompt before it sends (Chat.typing.test.ts): wait past that.
+const WAIT = { timeout: 5000 };
+
 afterEach(() => vi.restoreAllMocks());
 
 test('a chip send scrolls the chat container, never the page', async () => {
@@ -30,9 +33,9 @@ test('a chip send scrolls the chat container, never the page', async () => {
 	});
 	const view = render(Chat, { session, suggestions: [{ id: 'a', title: 'Try it', prompt: 'Make me a thing' }] });
 	await fireEvent.click(view.getByRole('button', { name: 'Try it' }));
-	await vi.waitFor(() => expect(view.getByText('Here you go.')).toBeTruthy());
+	await vi.waitFor(() => expect(view.getByText('Here you go.')).toBeTruthy(), WAIT);
 
-	await vi.waitFor(() => expect(scrolled.length).toBeGreaterThan(0));
+	await vi.waitFor(() => expect(scrolled.length).toBeGreaterThan(0), WAIT);
 	expect(scrolled.every((el) => el.classList.contains('scroller'))).toBe(true);
 	expect(intoView).not.toHaveBeenCalled();
 	expect(pageScroll).not.toHaveBeenCalled();
@@ -57,7 +60,7 @@ test('growth before the first turn leaves the chat at its top', async () => {
 	try {
 		// jsdom lays nothing out, so every scroller reads as at its bottom: the follow would fire.
 		render(Chat, { session: new ChatSession(async function* () {}) });
-		await vi.waitFor(() => expect(observers.length).toBe(1));
+		await vi.waitFor(() => expect(observers.length).toBe(1), WAIT);
 		observers[0]();
 		expect(scrolled).toEqual([]);
 	} finally {
@@ -81,9 +84,9 @@ test('pageScroll: a chip send brings the new turn into view in the page, nothing
 	const view = render(Chat, { session, pageScroll: true, suggestions: [{ id: 'a', title: 'Try it', prompt: 'Make me a thing' }] });
 	expect(view.container.querySelector('.chat')?.hasAttribute('data-page-scroll')).toBe(true);
 	await fireEvent.click(view.getByRole('button', { name: 'Try it' }));
-	await vi.waitFor(() => expect(view.getByText('Here you go.')).toBeTruthy());
+	await vi.waitFor(() => expect(view.getByText('Here you go.')).toBeTruthy(), WAIT);
 
-	await vi.waitFor(() => expect(intoView.length).toBe(1));
+	await vi.waitFor(() => expect(intoView.length).toBe(1), WAIT);
 	const [{ el, opts }] = intoView;
 	expect(el.matches('li.turn[data-role="user"]')).toBe(true);
 	expect(el.textContent).toContain('Make me a thing');
@@ -103,7 +106,7 @@ test('pageScroll: smooth, or a jump under reduced motion', async () => {
 		});
 		const view = render(Chat, { session, pageScroll: true, suggestions: [{ id: 'a', title: 'Try it', prompt: 'Go' }] });
 		await fireEvent.click(view.getByRole('button', { name: 'Try it' }));
-		await vi.waitFor(() => expect(opts.length).toBe(1));
+		await vi.waitFor(() => expect(opts.length).toBe(1), WAIT);
 		expect(opts[0].behavior).toBe('auto');
 	} finally {
 		vi.unstubAllGlobals();
@@ -132,7 +135,7 @@ test('pageScroll: a DOM without scrollIntoView (jsdom) scrolls nothing and throw
 		});
 		const view = render(Chat, { session, pageScroll: true, suggestions: [{ id: 'a', title: 'Try it', prompt: 'Go' }] });
 		await fireEvent.click(view.getByRole('button', { name: 'Try it' }));
-		await vi.waitFor(() => expect(view.container.querySelector('li.turn[data-role="user"]')).toBeTruthy());
+		await vi.waitFor(() => expect(view.container.querySelector('li.turn[data-role="user"]')).toBeTruthy(), WAIT);
 		await new Promise((r) => setTimeout(r, 20));
 		expect(rejections).toEqual([]);
 	} finally {
