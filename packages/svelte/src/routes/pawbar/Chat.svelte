@@ -10,11 +10,12 @@
     going to the toggle. With `foldChips` (the landing), the visitor's first
     turn (not a seeded one) removes the row and puts the toggle left of the
     composer, giving the log that height.
-    Sending: a chip runs here (session.send); typed text goes to Paw OS
-    (session.handoff, opened from the send gesture) unless `typedLocal` keeps it
-    on the Paw Bar (mock and dev only), as the composer's label says. A
-    `handoff` chip takes the typed path and says "Opens in Paw OS"
-    (one hidden note shared through aria-describedby).
+    Sending: a chip types its prompt into the composer (1.2s at most, a pause,
+    none under reduced motion; busy meanwhile, Stop or a keystroke cancels),
+    then runs here (session.send); the exported `ask` sends at once. Typed text
+    goes to Paw OS (session.handoff, from the send gesture) unless `typedLocal`
+    keeps it on the Paw Bar (mock and dev only). A `handoff` chip takes the typed
+    path at once, noted "Opens in Paw OS" (one hidden note via aria-describedby).
     Look: Paw OS. ChatPill's glass composer (send turns into stop while a turn
     streams), the visitor's message a blue-tint bubble, cards on --site-card
     with a hairline, typing dots and a shimmer label while waiting, shimmer bars
@@ -265,8 +266,43 @@
 	});
 
 	export async function ask(text: string) {
-		if (session.busy || !text.trim()) return;
+		if (busy || !text.trim()) return;
 		await session.send(text);
+	}
+
+	/** A chip's prompt is being typed into the composer; the chat counts as busy. */
+	let typing = $state(false);
+	let typingTimer: ReturnType<typeof setTimeout> | undefined;
+	const busy = $derived(session.busy || typing);
+	const TYPE_MS = 22;
+	const TYPE_STEPS = 55; // about 1.2s at most: a long prompt types several characters a step
+	const TYPE_PAUSE_MS = 250;
+
+	function stopTyping() {
+		clearTimeout(typingTimer);
+		typing = false;
+	}
+	$effect(() => () => clearTimeout(typingTimer));
+
+	/** A chip: type its prompt into the composer, pause, then send it. Reduced motion sends at once. */
+	function typeThenAsk(text: string) {
+		if (busy || !text.trim()) return;
+		if (globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return void ask(text);
+		const step = Math.ceil(text.length / TYPE_STEPS);
+		let n = 0;
+		typing = true;
+		const next = () => {
+			n = Math.min(text.length, n + step);
+			draft = text.slice(0, n);
+			if (n < text.length) typingTimer = setTimeout(next, TYPE_MS);
+			else
+				typingTimer = setTimeout(() => {
+					typing = false;
+					draft = '';
+					void ask(text);
+				}, TYPE_PAUSE_MS);
+		};
+		next();
 	}
 
 	export function focus() {
@@ -276,7 +312,7 @@
 	/** The composer: Paw OS opens synchronously in this gesture, or the popup is blocked. */
 	function submit() {
 		const text = draft;
-		if (session.busy || !text.trim()) return;
+		if (busy || !text.trim()) return;
 		draft = '';
 		toPawOS(text);
 	}
@@ -300,6 +336,12 @@
 	});
 
 	function onKey(e: KeyboardEvent) {
+		// The visitor types over a chip's prompt: drop it, so their key lands in an empty field.
+		if (typing && !e.ctrlKey && !e.metaKey && (e.key.length === 1 || e.key === 'Backspace' || e.key === 'Delete')) {
+			stopTyping();
+			draft = '';
+			if (field) field.value = '';
+		}
 		if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
 			e.preventDefault();
 			submit();
@@ -573,7 +615,7 @@
 												{:else if turn.notice.link}<a href={turn.notice.link.href}>{turn.notice.link.label}</a>{/if}
 											</span>
 											{#if turn.notice.replay}
-												<button type="button" class="replay" disabled={session.busy} onclick={() => {
+												<button type="button" class="replay" disabled={busy} onclick={() => {
 														session.replayRecorded(turn.id);
 														if (pageScroll) void tick().then(() => showTurn(turn.id));
 													}}>
@@ -601,13 +643,14 @@
 				<button
 					type="button"
 					class="chip"
-					disabled={session.busy}
+					disabled={busy}
 					title={s.handoff ? `${s.prompt} (Opens in Paw OS)` : s.prompt}
 					aria-describedby={s.handoff ? 'ripple-chip-handoff' : undefined}
 					onclick={() => {
 						closePanel();
+						if (busy) return;
 						if (s.handoff) toPawOS(s.prompt);
-						else void ask(s.prompt);
+						else typeThenAsk(s.prompt);
 					}}
 					>{#if Icon}<Icon class="chip-icon" size={15} aria-hidden="true" />{/if}{s.title}{#if s.steps}{' '}<span class="chip-steps"
 							>step by step</span
@@ -667,10 +710,15 @@
 					bind:value={draft}
 					bind:this={field}
 					onkeydown={onKey}
+					oninput={() => typing && stopTyping()}
 				></textarea>
 				<div class="controls">
-					{#if session.busy}
-						<button type="button" class="send stop" aria-label="Stop" title="Stop" onclick={() => session.stop()}><span class="disc"><X size={14} strokeWidth={2.25} aria-hidden="true" /></span></button>
+					{#if busy}
+						<button type="button" class="send stop" aria-label="Stop" title="Stop" onclick={() => {
+							if (!typing) return session.stop();
+							stopTyping();
+							draft = '';
+						}}><span class="disc"><X size={14} strokeWidth={2.25} aria-hidden="true" /></span></button>
 					{:else}
 						<button type="submit" class="send" aria-label="Send" title="Send" disabled={!draft.trim()}><span class="disc"><ArrowUp size={15} strokeWidth={2.25} aria-hidden="true" /></span></button>
 					{/if}

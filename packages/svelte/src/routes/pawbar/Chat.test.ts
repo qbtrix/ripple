@@ -56,7 +56,7 @@ test('a streamed card renders, stays inert to the host until final, then works',
 	const view = render(Chat, { session, suggestions: [{ id: 'lamp', title: 'A lamp', prompt: 'Make me a lamp switch' }] });
 
 	await fireEvent.click(view.getByRole('button', { name: 'A lamp' }));
-	expect(await view.findByText('Make me a lamp switch')).toBeTruthy();
+	expect(await view.findByText('Make me a lamp switch', undefined, { timeout: 5000 })).toBeTruthy();
 	await waitFor(() => expect(view.getByText('Lamp off')).toBeTruthy());
 	expect(view.getByText('Here is a lamp.')).toBeTruthy();
 
@@ -315,7 +315,7 @@ test('a chip and a card ask still go to the Paw Bar, not Paw OS', async () => {
 	});
 	const view = render(Chat, { session, open, suggestions: [{ id: 'x', title: 'Split the bill', prompt: 'Split it' }] });
 	await fireEvent.click(view.getByRole('button', { name: 'Split the bill' }));
-	await fireEvent.click(await view.findByRole('button', { name: 'More like this' }));
+	await fireEvent.click(await view.findByRole('button', { name: 'More like this' }, { timeout: 5000 }));
 	await waitFor(() => expect(sent).toEqual(['Split it', 'Show me more']));
 	expect(open).not.toHaveBeenCalled();
 });
