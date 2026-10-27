@@ -13,7 +13,9 @@
   raw `position` is honoured only on `src` models. A pin or its row in the list
   under the viewer opens the note, aims the camera at the point (and the
   anchor's orbit), and fires the spec's `on_select` with { anchor, label }.
-  Clicking again or Esc closes it. `focus` opens one at start.
+  Once the model has loaded, the camera pans only halfway to the point and
+  pulls back by that offset, so the far end of the model stays on the stage. Clicking again or Esc closes it. `focus`
+  opens one at start.
 
   The stage has a toned backdrop and a ground shadow (default 1), so a white
   model still reads on the light theme; dark keeps a quiet tint. A pin label
@@ -166,8 +168,26 @@
 	let picked = $state<string | null | undefined>(undefined);
 	const activeKey = $derived(picked === undefined ? (typeof focus === 'string' ? focus : null) : picked);
 	const active = $derived(notes.find((n) => n.key === activeKey) ?? null);
-	const cameraTarget = $derived(active ? metres(active.position) : undefined);
-	const cameraOrbit = $derived(active?.orbit ?? model?.orbit);
+	// The loaded model's bounding sphere, read on `load`.
+	let bounds = $state<{ c: number[]; r: number } | null>(null);
+	// Focus pans halfway from the model's centre to the point and pulls the camera
+	// back by (R + d/2) / R, d the point's distance from the centre: the whole
+	// sphere (radius R) then stays in frame, which a full pan at the whole-model
+	// radius does not. The default max radius is the unscaled one, so it is lifted.
+	// ponytail: orbit-less points (raw src pins) pan fully and unscaled and can still clip; pass an orbit if that bites.
+	const focusView = $derived.by(() => {
+		if (!active) return null;
+		const m = active.orbit && /^(.*\s)(\d*\.?\d+)(m|cm|mm|%)$/.exec(active.orbit.trim());
+		if (!m || !bounds?.r) return { target: metres(active.position), orbit: active.orbit, radius: undefined };
+		const { c, r } = bounds;
+		const mid = active.position.split(' ').map((t, i) => (parseFloat(t) + c[i]) / 2);
+		const d = 2 * Math.hypot(...mid.map((v, i) => v - c[i]));
+		const radius = `${+((parseFloat(m[2]) * (r + d / 2)) / r).toFixed(3)}${m[3]}`;
+		return { target: mid.map((v) => `${+v.toFixed(4)}m`).join(' '), orbit: m[1] + radius, radius };
+	});
+	const cameraTarget = $derived(focusView?.target);
+	const cameraOrbit = $derived(focusView?.orbit ?? model?.orbit);
+	const maxOrbit = $derived(focusView?.radius ? `auto auto ${focusView.radius}` : undefined);
 
 	// A failed load belongs to its src: a later (or fully streamed) src retries.
 	let failedSrc = $state<string | null>(null);
@@ -179,8 +199,20 @@
 		failedSrc = model?.src ?? null;
 	}
 
-	type Viewer = HTMLElement & { jumpCameraToGoal?: () => void; updateComplete?: Promise<unknown> };
+	type Vec = { x: number; y: number; z: number };
+	type Viewer = HTMLElement & {
+		jumpCameraToGoal?: () => void;
+		updateComplete?: Promise<unknown>;
+		getBoundingBoxCenter?: () => Vec;
+		getDimensions?: () => Vec;
+	};
 	let viewer = $state<Viewer>();
+
+	function onLoad() {
+		const c = viewer?.getBoundingBoxCenter?.();
+		const s = viewer?.getDimensions?.();
+		bounds = c && s ? { c: [c.x, c.y, c.z], r: Math.hypot(s.x, s.y, s.z) / 2 } : null;
+	}
 	$effect(() => {
 		void cameraTarget;
 		void cameraOrbit;
@@ -280,9 +312,11 @@
 				exposure={exposure != null ? String(exposure) : undefined}
 				shadow-intensity={String(shadowIntensity ?? 1)}
 				camera-orbit={cameraOrbit}
+				max-camera-orbit={maxOrbit}
 				camera-target={cameraTarget}
 				interpolation-decay={reduced ? '1' : undefined}
 				onerror={onError}
+				onload={onLoad}
 			>
 				{#each notes as n, i (n.key)}
 					<button

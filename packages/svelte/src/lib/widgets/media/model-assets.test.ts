@@ -1,17 +1,26 @@
 // Guards the model library: every catalog entry points at a real, in-budget file
-// with a usable licence and well-formed, unique anchors.
+// with a usable licence and well-formed, unique anchors, and every mesh in it
+// carries a material (a bare primitive renders as glTF's flat white metal).
 import { describe, expect, it } from 'vitest';
 import { MODEL_ASSETS } from './model-assets.js';
 
 // Tests run from the package root. ripple's tsconfig carries no node types.
 // @ts-ignore
-const { existsSync, readdirSync, statSync } = await import('node:fs');
+const { existsSync, readFileSync, readdirSync, statSync } = await import('node:fs');
 const dir = 'static/models/';
 const KEBAB = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const FILE_BUDGET = 600 * 1024;
 const TOTAL_BUDGET = 10 * 1024 * 1024;
 const assets = Object.entries(MODEL_ASSETS);
 const vec3 = (s: string) => s.trim().split(/\s+/).map(Number);
+
+/** The glTF JSON chunk of a .glb file. */
+function glbJson(file: string): { meshes?: { primitives: { material?: number }[] }[] } {
+	const buf: Uint8Array = readFileSync(file);
+	const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+	const length = view.getUint32(12, true);
+	return JSON.parse(new TextDecoder().decode(buf.subarray(20, 20 + length)));
+}
 
 describe('MODEL_ASSETS', () => {
 	it('has a real library', () =>
@@ -38,6 +47,11 @@ describe('MODEL_ASSETS', () => {
 				expect(xyz.every(Number.isFinite)).toBe(true);
 			}
 		}
+	});
+
+	it.each(assets)('%s gives every mesh primitive a material', (_key, a) => {
+		const bare = (glbJson(dir + a.file).meshes ?? []).flatMap((m) => m.primitives).filter((p) => p.material == null);
+		expect(bare).toHaveLength(0);
 	});
 
 	it('ids are unique and every shipped GLB is in the catalog', () => {

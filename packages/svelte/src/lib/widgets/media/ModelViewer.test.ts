@@ -149,6 +149,25 @@ describe('ModelViewer', () => {
 		expect(onselect).toHaveBeenCalledTimes(3);
 	});
 
+	it('on a focused anchor, pans halfway and pulls the camera back so the whole model stays on the stage', async () => {
+		const { container } = render(ModelViewer, { props: { asset: 'plane', annotations: NOTES, focus: 'nose' } });
+		const v = viewerOf(container)! as HTMLElement & Record<string, unknown>;
+		// A 6 x 2 x 5 m model centred on the origin: R = 4.03, the nose sits d = 2.06 from the centre.
+		v.getBoundingBoxCenter = () => ({ x: 0, y: 0, z: 0 });
+		v.getDimensions = () => ({ x: 6, y: 2, z: 5 });
+		v.dispatchEvent(new Event('load'));
+		await tick();
+		expect(v.getAttribute('camera-target')).toBe('0m 0.25m 1m');
+		const [theta, phi, radius] = v.getAttribute('camera-orbit')!.split(' ');
+		expect([theta, phi]).toEqual(['0deg', '80deg']);
+		// A full pan at the whole-model radius pushes the far end out of frame.
+		const R = Math.hypot(6, 2, 5) / 2;
+		expect(parseFloat(radius)).toBeCloseTo((3 * (R + Math.hypot(0.5, 2) / 2)) / R, 2);
+		expect(radius.endsWith('m')).toBe(true);
+		// model-viewer caps the radius at the unscaled default unless the max is lifted too.
+		expect(v.getAttribute('max-camera-orbit')).toBe(`auto auto ${radius}`);
+	});
+
 	it('focus opens a note at start without firing on_select', () => {
 		const onselect = vi.fn();
 		render(ModelViewer, { props: { asset: 'plane', annotations: NOTES, focus: 'left-wing', onselect } });
