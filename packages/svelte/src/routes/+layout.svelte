@@ -3,13 +3,14 @@
   @description The site chrome every route shares, following Paw OS's TopBar
     (paw-enterprise components/os/TopBar.svelte, PlanBadge.svelte and the
     .liquid-glass pill in routes/+layout.svelte). One sticky strip: the Ripple
-    mark on the left; a centred icon nav (Chat, Gallery, Playground, Docs, Design system)
+    wordmark on the left, drawn as calm paper (lib/site/PaperWordmark.svelte,
+    plain text until its fonts load), at every width; a centred icon nav (Chat, Gallery, Playground, Docs, Design system)
     where every item is an icon with an aria-label and a tooltip and the
     current one is PE's liquid-glass pill carrying its icon and label; on the
     right the docs search as a ⌘K chip, the GitHub, sound and theme icon buttons, and a
     blue "Add to your agent" pill in PlanBadge's paid style. The strip is PE's frosted
     shade over the warm ground with its faint cool tint, mirrored in light.
-    Below 640px the nav sits between the mark and the tools; GitHub and the
+    Below 640px the nav sits between the wordmark and the tools; GitHub and the
     agent pill leave the bar (the footer carries both), and so do the ⌘K chip
     (a keyboard hint; the shortcut still works), the sound button and the Design
     system tab unless it is the current page. On small phones a long
@@ -44,6 +45,7 @@
 	import '$lib/styles.css';
 	import './site.css';
 	import Search from '$lib/site/docs/Search.svelte';
+	import PaperWordmark from '$lib/site/PaperWordmark.svelte';
 	import { EARLY_ACCESS_URL } from './pawbar/session.svelte.js';
 	import { setModelAssetBase } from '$lib/widgets/media/model-asset-types.js';
 	import { setMapDefaultTiles } from '$lib/widgets/data/Map.svelte';
@@ -102,8 +104,7 @@
 	<header class="topbar">
 		<div class="bar">
 			<a href="/" class="brand" aria-label="Ripple home">
-				<span class="mark" aria-hidden="true"></span>
-				<span class="wordmark">Ripple</span>
+				<span class="wordmark"><PaperWordmark /></span>
 			</a>
 			<nav class="tabs" aria-label="Site">
 				{#each nav as item (item.href)}
@@ -260,13 +261,6 @@
 	}
 	.brand:hover {
 		background: var(--site-hover);
-	}
-	.mark {
-		width: 18px;
-		height: 20px;
-		background: currentColor;
-		-webkit-mask: url('/paw-logo/paw-mark.svg') center / contain no-repeat;
-		mask: url('/paw-logo/paw-mark.svg') center / contain no-repeat;
 	}
 	.wordmark {
 		font-family: var(--font-display);
@@ -486,13 +480,12 @@
 			height: 32px;
 		}
 	}
-	/* Phones: the nav flows between the mark and the tools; GitHub and Try
-	   Paw OS move to the footer, the wordmark goes (PE hides its logo text). */
+	/* Phones: the nav flows between the wordmark and the tools; GitHub and
+	   the agent pill move to the footer. */
 	@media (max-width: 639.98px) {
 		.bar {
 			gap: 6px;
 		}
-		.wordmark,
 		.wide,
 		.tools :global(.trigger) {
 			display: none;
