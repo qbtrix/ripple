@@ -1,6 +1,6 @@
 {
   "name": "@ripple-ui/svelte",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "license": "MIT",
   "description": "Svelte 5 renderer for Ripple: turns declarative JSON specs into interactive UI. The framework-agnostic engine lives in @ripple-ui/core.",
   "keywords": [

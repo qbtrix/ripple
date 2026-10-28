@@ -21,7 +21,7 @@
     Sound: the speaker button flips $lib/sound's on/off flag (widget cues).
     Labs and dev routes stay reachable by URL, unlinked. The pill says "Add
     to your agent" and opens the coding-agents guide (the ripple skill); the
-    footer's quiet "Paw OS" link opens EARLY_ACCESS_URL, the build's
+    footer links the svelte package's npm page next to GitHub; its quiet "Paw OS" link opens EARLY_ACCESS_URL, the build's
     PUBLIC_PAWOS_URL with ?ref=ripple. It points the model-viewer library at the
     site's own /models/ so 3D cards load same-origin, and defaults maps to OSM
     tiles (the CSP also admits CARTO's, for specs that pick a carto preset).
@@ -54,8 +54,8 @@
 	let { children } = $props();
 
 	const GITHUB_URL = 'https://github.com/qbtrix/ripple-iui';
-	// The packages are not on npm yet; the footer points at the release tarballs.
-	const RELEASES_URL = 'https://github.com/qbtrix/ripple-iui/releases';
+	// The packages are on npm; the footer links the svelte package page.
+	const NPM_URL = 'https://www.npmjs.com/package/@ripple-ui/svelte';
 	// `short` is the active pill's label on phones; null means icon only there.
 	const nav = [
 		{ href: '/', label: 'Chat', short: 'Chat', icon: MessageSquare },
@@ -159,7 +159,7 @@
 
 	<footer class="foot">
 		<p>
-			<span>MIT</span><a href={RELEASES_URL}>Releases</a><a href={GITHUB_URL}>GitHub</a><a href="/playground">Playground</a><a href={EARLY_ACCESS_URL}
+			<span>MIT</span><a href={NPM_URL}>npm</a><a href={GITHUB_URL}>GitHub</a><a href="/playground">Playground</a><a href={EARLY_ACCESS_URL}
 				>Paw OS</a
 			>
 		</p>
