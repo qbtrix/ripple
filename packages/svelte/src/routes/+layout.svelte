@@ -3,14 +3,17 @@
   @description The site chrome every route shares, following Paw OS's TopBar
     (paw-enterprise components/os/TopBar.svelte, PlanBadge.svelte and the
     .liquid-glass pill in routes/+layout.svelte). One sticky strip: the Ripple
-    mark on the left; a centred icon nav (Chat, Gallery, Playground, Docs, Design system)
+    wordmark on the left, drawn as calm paper (lib/site/PaperWordmark.svelte,
+    plain text until its fonts load), at every width; a centred icon nav (Chat, Gallery, Playground, Docs, Design system)
     where every item is an icon with an aria-label and a tooltip and the
     current one is PE's liquid-glass pill carrying its icon and label; on the
     right the docs search as a ⌘K chip, the GitHub, sound and theme icon buttons, and a
     blue "Add to your agent" pill in PlanBadge's paid style. The strip is PE's frosted
     shade over the warm ground with its faint cool tint, mirrored in light.
-    Below 640px the nav sits between the mark and the tools, GitHub and the
-    agent pill leave the bar (the footer carries both), and on small phones a long
+    Below 640px the nav sits between the wordmark and the tools; GitHub and the
+    agent pill leave the bar (the footer carries both), the ⌘K chip turns into a
+    magnifier icon, and the sound button and the Design system tab leave
+    (the tab stays when it is the current page). On small phones a long
     active label (Design system) shows its short form so 375px never scrolls sideways.
     Below 400px every tab is icon-only, the active one included, so five tabs
     and the tools fit a 320px phone.
@@ -42,6 +45,7 @@
 	import '$lib/styles.css';
 	import './site.css';
 	import Search from '$lib/site/docs/Search.svelte';
+	import PaperWordmark from '$lib/site/PaperWordmark.svelte';
 	import { EARLY_ACCESS_URL } from './pawbar/session.svelte.js';
 	import { setModelAssetBase } from '$lib/widgets/media/model-asset-types.js';
 	import { setMapDefaultTiles } from '$lib/widgets/data/Map.svelte';
@@ -62,7 +66,7 @@
 		{ href: '/live', label: 'Gallery', short: 'Gallery', icon: LayoutGrid },
 		{ href: '/playground', label: 'Playground', short: 'Play', icon: SquareCode },
 		{ href: '/docs', label: 'Docs', short: 'Docs', icon: BookOpen },
-		{ href: '/ds', label: 'Design system', short: 'DS', icon: Palette }
+		{ href: '/ds', label: 'Design system', short: 'DS', icon: Palette, wide: true }
 	];
 	// '/' would prefix-match every page, so Chat is current only on the landing.
 	const current = (href: string) => (href === '/' ? page.url.pathname === '/' : page.url.pathname.startsWith(href));
@@ -100,8 +104,7 @@
 	<header class="topbar">
 		<div class="bar">
 			<a href="/" class="brand" aria-label="Ripple home">
-				<span class="mark" aria-hidden="true"></span>
-				<span class="wordmark">Ripple</span>
+				<span class="wordmark"><PaperWordmark /></span>
 			</a>
 			<nav class="tabs" aria-label="Site">
 				{#each nav as item (item.href)}
@@ -112,6 +115,7 @@
 						class:active={on}
 						class:liquid-glass={on}
 						class:no-short={on && !item.short}
+						class:wide={item.wide && !on}
 						aria-label={item.label}
 						aria-current={on ? 'page' : undefined}
 						data-tip={on ? undefined : item.label}
@@ -133,7 +137,7 @@
 					>
 				</a>
 				<button
-					class="util"
+					class="util wide"
 					type="button"
 					onclick={toggleSound}
 					aria-label={sound ? 'Turn sounds off' : 'Turn sounds on'}
@@ -257,13 +261,6 @@
 	}
 	.brand:hover {
 		background: var(--site-hover);
-	}
-	.mark {
-		width: 18px;
-		height: 20px;
-		background: currentColor;
-		-webkit-mask: url('/paw-logo/paw-mark.svg') center / contain no-repeat;
-		mask: url('/paw-logo/paw-mark.svg') center / contain no-repeat;
 	}
 	.wordmark {
 		font-family: var(--font-display);
@@ -483,13 +480,12 @@
 			height: 32px;
 		}
 	}
-	/* Phones: the nav flows between the mark and the tools; GitHub and Try
-	   Paw OS move to the footer, the wordmark goes (PE hides its logo text). */
+	/* Phones: the nav flows between the wordmark and the tools; GitHub and
+	   the agent pill move to the footer. */
 	@media (max-width: 639.98px) {
 		.bar {
 			gap: 6px;
 		}
-		.wordmark,
 		.wide {
 			display: none;
 		}

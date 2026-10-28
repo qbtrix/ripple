@@ -11,7 +11,10 @@
     below (html scroll-padding-top keeps anchors clear of the bar). Under the composer a one-line strip: the install command
     with a copy button (it selects the command when the clipboard is blocked),
     Docs and Gallery, then a link to the band's other frameworks while it
-    fits. The chat opens on one
+    fits. Under 640px the page drops chrome so the card starts on the first
+    screen: no context row (the replay's meta line labels it), a smaller h1, the
+    lede's middle sentence hidden, and no "How it works" link or install strip in
+    the sticky dock (the band below carries the install command). The chat opens on one
     finished recorded exchange (the executive dashboard, seeded synchronously with a
     fixed intro, so it is in the prerendered HTML and hydrates without a
     re-render). The chips are the grouped suggestion panel (live/scenarios.ts
@@ -259,8 +262,8 @@
 				<header class="hero">
 					<h1 id="hero-title">Ask for a tool. <span>Ripple builds it while the model is still typing.</span></h1>
 					<p class="lede">
-						Ripple is an open-source generative UI engine. A model writes a small JSON spec, and Ripple turns it into a
-						working interface as the spec streams in. {TYPED_LOCAL ? 'Ask for something below.' : 'Tap a suggestion below to watch one build, or try it with your own agent.'}
+						Ripple is an open-source generative UI engine. <span class="lede-more">A model writes a small JSON spec, and Ripple turns it into a
+						working interface as the spec streams in.</span> {TYPED_LOCAL ? 'Ask for something below.' : 'Tap a suggestion below to watch one build, or try it with your own agent.'}
 					</p>
 				</header>
 			{/snippet}
@@ -931,14 +934,24 @@
 			font-size: 12.5px;
 		}
 		.lede {
+			margin-top: 8px;
 			font-size: 16px;
 			line-height: 1.5;
 		}
-		/* The composer needs the width: the link keeps its chevron and name. */
-		.more {
-			padding: 0 14px;
+		/* Phones: the card should start on the first screen. */
+		.context,
+		.lede-more,
+		.app :global(.dock-foot) {
+			display: none;
 		}
-		.more-label {
+		.hero {
+			padding-top: 16px;
+		}
+		h1 {
+			font-size: 1.5rem;
+		}
+		/* The composer needs the width; the sections are a scroll away. */
+		.more {
 			display: none;
 		}
 	}

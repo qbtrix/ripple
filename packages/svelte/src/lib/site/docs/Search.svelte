@@ -11,6 +11,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { safeUrl } from '@ripple-ui/core';
+	import SearchIcon from '@lucide/svelte/icons/search';
 
 	interface Hit {
 		url: string;
@@ -93,7 +94,8 @@
 	data-tip="Search docs"
 	onclick={open}
 >
-	<span aria-hidden="true">{shortcut}</span>
+	<span class="keys" aria-hidden="true">{shortcut}</span>
+	<SearchIcon class="glass" size={16} aria-hidden="true" />
 </button>
 
 <dialog bind:this={dialog} class="modal" aria-label="Search docs" onclick={(e) => e.target === dialog && dialog.close()}>
@@ -136,7 +138,8 @@
 
 <style>
 	/* PE's TopBar ⌘K chip (.cmdk-btn): 22px tall, 11px/600, on --input with a
-	   hairline; it stays in the bar at every width. */
+	   hairline. Under 640px a keyboard hint means nothing, so it becomes a plain
+	   magnifier icon button the size of the bar's other tools. */
 	.trigger {
 		display: inline-flex;
 		align-items: center;
@@ -165,6 +168,25 @@
 		content: '';
 		position: absolute;
 		inset: -9px -4px;
+	}
+	.trigger :global(.glass) {
+		display: none;
+	}
+	@media (max-width: 639.98px) {
+		.trigger {
+			width: 32px;
+			height: 32px;
+			padding: 0;
+			border: 0;
+			border-radius: 999px;
+			background: transparent;
+		}
+		.keys {
+			display: none;
+		}
+		.trigger :global(.glass) {
+			display: block;
+		}
 	}
 	.trigger:hover {
 		color: var(--site-ink);

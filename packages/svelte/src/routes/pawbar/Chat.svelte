@@ -44,7 +44,10 @@
     `pageScroll` (the landing): no inner box, the page scrolls, the dock sticks
     to the viewport's bottom, and only the visitor's own action (a message, a
     replay, a pay nudge) scrolls that turn under the site bar; streaming never
-    does. The dock: the panel, the composer with `more` right, a `foot` row. The log is role="log", aria-busy while
+    does. The dock: the panel, the composer with `more` right, a `foot` row.
+    pageScroll under 640px keeps the dock short: the collapsed chip row shares
+    its line with the toggle, and the composer is one row (send beside the
+    text). The log is role="log", aria-busy while
     streaming; one polite region says "Building" and "Done" per turn. DOM ids
     are positional, never Card.id. Playground props: `chips`, `onspec`; exports
     `ask`, `focus`.
@@ -1656,6 +1659,37 @@
 		.chips-toggle {
 			width: 44px;
 			height: 44px;
+		}
+	}
+	/* pageScroll on a phone: the sticky dock stays short so the card shows.
+	   The chip row and its toggle share one line; every other dock child
+	   takes a full line. The composer is one row, the send disc centred on
+	   the first text line. */
+	@media (max-width: 639px) {
+		.chat[data-page-scroll] .dock {
+			flex-flow: row wrap;
+			align-items: center;
+		}
+		.chat[data-page-scroll] .dock > * {
+			flex: 1 1 100%;
+			min-width: 0;
+		}
+		.chat[data-page-scroll] .dock > .chip-groups:not([data-expanded='true']) {
+			flex: 1 1 0;
+			margin-right: 0;
+			padding-right: 12px;
+		}
+		.chat[data-page-scroll] .dock > .chips-toggle {
+			flex: none;
+			margin: 0 0 0 auto;
+		}
+		.chat[data-page-scroll] .composer {
+			flex-direction: row;
+			align-items: flex-end;
+			gap: 8px;
+		}
+		.chat[data-page-scroll] .controls {
+			padding-bottom: 5px;
 		}
 	}
 	@media (max-width: 420px) {
