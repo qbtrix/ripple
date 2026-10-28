@@ -11,9 +11,9 @@
     blue "Add to your agent" pill in PlanBadge's paid style. The strip is PE's frosted
     shade over the warm ground with its faint cool tint, mirrored in light.
     Below 640px the nav sits between the wordmark and the tools; GitHub and the
-    agent pill leave the bar (the footer carries both), and so do the ⌘K chip
-    (a keyboard hint; the shortcut still works), the sound button and the Design
-    system tab unless it is the current page. On small phones a long
+    agent pill leave the bar (the footer carries both), the ⌘K chip turns into a
+    magnifier icon, and the sound button and the Design system tab leave
+    (the tab stays when it is the current page). On small phones a long
     active label (Design system) shows its short form so 375px never scrolls sideways.
     Below 400px every tab is icon-only, the active one included, so five tabs
     and the tools fit a 320px phone.
@@ -486,8 +486,7 @@
 		.bar {
 			gap: 6px;
 		}
-		.wide,
-		.tools :global(.trigger) {
+		.wide {
 			display: none;
 		}
 		.tabs {
