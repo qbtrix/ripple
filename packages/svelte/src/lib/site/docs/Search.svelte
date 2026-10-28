@@ -136,7 +136,7 @@
 
 <style>
 	/* PE's TopBar ⌘K chip (.cmdk-btn): 22px tall, 11px/600, on --input with a
-	   hairline; it stays in the bar at every width. */
+	   hairline. Under 640px the site bar hides it (+layout.svelte); Ctrl/⌘K still opens the dialog. */
 	.trigger {
 		display: inline-flex;
 		align-items: center;
