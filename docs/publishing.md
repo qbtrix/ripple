@@ -7,7 +7,7 @@
 Four packages, always in this order, each after what it depends on:
 
 1. `@ripple-ui/core` `0.6.0`
-2. `@ripple-ui/svelte` `0.8.1` (depends on core)
+2. `@ripple-ui/svelte` `0.8.2` (depends on core)
 3. `@ripple-ui/embed` `0.1.0` (bundles svelte and core, so it has no runtime
    dependencies; it still goes after them so the release is consistent)
 4. `@ripple-ui/react` `0.1.0` (depends on embed)
@@ -73,7 +73,7 @@ bun install --frozen-lockfile
 bun run build
 bun run pack:release
 #   ok  @ripple-ui/core@0.6.0    .../release/ripple-ui-core-0.6.0.tgz    228 files, ~263 kB packed
-#   ok  @ripple-ui/svelte@0.8.1  .../release/ripple-ui-svelte-0.8.1.tgz  1814 files, ~1.6 MB packed
+#   ok  @ripple-ui/svelte@0.8.2  .../release/ripple-ui-svelte-0.8.2.tgz  1814 files, ~1.6 MB packed
 #   ok  @ripple-ui/embed@0.1.0   .../release/ripple-ui-embed-0.1.0.tgz   2025 files, ~3.2 MB packed
 #   ok  @ripple-ui/react@0.1.0   .../release/ripple-ui-react-0.1.0.tgz   5 files, ~3 kB packed
 git status --short   # package.json files unchanged; the build always bumps the
@@ -86,13 +86,13 @@ npm publish --dry-run --access public ./release/ripple-ui-core-0.6.0.tgz
 # 4. Publish in order. Keep the ./ prefix: without it npm reads
 #    release/x.tgz as a GitHub repo shorthand.
 npm publish --access public ./release/ripple-ui-core-0.6.0.tgz
-npm publish --access public ./release/ripple-ui-svelte-0.8.1.tgz
+npm publish --access public ./release/ripple-ui-svelte-0.8.2.tgz
 npm publish --access public ./release/ripple-ui-embed-0.1.0.tgz
 npm publish --access public ./release/ripple-ui-react-0.1.0.tgz
 
 # 5. Verify.
 npm view @ripple-ui/core version            # 0.6.0
-npm view @ripple-ui/svelte version          # 0.8.1
+npm view @ripple-ui/svelte version          # 0.8.2
 npm view @ripple-ui/svelte dependencies     # '@ripple-ui/core': '^0.6.0', no file:
 npm view @ripple-ui/embed version           # 0.1.0
 npm view @ripple-ui/embed dependencies      # nothing: the renderer is bundled
@@ -124,23 +124,26 @@ the version number stays burned.
    embed (and react) users only when embed is bumped and published too.
 2. Same commands as above, or run the `release-manifest` workflow by hand with
    `publish_npm: true`. The workflow packs through the same script, publishes
-   whichever version is not on npm yet in the order above, and attaches every tarball and the
+   whichever version is still unpublished, in the order above, and attaches every tarball and the
    manifests to a GitHub release. It needs an `NPM_TOKEN` repo secret: a
    granular access token, read and write on the `@ripple-ui` scope only, with
    an expiry. A plain tag push builds the release but does not publish to npm.
 3. Provenance is off: the workflow publishes with `bun publish`, which has no
    `--provenance`.
+4. After this first publish the plan is npm Trusted Publishing (OIDC from
+   GitHub Actions), which needs no stored token. Once it is configured for each
+   package on npmjs.com, the `NPM_TOKEN` repo secret gets deleted. The workflow
+   itself has not changed yet.
 
 ## What depends on the publish
 
 - **The site's install line.** The landing page copies `bun add
   @ripple-ui/svelte` (`packages/svelte/src/routes/+page.svelte`, `INSTALL`),
-  and both READMEs say the same. Until the publish, that command fails.
+  and the READMEs say the same. With the packages published, that command works.
 - **The install docs page** (`packages/svelte/src/docs/getting-started/install.md`)
-  still installs from the GitHub release tarballs and says the packages are
-  not on npm yet. After the publish, change it to `npm install
-  @ripple-ui/svelte` (core comes along as a dependency) and drop the tarball
-  URLs.
+  installs from npm with `npm install @ripple-ui/svelte` (core comes along as a
+  dependency). Each GitHub release still carries the tarballs. The site footer
+  links the npm package page.
 - **The ripple skill.** `skills/ripple/scripts/build.mjs` loads
   `@ripple-ui/core/build` from the caller's project first and falls back to a
   ripple checkout. Once core is on npm, `npm i @ripple-ui/core` in any project

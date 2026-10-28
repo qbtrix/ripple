@@ -12,7 +12,7 @@ Ripple renders a JSON UI spec as a live interface. Pick the package by your app:
 
 The React and embed packages carry the Svelte renderer, its styles and its fonts compiled in, so they need no Svelte and no Tailwind in your app.
 
-For Svelte, the engine underneath, `@ripple-ui/core`, is a dependency. Until both are on the npm registry, you point your package manager at the core tarball too, as "Add the package" shows.
+For Svelte, the engine underneath, `@ripple-ui/core`, is a dependency. It installs with the package, so you add nothing extra.
 
 ## Set up with a coding agent
 
@@ -26,29 +26,19 @@ The rest of this page is the same setup by hand.
 
 ## Add the package
 
-The packages are not on the npm registry yet, so install them from the [GitHub release](https://github.com/qbtrix/ripple-iui/releases/tag/v0.8.1). `@ripple-ui/svelte` depends on `@ripple-ui/core`, and a package manager would look for that on the registry, so point it at the release tarball too.
-
-With npm, install both in one command:
+Install the package from the npm registry. `@ripple-ui/core`, the engine underneath, comes in as a dependency:
 
 ```bash
-npm install https://github.com/qbtrix/ripple-iui/releases/download/v0.8.1/ripple-ui-core-0.6.0.tgz https://github.com/qbtrix/ripple-iui/releases/download/v0.8.1/ripple-ui-svelte-0.8.1.tgz
+npm install @ripple-ui/svelte
 ```
 
-With Bun, add an override for core to `package.json` first:
-
-```json
-{
-  "overrides": {
-    "@ripple-ui/core": "https://github.com/qbtrix/ripple-iui/releases/download/v0.8.1/ripple-ui-core-0.6.0.tgz"
-  }
-}
-```
-
-Then add the Svelte package:
+With Bun:
 
 ```bash
-bun add https://github.com/qbtrix/ripple-iui/releases/download/v0.8.1/ripple-ui-svelte-0.8.1.tgz
+bun add @ripple-ui/svelte
 ```
+
+Each [GitHub release](https://github.com/qbtrix/ripple-iui/releases) also carries the package tarballs.
 
 The only peer dependency is Svelte 5 (`^5.0.0`).
 
@@ -142,4 +132,4 @@ card.update(nextSpec); // swaps in place; what the user typed survives
 card.destroy();
 ```
 
-Like the Svelte package, these two are not on the npm registry yet, and the v0.8.1 release predates them, so these commands work once they are published.
+Like the Svelte package, both are on the npm registry.
