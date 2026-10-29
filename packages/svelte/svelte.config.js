@@ -43,6 +43,8 @@ const connectSrc = [
 	// model-viewer (three.js GLTFLoader) unpacks a GLB's embedded textures to blob:
 	// URLs of this page and fetches them; same-origin data, no network reach.
 	'blob:',
+	// Cloudflare Web Analytics' beacon reports page views here.
+	'https://cloudflareinsights.com',
 	...(dev ? ['http://localhost:*', 'ws://localhost:*'] : [])
 ].filter((v) => v != null);
 
@@ -67,7 +69,7 @@ const config = {
 			mode: 'hash',
 			directives: {
 				'default-src': ['self'],
-				'script-src': ['self', 'wasm-unsafe-eval', 'unsafe-hashes', 'sha256-7dQwUgLau1NFCCGjfn9FsYptB6ZtWxJin6VohGIu20I='],
+				'script-src': ['self', 'https://static.cloudflareinsights.com', 'wasm-unsafe-eval', 'unsafe-hashes', 'sha256-7dQwUgLau1NFCCGjfn9FsYptB6ZtWxJin6VohGIu20I='],
 				'style-src': ['self', 'unsafe-inline'],
 				'img-src': ['self', 'data:', 'https://images.unsplash.com', 'https://i.pravatar.cc', 'https://tile.openstreetmap.org', 'https://*.basemaps.cartocdn.com', ...(storeOrigin ? [storeOrigin] : [])],
 				'font-src': ['self'],

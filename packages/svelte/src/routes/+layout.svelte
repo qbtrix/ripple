@@ -32,6 +32,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
+	import { dev } from '$app/environment';
 	import MessageSquare from '@lucide/svelte/icons/message-square';
 	import LayoutGrid from '@lucide/svelte/icons/layout-grid';
 	import SquareCode from '@lucide/svelte/icons/square-code';
@@ -97,6 +98,10 @@
 <svelte:head>
 	<link rel="icon" href="/paw-logo/favicon.svg" type="image/svg+xml" />
 	<title>Ripple</title>
+	<!-- Cloudflare Web Analytics: cookieless page-view counts, on the built site only. -->
+	{#if !dev}
+		<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon={'{"token": "2d2fb239a9af4a509f17a29a5ab2c07e"}'}></script>
+	{/if}
 </svelte:head>
 
 <div class="shell">
