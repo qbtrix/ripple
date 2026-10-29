@@ -35,6 +35,20 @@ export function Answer({ spec, dark }) {
   browser. With the Next.js app router the module is already marked
   `'use client'`.
 
+## Vite
+
+In `vite dev`, Vite pre-bundles `@ripple-ui/embed` and the card's font URLs
+stop resolving, so it falls back to system fonts. Production builds are fine.
+Exclude the embed from pre-bundling:
+
+```js
+// vite.config.js
+export default defineConfig({
+  plugins: [react()],
+  optimizeDeps: { exclude: ['@ripple-ui/embed'] }
+});
+```
+
 ## Size
 
 The component itself is under 1 KB. The card's first load comes from the

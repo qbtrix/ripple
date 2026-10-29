@@ -63,9 +63,21 @@ Measured in Chromium (gzip of the JS fetched; fonts are separate woff2 files):
 
 ## Notes
 
-- In a Vite app it works as is, in dev and build (checked with Vite 7 against
-  the packed tarball). If another bundler's dev server mangles the chunk or
-  font URLs, exclude the package from its dependency pre-bundling.
+- A Vite production build works as is (checked with Vite 7 against the packed
+  tarball). `vite dev` needs one line: its dependency optimizer pre-bundles the
+  package into `node_modules/.vite/deps`, where the relative font URLs no
+  longer resolve, so the card falls back to system fonts. Exclude the package
+  from pre-bundling (also when you use it through `@ripple-ui/react`):
+
+  ```js
+  // vite.config.js
+  export default defineConfig({
+    optimizeDeps: { exclude: ['@ripple-ui/embed'] }
+  });
+  ```
+
+  If another bundler's dev server mangles the chunk or font URLs, exclude the
+  package from its pre-bundling the same way.
 - The Chart widget's echarts build includes the series it draws (bar, line,
   pie, candlestick, heatmap, gauge, radar). A `themeOverrides` option that
   needs another echarts component is ignored here.
