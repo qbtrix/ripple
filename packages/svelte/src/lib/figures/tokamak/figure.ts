@@ -28,6 +28,7 @@
 import * as k from '@ripple-ui/core/iso';
 import type { Flat, Point3, SolidPaths } from '@ripple-ui/core/iso';
 import { frameOf, framed, percentIn, type FrameBox } from '../frame.js';
+import { addFigureStyle } from '../style.js';
 import { beamSpeedOf, clampParams, describe, glowOf, readoutsOf, solve, streamSpeedOf, twistAt, type TokamakParams } from './model.js';
 
 export const WIDTH = 640;
@@ -731,12 +732,7 @@ const STYLE_ID = 'ripple-iso-tokamak-css';
 
 export function mount(el: HTMLElement, { theme = 'dark', params: initial, onReadout }: MountOptions = {}): FigureHandle {
 	const doc = el.ownerDocument;
-	if (!doc.getElementById(STYLE_ID)) {
-		const style = doc.createElement('style');
-		style.id = STYLE_ID;
-		style.textContent = k.ISO_CSS + TOKAMAK_CSS;
-		doc.head.appendChild(style);
-	}
+	addFigureStyle(el, STYLE_ID, k.ISO_CSS + TOKAMAK_CSS);
 	let params = clampParams(initial);
 	const svg = doc.importNode(new DOMParser().parseFromString(tokamakSvg(params), 'image/svg+xml').documentElement, true) as unknown as SVGSVGElement;
 	el.classList.add('iso');

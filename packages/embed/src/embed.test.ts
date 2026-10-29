@@ -11,11 +11,6 @@ import { flushSync, tick } from 'svelte';
 import { mount } from './index.js';
 import { specTypes } from './registry.js';
 
-// jsdom has no matchMedia; svelte/motion's prefersReducedMotion (used by the
-// figure widget) reads it on import.
-window.matchMedia ??= ((query: string) =>
-	({ matches: false, media: query, addEventListener() {}, removeEventListener() {} }) as unknown as MediaQueryList);
-
 const settle = async () => {
 	for (let i = 0; i < 5; i++) {
 		await tick();
