@@ -26,8 +26,9 @@ const stripCopy = () => screen.getAllByRole('button', { name: 'Copy install comm
 test('the hero leads the chat column, above the first message', () => {
 	const view = render(Landing, { props });
 	const h1 = view.getByRole('heading', { level: 1 });
-	expect(h1.textContent).toBe('Ask for a tool. Ripple builds it while the model is still typing.');
-	expect(view.getByText(/Ripple is an open-source generative UI engine\./)).toBeTruthy();
+	expect(h1.textContent).toBe('The open-source generative UI engine');
+	expect(view.getByText(/Open-source alternative to ChatGPT's Intelligent UI and Claude Dashboards/)).toBeTruthy();
+	expect(view.getByText(/Ask for a tool and Ripple builds it while the model is still typing\./)).toBeTruthy();
 	expect(view.getByRole('link', { name: 'Svelte, React or plain HTML' }).getAttribute('href')).toBe('#install');
 	expect(view.container.querySelector('.context')?.textContent?.trim()).toBe('Recorded demo');
 	expect(view.queryByText('The card is live now. Change something and see.')).toBeNull();
