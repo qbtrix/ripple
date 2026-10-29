@@ -1,7 +1,7 @@
 {
   "schema": "ripple.manifest/v1",
   "version": "0.8.2",
-  "generatedAt": "2026-10-28T13:51:45.167Z",
+  "generatedAt": "2026-10-29T08:37:20.715Z",
   "spec": {
     "uiField": "ui",
     "stateField": "state",
@@ -1907,7 +1907,7 @@
         "colors": {
           "type": "string[]",
           "required": false,
-          "description": "Palette in order: one per series when points carry `series`, one per slice on pie/donut. On one series (bar, line) every point wears the first colour; give two or more to colour points individually. Default palette is categorical, no status colours."
+          "description": "Palette in order: one per series when points carry `series`, one per slice on pie/donut. On one series (bar, line) every point wears the first colour; give two or more to colour points individually. Default palette is the theme's chart-1 to chart-5 (brand blue first), then categorical; no status colours."
         },
         "reference": {
           "type": "string | string[]",
@@ -8287,12 +8287,12 @@
     {
       "type": "markdown",
       "category": "display",
-      "description": "Render markdown with GFM support (tables, strikethrough, autolinks, task lists).",
+      "description": "Render markdown with GFM (tables, strikethrough, autolinks, task lists), LaTeX math and mermaid diagrams.",
       "props": {
         "content": {
           "type": "string",
           "required": false,
-          "description": "Markdown source."
+          "description": "Markdown source. Math: $x$ inline, $$x$$ on its own lines for display; a bare number like $5 stays text. A ```mermaid fence draws as a diagram."
         },
         "text": {
           "type": "string",

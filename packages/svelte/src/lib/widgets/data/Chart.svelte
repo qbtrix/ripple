@@ -1,8 +1,10 @@
 <!--
   Chart.svelte: 10 chart types (bar, line, area, pie, donut, candlestick,
   sparkline, heatmap, gauge, radar) drawn with echarts. Colours, axis label fit
-  and the pie legend come from chart-layout.ts: series take the categorical
-  palette in order, one series is one colour, `reference` series draw muted and
+  and the pie legend come from chart-layout.ts: an explicit `colors` prop wins,
+  otherwise series take the theme's --chart-1..5 in order (read as hex because
+  echarts draws on a canvas; an unset slot falls back to chart-layout's
+  categorical palette), one series is one colour, `reference` series draw muted and
   dashed, the category axis rotates or evenly thins labels (keeping first and
   last) to the measured width, and pie/donut legends carry value and percent.
   The instance is created once, when ResizeObserver first reports a size, and
@@ -19,7 +21,7 @@
 	import { onMount } from 'svelte';
 	import { cn } from '$lib/utils.js';
 	import { safeArray, safeObject } from '$lib/utils/safe-props.js';
-	import { fitAxisLabels, pieLayout, pointColors, seriesColor, sliceColors, sliceLegendText } from './chart-layout.js';
+	import { CATEGORICAL, fitAxisLabels, pieLayout, pointColors, seriesColor, sliceColors, sliceLegendText } from './chart-layout.js';
 
 	interface DataPoint {
 		label: string;
@@ -104,7 +106,32 @@
 
 	/** The i-th series colour, a `var(--x)` resolved for the canvas. */
 	function getColor(i: number): string {
-		return cssColor(seriesColor(i, colors));
+		return cssColor(seriesColor(i, colors, palette));
+	}
+
+	/** This draw's default palette, read once per buildOption. */
+	let palette: readonly string[] = CATEGORICAL;
+
+	/** The default palette: the theme's --chart-1..5 where they resolve, then chart-layout's categorical one. */
+	function themePalette(): string[] {
+		return CATEGORICAL.map((c, i) => (i < 5 && hexOf(cssColor(`var(--chart-${i + 1})`))) || c);
+	}
+
+	function hexOf(color: string): string | undefined {
+		if (/^#[0-9a-f]{6}$/i.test(color)) return color;
+		// An unset token comes back as `var(...)`: CSS.supports accepts it, canvas ignores it and reads black.
+		if (!color || color.startsWith('var(')) return undefined;
+		try {
+			if (!CSS.supports('color', color)) return undefined;
+			const ctx = document.createElement('canvas').getContext('2d');
+			if (!ctx) return undefined;
+			ctx.fillStyle = color;
+			ctx.fillRect(0, 0, 1, 1);
+			const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+			return `#${[r, g, b].map((n) => n.toString(16).padStart(2, '0')).join('')}`;
+		} catch {
+			return undefined;
+		}
 	}
 
 	let chartEl: HTMLDivElement | undefined = $state();
@@ -193,11 +220,12 @@
 	);
 
 	function buildOption() {
+		palette = themePalette();
 		const tc = themeColors();
 		const labels = data.map(d => d.label);
 		const values = data.map(d => d.value ?? 0);
 		// One series is one colour, unless the spec colours points itself.
-		const itemColors = pointColors(data, colors).map(cssColor);
+		const itemColors = pointColors(data, colors, palette).map(cssColor);
 
 		// Detect multi-series: any point carries a `series` map → one ECharts series per key.
 		const seriesKeys: string[] = (() => {
@@ -342,7 +370,7 @@
 				};
 			}
 		} else if (type === 'pie' || type === 'donut') {
-			const slices = sliceColors(data, colors).map(cssColor);
+			const slices = sliceColors(data, colors, palette).map(cssColor);
 			const legendText = sliceLegendText(data);
 			const pie = pieLayout(boxWidth, height, [...legendText.values()]);
 			const r = pie.radius;

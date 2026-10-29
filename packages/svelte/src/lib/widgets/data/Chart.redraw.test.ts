@@ -18,6 +18,7 @@ import Treemap from './Treemap.svelte';
 import Sankey from './Sankey.svelte';
 import Funnel from './Funnel.svelte';
 import GanttChart from './GanttChart.svelte';
+import { CATEGORICAL } from './chart-layout.js';
 
 const ec = vi.hoisted(() => ({ init: vi.fn(), setOption: vi.fn(), resize: vi.fn(), dispose: vi.fn() }));
 vi.mock('echarts', () => ({
@@ -187,5 +188,47 @@ describe('gantt', () => {
 		expect(items).toHaveLength(2);
 		expect(items[1].getAttribute('aria-label')).toBe('Build, Jan 6, 2026 to Jan 10, 2026, after Plan');
 		expect(container.textContent).toContain('Jan 1 – Jan 10, 2026 · 2 tasks');
+	});
+});
+
+describe('chart default colours', () => {
+	const pts = [{ label: 'a', value: 1 }, { label: 'b', value: 2 }, { label: 'c', value: 3 }];
+	const barColours = () => {
+		const color = lastOption().series[0].itemStyle.color as (p: { dataIndex: number }) => string;
+		return pts.map((_, dataIndex) => color({ dataIndex }));
+	};
+	const sliceColours = () => lastOption().series[0].data.map((d: { itemStyle: { color: string } }) => d.itemStyle.color);
+	/** A host element carrying the theme's chart tokens, as styles.css or a brand pack would. */
+	const themed = () => {
+		const el = document.createElement('div');
+		el.style.setProperty('--chart-1', '#1877f2');
+		el.style.setProperty('--chart-2', '#0d9488');
+		el.style.setProperty('--chart-3', '#d97706');
+		document.body.appendChild(el);
+		return el;
+	};
+
+	test('one series wears the theme --chart-1 on every bar, not a rainbow', async () => {
+		render(Chart, { props: { type: 'bar', data: pts }, target: themed() });
+		await vi.waitFor(() => expect(ec.setOption).toHaveBeenCalled());
+		expect(barColours()).toEqual(['#1877f2', '#1877f2', '#1877f2']);
+	});
+
+	test('pie slices take the theme slots in order', async () => {
+		render(Chart, { props: { type: 'pie', data: pts }, target: themed() });
+		await vi.waitFor(() => expect(ec.setOption).toHaveBeenCalled());
+		expect(sliceColours()).toEqual(['#1877f2', '#0d9488', '#d97706']);
+	});
+
+	test('with no chart tokens on the cascade, the categorical palette fills in', async () => {
+		render(Chart, { props: { type: 'pie', data: pts } });
+		await vi.waitFor(() => expect(ec.setOption).toHaveBeenCalled());
+		expect(sliceColours()).toEqual(CATEGORICAL.slice(0, 3));
+	});
+
+	test('an explicit colors prop wins', async () => {
+		render(Chart, { props: { type: 'bar', data: pts, colors: ['#111111', '#222222', '#333333'] }, target: themed() });
+		await vi.waitFor(() => expect(ec.setOption).toHaveBeenCalled());
+		expect(barColours()).toEqual(['#111111', '#222222', '#333333']);
 	});
 });

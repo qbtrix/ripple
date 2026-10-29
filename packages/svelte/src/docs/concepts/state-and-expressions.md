@@ -160,6 +160,17 @@ These return `undefined`:
 
 The language is small on purpose. A model writes these expressions, and a narrow grammar means an unknown pattern is always a bug in the spec rather than code that runs.
 
+### Literal braces
+
+Not every `{` is an expression, so TeX math and mermaid diagrams can go straight into a prop. A brace stays as written when:
+
+- a backslash escapes it: `\{state.x}` stays `\{state.x}`. The backslash is kept, because TeX needs it for a brace glyph (`\{a, b\}`) and markdown shows `\{` as `{`.
+- it is a TeX command argument: `\frac{1}{2}`, `\sqrt[3]{x}`, `\begin{pmatrix}`, and every group that follows one directly.
+- its inside holds a backslash or a line break outside a quoted string: `{i\pi}`, a JSON sample, a class diagram block.
+- it is glued to `^`, `_`, a letter or a digit and its first name reads nothing that exists: `x^{2}`, `a_{n+1}`, mermaid's `B{Valid?}`. When the name does exist (a state key, a loop name, `state`, `item`, `index`, `data`), it resolves as before, so `modal_{id}` and `row{index}` still work.
+
+Everything else is an expression, as above. A string that is one whole `{...}` is always one expression.
+
 ## Conditions
 
 `show` on any node and `condition` on an `if` node take an expression and render when it is truthy. The braces are optional there, so `"show": "state.count > 0"` and `"show": "{state.count > 0}"` are the same.
