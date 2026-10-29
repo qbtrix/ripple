@@ -3,7 +3,7 @@
   @description Ripple's landing, chat-first, laid out like a Paw OS chat: under
     the site bar a thin context row says which demo this is (recorded or live),
     then the chat, at least the first screen tall. One scroll, the page's: the
-    chat (Chat pageScroll) has no scroll box of its own; the hero (the h1 and a
+    chat (Chat pageScroll) has no scroll box of its own; the hero (a positioning tag, the h1 and a
     lede) sits above the first message, the transcript grows in the page, and
     the chips and composer stick to the viewport's bottom while the chat is on
     screen. A chip or replay scrolls the window to the new turn. "How it
@@ -245,7 +245,7 @@
 	});
 
 	const DESCRIPTION =
-		'Ripple is an open-source generative UI engine. A model writes a small JSON spec and Ripple renders it as a working interface while the spec streams in.';
+		"Ripple is an open-source generative UI engine, an alternative to ChatGPT's Intelligent UI and Claude Dashboards for your own app. A model writes a small JSON spec and Ripple renders it as a working interface while the spec streams in.";
 	// Structured data for search engines and answer engines; `<` escaped so no string can close the tag.
 	const jsonLd = JSON.stringify({
 		'@context': 'https://schema.org',
@@ -262,7 +262,7 @@
 	const jsonLdTag = `<script type="application/ld+json">${jsonLd}<\/script>`;
 </script>
 
-<SeoHead title="Ripple: ask for a tool, watch it build" description={DESCRIPTION} />
+<SeoHead title="Ripple: the open-source generative UI engine" description={DESCRIPTION} />
 <svelte:head>
 	<!-- A JSON data block, not script: CSP script-src does not apply to it. -->
 	{@html jsonLdTag}
@@ -280,9 +280,10 @@
 			{#snippet top()}
 				<!-- The hero: top of the chat, above the first message. -->
 				<header class="hero">
-					<h1 id="hero-title">Ask for a tool. <span>Ripple builds it while the model is still typing.</span></h1>
+					<p class="tag">Open-source alternative to ChatGPT's Intelligent UI and Claude Dashboards</p>
+					<h1 id="hero-title">The open-source <span>generative UI engine</span></h1>
 					<p class="lede">
-						Ripple is an open-source generative UI engine. <span class="lede-more">A model writes a small JSON spec, and Ripple turns it into a
+						Ask for a tool and Ripple builds it while the model is still typing. <span class="lede-more">A model writes a small JSON spec, and Ripple turns it into a
 						working interface as the spec streams in.</span> {TYPED_LOCAL ? 'Ask for something below.' : 'Tap a suggestion below to watch one build, or try it with your own agent.'}
 					</p>
 				</header>
@@ -496,6 +497,17 @@
 	h1 span {
 		display: block;
 		margin-top: 0.12em;
+	}
+	/* The positioning tag above the h1: a quiet hairline pill. */
+	.tag {
+		display: inline-block;
+		margin: 0 0 12px;
+		padding: 4px 12px;
+		border: 1px solid var(--site-line);
+		border-radius: 999px;
+		color: var(--site-soft);
+		font-size: 13px;
+		line-height: 1.4;
 	}
 	.lede {
 		margin: clamp(10px, 1.6vw, 18px) 0 8px;
@@ -1023,6 +1035,12 @@
 		}
 		h1 {
 			font-size: 1.5rem;
+		}
+		/* Two lines on a phone: a softer corner reads better than a full pill. */
+		.tag {
+			margin-bottom: 8px;
+			border-radius: 10px;
+			font-size: 12px;
 		}
 		/* The composer needs the width; the sections are a scroll away. */
 		.more {
