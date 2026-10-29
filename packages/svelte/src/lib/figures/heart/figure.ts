@@ -17,6 +17,7 @@
 import * as k from '@ripple-ui/core/iso';
 import type { Flat, Point3, SolidPaths } from '@ripple-ui/core/iso';
 import { frameOf, framed, percentIn, type FrameBox } from '../frame.js';
+import { addFigureStyle } from '../style.js';
 import { clampParams, describe, readoutsOf, stateAt, stillTime, timingOf, type HeartParams, type HeartState } from './model.js';
 
 export const WIDTH = 640;
@@ -519,12 +520,7 @@ const FLOW_PX = 0.22; // dash px per ml/s
 
 export function mount(el: HTMLElement, { theme = 'dark', params: initial, onReadout }: MountOptions = {}): FigureHandle {
 	const doc = el.ownerDocument;
-	if (!doc.getElementById(STYLE_ID)) {
-		const style = doc.createElement('style');
-		style.id = STYLE_ID;
-		style.textContent = k.ISO_CSS + HEART_CSS;
-		doc.head.appendChild(style);
-	}
+	addFigureStyle(el, STYLE_ID, k.ISO_CSS + HEART_CSS);
 	let params = clampParams(initial);
 	const parsed = new DOMParser().parseFromString(heartSvg(params), 'image/svg+xml').documentElement;
 	const svg = doc.importNode(parsed, true) as unknown as SVGSVGElement;

@@ -115,6 +115,16 @@ export function Answer({ spec, dark }) {
 }
 ```
 
+In a Vite app, exclude the embed from Vite's dev pre-bundling. Without this, `vite dev` serves the card without its fonts (production builds are fine):
+
+```js
+// vite.config.js
+export default defineConfig({
+  plugins: [react()],
+  optimizeDeps: { exclude: ['@ripple-ui/embed'] }
+});
+```
+
 ## Any framework
 
 `@ripple-ui/embed` is one ES module that renders a spec inside a shadow root on the element you pass, so your page's CSS can't reach the card and its styles can't leak out.
@@ -131,5 +141,7 @@ await card.ready; // first paint is on screen
 card.update(nextSpec); // swaps in place; what the user typed survives
 card.destroy();
 ```
+
+With Vite, add `optimizeDeps: { exclude: ['@ripple-ui/embed'] }` to `vite.config.js`. Vite's dev server otherwise pre-bundles the package and its font URLs stop resolving. Production builds are fine without it.
 
 Like the Svelte package, both are on the npm registry.

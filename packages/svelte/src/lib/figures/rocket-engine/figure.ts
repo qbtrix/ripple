@@ -21,6 +21,7 @@
 import * as k from '@ripple-ui/core/iso';
 import type { Flat, Frame, Point3, SolidPaths } from '@ripple-ui/core/iso';
 import { frameOf, framed, percentIn, type FrameBox } from '../frame.js';
+import { addFigureStyle } from '../style.js';
 import { clampParams, describe, plumeOf, readoutsOf, shaftSpeedOf, stateOf, type EngineParams } from './model.js';
 
 export const WIDTH = 640;
@@ -844,12 +845,7 @@ const FLOW_PX = 0.08; // dash px a second per kg/s
 
 export function mount(el: HTMLElement, { theme = 'dark', params: initial, onReadout }: MountOptions = {}): FigureHandle {
 	const doc = el.ownerDocument;
-	if (!doc.getElementById(STYLE_ID)) {
-		const style = doc.createElement('style');
-		style.id = STYLE_ID;
-		style.textContent = k.ISO_CSS + ENGINE_CSS;
-		doc.head.appendChild(style);
-	}
+	addFigureStyle(el, STYLE_ID, k.ISO_CSS + ENGINE_CSS);
 	let params = clampParams(initial);
 	const svg = doc.importNode(new DOMParser().parseFromString(engineSvg(params), 'image/svg+xml').documentElement, true) as unknown as SVGSVGElement;
 	el.classList.add('iso');

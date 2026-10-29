@@ -39,7 +39,7 @@ export function widgetSources(widgetsDir: string): Record<string, string> {
 	const block = index.match(/const defaultRegistry: WidgetMap = \{([\s\S]*?)\n\};/);
 	if (!block) throw new Error(`widget-sources: no defaultRegistry block in ${indexPath}`);
 	const out: Record<string, string> = {};
-	for (const line of block[1].split('\n')) {
+	for (const line of block[1].split(/\r?\n/)) {
 		if (!line.trim() || line.trim().startsWith('//')) continue;
 		const m = line.match(ENTRY);
 		if (!m) throw new Error(`widget-sources: cannot parse registry line: ${line.trim()}`);

@@ -25,20 +25,21 @@
 // no import-time effects); otherwise its zod schemas ship in the first load.
 // Component CSS is compiled as injected, so Svelte appends it to the shadow root.
 import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import tailwindcss from '@tailwindcss/vite';
 import { transform } from 'esbuild';
-import { defineConfig, type Plugin } from 'vite';
+import { defineConfig, normalizePath, type Plugin } from 'vite';
 import { widgetSources } from '../svelte/scripts/widget-sources.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const SVELTE_LIB = resolve(here, '../svelte/src/lib');
 const CORE = resolve(here, '../core');
 const EMBED_SRC = resolve(here, 'src');
-const WIDGETS_INDEX = join(SVELTE_LIB, 'widgets/index.ts');
-const REGISTRY = join(EMBED_SRC, 'registry.ts');
+// Compared with Vite module ids, which use forward slashes on Windows too.
+const WIDGETS_INDEX = normalizePath(join(SVELTE_LIB, 'widgets/index.ts'));
+const REGISTRY = normalizePath(join(EMBED_SRC, 'registry.ts'));
 const LOADERS_ID = 'virtual:ripple-widget-loaders';
 
 // @ripple-ui/core and each subpath it exports resolve to its source, as in the
@@ -54,8 +55,8 @@ const coreAlias = Object.entries(coreExports)
 
 // importer -> the imports of it that become on-demand stand-ins (src/deferred/).
 const DEFERRED: Record<string, RegExp> = {
-	[join(SVELTE_LIB, 'Ripple.svelte')]: /^\.\/intent\/(IntentRenderer|DashboardRenderer|FlowRunner)\.svelte$/,
-	[join(SVELTE_LIB, 'components/NodeRenderer.svelte')]: /^\.\.\/organisms\/(OrganismRenderer)\.svelte$/
+	[normalizePath(join(SVELTE_LIB, 'Ripple.svelte'))]: /^\.\/intent\/(IntentRenderer|DashboardRenderer|FlowRunner)\.svelte$/,
+	[normalizePath(join(SVELTE_LIB, 'components/NodeRenderer.svelte'))]: /^\.\.\/organisms\/(OrganismRenderer)\.svelte$/
 };
 
 const lazyRegistry: Plugin = {
@@ -93,7 +94,7 @@ const embedFile: Plugin = {
 		if (!id.endsWith('?embed-file')) return null;
 		const file = id.slice(0, -11);
 		if (this.meta.watchMode || !('emitFile' in this)) return `export default ${JSON.stringify('/@fs' + file)};`;
-		const ref = this.emitFile({ type: 'asset', name: file.split('/').pop(), source: readFileSync(file) });
+		const ref = this.emitFile({ type: 'asset', name: basename(file), source: readFileSync(file) });
 		return `export default import.meta.ROLLUP_FILE_URL_${ref};`;
 	}
 };
