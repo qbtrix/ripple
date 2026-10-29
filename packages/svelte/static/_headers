@@ -1,0 +1,6 @@
+# _headers: response headers Cloudflare Workers static assets adds to the site.
+# The 3D model library is read cross-origin by every host that renders a
+# model-viewer card (Paw OS at os.pocketpaw.xyz, the embed on other sites), so
+# the GLB files must allow any origin. They are public assets with no cookies.
+/models/*
+  Access-Control-Allow-Origin: *
