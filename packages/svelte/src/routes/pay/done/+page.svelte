@@ -39,7 +39,6 @@
 
 <svelte:head>
 	<title>Payment · Ripple</title>
-	<meta name="robots" content="noindex" />
 </svelte:head>
 
 <main class="done">

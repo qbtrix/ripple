@@ -1,7 +1,8 @@
 <!--
   @file routes/ds/Showcase.svelte
-  @description The shell every /ds/<slug> page renders through: the <title>
-    ("<title> · Ripple design system") and meta description from pages.ts, a
+  @description The shell every /ds/<slug> page renders through: the title
+    ("<title> · Ripple design system") and description from pages.ts through
+    lib/site/SeoHead.svelte, a
     back link to /ds, the h1 on the hub's display scale, the intro (a snippet,
     or the page's description), the in-page nav pills, then the page body.
     It also owns the shared section styles the pages use, as :global classes
@@ -12,6 +13,7 @@
 -->
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import SeoHead from '$lib/site/SeoHead.svelte';
 	import { dsPage } from './pages.js';
 
 	let {
@@ -24,10 +26,7 @@
 	const page = $derived(dsPage(slug));
 </script>
 
-<svelte:head>
-	<title>{page.title} · Ripple design system</title>
-	<meta name="description" content={page.description} />
-</svelte:head>
+<SeoHead title="{page.title} · Ripple design system" description={page.description} />
 
 <main class="showcase">
 	<header class="showcase-header">

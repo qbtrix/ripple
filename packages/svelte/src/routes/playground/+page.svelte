@@ -29,6 +29,7 @@
     chat, Ctrl/Cmd+J toggles the JSON; Ctrl/Cmd+K stays docs search.
 -->
 <script lang="ts">
+	import SeoHead from '$lib/site/SeoHead.svelte';
 	import { onMount, tick } from 'svelte';
 	import { MediaQuery } from 'svelte/reactivity';
 	import type { RippleEvent, TerminalResult } from '$lib/index.js';
@@ -287,13 +288,7 @@
 
 <svelte:window onkeydown={onkey} />
 
-<svelte:head>
-	<title>Playground: ask for a tool, watch Ripple build it</title>
-	<meta
-		name="description"
-		content="Ask for a small tool and watch its Ripple spec stream into a working UI, with the JSON beside it line by line. Edit the JSON and the UI follows. Answers are recorded model output, replayed in your browser."
-	/>
-</svelte:head>
+<SeoHead title="Playground: ask for a tool, watch Ripple build it" description="Ask for a small tool and watch its Ripple spec stream into a working UI, with the JSON beside it line by line. Edit the JSON and the UI follows. Answers are recorded model output, replayed in your browser." />
 
 {#snippet paneTools()}
 	{#if wide.current && !showChat}

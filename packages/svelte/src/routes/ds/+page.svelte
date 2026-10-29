@@ -15,6 +15,7 @@
     each atom category, each of which links back to the top.
 -->
 <script lang="ts">
+	import SeoHead from '$lib/site/SeoHead.svelte';
 	import { Ripple } from '$lib/index.js';
 	import { DS_PAGES } from './pages.js';
 
@@ -53,13 +54,7 @@
 
 </script>
 
-<svelte:head>
-	<title>Design system · Ripple</title>
-	<meta
-		name="description"
-		content="Ripple's tokens and atoms: colours for both themes, the type scale, spacing and radius, and every building-block widget rendered live from its spec."
-	/>
-</svelte:head>
+<SeoHead title="Design system · Ripple" description="Ripple's tokens and atoms: colours for both themes, the type scale, spacing and radius, and every building-block widget rendered live from its spec." />
 
 <main class="ds">
 	<header class="head" id="top">

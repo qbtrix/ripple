@@ -38,6 +38,8 @@
     above (+page.server.ts codeSamples); then the coding-agent setup prompt
     from lib/site/setup-prompt.ts (falling back to its Install docs section),
     the recorded runs (the /live gallery's thumbnail tiles, GalleryGrid) linking /live, and a closer that points to the ripple skill (and, quietly, Paw OS).
+    The head carries the title and description (SeoHead) and a schema.org
+    SoftwareSourceCode JSON-LD block, the only one on the site.
 
   Creative Direction Declaration
     Scene: a developer at night, comparing generative UI tools with a terminal
@@ -50,6 +52,8 @@
       working, not a description of it.
 -->
 <script lang="ts">
+	import SeoHead from '$lib/site/SeoHead.svelte';
+	import { SITE_URL } from '$lib/site/docs/model.js';
 	import { onMount } from 'svelte';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import Check from '@lucide/svelte/icons/check';
@@ -239,14 +243,29 @@
 		}
 		return () => session.stop();
 	});
+
+	const DESCRIPTION =
+		'Ripple is an open-source generative UI engine. A model writes a small JSON spec and Ripple renders it as a working interface while the spec streams in.';
+	// Structured data for search engines and answer engines; `<` escaped so no string can close the tag.
+	const jsonLd = JSON.stringify({
+		'@context': 'https://schema.org',
+		'@type': 'SoftwareSourceCode',
+		name: 'Ripple',
+		description: DESCRIPTION,
+		url: `${SITE_URL}/`,
+		codeRepository: 'https://github.com/qbtrix/ripple-iui',
+		programmingLanguage: ['TypeScript', 'Svelte'],
+		license: 'https://opensource.org/licenses/MIT'
+	}).replace(/</g, '\\u003c');
+	// The closing tag is escaped as <\/script>: oxlint cuts a .svelte file at
+	// the first closing script tag it sees, so a literal one ends this block.
+	const jsonLdTag = `<script type="application/ld+json">${jsonLd}<\/script>`;
 </script>
 
+<SeoHead title="Ripple: ask for a tool, watch it build" description={DESCRIPTION} />
 <svelte:head>
-	<title>Ripple: ask for a tool, watch it build</title>
-	<meta
-		name="description"
-		content="Ripple is an open-source generative UI engine. A model writes a small JSON spec and Ripple renders it as a working interface while the spec streams in."
-	/>
+	<!-- A JSON data block, not script: CSP script-src does not apply to it. -->
+	{@html jsonLdTag}
 </svelte:head>
 
 <main class="landing">

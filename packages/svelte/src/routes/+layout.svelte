@@ -28,6 +28,11 @@
     PUBLIC_PAWOS_URL with ?ref=ripple. It points the model-viewer library at the
     site's own /models/ so 3D cards load same-origin, and defaults maps to OSM
     tiles (the CSP also admits CARTO's, for specs that pick a carto preset).
+    Head: the fallback <title>, then the tags that follow from the path alone:
+    canonical and og:url (SITE_URL + pathname; skipped on /showcase redirects,
+    which name their target), og:type, og:site_name, og:image (static/hero.jpg)
+    and twitter:card. Lab pages and /pay get noindex instead of a canonical.
+    Each page's title and description come from lib/site/SeoHead.svelte.
 -->
 <script lang="ts">
 	import { onMount } from 'svelte';
@@ -47,6 +52,7 @@
 	import './site.css';
 	import Search from '$lib/site/docs/Search.svelte';
 	import PaperWordmark from '$lib/site/PaperWordmark.svelte';
+	import { SITE_URL } from '$lib/site/docs/model.js';
 	import { EARLY_ACCESS_URL } from './pawbar/session.svelte.js';
 	import { setModelAssetBase } from '$lib/widgets/media/model-asset-types.js';
 	import { setMapDefaultTiles } from '$lib/widgets/data/Map.svelte';
@@ -71,6 +77,11 @@
 	];
 	// '/' would prefix-match every page, so Chat is current only on the landing.
 	const current = (href: string) => (href === '/' ? page.url.pathname === '/' : page.url.pathname.startsWith(href));
+
+	// Unlinked labs and the payment return page stay out of search results.
+	const noindex = $derived(/^\/(labs|design-system-lab|editor-lab|quick-lab|slides-lab|pay)(\/|$)/.test(page.url.pathname));
+	// Old /showcase URLs are redirect pages that set their own canonical.
+	const canonical = $derived(noindex || page.url.pathname.startsWith('/showcase') ? null : SITE_URL + (page.url.pathname.replace(/\/+$/, '') || '/'));
 
 	let dark = $state(true);
 	onMount(() => {
@@ -98,6 +109,18 @@
 <svelte:head>
 	<link rel="icon" href="/paw-logo/favicon.svg" type="image/svg+xml" />
 	<title>Ripple</title>
+	{#if noindex}<meta name="robots" content="noindex" />{/if}
+	{#if canonical}
+		<link rel="canonical" href={canonical} />
+		<meta property="og:url" content={canonical} />
+	{/if}
+	<meta property="og:type" content="website" />
+	<meta property="og:site_name" content="Ripple" />
+	<meta property="og:image" content="{SITE_URL}/hero.jpg" />
+	<meta property="og:image:width" content="1600" />
+	<meta property="og:image:height" content="900" />
+	<meta property="og:image:alt" content="Ripple" />
+	<meta name="twitter:card" content="summary_large_image" />
 	<!-- Cloudflare Web Analytics (its own site, ripple.pocketpaw.xyz): cookieless page-view counts, on the built site only. -->
 	{#if !dev}
 		<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon={'{"token": "728ccadb100c48c7ac51dd504f3e0245"}'}></script>

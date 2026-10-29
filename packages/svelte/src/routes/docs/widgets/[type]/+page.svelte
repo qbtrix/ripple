@@ -16,6 +16,7 @@
     phone never scrolls sideways. Indexed by Pagefind (data-pagefind-body).
 -->
 <script lang="ts">
+	import SeoHead from '$lib/site/SeoHead.svelte';
 	import SpecExample from '$lib/site/SpecExample.svelte';
 	import PropsConfigurator from '$lib/site/docs/PropsConfigurator.svelte';
 	import VariantRow from '$lib/site/docs/VariantRow.svelte';
@@ -39,10 +40,7 @@
 	}
 </script>
 
-<svelte:head>
-	<title>{data.type} widget · Ripple docs</title>
-	<meta name="description" content={data.description} />
-</svelte:head>
+<SeoHead title="{data.type} widget · Ripple docs" description={data.description} />
 
 {#snippet table(id: string, title: string, list: typeof data.props)}
 	{#if list.length}
