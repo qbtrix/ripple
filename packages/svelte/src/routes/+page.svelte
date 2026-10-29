@@ -52,6 +52,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
+	import Check from '@lucide/svelte/icons/check';
 	import Copy from '@lucide/svelte/icons/copy';
 	import { Ripple } from '$lib/index.js';
 	import JsonLines from '$lib/site/JsonLines.svelte';
@@ -316,26 +317,33 @@
 		<div class="band" id="install">
 			<div class="band-inner">
 				<div class="setup">
+				<div class="panel">
 					<div class="fw" role="group" aria-label="Framework">
 						{#each FRAMEWORKS as f (f.id)}
 							<button type="button" aria-pressed={fw === f.id} onclick={() => pick(f.id)}>{f.label}</button>
 						{/each}
 					</div>
-					<div class="install">
+					<div class="snip">
 						<code bind:this={bandCmd}><span aria-hidden="true">$</span> {current.install}</code>
-						<button type="button" onclick={() => copyText('code')} aria-label="Copy install command">{copied === 'code' ? 'Copied' : 'Copy'}</button>
+						<button type="button" class="icon" onclick={() => copyText('code')} aria-label={copied === 'code' ? 'Copied' : 'Copy install command'}>
+							{#if copied === 'code'}<Check size={16} aria-hidden="true" />{:else}<Copy size={16} aria-hidden="true" />{/if}
+						</button>
 					</div>
-					<div class="install usage">
+					<div class="snip usage">
 						<pre bind:this={usageEl} aria-label="Usage">{current.usage}</pre>
-						<button type="button" onclick={() => copyText('usage')} aria-label="Copy usage snippet">{copied === 'usage' ? 'Copied' : 'Copy'}</button>
+						<button type="button" class="icon" onclick={() => copyText('usage')} aria-label={copied === 'usage' ? 'Copied' : 'Copy usage snippet'}>
+							{#if copied === 'usage'}<Check size={16} aria-hidden="true" />{:else}<Copy size={16} aria-hidden="true" />{/if}
+						</button>
 					</div>
 				</div>
+				<p class="small note">{current.note} <a href={current.link.href}>{current.link.label}</a></p>
+				</div>
 				<div class="aside">
-					<div class="install agent">
-						<button type="button" onclick={copyPrompt}>{copied === 'prompt' ? 'Copied' : 'Copy setup prompt'}</button>
-						<p class="small">For your coding agent: it finds your framework, installs, wires streaming and checks its work. <a href={SETUP_DOC}>Read it</a></p>
-					</div>
-					<p class="small">{current.note} <a href={current.link.href}>{current.link.label}</a></p>
+					<h3 class="aside-title">Or let your coding agent do it</h3>
+					<p class="small">The setup prompt finds your framework, installs, wires streaming and checks its work. <a href={SETUP_DOC}>Read it</a></p>
+					<button type="button" class="prompt" onclick={copyPrompt}>
+						{#if copied === 'prompt'}<Check size={16} aria-hidden="true" /> Copied{:else}<Copy size={16} aria-hidden="true" /> Copy setup prompt{/if}
+					</button>
 				</div>
 			</div>
 		</div>
@@ -707,37 +715,45 @@
 		background: var(--primary);
 		color: var(--site-on-primary);
 	}
-	/* Two columns: the framework switch, its install line and usage snippet;
-	   then the setup prompt and the tab's styling note. One column under 860px. */
+	/* Two columns: one dark code panel (framework tabs on top, the install
+	   line and usage snippet under, each with an icon copy button at its right
+	   edge) over the tab's styling note; then the coding-agent setup prompt,
+	   the band's one filled button. One column under 860px. */
 	.band-inner {
 		max-width: var(--site-max);
 		margin-inline: auto;
-		padding: 32px var(--site-gutter);
+		padding: 40px var(--site-gutter);
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(0, 26rem);
-		align-items: start;
-		gap: 24px 56px;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 24rem);
+		align-items: center;
+		gap: 32px 56px;
 	}
-	.setup,
-	.aside {
+	.setup {
 		display: flex;
 		flex-direction: column;
-		gap: 16px;
+		gap: 12px;
 		min-width: 0;
 	}
-	/* The framework switch: the site's segmented pattern (live/Player.svelte),
-	   in white on the band; the picked tab takes the band's darker blue. */
-	.fw {
-		display: inline-flex;
-		width: fit-content;
-		border: 1px solid var(--site-on-primary);
-		border-radius: var(--radius-control);
+	.panel {
+		min-width: 0;
+		border-radius: var(--radius-card);
+		background: color-mix(in oklch, var(--primary) 78%, black);
 		overflow: hidden;
 	}
+	/* Framework tabs: text tabs in the panel's header; the picked one carries
+	   a white underline. The header's rule is the band's own blue. */
+	.fw {
+		display: flex;
+		gap: 4px;
+		padding: 0 8px;
+		border-bottom: 1px solid var(--primary);
+	}
 	.fw button {
-		min-height: 40px;
-		padding: 0 16px;
+		min-height: 44px;
+		padding: 0 12px;
 		border: 0;
+		border-bottom: 2px solid transparent;
+		margin-bottom: -1px;
 		background: transparent;
 		color: var(--site-on-primary);
 		font: inherit;
@@ -746,76 +762,112 @@
 		font-weight: 500;
 		cursor: pointer;
 	}
-	.fw button + button {
-		border-left: 1px solid var(--site-on-primary);
-	}
-	.fw button:hover,
 	.fw button[aria-pressed='true'] {
-		background: color-mix(in oklch, var(--primary) 78%, black);
-	}
-	.fw button[aria-pressed='true'] {
+		border-bottom-color: var(--site-on-primary);
 		font-weight: 650;
+	}
+	.fw button:hover {
+		background: color-mix(in oklch, var(--primary) 88%, black);
 	}
 	.fw button:focus-visible {
 		outline: 2px solid var(--site-on-primary);
 		outline-offset: -4px;
 	}
-	.install {
+	.snip {
 		display: flex;
 		align-items: center;
-		gap: 12px;
+		gap: 8px;
 		min-width: 0;
-		max-width: 100%;
-		font-size: 15px;
+		padding: 10px 8px 10px 18px;
+		font-size: 14px;
 	}
-	.install code {
+	.snip + .snip {
+		border-top: 1px solid var(--primary);
+	}
+	.snip code {
+		flex: 1;
+		min-width: 0;
 		overflow-x: auto;
 		white-space: nowrap;
 		color: inherit;
 	}
-	.install code span {
+	.snip code span {
 		margin-right: 6px;
 	}
-	/* The usage snippet: a darker well, wrapped at spaces rather than scrolled;
-	   on a phone its Copy drops below so the well gets the full width. */
+	/* The usage snippet wraps at spaces rather than scrolling. */
 	.usage {
-		flex-wrap: wrap;
 		align-items: start;
 	}
 	.usage pre {
-		flex: 1 1 20rem;
+		flex: 1;
 		min-width: 0;
 		margin: 0;
-		padding: 12px 14px;
-		border-radius: var(--radius-control);
-		background: color-mix(in oklch, var(--primary) 78%, black);
+		padding: 6px 0;
 		font-size: 13px;
 		line-height: 1.55;
 		white-space: pre-wrap;
 		overflow-wrap: break-word;
 	}
-	.install button {
+	/* Icon copy buttons: 36px, quiet until hovered; a check while copied. */
+	.icon {
 		flex: none;
-		min-height: 44px;
-		padding: 0 16px;
-		border: 1px solid var(--site-on-primary);
+		display: grid;
+		place-items: center;
+		width: 36px;
+		height: 36px;
+		padding: 0;
+		border: 0;
 		border-radius: var(--radius-control);
 		background: transparent;
 		color: var(--site-on-primary);
+		cursor: pointer;
+	}
+	.icon:hover {
+		background: var(--primary);
+	}
+	.aside {
+		display: flex;
+		flex-direction: column;
+		align-items: start;
+		gap: 12px;
+		min-width: 0;
+	}
+	.aside-title {
+		margin: 0;
+		font-family: var(--font-display);
+		font-size: 20px;
+		font-weight: 650;
+		letter-spacing: -0.01em;
+	}
+	/* The band's one filled button: white, with the panel's darker blue ink. */
+	.prompt {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		min-height: 44px;
+		margin-top: 4px;
+		padding: 0 18px;
+		border: 0;
+		border-radius: var(--radius-control);
+		background: var(--site-on-primary);
+		color: color-mix(in oklch, var(--primary) 70%, black);
 		font: inherit;
 		font-family: var(--font-sans);
 		font-size: 14px;
 		font-weight: 600;
 		cursor: pointer;
 	}
-	.install button:hover {
-		background: color-mix(in oklch, var(--primary) 82%, black);
+	.prompt:hover {
+		background: color-mix(in oklch, var(--site-on-primary) 90%, var(--primary));
 	}
 	.small {
 		margin: 0;
 		max-width: 52ch;
 		font-size: 15px;
 		line-height: 1.55;
+	}
+	.note {
+		font-size: 14px;
 	}
 	.band a {
 		color: inherit;
@@ -911,7 +963,7 @@
 		outline-offset: 2px;
 	}
 	/* --ring is the band's own blue, so focus on the band is white. */
-	.band .install button:focus-visible,
+	.band button:focus-visible,
 	.band a:focus-visible {
 		outline: 2px solid var(--site-on-primary);
 		outline-offset: 2px;
@@ -929,6 +981,9 @@
 		}
 		.band-inner {
 			padding-inline: 16px;
+		}
+		.band-inner {
+			padding-block: 32px;
 		}
 		.usage pre {
 			font-size: 12.5px;
