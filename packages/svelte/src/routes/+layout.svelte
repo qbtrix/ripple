@@ -98,9 +98,9 @@
 <svelte:head>
 	<link rel="icon" href="/paw-logo/favicon.svg" type="image/svg+xml" />
 	<title>Ripple</title>
-	<!-- Cloudflare Web Analytics: cookieless page-view counts, on the built site only. -->
+	<!-- Cloudflare Web Analytics (its own site, ripple.pocketpaw.xyz): cookieless page-view counts, on the built site only. -->
 	{#if !dev}
-		<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon={'{"token": "2d2fb239a9af4a509f17a29a5ab2c07e"}'}></script>
+		<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon={'{"token": "728ccadb100c48c7ac51dd504f3e0245"}'}></script>
 	{/if}
 </svelte:head>
 
