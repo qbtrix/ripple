@@ -10,8 +10,9 @@
   - Upgrade output is sanitized again (sanitizeMath, sanitizeSvg) and mermaid
     runs with strict security and SVG-only labels. Diagrams wait until a
     streamed spec is done, so a half-written fence is not parsed every frame.
-  - Diagrams take their palette from the --ripple-* tokens at this element and
-    redraw when the html class or data-theme changes the palette.
+  - Diagrams take their palette from the --ripple-* tokens at this element (so
+    inside an embed's shadow root too) and redraw when class or data-theme
+    changes on <html>, on the shadow host, or on .ripple-embed-root.
 -->
 <script lang="ts" module>
   import { Marked } from 'marked';
@@ -138,8 +139,15 @@
   });
 
   $effect(() => {
+    if (!root) return;
+    // The page's theme lives on <html>; an embed's on its shadow host (data-theme)
+    // and .ripple-embed-root (.dark), and <html> never changes there.
+    const host = (root.getRootNode() as Partial<ShadowRoot>).host;
+    const themeRoots = new Set([document.documentElement, host, root.closest('.ripple-embed-root')]);
     const mo = new MutationObserver(() => themeTick++);
-    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme'] });
+    for (const el of themeRoots) {
+      if (el) mo.observe(el, { attributes: true, attributeFilter: ['class', 'data-theme'] });
+    }
     return () => mo.disconnect();
   });
 

@@ -2,7 +2,8 @@
 // math becomes sanitized MathML (real temml), ```mermaid fences become
 // sanitized SVG through a mocked mermaid (its renderer needs a real browser),
 // mermaid is imported only when a fence exists, a failed render keeps the
-// source, and a streaming spec defers diagrams.
+// source, a streaming spec defers diagrams, and a theme flip redraws them,
+// whether it lands on <html> or on an embed's shadow host and wrapper.
 import { render } from '@testing-library/svelte';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import Markdown from './Markdown.svelte';
@@ -18,10 +19,13 @@ vi.mock('mermaid', () => {
 	return { default: { render: m.render, initialize: m.initialize } };
 });
 
+/** What the mocked canvas reads back: every resolved palette colour. A test flips it to fake a theme change. */
+let pixel = [255, 255, 255, 255];
+
 beforeAll(() => {
 	// jsdom has no 2D canvas; the palette resolver only needs these three calls.
 	vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
-		() => ({ fillRect() {}, getImageData: () => ({ data: [255, 255, 255, 255] }), fillStyle: '' }) as never
+		() => ({ fillRect() {}, getImageData: () => ({ data: pixel }), fillStyle: '' }) as never
 	);
 });
 afterEach(() => {
@@ -116,6 +120,40 @@ describe('markdown widget, mermaid', () => {
 		expect(pre.hidden).toBe(false);
 		expect(pre.textContent).toContain('A -->');
 		expect(container.querySelector('.ripple-diagram-canvas')).toBeNull();
+	});
+
+	it('redraws when the html theme changes', async () => {
+		const { container } = render(Markdown, { props: { content: FENCE } });
+		await vi.waitFor(() => expect(container.querySelector('.ripple-diagram-canvas svg')).not.toBeNull());
+		pixel = [10, 10, 10, 255];
+		try {
+			document.documentElement.classList.add('dark');
+			await vi.waitFor(() => expect(m.render).toHaveBeenCalledTimes(2));
+		} finally {
+			document.documentElement.classList.remove('dark');
+			pixel = [255, 255, 255, 255];
+		}
+	});
+
+	it('redraws when an embed flips its theme inside a shadow root', async () => {
+		// @ripple-ui/embed: data-theme on the shadow host, .dark on .ripple-embed-root; <html> never changes.
+		const host = document.createElement('div');
+		document.body.append(host);
+		const wrap = document.createElement('div');
+		wrap.className = 'ripple-embed-root';
+		host.attachShadow({ mode: 'open' }).append(wrap);
+		try {
+			render(Markdown, { props: { content: FENCE }, target: wrap });
+			await vi.waitFor(() => expect(wrap.querySelector('.ripple-diagram-canvas svg')).not.toBeNull());
+			pixel = [10, 10, 10, 255];
+			host.dataset.theme = 'dark';
+			wrap.classList.add('dark');
+			await vi.waitFor(() => expect(m.render).toHaveBeenCalledTimes(2));
+			expect(m.initialize.mock.lastCall![0].themeVariables.darkMode).toBe(true);
+		} finally {
+			pixel = [255, 255, 255, 255];
+			host.remove();
+		}
 	});
 
 	it('waits for a streamed spec to finish before drawing', async () => {
