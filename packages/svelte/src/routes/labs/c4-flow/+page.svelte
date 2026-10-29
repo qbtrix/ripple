@@ -3,7 +3,7 @@
   @description Unlisted bench for C4Diagram flow playback: a fictional bakery's order flow played
     over its container map, with the transport a host draws (back, play, next, the step count and
     the current step's text). Clicking a connection jumps to its step through `onstep`. Play is
-    always user-started. noindex: it is a workbench, not a page.
+    always user-started. noindex (from the root layout): it is a workbench, not a page.
 -->
 <script lang="ts">
 	import { C4Diagram } from '$lib/widgets/c4/index.js';
@@ -60,7 +60,6 @@
 
 <svelte:head>
 	<title>Ripple · C4 flow</title>
-	<meta name="robots" content="noindex" />
 </svelte:head>
 
 <main class="bench">

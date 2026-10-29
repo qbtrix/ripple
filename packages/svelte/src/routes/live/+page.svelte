@@ -25,6 +25,7 @@
     OrderReceipt.
 -->
 <script lang="ts">
+	import SeoHead from '$lib/site/SeoHead.svelte';
 	import { onMount, tick, type Component } from 'svelte';
 	import { pushState, replaceState } from '$app/navigation';
 	import DiscoverHeader from '$lib/discover/DiscoverHeader.svelte';
@@ -129,13 +130,7 @@
 
 <svelte:window onpopstate={onPop} />
 
-<svelte:head>
-	<title>Gallery · Ripple</title>
-	<meta
-		name="description"
-		content="What Ripple can render: recorded model runs replayed as they stream, hand-written card specs and live widget demos, from trip plans and bookings to games, trackers, step-by-step flows and annotated drawings."
-	/>
-</svelte:head>
+<SeoHead title="Gallery · Ripple" description="What Ripple can render: recorded model runs replayed as they stream, hand-written card specs and live widget demos, from trip plans and bookings to games, trackers, step-by-step flows and annotated drawings." />
 
 {#snippet credit()}
 	<p class="credit">Isometric drawings inspired by <a href="https://skills.wheresryan.sh/anatomy" rel="noopener">Anatomy</a> by Ryan.</p>

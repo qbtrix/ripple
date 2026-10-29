@@ -2,11 +2,13 @@
   @file routes/showcase/[...path]/+page.svelte
   @description An old /showcase URL (see +page.ts for where each one goes).
     The prerendered HTML carries a meta refresh (works with JavaScript off) and
-    a plain link; in the browser it also replaces the URL right away.
+    a plain link, and its canonical is the target's absolute URL; in the
+    browser it also replaces the URL right away.
 -->
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { SITE_URL } from '$lib/site/docs/model.js';
 
 	let { data } = $props();
 
@@ -18,7 +20,7 @@
 <svelte:head>
 	<title>Moved to {data.to} · Ripple</title>
 	<meta http-equiv="refresh" content="0; url={data.to}" />
-	<link rel="canonical" href={data.to} />
+	<link rel="canonical" href="{SITE_URL}{data.to}" />
 </svelte:head>
 
 <p class="moved">This page moved to <a href={data.to}>{data.to}</a>.</p>

@@ -8,6 +8,7 @@
     Plain lists, no live renders, so this page ships no widget JS.
 -->
 <script lang="ts">
+	import SeoHead from '$lib/site/SeoHead.svelte';
 	import { codeSpans } from '$lib/site/docs/widgets.js';
 
 	let { data } = $props();
@@ -26,10 +27,7 @@
 	const matches = $derived(shown.reduce((n, c) => n + c.widgets.length, 0));
 </script>
 
-<svelte:head>
-	<title>Widgets · Ripple docs</title>
-	<meta name="description" content="Every Ripple widget type by category, with props, events and a live example." />
-</svelte:head>
+<SeoHead title="Widgets · Ripple docs" description="Every Ripple widget type by category, with props, events and a live example." />
 
 <article class="doc" data-pagefind-body>
 	<h1>Widgets</h1>

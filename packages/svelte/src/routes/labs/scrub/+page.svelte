@@ -3,7 +3,7 @@
   @description Unlisted bench for the shared ScrubPlayer (home hero, /live):
     the bill splitter at its midpoint, with pills to swap in the other
     recorded /live streams. Prerendered, so the static HTML carries the
-    midpoint frame. noindex: it is a workbench, not a page.
+    midpoint frame. noindex (from the root layout): it is a workbench, not a page.
 -->
 <script lang="ts">
 	import ScrubPlayer from '$lib/site/scrub/ScrubPlayer.svelte';
@@ -17,7 +17,6 @@
 
 <svelte:head>
 	<title>Ripple · Scrub player</title>
-	<meta name="robots" content="noindex" />
 </svelte:head>
 
 <main class="bench">

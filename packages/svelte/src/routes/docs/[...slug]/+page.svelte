@@ -9,6 +9,7 @@
     Only this content area is indexed by Pagefind (data-pagefind-body).
 -->
 <script lang="ts">
+	import SeoHead from '$lib/site/SeoHead.svelte';
 	import SpecExample from '$lib/site/SpecExample.svelte';
 	import { forYourModel, SITE_URL } from '$lib/site/docs/model.js';
 	import { attachDiagrams } from '$lib/site/docs/diagrams.js';
@@ -42,10 +43,7 @@
 	}
 </script>
 
-<svelte:head>
-	<title>{data.meta.title} · Ripple docs</title>
-	<meta name="description" content={data.meta.description} />
-</svelte:head>
+<SeoHead title="{data.meta.title} · Ripple docs" description={data.meta.description} />
 
 <article class="doc" data-pagefind-body>
 	<header class="head">

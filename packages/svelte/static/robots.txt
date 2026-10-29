@@ -1,3 +1,6 @@
-# allow crawling everything by default
+# Allow crawling everything; lab and payment pages opt out with a noindex meta
+# tag, which crawlers only see if they may fetch the page, so no Disallow here.
 User-agent: *
 Disallow:
+
+Sitemap: https://ripple.pocketpaw.xyz/sitemap.xml
