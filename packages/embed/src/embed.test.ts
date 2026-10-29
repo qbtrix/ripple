@@ -2,11 +2,19 @@
 // the build (lazy registry, lucide proxy, shadow CSS). Pins what hosts rely
 // on: the card renders in a shadow root, update() keeps the user's state,
 // setTheme() flips data-theme, destroy() leaves the element clean, a second
-// mount() on the same element replaces the first, and streamed frames apply.
+// mount() on the same element replaces the first, streamed frames apply, emit
+// reaches onEvent with its name and payload, and an iso figure's CSS lands in
+// the shadow root. The examples/specs check keeps the repo's samples on the
+// emit keys the dispatcher actually reads.
 import { afterEach, describe, expect, it } from 'vitest';
 import { flushSync, tick } from 'svelte';
 import { mount } from './index.js';
 import { specTypes } from './registry.js';
+
+// jsdom has no matchMedia; svelte/motion's prefersReducedMotion (used by the
+// figure widget) reads it on import.
+window.matchMedia ??= ((query: string) =>
+	({ matches: false, media: query, addEventListener() {}, removeEventListener() {} }) as unknown as MediaQueryList);
 
 const settle = async () => {
 	for (let i = 0; i < 5; i++) {
@@ -37,6 +45,25 @@ const host = () => {
 	document.body.append(el);
 	return el;
 };
+
+describe('examples/specs', () => {
+	// The dispatcher reads only target/value on emit; any other key is dropped
+	// silently and the host gets the DOM event as the payload.
+	it('write emit actions with the keys the dispatcher reads', () => {
+		const specs = import.meta.glob('../../../examples/specs/*.json', { eager: true, import: 'default' });
+		expect(Object.keys(specs).length).toBeGreaterThan(0);
+		const bad: string[] = [];
+		const walk = (n: unknown, file: string): void => {
+			if (Array.isArray(n)) return n.forEach((x) => walk(x, file));
+			if (!n || typeof n !== 'object') return;
+			const o = n as Record<string, unknown>;
+			if (o.action === 'emit' && Object.keys(o).some((k) => !['action', 'target', 'value'].includes(k))) bad.push(`${file}: ${JSON.stringify(o)}`);
+			Object.values(o).forEach((x) => walk(x, file));
+		};
+		for (const [file, spec] of Object.entries(specs)) walk(spec, file);
+		expect(bad).toEqual([]);
+	});
+});
 
 describe('specTypes', () => {
 	it('collects every known widget type, at any depth, and skips the rest', () => {
@@ -121,14 +148,32 @@ describe('mount', () => {
 		const events: unknown[] = [];
 		const spec = {
 			version: '1.0',
-			ui: { type: 'switch', props: { label: 'Go' }, on_change: { action: 'emit', event: 'go', payload: { n: 1 } } }
+			ui: { type: 'switch', props: { label: 'Go' }, on_change: { action: 'emit', target: 'go', value: { n: 1 } } }
 		};
 		const card = mount(host(), spec, { onEvent: (e) => void events.push(e) });
 		await card.ready;
 		await settle();
 		el.shadowRoot!.querySelector<HTMLElement>('[role=switch]')!.click();
 		await settle();
-		expect(events).toEqual([expect.objectContaining({ type: 'emit' })]);
+		expect(events).toEqual([expect.objectContaining({ type: 'emit', name: 'go', payload: { n: 1 } })]);
 		card.destroy();
+	});
+
+	it('styles an iso figure inside each shadow root, not in the page head', async () => {
+		const heart = { version: '1.0', ui: { type: 'figure', props: { figure: 'heart' } } };
+		const a = mount(host(), heart);
+		const first = el;
+		const b = mount(host(), heart);
+		await Promise.all([a.ready, b.ready]);
+		for (let i = 0; i < 50 && !el.shadowRoot!.querySelector('.iso-svg'); i++) await settle();
+		for (const root of [first.shadowRoot!, el.shadowRoot!]) {
+			expect(root.querySelector('.iso-svg')).not.toBeNull();
+			const css = [...root.querySelectorAll('style')].map((s) => s.textContent).join('');
+			expect(css).toContain('.iso-fill');
+		}
+		expect([...document.head.querySelectorAll('style')].some((s) => s.textContent?.includes('.iso-fill'))).toBe(false);
+		a.destroy();
+		b.destroy();
+		first.remove();
 	});
 });
