@@ -25,7 +25,7 @@
 // no import-time effects); otherwise its zod schemas ship in the first load.
 // Component CSS is compiled as injected, so Svelte appends it to the shadow root.
 import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import tailwindcss from '@tailwindcss/vite';
@@ -94,7 +94,7 @@ const embedFile: Plugin = {
 		if (!id.endsWith('?embed-file')) return null;
 		const file = id.slice(0, -11);
 		if (this.meta.watchMode || !('emitFile' in this)) return `export default ${JSON.stringify('/@fs' + file)};`;
-		const ref = this.emitFile({ type: 'asset', name: file.split('/').pop(), source: readFileSync(file) });
+		const ref = this.emitFile({ type: 'asset', name: basename(file), source: readFileSync(file) });
 		return `export default import.meta.ROLLUP_FILE_URL_${ref};`;
 	}
 };
