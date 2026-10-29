@@ -30,15 +30,16 @@ import { fileURLToPath } from 'node:url';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import tailwindcss from '@tailwindcss/vite';
 import { transform } from 'esbuild';
-import { defineConfig, type Plugin } from 'vite';
+import { defineConfig, normalizePath, type Plugin } from 'vite';
 import { widgetSources } from '../svelte/scripts/widget-sources.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const SVELTE_LIB = resolve(here, '../svelte/src/lib');
 const CORE = resolve(here, '../core');
 const EMBED_SRC = resolve(here, 'src');
-const WIDGETS_INDEX = join(SVELTE_LIB, 'widgets/index.ts');
-const REGISTRY = join(EMBED_SRC, 'registry.ts');
+// Compared with Vite module ids, which use forward slashes on Windows too.
+const WIDGETS_INDEX = normalizePath(join(SVELTE_LIB, 'widgets/index.ts'));
+const REGISTRY = normalizePath(join(EMBED_SRC, 'registry.ts'));
 const LOADERS_ID = 'virtual:ripple-widget-loaders';
 
 // @ripple-ui/core and each subpath it exports resolve to its source, as in the
@@ -54,8 +55,8 @@ const coreAlias = Object.entries(coreExports)
 
 // importer -> the imports of it that become on-demand stand-ins (src/deferred/).
 const DEFERRED: Record<string, RegExp> = {
-	[join(SVELTE_LIB, 'Ripple.svelte')]: /^\.\/intent\/(IntentRenderer|DashboardRenderer|FlowRunner)\.svelte$/,
-	[join(SVELTE_LIB, 'components/NodeRenderer.svelte')]: /^\.\.\/organisms\/(OrganismRenderer)\.svelte$/
+	[normalizePath(join(SVELTE_LIB, 'Ripple.svelte'))]: /^\.\/intent\/(IntentRenderer|DashboardRenderer|FlowRunner)\.svelte$/,
+	[normalizePath(join(SVELTE_LIB, 'components/NodeRenderer.svelte'))]: /^\.\.\/organisms\/(OrganismRenderer)\.svelte$/
 };
 
 const lazyRegistry: Plugin = {
