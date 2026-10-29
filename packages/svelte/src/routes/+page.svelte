@@ -257,12 +257,15 @@
 		programmingLanguage: ['TypeScript', 'Svelte'],
 		license: 'https://opensource.org/licenses/MIT'
 	}).replace(/</g, '\\u003c');
+	// The closing tag is escaped as <\/script>: oxlint cuts a .svelte file at
+	// the first closing script tag it sees, so a literal one ends this block.
+	const jsonLdTag = `<script type="application/ld+json">${jsonLd}<\/script>`;
 </script>
 
 <SeoHead title="Ripple: ask for a tool, watch it build" description={DESCRIPTION} />
 <svelte:head>
 	<!-- A JSON data block, not script: CSP script-src does not apply to it. -->
-	{@html `<script type="application/ld+json">${jsonLd}</script>`}
+	{@html jsonLdTag}
 </svelte:head>
 
 <main class="landing">
