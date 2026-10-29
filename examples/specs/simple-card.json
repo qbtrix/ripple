@@ -29,7 +29,7 @@
             "props": { "label": "Send report", "disabled": "{state.email == \"\"}" },
             "on_click": [
               { "action": "set", "target": "sent", "value": true },
-              { "action": "emit", "event": "report_sent", "payload": { "to": "{state.email}" } }
+              { "action": "emit", "target": "report_sent", "value": { "to": "{state.email}" } }
             ]
           }
         ]

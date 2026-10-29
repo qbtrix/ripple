@@ -41,8 +41,8 @@
             },
             "on_change": {
               "action": "emit",
-              "event": "menu_pick",
-              "payload": {
+              "target": "menu_pick",
+              "value": {
                 "value": "{event}"
               }
             }
