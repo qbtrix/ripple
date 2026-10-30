@@ -235,7 +235,7 @@ describe('built-in copy', () => {
 
 describe('card type scale', () => {
   it('the tile and row use the app type utilities, not text-sm / text-xs', () => {
-    const tile = render(DiscoverTile, { props: { item, href: '/free-tools/t1' } }).body;
+    const tile = render(DiscoverTile, { props: { item: { ...item, remixCount: 3 }, href: '/discover/t1' } }).body;
     expect(tile).toMatch(/<h3 class="m-0 truncate text-headline text-foreground">/);
     expect(tile).toContain('text-footnote');
     expect(tile).toContain('text-caption-1');

@@ -14,6 +14,8 @@ import pkg from '../../../package.json' with { type: 'json' };
 /** Every runtime name on the surface, sorted. */
 const EXPECTED = [
 	'CARD_PALETTE',
+	'DISCOVER_AUDIENCES',
+	'DISCOVER_TYPES',
 	'DISCOVER_VIEWS',
 	'DetailMedia',
 	'DiscoverChips',
@@ -28,12 +30,23 @@ const EXPECTED = [
 	'DiscoverSkeleton',
 	'DiscoverTile',
 	'ItemArt',
+	'ItemDetail',
+	'LEGACY_ITEM_PREFIXES',
+	'LiveFrame',
+	'discoverSections',
+	'groupSections',
+	'httpUrl',
 	'initialFor',
+	'isPlainClick',
 	'isStudioKind',
 	'itemHref',
 	'mediaFor',
 	'primaryFor',
+	'relatedHeading',
 	'remixLabel',
+	'rendererFor',
+	'sectionFilter',
+	'showUsage',
 	'tintFor',
 	'usageLabel',
 	'usedLabel',
@@ -53,8 +66,28 @@ const COMPONENTS = [
 	'DiscoverSkeleton',
 	'DiscoverTile',
 	'ItemArt',
+	'ItemDetail',
+	'LiveFrame',
 ];
-const HELPERS = ['initialFor', 'isStudioKind', 'itemHref', 'mediaFor', 'primaryFor', 'remixLabel', 'tintFor', 'usageLabel', 'usedLabel'];
+const HELPERS = [
+	'discoverSections',
+	'groupSections',
+	'httpUrl',
+	'initialFor',
+	'isPlainClick',
+	'isStudioKind',
+	'itemHref',
+	'mediaFor',
+	'primaryFor',
+	'relatedHeading',
+	'remixLabel',
+	'rendererFor',
+	'sectionFilter',
+	'showUsage',
+	'tintFor',
+	'usageLabel',
+	'usedLabel',
+];
 
 const surface = discover as unknown as Record<string, unknown>;
 
@@ -79,6 +112,15 @@ describe('the ./discover surface', () => {
 
 	it('DISCOVER_VIEWS lists the three views in toggle order', () => {
 		expect(surface.DISCOVER_VIEWS).toEqual(['grid', 'shelves', 'list']);
+	});
+
+	it('LEGACY_ITEM_PREFIXES names the old per-kind folders', () => {
+		expect(surface.LEGACY_ITEM_PREFIXES).toEqual({ tool: '/free-tools/', game: '/play/', site: '/templates/' });
+	});
+
+	it('DISCOVER_TYPES and DISCOVER_AUDIENCES list the tabs and chips in display order', () => {
+		expect((surface.DISCOVER_TYPES as { value: string }[]).map((t) => t.value)).toEqual(['all', 'tool', 'game', 'site', 'image', 'video', 'music']);
+		expect((surface.DISCOVER_AUDIENCES as { value: string }[]).map((a) => a.value)).toEqual(['shop', 'design', 'everyone', 'fun']);
 	});
 
 	it('is reachable as a subpath, not just as a file', () => {
