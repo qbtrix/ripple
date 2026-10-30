@@ -1,4 +1,4 @@
-<!-- docs/discover.md: the ./discover export subpath, a server-renderable Discover library (cards, the item view, the page layout, the shared catalogue copy) for a public catalogue. Lists the surface, the purity rule, link mode, the item view, the live frame's sandbox and the type scale. -->
+<!-- docs/discover.md: the ./discover export subpath, a server-renderable Discover library (cards, the item view, the page layout, the hero's WhatsApp QR card, the shared catalogue copy) for a public catalogue. Lists the surface, the purity rule, link mode, the item view, the live frame's sandbox, the QR card and the type scale. -->
 
 # Discover
 
@@ -28,9 +28,10 @@ page gets complete HTML, and a hydrated page gets the callbacks.
 Props in, markup out. A component derives everything it shows from the
 `DiscoverItem` it is given, through the pure helpers below. It never reads
 `window` or `document`, never fetches, and never keeps state a server cannot
-produce (the exceptions only change things after hydration: `ItemArt`'s
-load-failure flag, `LiveFrame`'s load button and width toggle, and
-`ItemDetail`'s "Link copied" note; the server frame is the same either way).
+produce (`WhatsAppQrCard` is a form, the one stateful component, and reads
+the browser languages on mount; the other exceptions only change things after
+hydration: `ItemArt`'s load-failure flag, `LiveFrame`'s load button and
+width toggle, and `ItemDetail`'s "Link copied" note; the server frame is the same either way).
 Only `http(s)` urls reach an `href` or a `src`: `imageUrl`, `mediaUrl` and
 `liveUrl` all pass through `httpUrl`, so a `javascript:`, `data:` or
 protocol-relative value renders the placeholder, no media, or no action.
@@ -151,6 +152,50 @@ Every other host runs in an opaque origin, where `localStorage`, cookies and
 IndexedDB throw; such a page still works through "Open full screen". To trust
 another host, extend the constant.
 
+## The WhatsApp QR card
+
+`WhatsAppQrCard` is the hero's "Try one · no sign-up" widget, and the one
+stateful component here: a form that turns a shop name and a WhatsApp number
+into a printable counter card. The app's /discover and the public Discover page
+mount the same component in `DiscoverHeader`'s `aside` (with
+`class="lg:items-start"` on the header so the card lines up with the title).
+
+```svelte
+<script>
+  import { DiscoverHeader, WhatsAppQrCard } from '@ripple-ui/svelte/discover';
+</script>
+
+<DiscoverHeader title="Free things you can" accent="use right now." class="lg:items-start">
+  {#snippet aside()}<WhatsAppQrCard brand="Paw OS" makeHref="https://app.example.com/" />{/snippet}
+</DiscoverHeader>
+```
+
+- **Number.** 71 calling codes (`Select`), defaulting on mount from
+  `navigator.languages` (`en-GB` gives GB), else India. A pasted
+  `+44 7700 900123` or `0044 …` switches the country. The whole E.164 number must
+  be 8 to 15 digits; the reason shows under the field (`aria-live`) once it is
+  left. Until the number is valid the preview shows a placeholder, there is no
+  link, and every export is disabled.
+- **Link.** `https://wa.me/<digits>?text=<message>`, the message optional
+  (default `Hi! I'd like to place an order.`, at most 200 characters), with Copy
+  and "Test it".
+- **Card.** 148 × 105 mm, always dark ink on white paper whatever the theme. The
+  preview is the same card, tilted (flat with reduced motion). PNG at 300 dpi
+  (1748 × 1240), SVG sized in mm, and Print as one 148 × 105 mm page from a
+  hidden iframe. Files are named from the slugified shop
+  (`sharma-sweets-whatsapp-qr.png`). One QR path (`qrcode-svg`'s matrix, error
+  correction M) draws the preview, the SVG and the PNG.
+- **Server render.** India and the example `Sharma Sweets` / `98765 43210`: a
+  real QR and link, so a page with JS off shows a
+  meaningful example ("Test it" is a plain link). On mount the number clears and
+  the country follows the browser.
+
+Props, all optional: `brand` (`'Paw'`; named in "Make a full menu or site with
+…" and on the card's foot), `oncopy(text)` (default: the clipboard API),
+`onopenlink(url)` (default: a `target="_blank"` link), `ondownload(blob,
+filename)` (default: an anchor download of a blob URL), `onmake(shop)` or
+`makeHref` (the make action renders only when one is given), `class`.
+
 ## Shared catalogue copy
 
 The app and the website group and label the catalogue the same way:
@@ -210,6 +255,7 @@ with identical declarations, so nothing changes. Hosts must scan ripple's
 | `DiscoverSkeleton` | component | The loading state, one `role="status"`: tile skeletons, or row skeletons for the list view. Props: `view?`, `count?` (8), `label?`, `class?`. |
 | `DiscoverEmpty` | component | `Nothing here yet`, `Nothing matches that yet.` or the load error. Props: `state?` (`'empty'`, `'filtered'`, `'error'`), `title?` and `description?` (replace the state's copy), `actions?`, `class?`. |
 | `DiscoverPublish` | component | The publish band. Props: `title?`, `body?`, `cta?` (the button label), `href?` or `onpublish?`, `class?`. |
+| `WhatsAppQrCard` | component | The hero's WhatsApp QR card (see above). Props: `brand?`, `oncopy?`, `onopenlink?`, `ondownload?`, `onmake?` (`(shop) => void`), `makeHref?`, `class?`. |
 | `DISCOVER_VIEWS` | constant | `['grid', 'shelves', 'list']`, the toggle order. |
 | `itemHref(kind, idOrSlug)` | helper | The item's page: `/discover/<slug>` for every kind. |
 | `LEGACY_ITEM_PREFIXES` | constant | The old per-kind folders, for redirects: `{ tool: '/free-tools/', game: '/play/', site: '/templates/' }`. |

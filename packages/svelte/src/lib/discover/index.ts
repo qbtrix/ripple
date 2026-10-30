@@ -2,10 +2,11 @@
 // Discover library for a public catalogue. The cards (tile, row, art), the
 // item view (ItemDetail with its live frame and media player), the page
 // layout around them (header, search, chips, type bar, sections, skeleton,
-// empty state, publish band), the shared catalogue copy and grouping, the
-// item type they render, and the route helper for an item's own page. Pure
-// components: props in, markup out; every control works by callback or as a
-// plain link.
+// empty state, publish band), the hero's WhatsApp QR card (WhatsAppQrCard,
+// the one stateful widget: a form, rendering an example card on the server),
+// the shared catalogue copy and grouping, the item type they render, and the
+// route helper for an item's own page. Pure components: props in, markup out;
+// every control works by callback or as a plain link.
 
 export { default as DiscoverTile } from './DiscoverTile.svelte';
 export { default as DiscoverRow } from './DiscoverRow.svelte';
@@ -22,6 +23,7 @@ export { default as DiscoverGrid } from './DiscoverGrid.svelte';
 export { default as DiscoverSkeleton } from './DiscoverSkeleton.svelte';
 export { default as DiscoverEmpty } from './DiscoverEmpty.svelte';
 export { default as DiscoverPublish } from './DiscoverPublish.svelte';
+export { default as WhatsAppQrCard } from './WhatsAppQrCard.svelte';
 export { itemHref, isPlainClick, LEGACY_ITEM_PREFIXES } from './href.js';
 export { tintFor, initialFor, CARD_PALETTE } from './art.js';
 export {

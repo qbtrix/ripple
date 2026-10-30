@@ -34,6 +34,7 @@ const EXPECTED = [
 	'LEGACY_ITEM_PREFIXES',
 	'LIVE_FRAME_TRUSTED_HOST_SUFFIX',
 	'LiveFrame',
+	'WhatsAppQrCard',
 	'discoverSections',
 	'frameSandbox',
 	'groupSections',
@@ -71,6 +72,7 @@ const COMPONENTS = [
 	'ItemArt',
 	'ItemDetail',
 	'LiveFrame',
+	'WhatsAppQrCard',
 ];
 const HELPERS = [
 	'discoverSections',
