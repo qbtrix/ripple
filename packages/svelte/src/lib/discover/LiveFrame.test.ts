@@ -1,6 +1,6 @@
 // discover/LiveFrame.test.ts — the client half of the live frame and the card
 // open path: LiveFrame creates its iframe only after the load button is
-// pressed, with the fixed sandbox (no allow-same-origin) and the width toggle
+// pressed, with allow-same-origin only on a pawsites subdomain, and the width toggle
 // for sites; a card with `onopen` takes a plain click on its title and lets a
 // modified click through to the link; the card ⋯ menu opens and calls back.
 // Runs in the `client` vitest project.
@@ -22,12 +22,21 @@ describe('LiveFrame', () => {
     const frame = container.querySelector('iframe')!;
     expect(frame).not.toBeNull();
     expect(frame.getAttribute('src')).toBe('https://dentist.pawsites.workers.dev/');
-    expect(frame.getAttribute('sandbox')).toBe('allow-scripts allow-forms allow-popups allow-pointer-lock');
-    expect(frame.getAttribute('sandbox')).not.toContain('allow-same-origin');
+    // A pawsites subdomain keeps its own origin, and so its storage.
+    expect(frame.getAttribute('sandbox')).toBe('allow-scripts allow-forms allow-popups allow-pointer-lock allow-same-origin');
     expect(frame.getAttribute('allow')).toBe('fullscreen; gamepad; autoplay');
     expect(frame.getAttribute('referrerpolicy')).toBe('no-referrer');
     expect(frame.getAttribute('title')).toBe('Bright Smile');
   });
+
+  it.each(['https://pawsites.workers.dev.evil.com/', 'http://x.pawsites.workers.dev/', 'https://example.com/', 'https://pawsites.workers.dev/'])(
+    'a frame on %s stays opaque',
+    async (url) => {
+      const { container, getByRole } = render(LiveFrame, { ...base, url, kind: 'game' });
+      await fireEvent.click(getByRole('button', { name: /Play/ }));
+      expect(container.querySelector('iframe')!.getAttribute('sandbox')).toBe('allow-scripts allow-forms allow-popups allow-pointer-lock');
+    },
+  );
 
   it('a site gets the Desktop / Phone toggle once loaded', async () => {
     const { container, getByRole, queryByRole } = render(LiveFrame, { ...base, kind: 'site' });

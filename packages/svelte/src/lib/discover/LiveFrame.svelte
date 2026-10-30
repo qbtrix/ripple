@@ -10,14 +10,15 @@
      mount, so with JS off the poster and the "Open full screen" link are what
      shows, and the link works.
 
-     Sandbox: allow-scripts allow-forms allow-popups allow-pointer-lock.
-     allow-same-origin is left out on purpose. Items live on their own origin
-     (*.pawsites.workers.dev), but the url is listing data: if one ever named
-     the embedding origin, scripts plus same-origin would let the page remove
-     its own sandbox and reach the host. Without it the page runs in an opaque
-     origin, so localStorage, sessionStorage, cookies and IndexedDB throw; a
-     page that needs them works through "Open full screen". The link is
-     user-submitted content, so it carries
+     Sandbox (frameSandbox in frame.ts): allow-scripts allow-forms
+     allow-popups allow-pointer-lock, plus allow-same-origin only for an https
+     page on a subdomain of LIVE_FRAME_TRUSTED_HOST_SUFFIX
+     (.pawsites.workers.dev). Scripts plus same-origin only escape the sandbox
+     when the page shares the host's origin; each published site is its own
+     subdomain on a registrable domain apart from the website and the app, so
+     it keeps its own origin and storage (games save scores). Any other host
+     runs opaque, where storage throws; it still works through "Open full
+     screen". The link is user-submitted content, so it carries
      rel="nofollow ugc noopener noreferrer". -->
 <script lang="ts">
   import { safeUrl } from '@ripple-ui/core';
@@ -29,6 +30,7 @@
   import { Button } from '../components/ui/button/index.js';
   import { cn } from '$lib/utils.js';
   import ItemArt from './ItemArt.svelte';
+  import { frameSandbox } from './frame.js';
   import { httpUrl } from './item.js';
   import type { DiscoverKind } from './types.js';
 
@@ -54,11 +56,11 @@
     class?: string;
   } = $props();
 
-  /** Fixed, never bound to a prop: see the header for why allow-same-origin is absent. */
-  const FRAME_SANDBOX = 'allow-scripts allow-forms allow-popups allow-pointer-lock';
   const LOAD_LABEL: Partial<Record<DiscoverKind, string>> = { site: 'Load site', game: 'Play', tool: 'Open tool' };
 
   const src = $derived(httpUrl(url));
+  // From the url, never a prop: see the header.
+  const sandbox = $derived(frameSandbox(src));
   const loadLabel = $derived(LOAD_LABEL[kind] ?? 'Load');
   let ready = $state(false);
   let loaded = $state(false);
@@ -81,7 +83,7 @@
         class="block h-full w-full border-0"
         src={safeUrl(src, { kind: 'resource' })}
         {title}
-        sandbox={FRAME_SANDBOX}
+        {sandbox}
         allow="fullscreen; gamepad; autoplay"
         loading="lazy"
         referrerpolicy="no-referrer"

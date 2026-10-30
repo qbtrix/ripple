@@ -49,5 +49,6 @@ export {
   type DiscoverSectionCopy,
   type GroupableItem,
 } from './sections.js';
+export { LIVE_FRAME_TRUSTED_HOST_SUFFIX, frameSandbox, isTrustedFrameHost } from './frame.js';
 export { DISCOVER_VIEWS, type DiscoverView, type DiscoverOption } from './layout.js';
 export type { DiscoverItem, DiscoverKind, DiscoverMediaKind, StudioKind } from './types.js';

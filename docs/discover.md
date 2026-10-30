@@ -137,14 +137,19 @@ screen" link, which always points at the live page (`target="_blank"`,
 `rel="nofollow ugc noopener noreferrer"`). Sites get a Desktop / Phone width
 toggle (phone is a 390px centred frame) once loaded.
 
-The iframe is fixed at `sandbox="allow-scripts allow-forms allow-popups
+The iframe gets `sandbox="allow-scripts allow-forms allow-popups
 allow-pointer-lock"`, `allow="fullscreen; gamepad; autoplay"`,
-`referrerpolicy="no-referrer"`, `loading="lazy"`. `allow-same-origin` is
-left out: items sit on their own origin, but the url is listing data, and
-scripts plus same-origin on a url that ever named the host's origin would let
-the page lift its own sandbox. The cost is that a framed page runs in an
-opaque origin, where `localStorage`, cookies and IndexedDB throw; such a page
-still works through "Open full screen".
+`referrerpolicy="no-referrer"`, `loading="lazy"`. `allow-same-origin` is added
+only when the url is https and its hostname ends in
+`LIVE_FRAME_TRUSTED_HOST_SUFFIX` (`.pawsites.workers.dev`, a subdomain match:
+the bare domain, `pawsites.workers.dev.evil.com` and http do not qualify).
+`frameSandbox(url)` is the rule. Scripts plus same-origin only let a page lift
+its sandbox when it shares the embedder's origin. Each published site is its
+own subdomain on a registrable domain apart from `pocketpaw.xyz` and the app,
+so it keeps its own origin and storage, which games need for saved scores.
+Every other host runs in an opaque origin, where `localStorage`, cookies and
+IndexedDB throw; such a page still works through "Open full screen". To trust
+another host, extend the constant.
 
 ## Shared catalogue copy
 
@@ -212,6 +217,7 @@ with identical declarations, so nothing changes. Hosts must scan ripple's
 | `rendererFor(item)` | helper | `'media'`, `'frame'` or `'art'`: what the detail view shows. |
 | `showUsage(item)` | helper | False at zero, so the usage line can be left out. |
 | `httpUrl(raw)` | helper | The url when it is http(s), else `null`. |
+| `frameSandbox(url)`, `isTrustedFrameHost(url)`, `LIVE_FRAME_TRUSTED_HOST_SUFFIX` | helper | The live frame's sandbox: `allow-same-origin` only for https on a `.pawsites.workers.dev` subdomain. |
 | `DISCOVER_TYPES`, `DISCOVER_AUDIENCES` | constant | The type tabs and the audience chips. |
 | `discoverSections(brand)`, `groupSections(items)`, `sectionFilter(key)`, `relatedHeading(kind)` | helper | The shared section copy, grouping, "All …" filters and related heading (see above). |
 | `primaryFor(item)` | helper | The primary action: `Use` or `Play` with an http(s) `href`, `Claim` or `Use this recipe` needing an account, or `null`. |
@@ -227,4 +233,5 @@ The exact runtime list is frozen by `src/lib/discover/discover-contract.test.ts`
 the server markup by `src/lib/discover/discover.ssr.test.ts` (cards),
 `src/lib/discover/discover-detail.ssr.test.ts` (item view) and
 `src/lib/discover/discover-layout.ssr.test.ts` (layout); the section rules by
-`src/lib/discover/sections.test.ts`.
+`src/lib/discover/sections.test.ts` and the frame sandbox by
+`src/lib/discover/frame.test.ts`.
