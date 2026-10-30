@@ -106,10 +106,22 @@
     <div class="flex flex-wrap items-center justify-between gap-2">
       {#if kind === 'site' && loaded}
         <div class="inline-flex rounded-lg border border-border p-0.5" role="group" aria-label="Preview width">
-          <Button size="xs" variant={phone ? 'ghost' : 'secondary'} aria-pressed={!phone} onclick={() => (phone = false)}>
+          <Button
+            size="xs"
+            variant={phone ? 'ghost' : 'secondary'}
+            class={phone ? 'text-muted-foreground' : 'text-foreground'}
+            aria-pressed={!phone}
+            onclick={() => (phone = false)}
+          >
             <Monitor aria-hidden="true" />Desktop
           </Button>
-          <Button size="xs" variant={phone ? 'secondary' : 'ghost'} aria-pressed={phone} onclick={() => (phone = true)}>
+          <Button
+            size="xs"
+            variant={phone ? 'secondary' : 'ghost'}
+            class={phone ? 'text-foreground' : 'text-muted-foreground'}
+            aria-pressed={phone}
+            onclick={() => (phone = true)}
+          >
             <Smartphone aria-hidden="true" />Phone
           </Button>
         </div>
@@ -117,8 +129,9 @@
         <span></span>
       {/if}
       <Button
-        variant="link"
+        variant="ghost"
         size="sm"
+        class="text-foreground"
         href={safeUrl(src)}
         target="_blank"
         rel="nofollow ugc noopener noreferrer"

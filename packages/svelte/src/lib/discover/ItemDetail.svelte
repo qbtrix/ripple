@@ -3,7 +3,8 @@
      picture), then the title, the line, who made it, the usage line (left out
      at zero), what it was remixed from, its tags, and the actions. The same
      body serves the item's own page (layout="page": wide, h1) and the in-app
-     overlay (layout="overlay": no outer padding, h2). It never draws the
+     overlay (layout="overlay": no side padding, h2, and a top inset that keeps
+     the media clear of the Dialog / Sheet close button). It never draws the
      Dialog or Sheet itself; consumers wrap it. `compact` is the narrow
      overlay: a framed item shows its picture and an Open link to its page
      instead of loading the frame there; media still plays.
@@ -87,7 +88,7 @@
 </script>
 
 <article
-  class={cn('flex min-w-0 flex-col', layout === 'page' ? 'mx-auto w-full max-w-4xl gap-6 px-6 py-10' : 'gap-4', className)}
+  class={cn('flex min-w-0 flex-col', layout === 'page' ? 'mx-auto w-full max-w-4xl gap-6 px-6 py-10' : 'gap-4 pt-8', className)}
   data-testid={`discover-detail-${item.id}`}
   data-renderer={renderer}
 >
