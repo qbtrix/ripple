@@ -22,6 +22,7 @@
      `brand` names the product. -->
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { safeUrl } from '@ripple-ui/core';
   import Check from '@lucide/svelte/icons/check';
   import Copy from '@lucide/svelte/icons/copy';
   import Download from '@lucide/svelte/icons/download';
@@ -175,7 +176,7 @@
             aria-describedby="{uid}-phone-note"
           />
         </div>
-        <p id="{uid}-phone-note" class={cn(error ? 'text-footnote text-destructive' : 'sr-only')} aria-live="polite">{error ?? ''}</p>
+        <p id="{uid}-phone-note" class={cn(error ? 'text-footnote text-ripple-error-text' : 'sr-only')} aria-live="polite">{error ?? ''}</p>
       </div>
     </div>
 
@@ -223,7 +224,7 @@
       <Button variant="outline" disabled={!layout} onclick={saveSvg} data-testid="discover-qr-svg">SVG</Button>
       <Button variant="outline" disabled={!layout} onclick={print} data-testid="discover-qr-print"><Printer />Print</Button>
     </div>
-    {#if note}<p class="text-footnote text-destructive" role="status">{note}</p>{/if}
+    {#if note}<p class="text-footnote text-ripple-error-text" role="status">{note}</p>{/if}
 
     {#if link}
       <div class="flex min-w-0 items-center gap-1 rounded-lg bg-muted px-2.5 py-1 text-footnote">
@@ -234,7 +235,7 @@
         {#if onopenlink}
           <Button variant="ghost" size="xs" onclick={() => onopenlink(link)}><ExternalLink />Test it</Button>
         {:else}
-          <Button variant="ghost" size="xs" href={link} target="_blank" rel="noopener noreferrer"><ExternalLink />Test it</Button>
+          <Button variant="ghost" size="xs" href={safeUrl(link)} target="_blank" rel="noopener noreferrer"><ExternalLink />Test it</Button>
         {/if}
       </div>
     {/if}
@@ -244,7 +245,7 @@
       {#if onmake}
         <Button variant="link" size="xs" class="h-auto px-0 text-primary" onclick={() => onmake(shop)}>Make a full menu or site with {brand}</Button>
       {:else if makeHref}
-        <Button variant="link" size="xs" class="h-auto px-0 text-primary" href={makeHref}>Make a full menu or site with {brand}</Button>
+        <Button variant="link" size="xs" class="h-auto px-0 text-primary" href={safeUrl(makeHref)}>Make a full menu or site with {brand}</Button>
       {/if}
     </div>
   </div>
