@@ -17,7 +17,9 @@
      ./whatsapp-card-export (PNG 300 dpi, SVG in mm, Print one 148 × 105 mm page).
      Host hooks: `oncopy`, `onopenlink`, `ondownload` replace the browser defaults
      (clipboard, a target=_blank link, an anchor download); the "Make a full menu or
-     site" action renders only with `onmake` or `makeHref`; `brand` names the product. -->
+     site" action renders only with `onmake` or `makeHref` (painted text-primary, the
+     host's own accent, so it reads on a host whose ripple tokens are the light set);
+     `brand` names the product. -->
 <script lang="ts">
   import { onMount } from 'svelte';
   import Check from '@lucide/svelte/icons/check';
@@ -240,9 +242,9 @@
     <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-footnote text-muted-foreground">
       <span>Free · runs in your browser</span>
       {#if onmake}
-        <Button variant="link" size="xs" class="h-auto px-0" onclick={() => onmake(shop)}>Make a full menu or site with {brand}</Button>
+        <Button variant="link" size="xs" class="h-auto px-0 text-primary" onclick={() => onmake(shop)}>Make a full menu or site with {brand}</Button>
       {:else if makeHref}
-        <Button variant="link" size="xs" class="h-auto px-0" href={makeHref}>Make a full menu or site with {brand}</Button>
+        <Button variant="link" size="xs" class="h-auto px-0 text-primary" href={makeHref}>Make a full menu or site with {brand}</Button>
       {/if}
     </div>
   </div>
