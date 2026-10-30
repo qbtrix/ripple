@@ -3,7 +3,8 @@
 // `svelte/server` with no hydration, the path a prerendered public catalogue
 // page takes, and that only http(s) urls reach a src or an action href. Runs in
 // the `ssr` vitest project. Also pins the pure item rules: itemHref's routes,
-// primaryFor, the usage labels and the placeholder palette.
+// isPlainClick, primaryFor, rendererFor, the usage labels and the placeholder
+// palette.
 import { render } from 'svelte/server';
 import { describe, expect, it } from 'vitest';
 import DetailMedia from './DetailMedia.svelte';
@@ -11,8 +12,8 @@ import DiscoverRow from './DiscoverRow.svelte';
 import DiscoverTile from './DiscoverTile.svelte';
 import ItemArt from './ItemArt.svelte';
 import { CARD_PALETTE, tintFor } from './art.js';
-import { itemHref } from './href.js';
-import { primaryFor, remixLabel, usageLabel, usedLabel } from './item.js';
+import { isPlainClick, itemHref, LEGACY_ITEM_PREFIXES } from './href.js';
+import { primaryFor, remixLabel, rendererFor, showUsage, usageLabel, usedLabel } from './item.js';
 import type { DiscoverItem } from './types.js';
 
 const tool: DiscoverItem = {
@@ -184,11 +185,54 @@ describe('item rules', () => {
 });
 
 describe('itemHref', () => {
-  it('routes by kind', () => {
-    expect(itemHref('tool', 'invoice-maker')).toBe('/free-tools/invoice-maker');
-    expect(itemHref('game', 'snake')).toBe('/play/snake');
-    expect(itemHref('site', 'dentist')).toBe('/templates/dentist');
+  it('routes every kind to /discover/<slug>', () => {
+    expect(itemHref('tool', 'invoice-maker')).toBe('/discover/invoice-maker');
+    expect(itemHref('game', 'snake')).toBe('/discover/snake');
+    expect(itemHref('site', 'dentist')).toBe('/discover/dentist');
     expect(itemHref('video', 'vid-1')).toBe('/discover/vid-1');
     expect(itemHref('music', 'a b')).toBe('/discover/a%20b');
+    expect(itemHref('tool', '../x?y')).toBe('/discover/..%2Fx%3Fy');
+  });
+
+  it('keeps the old folders for redirects', () => {
+    expect(LEGACY_ITEM_PREFIXES).toEqual({ tool: '/free-tools/', game: '/play/', site: '/templates/' });
+  });
+});
+
+describe('isPlainClick', () => {
+  const click = { button: 0, metaKey: false, ctrlKey: false, shiftKey: false, altKey: false, defaultPrevented: false };
+  it('takes a plain left click only', () => {
+    expect(isPlainClick(click)).toBe(true);
+    for (const patch of [{ button: 1 }, { metaKey: true }, { ctrlKey: true }, { shiftKey: true }, { altKey: true }, { defaultPrevented: true }]) {
+      expect(isPlainClick({ ...click, ...patch })).toBe(false);
+    }
+  });
+});
+
+describe('rendererFor and showUsage', () => {
+  it('picks media for playable studio items, frame for live pages, art otherwise', () => {
+    expect(rendererFor(video)).toBe('media');
+    expect(rendererFor(song)).toBe('media');
+    expect(rendererFor({ ...video, mediaUrl: null })).toBe('art');
+    expect(rendererFor({ ...video, mediaUrl: 'javascript:alert(1)' })).toBe('art');
+    expect(rendererFor(tool)).toBe('frame');
+    expect(rendererFor({ ...tool, kind: 'game' })).toBe('frame');
+    expect(rendererFor({ ...tool, kind: 'site' })).toBe('frame');
+    expect(rendererFor({ ...tool, liveUrl: null })).toBe('art');
+    expect(rendererFor({ ...tool, liveUrl: 'data:text/html,hi' })).toBe('art');
+    expect(rendererFor({ ...tool, kind: 'podcast' as DiscoverItem['kind'] })).toBe('art');
+  });
+
+  it('showUsage is false at zero and for junk counts', () => {
+    expect(showUsage({ ...tool, remixCount: 0 })).toBe(false);
+    expect(showUsage({ ...tool, remixCount: Number.NaN })).toBe(false);
+    expect(showUsage({ ...tool, remixCount: 1 })).toBe(true);
+  });
+
+  it('cards drop the usage line at zero', () => {
+    for (const C of [DiscoverTile, DiscoverRow]) {
+      const { body } = render(C, { props: { item: { ...tool, remixCount: 0 } } });
+      expect(body).not.toContain('No remixes yet');
+    }
   });
 });

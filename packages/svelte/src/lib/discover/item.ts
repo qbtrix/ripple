@@ -1,5 +1,6 @@
-// discover/item.ts — what a tile or row derives from a DiscoverItem: the studio
-// flag, the usage line, the playable media, and the primary action. Pure
+// discover/item.ts — what a tile, a row or the detail view derives from a
+// DiscoverItem: the studio flag, the usage line (and whether to show it), the
+// playable media, the primary action, and which renderer the detail uses. Pure
 // functions, so the components stay props-in markup-out and the rules are
 // testable without a DOM. Only http(s) urls survive into an href or a src.
 
@@ -42,6 +43,9 @@ export function usedLabel(count: number): string {
 export const usageLabel = (item: DiscoverItem): string =>
   isStudioKind(item.kind) ? usedLabel(item.remixCount) : remixLabel(item.remixCount);
 
+/** False at zero, so a card can drop "No remixes yet" instead of printing it. */
+export const showUsage = (item: DiscoverItem): boolean => Number.isFinite(item.remixCount) && item.remixCount > 0;
+
 export function mediaFor(item: DiscoverItem): { kind: DiscoverMediaKind; url: string } | null {
   const url = isStudioKind(item.kind) ? httpUrl(item.mediaUrl) : null;
   return url && item.mediaKind ? { kind: item.mediaKind, url } : null;
@@ -53,4 +57,14 @@ export function primaryFor(item: DiscoverItem): DiscoverPrimary | null {
   const href = httpUrl(item.liveUrl);
   if (!href) return null;
   return { label: item.kind === 'game' ? 'Play' : 'Use', href, needsAccount: false };
+}
+
+/** How the detail view shows an item: the studio player, the live page in a
+ *  frame, or the picture. Unknown kinds and items with nothing to play get the art. */
+export type DiscoverRenderer = 'media' | 'frame' | 'art';
+
+export function rendererFor(item: DiscoverItem): DiscoverRenderer {
+  if (isStudioKind(item.kind)) return mediaFor(item) ? 'media' : 'art';
+  if (item.kind === 'site' || item.kind === 'game' || item.kind === 'tool') return httpUrl(item.liveUrl) ? 'frame' : 'art';
+  return 'art';
 }

@@ -1,0 +1,43 @@
+<!-- discover/ItemMenu.svelte — the ⋯ overflow a card and the detail view share:
+     Copy link and Report, each drawn only when its callback is passed; with
+     neither, no trigger is drawn. Internal to the card set (not exported). The
+     menu is ripple's DropdownMenu, whose content mounts only when open, so the
+     server markup is just the trigger button. -->
+<script lang="ts">
+  import Ellipsis from '@lucide/svelte/icons/ellipsis';
+  import Flag from '@lucide/svelte/icons/flag';
+  import Link from '@lucide/svelte/icons/link';
+  import { Button } from '../components/ui/button/index.js';
+  import * as DropdownMenu from '../components/ui/dropdown-menu/index.js';
+
+  let {
+    title,
+    oncopy,
+    onreport,
+  }: {
+    /** The item's title, for the trigger's accessible name. */
+    title: string;
+    oncopy?: () => void;
+    onreport?: () => void;
+  } = $props();
+</script>
+
+{#if oncopy || onreport}
+  <DropdownMenu.Root>
+    <DropdownMenu.Trigger>
+      {#snippet child({ props })}
+        <Button {...props} size="icon-sm" variant="ghost" class="text-muted-foreground" aria-label={`More for ${title}`} title="More">
+          <Ellipsis class="size-4" />
+        </Button>
+      {/snippet}
+    </DropdownMenu.Trigger>
+    <DropdownMenu.Content align="end" class="w-40">
+      {#if oncopy}
+        <DropdownMenu.Item onSelect={oncopy}><Link />Copy link</DropdownMenu.Item>
+      {/if}
+      {#if onreport}
+        <DropdownMenu.Item onSelect={onreport}><Flag />Report</DropdownMenu.Item>
+      {/if}
+    </DropdownMenu.Content>
+  </DropdownMenu.Root>
+{/if}

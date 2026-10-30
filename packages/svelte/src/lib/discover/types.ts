@@ -1,8 +1,10 @@
 // discover/types.ts — the item shape the Discover card set renders. A flattened
 // view of one public catalogue listing: enough to draw a tile, a row, or the
-// detail media on the server, with no fetch and no store. Consumers map their
+// detail view on the server, with no fetch and no store. Consumers map their
 // wire format onto this; the components derive everything else (labels, the
-// primary action, the studio flag) from these fields.
+// primary action, the studio flag, the renderer) from these fields. The
+// creator, tags, update time and remix source are optional: older listings
+// and older consumers leave them out.
 
 export type StudioKind = 'image' | 'video' | 'music';
 export type DiscoverKind = 'site' | 'tool' | 'game' | StudioKind;
@@ -27,4 +29,12 @@ export interface DiscoverItem {
   /** Copies made; for a studio listing, times its recipe was opened. */
   remixCount: number;
   featured: boolean;
+  /** Who made it, when they opted in at publish. */
+  creator?: { name: string; handle?: string | null } | null;
+  /** Free-form topic tags, drawn as chips on the detail view. */
+  tags?: string[];
+  /** ISO timestamp of the last publish. */
+  updatedAt?: string | null;
+  /** The listing this one was remixed from, by slug. */
+  remixedFrom?: { slug: string; title: string } | null;
 }
