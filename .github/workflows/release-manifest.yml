@@ -12,6 +12,9 @@
 #   rewrites it only while packing (core drops its `source` export conditions,
 #   each sibling `file:` dependency becomes `^<that package's version>`), then
 #   fails the run if a tarball still carries a file: dependency.
+# - A pre-release version (one with a "-", e.g. 0.9.0-next.0) publishes under
+#   its identifier as the npm dist-tag ("next"), never "latest", and its tag
+#   (v0.9.0-next.0) makes a GitHub pre-release. Stable versions go to "latest".
 # - Packages publish in dependency order: core, svelte, embed, react. A version already on
 #   npm is skipped, so a re-dispatch after a partial publish still reaches the
 #   release step.
@@ -80,7 +83,14 @@ jobs:
               echo "@ripple-ui/$P@$V is already on npm, skipping"
               continue
             fi
-            bun publish "./release/ripple-ui-$P-$V.tgz" --access public
+            # A pre-release (0.9.0-next.0) goes out under its identifier ("next"),
+            # never "latest", so a plain install keeps getting the last stable.
+            case "$V" in
+              *-*) DIST_TAG="${V#*-}"; DIST_TAG="${DIST_TAG%%.*}" ;;
+              *) DIST_TAG=latest ;;
+            esac
+            echo "publishing @ripple-ui/$P@$V under dist-tag $DIST_TAG"
+            bun publish "./release/ripple-ui-$P-$V.tgz" --access public --tag "$DIST_TAG"
           done
 
       - name: Stage release assets
@@ -115,6 +125,7 @@ jobs:
         with:
           tag_name: ${{ steps.tag.outputs.name }}
           name: ${{ steps.tag.outputs.name }}
+          prerelease: ${{ contains(steps.tag.outputs.name, '-') }}
           generate_release_notes: true
           fail_on_unmatched_files: true
           files: |
