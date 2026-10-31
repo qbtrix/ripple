@@ -61,6 +61,23 @@ describe('dial codes', () => {
     expect(defaultDialIso([], { timeZone: 'America/Sao_Paulo' })).toBe('BR');
   });
 
+  it('reads CLDR American zones by country, and lets an unknown one fall to the language', () => {
+    expect(defaultDialIso(['es-AR'], { timeZone: 'America/Buenos_Aires' })).toBe('AR');
+    expect(defaultDialIso([], { timeZone: 'America/Argentina/Cordoba' })).toBe('AR');
+    for (const zone of ['America/Monterrey', 'America/Cancun', 'America/Tijuana']) {
+      expect(defaultDialIso([], { timeZone: zone })).toBe('MX');
+    }
+    for (const zone of ['America/Recife', 'America/Fortaleza', 'America/Manaus', 'America/Bahia']) {
+      expect(defaultDialIso([], { timeZone: zone })).toBe('BR');
+    }
+    for (const zone of ['America/New_York', 'America/Los_Angeles', 'America/Indiana/Indianapolis', 'America/Kentucky/Louisville', 'Pacific/Honolulu']) {
+      expect(defaultDialIso([], { timeZone: zone })).toBe('US');
+    }
+    // An American zone we don't list says nothing: the language decides.
+    expect(defaultDialIso(['es-MX'], { timeZone: 'America/Nowhere_Listed' })).toBe('MX');
+    expect(defaultDialIso(['en'], { timeZone: 'America/Nowhere_Listed' })).toBe('IN');
+  });
+
   it('matches the longest code, keeping the current country among shared ones', () => {
     expect(matchDialCode('447700900123')?.iso).toBe('GB');
     expect(matchDialCode('971501234567')?.iso).toBe('AE');

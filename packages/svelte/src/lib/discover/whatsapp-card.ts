@@ -126,14 +126,29 @@ const ZONE_COUNTRY: Readonly<Record<string, string>> = {
   'Africa/Cairo': 'EG', 'Africa/Accra': 'GH', 'Africa/Casablanca': 'MA', 'Africa/Algiers': 'DZ',
   'Africa/Addis_Ababa': 'ET', 'Africa/Dar_es_Salaam': 'TZ', 'Africa/Kampala': 'UG', 'Africa/Harare': 'ZW',
   'Pacific/Auckland': 'NZ', 'America/Toronto': 'CA', 'America/Vancouver': 'CA', 'America/Edmonton': 'CA',
-  'America/Winnipeg': 'CA', 'America/Halifax': 'CA', 'America/Mexico_City': 'MX', 'America/Sao_Paulo': 'BR',
+  'America/Winnipeg': 'CA', 'America/Halifax': 'CA', 'America/Regina': 'CA', 'America/St_Johns': 'CA',
   'America/Bogota': 'CO', 'America/Lima': 'PE', 'America/Santiago': 'CL',
+  // The United States, listed: browsers report CLDR ids, and America/* spans the
+  // whole continent, so a catch-all would make Argentina or Mexico read as US.
+  'America/New_York': 'US', 'America/Chicago': 'US', 'America/Denver': 'US', 'America/Los_Angeles': 'US',
+  'America/Phoenix': 'US', 'America/Anchorage': 'US', 'America/Detroit': 'US', 'America/Boise': 'US',
+  'America/Juneau': 'US', 'America/Adak': 'US', 'Pacific/Honolulu': 'US',
+  'America/Buenos_Aires': 'AR', 'America/Cordoba': 'AR',
+  'America/Mexico_City': 'MX', 'America/Monterrey': 'MX', 'America/Cancun': 'MX', 'America/Tijuana': 'MX',
+  'America/Merida': 'MX', 'America/Chihuahua': 'MX', 'America/Hermosillo': 'MX', 'America/Mazatlan': 'MX',
+  'America/Matamoros': 'MX', 'America/Bahia_Banderas': 'MX',
+  'America/Sao_Paulo': 'BR', 'America/Recife': 'BR', 'America/Fortaleza': 'BR', 'America/Manaus': 'BR',
+  'America/Bahia': 'BR', 'America/Belem': 'BR', 'America/Maceio': 'BR', 'America/Cuiaba': 'BR',
+  'America/Campo_Grande': 'BR', 'America/Porto_Velho': 'BR', 'America/Rio_Branco': 'BR', 'America/Araguaina': 'BR',
 };
-/** Zone prefixes that mean one country when no exact zone matched. */
+/** Zone prefixes that mean one country when no exact zone matched. Any other
+ *  America/* zone says nothing, and the language decides. */
 const ZONE_REGIONS: readonly (readonly [string, string])[] = [
   ['America/Argentina/', 'AR'],
+  ['America/Indiana/', 'US'],
+  ['America/Kentucky/', 'US'],
+  ['America/North_Dakota/', 'US'],
   ['Australia/', 'AU'],
-  ['America/', 'US'],
 ];
 
 const listed = (iso: string | undefined): string | null =>
