@@ -89,8 +89,9 @@
     onmake?: (shop: string) => void;
     /** The same action as a link, for a host without a callback. */
     makeHref?: string;
-    /** The workspace or user country (ISO code or listed name), read on mount; it
-     *  outranks the browser's time zone and languages for the default code. */
+    /** The workspace or user country (ISO code or listed name). It outranks the
+     *  browser's time zone and languages for the default code, and a later value
+     *  applies until the owner picks a code themselves. */
     country?: string;
     class?: string;
   } = $props();
@@ -98,7 +99,16 @@
   const uid = $props.id();
 
   let shop = $state(DEFAULT_SHOP);
-  let iso = $state(DEFAULT_DIAL_ISO);
+  /** The owner's own pick (the select, or a pasted international number). Until
+   *  there is one, the code follows the host's `country` and the browser, so a
+   *  `country` the host learns after mount still applies (a $derived, no effect). */
+  let picked = $state<string | null>(null);
+  /** The browser's languages and zone, read on mount (the server renders India). */
+  let browser = $state<{ languages: readonly string[]; timeZone: string | undefined } | null>(null);
+  const iso = $derived(
+    picked ??
+      (browser ? defaultDialIso(browser.languages, { country, timeZone: browser.timeZone }) : DEFAULT_DIAL_ISO),
+  );
   let phone = $state(EXAMPLE_PHONE);
   let message = $state(DEFAULT_MESSAGE);
   let touched = $state(false);
@@ -110,7 +120,7 @@
   const FULL_FROM = 480;
 
   onMount(() => {
-    iso = defaultDialIso(navigator.languages, { country, timeZone: browserTimeZone() });
+    browser = { languages: navigator.languages, timeZone: browserTimeZone() };
     phone = '';
     // Without ::details-content the CSS cannot show a closed card's body, so a
     // wide card opens itself. Browsers that have it never change state here.
@@ -128,7 +138,7 @@
   function onPhoneInput(e: Event & { currentTarget: HTMLInputElement }) {
     const split = splitInternational(e.currentTarget.value, iso);
     if (!split) return;
-    iso = split.iso;
+    picked = split.iso;
     phone = split.national;
   }
 
@@ -190,7 +200,7 @@
       <div class="flex min-w-0 flex-col gap-1.5">
         <Label for="{uid}-phone">WhatsApp number</Label>
         <div class="flex gap-1.5">
-          <Select.Root type="single" value={iso} onValueChange={(v) => (iso = v)}>
+          <Select.Root type="single" value={iso} onValueChange={(v) => (picked = v)}>
             <Select.Trigger class="w-[5.5rem] shrink-0 tabular-nums" aria-label={`Country code, ${dial.name}`} data-testid="discover-qr-country">
               {dial.iso} +{dial.code}
             </Select.Trigger>

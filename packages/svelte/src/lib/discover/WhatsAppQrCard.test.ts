@@ -60,6 +60,20 @@ describe('WhatsAppQrCard', () => {
     expect(screen.getByTestId('discover-qr-country')).toHaveTextContent('IN +91');
   });
 
+  it('a country the host passes later applies until the owner picks one', async () => {
+    languages(['en-GB']);
+    timeZone('Etc/UTC');
+    const { rerender } = render(WhatsAppQrCard);
+    expect(screen.getByTestId('discover-qr-country')).toHaveTextContent('GB +44');
+    await rerender({ country: 'IN' });
+    expect(screen.getByTestId('discover-qr-country')).toHaveTextContent('IN +91');
+    // A pasted international number is the owner's choice; a later prop leaves it.
+    await type(phone(), '+971 50 123 4567');
+    expect(screen.getByTestId('discover-qr-country')).toHaveTextContent('AE +971');
+    await rerender({ country: 'SG' });
+    expect(screen.getByTestId('discover-qr-country')).toHaveTextContent('AE +971');
+  });
+
   it('the host country prop beats the time zone and the languages', () => {
     languages(['en-GB']);
     timeZone('Asia/Kolkata');
