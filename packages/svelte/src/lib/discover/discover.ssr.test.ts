@@ -236,3 +236,37 @@ describe('rendererFor and showUsage', () => {
     }
   });
 });
+
+describe('remixHref — Remix as a link (the website)', () => {
+  const site: DiscoverItem = { ...tool, id: 'site-1', slug: 'bright-smile', kind: 'site', title: 'Bright Smile', liveUrl: 'https://bright.pawsites.workers.dev' };
+  const remixHref = 'https://app.example.com/remix/bright-smile';
+
+  it.each([DiscoverTile, DiscoverRow])('a site card gets Claim as a link with only remixHref', (C) => {
+    const { body } = render(C, { props: { item: site, remixHref } });
+    expect(body).toMatch(/<a [^>]*href="https:\/\/app\.example\.com\/remix\/bright-smile"[^>]*>(<!---->)?Claim(<!---->)?<\/a>/);
+    expect(body).not.toMatch(/<button[^>]*>Claim/);
+  });
+
+  it.each([DiscoverTile, DiscoverRow])('a studio card gets Use this recipe as a link', (C) => {
+    const { body } = render(C, { props: { item: video, remixHref: 'https://app.example.com/remix/vid-1' } });
+    expect(body).toMatch(/<a [^>]*href="https:\/\/app\.example\.com\/remix\/vid-1"[^>]*>(<!---->)?Use this recipe(<!---->)?<\/a>/);
+  });
+
+  it('remixHref wins over onremix for the primary', () => {
+    const { body } = render(DiscoverTile, { props: { item: site, remixHref, onremix: () => {} } });
+    expect(body).toMatch(/<a [^>]*>(<!---->)?Claim(<!---->)?<\/a>/);
+    expect(body).not.toMatch(/<button[^>]*>Claim/);
+  });
+
+  it('a tool keeps its live Use link and gets the Remix icon as a link', () => {
+    const { body } = render(DiscoverTile, { props: { item: tool, remixHref: 'https://app.example.com/remix/invoice-maker' } });
+    expect(body).toContain('>Use<');
+    expect(body).toMatch(/<a [^>]*href="https:\/\/app\.example\.com\/remix\/invoice-maker"[^>]*aria-label="Remix Invoice maker"|<a [^>]*aria-label="Remix Invoice maker"[^>]*href="https:\/\/app\.example\.com\/remix\/invoice-maker"/);
+  });
+
+  it('an unsafe remixHref renders no remix link and no Claim without onremix', () => {
+    const { body } = render(DiscoverTile, { props: { item: site, remixHref: 'javascript:alert(1)' } });
+    expect(body).not.toContain('javascript:');
+    expect(body).not.toContain('Claim');
+  });
+});

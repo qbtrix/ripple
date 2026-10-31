@@ -129,8 +129,11 @@ On a card, `onopen` with `href` makes a plain left click on the art or title
 call `onopen(item)` and `preventDefault`; ctrl/cmd/shift/alt and middle clicks
 still follow the link, and with JS off the link is all there is
 (`isPlainClick` is the rule). The card ⋯ menu holds Remix (tools and games,
-with `onremix`), Report and, with `href` and `oncopylink`, Copy link. Site
-cards have no Remix icon: Claim already copies.
+with `remixHref` or `onremix`), Report and, with `href` and `oncopylink`, Copy
+link. Site cards have no Remix icon: Claim already copies. Cards take
+`remixHref` too, as `ItemDetail` does: with it, Claim / Use this recipe, the
+Remix icon and the Remix menu item are links to it (it wins over `onremix`),
+so a static site gets its Claim button with no script.
 
 ## Creator and dates
 
@@ -302,7 +305,7 @@ with identical declarations, so nothing changes. Hosts must scan ripple's
 
 | Name | Kind | What it is |
 |---|---|---|
-| `DiscoverTile` | component | One item in a grid or shelf: art, title, one line, the creator line, usage (hidden at zero) and published date, actions; compact under 15rem. Props: `item`, `href?`, `target?`, `rel?`, `onremix?`, `onreport?`, `onopen?`, `oncopylink?` (`(item, href) => void`), `busy?`, `class?`. |
+| `DiscoverTile` | component | One item in a grid or shelf: art, title, one line, the creator line, usage (hidden at zero) and published date, actions; compact under 15rem. Props: `item`, `href?`, `target?`, `rel?`, `remixHref?` (Remix as a link; wins over `onremix`), `onremix?`, `onreport?`, `onopen?`, `oncopylink?` (`(item, href) => void`), `busy?`, `class?`. |
 | `DiscoverRow` | component | The same item as a list row (`role="listitem"`). Same props as the tile. |
 | `ItemArt` | component | The 16:9 picture: the image, a tinted placeholder with the title's initial, a music cover, or a play badge on a video. Props: `imageUrl`, `title`, `mediaKind?`, `tint`, `initial`, `class?`. |
 | `DetailMedia` | component | The detail view's media: `<video>` with poster, music cover plus `<audio>`, or the full image. Props: `item`, `class?`. |

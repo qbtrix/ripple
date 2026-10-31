@@ -35,6 +35,7 @@
     href,
     target,
     rel,
+    remixHref,
     onremix,
     onreport,
     onopen,
@@ -48,6 +49,8 @@
     /** Passed to both links. Off-site consumers pass target="_blank" rel="noopener". */
     target?: string;
     rel?: string;
+    /** Claim / Use this recipe and Remix as links (the website, to the app). Wins over `onremix`. */
+    remixHref?: string;
     onremix?: (item: DiscoverItem) => void;
     onreport?: (item: DiscoverItem) => void;
     /** Opens the item in place. With `href`, a plain click on the art or title calls
@@ -102,6 +105,6 @@
         </p>
       {/if}
     </div>
-    <ItemActions {item} pageHref={href} {onremix} {onreport} {onopen} {oncopylink} {busy} class="@max-[15rem]/tile:justify-between" />
+    <ItemActions {item} pageHref={href} {remixHref} {onremix} {onreport} {onopen} {oncopylink} {busy} class="@max-[15rem]/tile:justify-between" />
   </div>
 </article>

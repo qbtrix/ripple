@@ -2,7 +2,7 @@
 // open path: LiveFrame creates its iframe only after the load button is
 // pressed, with allow-same-origin only on a pawsites subdomain, and the width toggle
 // for sites; a card with `onopen` takes a plain click on its title and lets a
-// modified click through to the link; the card ⋯ menu opens and calls back.
+// modified click through to the link; the card ⋯ menu opens and calls back, or links with `remixHref`.
 // Runs in the `client` vitest project.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
@@ -91,5 +91,18 @@ describe('card ⋯ menu', () => {
     await fireEvent.keyDown(trigger, { key: 'Enter' });
     await fireEvent.click(await screen.findByRole('menuitem', { name: 'Report' }));
     expect(onreport).toHaveBeenCalledWith(item);
+  });
+
+  it('draws Remix as a link to remixHref, which wins over onremix', async () => {
+    const onremix = vi.fn();
+    const { getByRole } = render(DiscoverTile, { item, remixHref: 'https://app.example.com/remix/calc', onremix });
+    const trigger = getByRole('button', { name: 'More for Calc' });
+    trigger.focus();
+    await fireEvent.keyDown(trigger, { key: 'Enter' });
+    const remix = await screen.findByRole('menuitem', { name: 'Remix' });
+    expect(remix.tagName).toBe('A');
+    expect(remix.getAttribute('href')).toBe('https://app.example.com/remix/calc');
+    await fireEvent.click(remix);
+    expect(onremix).not.toHaveBeenCalled();
   });
 });
