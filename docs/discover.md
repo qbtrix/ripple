@@ -82,12 +82,24 @@ website can redirect them.
 
 `ItemDetail` is one item in full, and the same body serves two places:
 
-- `layout="page"`: the item's own route. Wide (`max-w-4xl`, padded), `h1`.
+- `layout="page"`: the item's own route, `h1`. One bordered card (up to
+  `max-w-7xl`, container `item-page`; the consumer supplies the page padding)
+  with two regions: the preview on the left, large (a site, game or tool
+  loads straight away in a tall `LiveFrame`, `autoload` + `tall`; studio
+  media plays; else the picture), and a sticky info panel on the right
+  (title and line, the actions, then creator, usage, made-with, remixed-from
+  and tags). From 56rem of container the panel sits beside the preview;
+  narrower, it stacks underneath. The related row is the consumer's, below
+  the card.
 - `layout="overlay"`: inside the consumer's `Dialog` (desktop) or bottom
-  `Sheet` (narrow). No outer padding, `h2`. ItemDetail never draws the
-  overlay itself. Pass `compact` in the narrow sheet: a site, game or tool
-  then shows its picture and an **Open** link to `href` (the full page)
-  instead of loading the live frame there. Studio media still plays.
+  `Sheet` (narrow). No outer padding, `h2`, frames stay click-to-load.
+  ItemDetail never draws the overlay itself. Pass `pageHref` to add a
+  **See full page** link to the item's page, and `onpage(item)` to take a
+  plain click on it (close the overlay, then navigate; modified clicks and
+  JS-off follow the link). Pass `compact` in the narrow sheet: a site, game
+  or tool then shows its picture instead of loading the live frame, and
+  See full page leads the actions (without `pageHref`, an **Open** link to
+  `href` does). Studio media still plays.
 
 ```svelte
 <script>
@@ -102,7 +114,7 @@ website can redirect them.
 {/each}
 <Dialog.Root open={!!open} onOpenChange={(o) => !o && (open = null)}>
   <Dialog.Content>
-    {#if open}<ItemDetail item={open} layout="overlay" href={itemHref(open.kind, open.slug ?? open.id)} onremix={remix} />{/if}
+    {#if open}<ItemDetail item={open} layout="overlay" href={itemHref(open.kind, open.slug ?? open.id)} pageHref={itemHref(open.kind, open.slug ?? open.id)} onremix={remix} />{/if}
   </Dialog.Content>
 </Dialog.Root>
 ```
@@ -189,15 +201,18 @@ different widths.
 ### The live frame
 
 `LiveFrame` shows the poster first and creates no iframe until the visitor
-presses "Load site", "Play" or "Open tool". That button appears after
-hydration, so with JS off the page shows the poster and the "Open full
-screen" link, which always points at the live page (`target="_blank"`,
+presses "Load site", "Play" or "Open tool" (grids, overlays and sheets).
+With `autoload` (the item page) the iframe is in the server HTML instead,
+`loading="eager"`, so it loads with JS off; `tall` makes it
+`min(72vh, 760px)` high rather than 16:9. The load button appears after
+hydration, so without autoload and with JS off the page shows the poster and
+the "Open full screen" link, which always points at the live page (`target="_blank"`,
 `rel="nofollow ugc noopener noreferrer"`). Sites get a Desktop / Phone width
 toggle (phone is a 390px centred frame) once loaded.
 
 The iframe gets `sandbox="allow-scripts allow-forms allow-popups
 allow-pointer-lock"`, `allow="fullscreen; gamepad; autoplay"`,
-`referrerpolicy="no-referrer"`, `loading="lazy"`. `allow-same-origin` is added
+`referrerpolicy="no-referrer"`, `loading="lazy"` (eager with `autoload`). `allow-same-origin` is added
 only when the url is https and its hostname ends in
 `LIVE_FRAME_TRUSTED_HOST_SUFFIX` (`.pawsites.workers.dev`, a subdomain match:
 the bare domain, `pawsites.workers.dev.evil.com` and http do not qualify).
@@ -309,8 +324,8 @@ with identical declarations, so nothing changes. Hosts must scan ripple's
 | `DiscoverRow` | component | The same item as a list row (`role="listitem"`). Same props as the tile. |
 | `ItemArt` | component | The 16:9 picture: the image, a tinted placeholder with the title's initial, a music cover, or a play badge on a video. Props: `imageUrl`, `title`, `mediaKind?`, `tint`, `initial`, `class?`. |
 | `DetailMedia` | component | The detail view's media: `<video>` with poster, music cover plus `<audio>`, or the full image. Props: `item`, `class?`. |
-| `ItemDetail` | component | One item in full, for its page or an overlay body. Props: `item`, `layout` (`'page'` or `'overlay'`), `compact?`, `href?`, `remixHref?`, `onremix?`, `onreport?`, `oncopylink?` (`(item) => void`), `busy?`, `headingLevel?` (`'h1'` or `'h2'`), `madeWith?` (a line such as "Made with Paw Sites"), `tagHref?` (`(tag) => string`; tags become links), `class?`. |
-| `LiveFrame` | component | A live page behind a poster: click to load the sandboxed iframe, a width toggle for sites, an "Open full screen" link. Props: `url`, `title`, `kind`, `poster?`, `tint`, `initial`, `class?`. |
+| `ItemDetail` | component | One item in full, for its page or an overlay body. Props: `item`, `layout` (`'page'` or `'overlay'`), `compact?`, `href?`, `remixHref?`, `onremix?`, `onreport?`, `oncopylink?` (`(item) => void`), `busy?`, `headingLevel?` (`'h1'` or `'h2'`), `madeWith?` (a line such as "Made with Paw Sites"), `tagHref?` (`(tag) => string`; tags become links), `pageHref?` and `onpage?` (`(item) => void`; overlay only, the See full page link), `class?`. |
+| `LiveFrame` | component | A live page behind a poster: click to load the sandboxed iframe, a width toggle for sites, an "Open full screen" link. Props: `url`, `title`, `kind`, `poster?`, `tint`, `initial`, `autoload?` (iframe at once, server HTML included), `tall?` (the page's tall frame), `class?`. |
 | `DiscoverHeader` | component | The pitch: a title with an optional primary-coloured `accent`, a lead, children (search, chips) and an `aside` beside it on wide containers; compact under 36rem. Props: `title`, `accent?`, `lead?`, `as?` (`'h2'` default, `'h1'` on a page without its own header), `narrowLead?` (`'hide'` default, `'full'`), `children?`, `aside?`, `class?` (on the inner grid). |
 | `DiscoverSearch` | component | Search in filter mode. Props: `value?`, `oninput?`, `action?` (GET form target), `name?` (`q`), `hidden?` (kept params), `placeholder?`, `class?`. |
 | `DiscoverChips` | component | Audience toggle chips. Props: `options` (`{ value, label, href? }[]`), `value?`, `onchange?`, `label?`, `class?`. |

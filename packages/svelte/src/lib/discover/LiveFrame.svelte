@@ -1,14 +1,18 @@
 <!-- discover/LiveFrame.svelte — a Discover item's live page (a site, a game, a
-     tool) inside the detail view. It starts as the poster (ItemArt) and loads
-     nothing: the iframe is created only when the visitor presses "Load site",
-     "Play" or "Open tool", so a catalogue page never pulls in a stranger's
-     page on view. Sites get a Desktop / Phone width toggle once loaded (phone
-     is a 390px centred frame). "Open full screen" always links to the page.
-     Only an http(s) url is framed or linked; anything else leaves the poster.
+     tool) inside the detail view. By default it starts as the poster (ItemArt)
+     and loads nothing: the iframe is created only when the visitor presses
+     "Load site", "Play" or "Open tool", so a grid, overlay or sheet never
+     pulls in a stranger's page on view. `autoload` (the item's own page)
+     renders the iframe straight away, in the server HTML too, so it loads
+     with JS off. `tall` sizes the frame for that page, min(72vh, 760px) high,
+     instead of 16:9. Sites get a Desktop / Phone width toggle once loaded
+     (phone is a 390px centred frame). "Open full screen" always links to the
+     page. Only an http(s) url is framed or linked; anything else leaves the
+     poster.
 
      Server-safe: nothing touches window. The load button is drawn after
-     mount, so with JS off the poster and the "Open full screen" link are what
-     shows, and the link works.
+     mount, so with JS off (and no autoload) the poster and the "Open full
+     screen" link are what shows, and the link works.
 
      Sandbox (frameSandbox in frame.ts): allow-scripts allow-forms
      allow-popups allow-pointer-lock, plus allow-same-origin only for an https
@@ -41,6 +45,8 @@
     poster = null,
     tint,
     initial,
+    autoload = false,
+    tall = false,
     class: className,
   }: {
     /** The live page. Only http(s) is framed. */
@@ -53,6 +59,10 @@
     /** The placeholder's tint and glyph when there is no poster (tintFor / initialFor). */
     tint: string;
     initial: string;
+    /** Render the iframe at once, server HTML included (the item's own page). */
+    autoload?: boolean;
+    /** The page's tall frame instead of a 16:9 strip. */
+    tall?: boolean;
     class?: string;
   } = $props();
 
@@ -63,7 +73,9 @@
   const sandbox = $derived(frameSandbox(src));
   const loadLabel = $derived(LOAD_LABEL[kind] ?? 'Load');
   let ready = $state(false);
-  let loaded = $state(false);
+  let pressed = $state(false);
+  const loaded = $derived(autoload || pressed);
+  const TALL = 'h-[min(72vh,760px)] min-h-80';
   let phone = $state(false);
 
   onMount(() => {
@@ -76,7 +88,13 @@
     <div
       class={cn(
         'overflow-hidden rounded-[10px] border border-border bg-background',
-        phone ? 'mx-auto aspect-[390/844] max-h-[75vh] w-[390px] max-w-full' : 'aspect-video w-full',
+        phone
+          ? tall
+            ? cn(TALL, 'mx-auto aspect-[390/844] w-auto max-w-full')
+            : 'mx-auto aspect-[390/844] max-h-[75vh] w-[390px] max-w-full'
+          : tall
+            ? cn(TALL, 'w-full')
+            : 'aspect-video w-full',
       )}
     >
       <iframe
@@ -85,17 +103,17 @@
         {title}
         {sandbox}
         allow="fullscreen; gamepad; autoplay"
-        loading="lazy"
+        loading={autoload ? 'eager' : 'lazy'}
         referrerpolicy="no-referrer"
         data-testid="discover-live-iframe"
       ></iframe>
     </div>
   {:else}
     <div class="relative">
-      <ItemArt imageUrl={poster} {title} {tint} {initial} />
+      <ItemArt imageUrl={poster} {title} {tint} {initial} class={tall ? cn(TALL, 'aspect-auto') : undefined} />
       {#if ready && src}
         <div class="absolute inset-0 grid place-items-center">
-          <Button size="lg" class="rounded-full px-5 shadow-md" aria-label={`${loadLabel}: ${title}`} onclick={() => (loaded = true)}>
+          <Button size="lg" class="rounded-full px-5 shadow-md" aria-label={`${loadLabel}: ${title}`} onclick={() => (pressed = true)}>
             <Play class="size-4" aria-hidden="true" />{loadLabel}
           </Button>
         </div>

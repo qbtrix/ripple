@@ -1,12 +1,13 @@
 // discover/LiveFrame.test.ts — the client half of the live frame and the card
 // open path: LiveFrame creates its iframe only after the load button is
-// pressed, with allow-same-origin only on a pawsites subdomain, and the width toggle
-// for sites; a card with `onopen` takes a plain click on its title and lets a
+// pressed (or at once with `autoload`), with allow-same-origin only on a pawsites subdomain, and the width toggle
+// for sites; the overlay's See full page hands a plain click to `onpage`; a card with `onopen` takes a plain click on its title and lets a
 // modified click through to the link; the card ⋯ menu opens and calls back, or links with `remixHref`.
 // Runs in the `client` vitest project.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
 import DiscoverTile from './DiscoverTile.svelte';
+import ItemDetail from './ItemDetail.svelte';
 import LiveFrame from './LiveFrame.svelte';
 import type { DiscoverItem } from './types.js';
 
@@ -46,6 +47,18 @@ describe('LiveFrame', () => {
     await fireEvent.click(phone);
     expect(phone.getAttribute('aria-pressed')).toBe('true');
     expect(container.querySelector('iframe')!.parentElement!.className).toContain('w-[390px]');
+  });
+
+  it('autoload renders the frame without a click and keeps the width toggle; default stays click-to-load', async () => {
+    const { container, getByRole, queryByRole } = render(LiveFrame, { ...base, kind: 'site', autoload: true });
+    expect(container.querySelector('iframe')!.getAttribute('src')).toBe('https://dentist.pawsites.workers.dev/');
+    expect(queryByRole('button', { name: /Load site/ })).toBeNull();
+    await fireEvent.click(getByRole('button', { name: /Phone/ }));
+    expect(container.querySelector('iframe')).not.toBeNull();
+    cleanup();
+    const lazy = render(LiveFrame, { ...base, kind: 'site', autoload: false });
+    expect(lazy.container.querySelector('iframe')).toBeNull();
+    expect(lazy.getByRole('button', { name: /Load site/ })).toBeTruthy();
   });
 
   it('labels the button by kind, and a game gets no width toggle', async () => {
@@ -104,5 +117,24 @@ describe('card ⋯ menu', () => {
     expect(remix.getAttribute('href')).toBe('https://app.example.com/remix/calc');
     await fireEvent.click(remix);
     expect(onremix).not.toHaveBeenCalled();
+  });
+});
+
+describe('overlay See full page', () => {
+  const item: DiscoverItem = { id: 's', slug: 'dentist', kind: 'site', mediaKind: null, title: 'Dentist', desc: '', imageUrl: null, liveUrl: 'https://dentist.pawsites.workers.dev', remixCount: 0, featured: false };
+
+  it('a plain click goes to onpage; a ctrl-click follows the link', () => {
+    const onpage = vi.fn();
+    const { getByRole } = render(ItemDetail, { item, layout: 'overlay', pageHref: '/discover/dentist', onpage });
+    const link = getByRole('link', { name: 'See full page' });
+    expect(link.getAttribute('href')).toBe('/discover/dentist');
+    const plain = new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 });
+    link.dispatchEvent(plain);
+    expect(onpage).toHaveBeenCalledWith(item);
+    expect(plain.defaultPrevented).toBe(true);
+    const ctrl = new MouseEvent('click', { bubbles: true, cancelable: true, button: 0, ctrlKey: true });
+    link.dispatchEvent(ctrl);
+    expect(onpage).toHaveBeenCalledTimes(1);
+    expect(ctrl.defaultPrevented).toBe(false);
   });
 });
