@@ -2,8 +2,8 @@
      a working WhatsApp QR card for a shop counter. The app's /discover and the public
      Discover page both mount this one component (in DiscoverHeader's `aside`).
 
-     The shop name, a calling code (Select; default from the browser's languages, read
-     on mount, else India) and the number build a wa.me link with an optional
+     The shop name, a calling code (Select; default read on mount from the host's
+     `country`, then the browser's time zone, then its languages, else India) and the number build a wa.me link with an optional
      pre-filled message; a pasted "+44 7700 900123" picks the country itself. Until the
      number is valid the preview shows a placeholder and every export is disabled, so
      no QR ever points at a wrong number; the reason shows under the field (aria-live)
@@ -13,7 +13,7 @@
 
      Server render: India and the example "Sharma Sweets" / "98765 43210", so a page
      with JS off shows a real example card and link. On mount the number is cleared
-     and the country follows the browser. All logic is in ./whatsapp-card; exports in
+     and the country follows the host or the browser. All logic is in ./whatsapp-card; exports in
      ./whatsapp-card-export (PNG 300 dpi, SVG in mm, Print one 148 × 105 mm page).
      Host hooks: `oncopy`, `onopenlink`, `ondownload` replace the browser defaults
      (clipboard, a target=_blank link, an anchor download); the "Make a full menu or
@@ -59,6 +59,7 @@
     cardFooter,
     cardLayout,
     checkPhone,
+    browserTimeZone,
     defaultDialIso,
     dialCodeFor,
     splitInternational,
@@ -73,6 +74,7 @@
     ondownload,
     onmake,
     makeHref,
+    country,
     class: className,
   }: {
     /** The product named in "Make a full menu or site with …" and on the card's foot. */
@@ -87,6 +89,9 @@
     onmake?: (shop: string) => void;
     /** The same action as a link, for a host without a callback. */
     makeHref?: string;
+    /** The workspace or user country (ISO code or listed name), read on mount; it
+     *  outranks the browser's time zone and languages for the default code. */
+    country?: string;
     class?: string;
   } = $props();
 
@@ -105,7 +110,7 @@
   const FULL_FROM = 480;
 
   onMount(() => {
-    iso = defaultDialIso(navigator.languages);
+    iso = defaultDialIso(navigator.languages, { country, timeZone: browserTimeZone() });
     phone = '';
     // Without ::details-content the CSS cannot show a closed card's body, so a
     // wide card opens itself. Browsers that have it never change state here.

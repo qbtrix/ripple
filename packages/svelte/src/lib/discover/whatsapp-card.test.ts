@@ -42,6 +42,25 @@ describe('dial codes', () => {
     expect(dialCodeFor('nope').iso).toBe('IN');
   });
 
+  it('prefers a passed country, then the time zone, then the language region, else India', () => {
+    // An Indian user whose browser speaks en-GB: the zone wins over the language.
+    expect(defaultDialIso(['en-GB', 'en'], { timeZone: 'Asia/Kolkata' })).toBe('IN');
+    expect(defaultDialIso(['en-GB'], { timeZone: 'Asia/Calcutta' })).toBe('IN');
+    // The workspace country beats both.
+    expect(defaultDialIso(['en-GB'], { country: 'ae', timeZone: 'Asia/Kolkata' })).toBe('AE');
+    expect(defaultDialIso(['en-GB'], { country: 'India' })).toBe('IN');
+    // An unknown country or zone falls through to the next signal.
+    expect(defaultDialIso(['en-GB'], { country: 'XX', timeZone: 'Etc/UTC' })).toBe('GB');
+    expect(defaultDialIso(['en'], { country: '', timeZone: 'Mars/Olympus' })).toBe('IN');
+    expect(defaultDialIso(undefined, { timeZone: 'Europe/London' })).toBe('GB');
+    expect(defaultDialIso(['en-IN'], { timeZone: 'Asia/Dubai' })).toBe('AE');
+    expect(defaultDialIso([], { timeZone: 'Asia/Singapore' })).toBe('SG');
+    expect(defaultDialIso([], { timeZone: 'Australia/Sydney' })).toBe('AU');
+    expect(defaultDialIso([], { timeZone: 'America/Chicago' })).toBe('US');
+    expect(defaultDialIso([], { timeZone: 'America/Toronto' })).toBe('CA');
+    expect(defaultDialIso([], { timeZone: 'America/Sao_Paulo' })).toBe('BR');
+  });
+
   it('matches the longest code, keeping the current country among shared ones', () => {
     expect(matchDialCode('447700900123')?.iso).toBe('GB');
     expect(matchDialCode('971501234567')?.iso).toBe('AE');

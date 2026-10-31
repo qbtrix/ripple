@@ -21,11 +21,20 @@ const phone = () => screen.getByLabelText('WhatsApp number') as HTMLInputElement
 const type = (el: HTMLElement, value: string) => fireEvent.input(el, { target: { value } });
 const languages = (value: string[]) => Object.defineProperty(navigator, 'languages', { value, configurable: true });
 
+const realOptions = new Intl.DateTimeFormat().resolvedOptions();
+const timeZone = (zone: string) =>
+  vi.spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions').mockReturnValue({ ...realOptions, timeZone: zone });
+
 beforeEach(() => {
   vi.clearAllMocks();
   languages(['en-IN']);
+  // A zone with no country, so the browser languages decide unless a test says otherwise.
+  timeZone('Etc/UTC');
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
 
 describe('WhatsAppQrCard', () => {
   it('starts with no number once mounted: a placeholder, no link, exports disabled', () => {
@@ -42,6 +51,20 @@ describe('WhatsAppQrCard', () => {
     languages(['en-GB', 'en']);
     render(WhatsAppQrCard);
     expect(screen.getByTestId('discover-qr-country')).toHaveTextContent('GB +44');
+  });
+
+  it('an Indian time zone beats an en-GB browser language', () => {
+    languages(['en-GB', 'en']);
+    timeZone('Asia/Kolkata');
+    render(WhatsAppQrCard);
+    expect(screen.getByTestId('discover-qr-country')).toHaveTextContent('IN +91');
+  });
+
+  it('the host country prop beats the time zone and the languages', () => {
+    languages(['en-GB']);
+    timeZone('Asia/Kolkata');
+    render(WhatsAppQrCard, { country: 'AE' });
+    expect(screen.getByTestId('discover-qr-country')).toHaveTextContent('AE +971');
   });
 
   it('typing the shop and a number updates the preview and the link', async () => {
