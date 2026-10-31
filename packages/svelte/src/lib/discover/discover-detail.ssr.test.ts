@@ -117,6 +117,35 @@ describe('ItemDetail — meta', () => {
     expect(body).toContain('booking');
   });
 
+  it('draws the creator row: avatar, name, published and (a day later) updated dates', () => {
+    const item = { ...site, creator: { name: 'Asha Rao', avatarUrl: 'https://cdn.example.com/a.png' }, createdAt: '2026-10-01T09:00:00Z', updatedAt: '2026-10-22T09:00:00Z' };
+    const { body } = render(ItemDetail, { props: { item, layout: 'page' } });
+    expect(body).toContain('data-testid="discover-detail-creator"');
+    expect(body).toContain('data-testid="discover-creator-avatar"');
+    expect(body).toContain('>AR<');
+    expect(body).toContain('By Asha Rao');
+    expect(body).toMatch(/data-testid="discover-detail-dates"[^>]*>Published Oct 1, 2026 · Updated Oct 22, 2026</);
+    const same = render(ItemDetail, { props: { item: { ...item, updatedAt: '2026-10-01T18:00:00Z' }, layout: 'page' } }).body;
+    expect(same).toContain('Published Oct 1, 2026');
+    expect(same).not.toContain('Updated');
+  });
+
+  it('draws the madeWith line only when the consumer passes one', () => {
+    expect(render(ItemDetail, { props: { item: site, layout: 'page' } }).body).not.toContain('discover-detail-made-with');
+    const { body } = render(ItemDetail, { props: { item: site, layout: 'page', madeWith: 'Made with Paw Sites' } });
+    expect(body).toMatch(/data-testid="discover-detail-made-with">Made with Paw Sites</);
+  });
+
+  it('links each tag with tagHref, and leaves them plain without it', () => {
+    const plain = render(ItemDetail, { props: { item: site, layout: 'page' } }).body;
+    expect(plain).not.toMatch(/<a [^>]*href="\/discover\?tag=/);
+    const { body } = render(ItemDetail, { props: { item: site, layout: 'page', tagHref: (t: string) => `/discover?tag=${t}` } });
+    expect(body).toMatch(/<a [^>]*href="\/discover\?tag=health"[^>]*>.*health/s);
+    expect(body).toMatch(/<a [^>]*href="\/discover\?tag=booking"/);
+    const bad = render(ItemDetail, { props: { item: site, layout: 'page', tagHref: () => 'javascript:alert(1)' } }).body;
+    expect(bad).not.toContain('javascript:');
+  });
+
   it('leaves them out when absent, and hides usage at zero', () => {
     const { body } = render(ItemDetail, { props: { item: tool, layout: 'page' } });
     expect(body).not.toContain('discover-detail-creator');

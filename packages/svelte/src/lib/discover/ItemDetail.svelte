@@ -1,7 +1,11 @@
 <!-- discover/ItemDetail.svelte — one Discover item in full: the renderer picked
      by rendererFor (the studio player, the live page in a LiveFrame, or the
-     picture), then the title, the line, who made it, the usage line (left out
-     at zero), what it was remixed from, its tags, and the actions. The same
+     picture), then the title and the line; the creator row (avatar, name,
+     "Published <date>" and "· Updated <date>" when it changed more than a day
+     later; dates are fixed-locale UTC so hydration never rewrites them); the
+     usage line (left out at zero), the `madeWith` line, what it was remixed
+     from; its tags (links with `tagHref`, plain chips otherwise); and the
+     actions. The same
      body serves the item's own page (layout="page": wide, h1) and the in-app
      overlay (layout="overlay": no side padding, h2, and a top inset that keeps
      the media clear of the Dialog / Sheet close button). It never draws the
@@ -21,13 +25,14 @@
   import Chip from '../widgets/display/Chip.svelte';
   import { Button } from '../components/ui/button/index.js';
   import { cn } from '$lib/utils.js';
+  import CreatorAvatar from './CreatorAvatar.svelte';
   import DetailMedia from './DetailMedia.svelte';
   import ItemArt from './ItemArt.svelte';
   import ItemMenu from './ItemMenu.svelte';
   import LiveFrame from './LiveFrame.svelte';
   import { initialFor, tintFor } from './art.js';
   import { itemHref } from './href.js';
-  import { httpUrl, isStudioKind, primaryFor, rendererFor, showUsage, usageLabel } from './item.js';
+  import { httpUrl, isStudioKind, primaryFor, publishedDate, rendererFor, showUsage, updatedDate, usageLabel } from './item.js';
   import type { DiscoverItem } from './types.js';
 
   let {
@@ -41,6 +46,8 @@
     oncopylink,
     busy = false,
     headingLevel,
+    madeWith,
+    tagHref,
     class: className,
   }: {
     item: DiscoverItem;
@@ -60,6 +67,10 @@
     busy?: boolean;
     /** Defaults to h1 for a page, h2 for an overlay. */
     headingLevel?: 'h1' | 'h2';
+    /** A line naming the tool it was made with, e.g. "Made with Paw Sites". */
+    madeWith?: string;
+    /** Makes each tag a link to this address (a filtered Discover page). */
+    tagHref?: (tag: string) => string;
     class?: string;
   } = $props();
 
@@ -72,6 +83,9 @@
   // A studio or site primary is already the remix; a second button would repeat it.
   const remixButton = $derived(!isStudioKind(item.kind) && item.kind !== 'site' && Boolean(remixHref || onremix));
   const canCopy = $derived(Boolean(href || oncopylink));
+  const creator = $derived(item.creator?.name ? item.creator : null);
+  const published = $derived(publishedDate(item));
+  const updated = $derived(updatedDate(item));
   let copied = $state(false);
 
   async function copyLink() {
@@ -104,9 +118,24 @@
     <div class="flex flex-col gap-1">
       <svelte:element this={heading} class={cn('m-0 text-foreground', layout === 'page' ? 'text-title-1' : 'text-title-2')}>{item.title}</svelte:element>
       {#if item.desc}<p class="m-0 text-body text-muted-foreground">{item.desc}</p>{/if}
-      {#if item.creator?.name}
-        <p class="m-0 text-footnote text-muted-foreground" data-testid="discover-detail-creator">By {item.creator.name}</p>
-      {/if}
+    </div>
+
+    {#if creator || published}
+      <div class="flex min-w-0 items-center gap-3" data-testid="discover-detail-creator">
+        {#if creator}<CreatorAvatar name={creator.name} avatarUrl={creator.avatarUrl} size="lg" />{/if}
+        <div class="flex min-w-0 flex-col">
+          {#if creator}<span class="truncate text-callout font-medium text-foreground">By {creator.name}</span>{/if}
+          {#if published}
+            <span class="text-footnote text-muted-foreground tabular-nums" data-testid="discover-detail-dates"
+              >Published {published}{#if updated}{' '}· Updated {updated}{/if}</span
+            >
+          {/if}
+        </div>
+      </div>
+    {/if}
+
+    {#if showUsage(item) || item.remixedFrom || madeWith}
+    <div class="flex flex-col gap-1">
       {#if showUsage(item)}
         <p class="m-0 flex items-center gap-1.5 text-caption-1 text-muted-foreground tabular-nums">
           <GitFork class="size-3" aria-hidden="true" />{usageLabel(item)}
@@ -117,12 +146,20 @@
           Remixed from <a class="text-foreground hover:underline" href={safeUrl(itemHref(item.kind, item.remixedFrom.slug))}>{item.remixedFrom.title}</a>
         </p>
       {/if}
+      {#if madeWith}<p class="m-0 text-footnote text-muted-foreground" data-testid="discover-detail-made-with">{madeWith}</p>{/if}
     </div>
+    {/if}
 
     {#if item.tags?.length}
       <ul class="m-0 flex list-none flex-wrap gap-1.5 p-0" aria-label="Tags">
         {#each item.tags as tag (tag)}
-          <li><Chip size="sm" label={tag} /></li>
+          <li>
+            {#if tagHref}
+              <a class="rounded-md focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none underline-offset-2 hover:underline" href={safeUrl(tagHref(tag))}><Chip size="sm" label={tag} /></a>
+            {:else}
+              <Chip size="sm" label={tag} />
+            {/if}
+          </li>
         {/each}
       </ul>
     {/if}

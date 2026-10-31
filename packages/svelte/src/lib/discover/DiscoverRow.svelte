@@ -1,10 +1,11 @@
 <!-- discover/DiscoverRow.svelte — one Discover item in a list: a small copy of
-     the same picture, title and one line, the usage count, then the actions.
+     the same picture, title, one line and the creator line (only with a
+     creator), the usage count and published date, then the actions.
      Built for scanning many items at once. With `href`, the art and the title are
      links; the art link is decorative. `target` and `rel` pass through to
      both, for consumers whose item pages are off-site; with `onopen` too, a
-     plain click opens the item in place. The usage column stays (empty) at
-     zero so rows align. Renders fully on the server. Type scale as in the
+     plain click opens the item in place. The meta column (usage, left out at
+     zero, over the published date) stays, empty if need be, so rows align. Renders fully on the server. Type scale as in the
      app's own list rows: text-body title, text-footnote line, text-caption-1
      usage. -->
 <script lang="ts">
@@ -16,7 +17,8 @@
   import ItemArt from './ItemArt.svelte';
   import { initialFor, tintFor } from './art.js';
   import { isPlainClick } from './href.js';
-  import { showUsage, usageLabel } from './item.js';
+  import { publishedDate, showUsage, usageLabel } from './item.js';
+  import CreatorLine from './CreatorLine.svelte';
   import type { DiscoverItem } from './types.js';
 
   let {
@@ -49,6 +51,8 @@
     class?: string;
   } = $props();
 
+  const published = $derived(publishedDate(item));
+
   function openInPlace(e: MouseEvent) {
     if (!onopen || !isPlainClick(e)) return;
     e.preventDefault();
@@ -77,11 +81,13 @@
       {#if item.featured}<Chip size="sm" variant="warning" label="Staff pick" />{/if}
     </span>
     <span class="truncate text-footnote text-muted-foreground">{item.desc}</span>
+    <CreatorLine creator={item.creator} class="mt-0.5" />
   </div>
-  <div class="hidden w-40 shrink-0 text-caption-1 text-muted-foreground md:flex">
+  <div class="hidden w-40 shrink-0 flex-col gap-0.5 text-caption-1 text-muted-foreground md:flex" data-testid="discover-meta">
     {#if showUsage(item)}
       <span class="inline-flex items-center gap-1 tabular-nums"><GitFork class="size-3" aria-hidden="true" />{usageLabel(item)}</span>
     {/if}
+    {#if published}<span class="tabular-nums">{published}</span>{/if}
   </div>
   <ItemActions {item} pageHref={href} {onremix} {onreport} {onopen} {oncopylink} {busy} />
 </div>

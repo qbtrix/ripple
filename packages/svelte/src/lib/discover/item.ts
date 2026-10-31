@@ -68,3 +68,37 @@ export function rendererFor(item: DiscoverItem): DiscoverRenderer {
   if (item.kind === 'site' || item.kind === 'game' || item.kind === 'tool') return httpUrl(item.liveUrl) ? 'frame' : 'art';
   return 'art';
 }
+
+const dateFormat = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+
+function toTime(iso: string | null | undefined): number | null {
+  if (!iso) return null;
+  const t = Date.parse(iso);
+  return Number.isFinite(t) ? t : null;
+}
+
+/** "Oct 22, 2026" for an ISO timestamp, the same on every machine; null when absent or unparseable. */
+export function formatDiscoverDate(iso: string | null | undefined): string | null {
+  const t = toTime(iso);
+  return t === null ? null : dateFormat.format(t);
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** When the item was first published: `createdAt`, else the last publish. */
+export const publishedDate = (item: DiscoverItem): string | null => formatDiscoverDate(item.createdAt ?? item.updatedAt);
+
+/** The update date, only when it is more than a day after the first publish. */
+export function updatedDate(item: DiscoverItem): string | null {
+  const created = toTime(item.createdAt);
+  const updated = toTime(item.updatedAt);
+  if (created === null || updated === null || updated - created <= DAY_MS) return null;
+  return formatDiscoverDate(item.updatedAt);
+}
+
+/** Up to two initials for an avatar fallback: "Asha Rao" -> "AR", "asha" -> "A". */
+export function creatorInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  const letters = parts.length > 1 ? [parts[0], parts[parts.length - 1]] : parts;
+  return letters.map((p) => Array.from(p)[0]?.toUpperCase() ?? '').join('');
+}

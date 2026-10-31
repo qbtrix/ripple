@@ -19,15 +19,27 @@
      (clipboard, a target=_blank link, an anchor download); the "Make a full menu or
      site" action renders only with `onmake` or `makeHref` (painted text-primary, the
      host's own accent, so it reads on a host whose ripple tokens are the light set);
-     `brand` names the product. -->
+     `brand` names the product.
+
+     Collapsed on narrow: the card is a <details> whose summary is a one-line
+     teaser ("Make a WhatsApp QR card for your shop" and a chevron). It sizes
+     off its own box (container `qr-card`): under 30rem (a phone) the details
+     start closed and the teaser opens them; from 30rem the teaser hides and
+     the content shows with the details still closed, through
+     ::details-content, so the server markup is the same at every width and
+     hydration never jumps. Works with JS off. A browser without
+     ::details-content keeps the teaser at every width; on mount, a wide one
+     opens the details instead. -->
 <script lang="ts">
   import { onMount } from 'svelte';
   import { safeUrl } from '@ripple-ui/core';
   import Check from '@lucide/svelte/icons/check';
+  import ChevronDown from '@lucide/svelte/icons/chevron-down';
   import Copy from '@lucide/svelte/icons/copy';
   import Download from '@lucide/svelte/icons/download';
   import ExternalLink from '@lucide/svelte/icons/external-link';
   import Printer from '@lucide/svelte/icons/printer';
+  import QrCode from '@lucide/svelte/icons/qr-code';
   import { cn } from '$lib/utils.js';
   import { Badge } from '../components/ui/badge/index.js';
   import { Button } from '../components/ui/button/index.js';
@@ -87,10 +99,18 @@
   let touched = $state(false);
   let copied = $state(false);
   let note = $state<string | null>(null);
+  let details = $state<HTMLDetailsElement>();
+
+  /** Width (px) of the card's own box from which it shows in full: 30rem. */
+  const FULL_FROM = 480;
 
   onMount(() => {
     iso = defaultDialIso(navigator.languages);
     phone = '';
+    // Without ::details-content the CSS cannot show a closed card's body, so a
+    // wide card opens itself. Browsers that have it never change state here.
+    const box = details?.parentElement;
+    if (details && box && !CSS.supports?.('selector(::details-content)') && box.clientWidth >= FULL_FROM) details.open = true;
   });
 
   const dial = $derived(dialCodeFor(iso));
@@ -136,7 +156,20 @@
   }
 </script>
 
-<div class={cn('relative w-full max-w-[440px] min-w-0 justify-self-center pt-3', className)} data-testid="discover-qr-card">
+<div class={cn('@container/qr-card w-full min-w-0 justify-self-center', className)} data-testid="discover-qr-card">
+<details class="qr-details group/qr mx-auto w-full max-w-[440px]" bind:this={details} data-testid="discover-qr-details">
+  <summary
+    class="qr-teaser flex cursor-pointer list-none items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-card-foreground shadow-sm select-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none group-open/qr:mb-3 [&::-webkit-details-marker]:hidden"
+    data-testid="discover-qr-teaser"
+  >
+    <span class="grid size-8 shrink-0 place-items-center rounded-lg bg-muted text-foreground" aria-hidden="true"><QrCode class="size-4" /></span>
+    <span class="min-w-0 flex-1 text-callout font-medium text-foreground">Make a WhatsApp QR card for your shop</span>
+    <ChevronDown
+      class="size-4 shrink-0 text-muted-foreground transition-transform duration-150 group-open/qr:rotate-180 motion-reduce:transition-none"
+      aria-hidden="true"
+    />
+  </summary>
+<div class="relative w-full pt-3">
   <Badge class="absolute top-0 left-6 z-10 uppercase">Try one · no sign-up</Badge>
   <div class="flex flex-col gap-3 rounded-2xl border border-border bg-card p-5 text-card-foreground shadow-sm">
     <div>
@@ -250,3 +283,20 @@
     </div>
   </div>
 </div>
+</details>
+</div>
+
+<style>
+  /* From 30rem of the card's own box: no teaser, the body shows while the
+     details stay closed (so the server markup never changes with width). */
+  @container qr-card (min-width: 30rem) {
+    @supports selector(::details-content) {
+      .qr-details > summary {
+        display: none;
+      }
+      .qr-details::details-content {
+        content-visibility: visible;
+      }
+    }
+  }
+</style>

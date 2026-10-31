@@ -3,8 +3,9 @@
 // detail view on the server, with no fetch and no store. Consumers map their
 // wire format onto this; the components derive everything else (labels, the
 // primary action, the studio flag, the renderer) from these fields. The
-// creator, tags, update time and remix source are optional: older listings
-// and older consumers leave them out.
+// creator (with an optional avatar), tags, publish and update times and the
+// remix source are optional: older listings and older consumers leave them
+// out, and a card simply draws less.
 
 export type StudioKind = 'image' | 'video' | 'music';
 export type DiscoverKind = 'site' | 'tool' | 'game' | StudioKind;
@@ -30,9 +31,11 @@ export interface DiscoverItem {
   remixCount: number;
   featured: boolean;
   /** Who made it, when they opted in at publish. */
-  creator?: { name: string; handle?: string | null } | null;
+  creator?: { name: string; handle?: string | null; avatarUrl?: string | null } | null;
   /** Free-form topic tags, drawn as chips on the detail view. */
   tags?: string[];
+  /** ISO timestamp of the first publish. */
+  createdAt?: string | null;
   /** ISO timestamp of the last publish. */
   updatedAt?: string | null;
   /** The listing this one was remixed from, by slug. */

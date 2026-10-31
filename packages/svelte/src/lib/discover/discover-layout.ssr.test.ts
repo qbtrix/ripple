@@ -3,7 +3,9 @@
 // its markup with no hydration, link mode renders anchors and no buttons (so
 // it works with JS off), callback mode renders the app's buttons and radios,
 // and a section lays its children out by the `view` prop. Runs in the `ssr`
-// vitest project. Also pins the cards' type scale to the app's.
+// vitest project. Also pins the cards' type scale to the app's, and the
+// narrow-container behaviour (compact header, one-row chips, scrolling tabs,
+// the two-column grid, the compact tile, the creator line) as server markup.
 import { createRawSnippet } from 'svelte';
 import { render as ssr } from 'svelte/server';
 import { describe, expect, it } from 'vitest';
@@ -69,8 +71,30 @@ describe('DiscoverFilters', () => {
     const { body } = render(DiscoverFilters, { props: { kinds: KINDS, kind: 'all', onkind: () => {}, view: 'grid', onview: () => {} } });
     expect(body).toContain('role="radiogroup"');
     expect(body).toMatch(/<button type="button" role="radio"[^>]*aria-checked="true"/);
-    expect(body).toMatch(/<\/svg>(<!--[^>]*-->)* Shelves<\/button>/);
+    expect(body).toMatch(/<\/svg>(<!--[^>]*-->)*\s*<span[^>]*>Shelves<\/span>\s*<\/button>/);
     expect(body).not.toContain('<a ');
+  });
+
+  it('marks the selected tab with its own surface (no sliding thumb), in links and radios alike', () => {
+    const links = render(DiscoverFilters, { props: { kinds: linked('/d'), kind: 'site' } }).body;
+    expect(links).toMatch(/<a [^>]*href="\/d\?kind=site"[^>]*aria-current="true"/);
+    expect(links).toMatch(/<a [^>]*href="\/d\?kind=site"[^>]*class="[^"]*bg-ripple-surface[^"]*"/);
+    expect(links).not.toMatch(/<a [^>]*href="\/d\?kind=tool"[^>]*class="[^"]*bg-ripple-surface[^"]*"/);
+    expect(links).not.toContain('translateX');
+    const radios = render(DiscoverFilters, { props: { kinds: KINDS, kind: 'tool', onkind: () => {} } }).body;
+    expect(radios).toMatch(/<button type="button" role="radio" aria-checked="true" class="[^"]*bg-ripple-surface/);
+  });
+
+  it('scrolls the kind tabs in their own faded track and keeps the view toggle from shrinking, icon-only when narrow', () => {
+    const { body } = render(DiscoverFilters, { props: { kinds: linked('/d'), kind: 'all', view: 'grid', viewHref: (v: string) => `/d?view=${v}` } });
+    expect(body).toContain('@container/discover-filters');
+    expect(body).toContain('data-testid="discover-kinds"');
+    expect(body).toMatch(/class="[^"]*min-w-0 flex-1 [^"]*overflow-x-auto[^"]*mask-image[^"]*"/);
+    expect(body).toMatch(/<div class="shrink-0" role="group" aria-label="View">/);
+    // View labels stay for screen readers and show from 36rem; kind labels are never hidden.
+    expect(body).toMatch(/<span class="sr-only @xl\/discover-filters:not-sr-only">Grid<\/span>/);
+    expect(body).not.toMatch(/<span class="sr-only[^"]*">All<\/span>/);
+    expect(body).toContain('title="Shelves"');
   });
 
   it('hides the view toggle with neither onview nor viewHref, and takes the host surface class', () => {
@@ -92,6 +116,16 @@ describe('DiscoverChips', () => {
     expect(body).toMatch(/<a [^>]*href="\/discover"[^>]*aria-current="true"/);
     expect(body).toContain('href="/discover?audience=fun"');
     expect(body).toContain('aria-label="Who is it for"');
+  });
+
+  it('keeps every chip on one sideways-scrolling row with a trailing fade', () => {
+    const { body } = render(DiscoverChips, { props: { options: [{ value: 'shop', label: 'For my shop' }], onchange: () => {} } });
+    expect(body).toContain('data-testid="discover-chips"');
+    expect(body).toContain('flex-nowrap');
+    expect(body).toContain('overflow-x-auto');
+    expect(body).toContain('snap-x');
+    expect(body).toContain('mask-image');
+    expect(body).not.toMatch(/\bflex-wrap\b/);
   });
 
   it('without hrefs renders pressed-state buttons', () => {
@@ -126,7 +160,8 @@ describe('DiscoverSection', () => {
     expect(body).toContain('data-testid="discover-section-picks"');
     expect(body).toContain('aria-labelledby="discover-h-picks"');
     expect(body).toMatch(/<h2 id="discover-h-picks"[^>]*>Staff picks<\/h2>/);
-    expect(body).toContain('grid-cols-[repeat(auto-fill,minmax(min(240px,100%),1fr))]');
+    // Never under two columns: each track's floor is half the grid less the gap.
+    expect(body).toContain('grid-cols-[repeat(auto-fill,minmax(min(240px,calc((100%-1.25rem)/2)),1fr))]');
     expect(body).toContain('data-testid="child"');
     expect(body).not.toContain('role="list"');
   });
@@ -154,6 +189,14 @@ describe('DiscoverSection', () => {
     const none = render(DiscoverSection, { props: { id: 's', title: 'S', more: 'All sites', children: tiles } }).body;
     expect(none).not.toContain('All sites');
   });
+
+  it('keeps "see all" on the title row, right-aligned, in the host accent, with the blurb below', () => {
+    const { body } = render(DiscoverSection, { props: { id: 's', title: 'S', blurb: 'Blurb.', more: 'All sites', moreHref: '/t', children: tiles } });
+    expect(body).toMatch(/<h2 [^>]*>S<\/h2>\s*<a [^>]*class="[^"]*ml-auto[^"]*"[^>]*href="\/t"/);
+    expect(body).toMatch(/<a [^>]*class="[^"]*\btext-primary\b[^"]*"[^>]*href="\/t"/);
+    expect(body).not.toContain('text-ripple-accent-text');
+    expect(body.indexOf('Blurb.')).toBeGreaterThan(body.indexOf('All sites'));
+  });
 });
 
 describe('DiscoverGrid, DiscoverSkeleton, DiscoverEmpty', () => {
@@ -169,6 +212,8 @@ describe('DiscoverGrid, DiscoverSkeleton, DiscoverEmpty', () => {
     expect(grid).toContain('aria-label="Loading Discover"');
     expect(grid).toContain('data-testid="discover-loading"');
     expect(grid.match(/aspect-video w-full rounded-2xl/g)).toHaveLength(8);
+    expect(grid.match(/@container\/tile/g)).toHaveLength(8);
+    expect(grid).toContain('@max-[15rem]/tile:block');
     const list = render(DiscoverSkeleton, { props: { view: 'list', count: 3 } }).body;
     expect(list.match(/aspect-video w-24/g)).toHaveLength(3);
     expect(list).toContain('divide-y');
@@ -191,8 +236,14 @@ describe('DiscoverHeader and DiscoverPublish', () => {
     const { body } = render(DiscoverHeader, {
       props: { title: 'Free things you can', accent: 'use right now.', lead: 'Tools.', as: 'h1', children: snip('<div>search</div>'), aside: snip('<aside>qr</aside>') },
     });
-    expect(body).toMatch(/<h1 class="text-title-1[^"]*">\s*Free things you can <span class="text-primary">use right now\.<\/span>/);
-    expect(body).toContain('text-body text-muted-foreground">Tools.');
+    expect(body).toMatch(/<h1 class="text-title-2 [^"]*@xl\/discover-header:text-title-1[^"]*">\s*Free things you can <span class="text-primary">use right now\.<\/span>/);
+    expect(body).toMatch(/<p class="[^"]*\bhidden @xl\/discover-header:block">Tools\.<\/p>/);
+    expect(body).toContain('@container/discover-header');
+    expect(body).toContain('@4xl/discover-header:grid-cols-[1.1fr_0.9fr]');
+    const full = render(DiscoverHeader, { props: { title: 'T', lead: 'Pitch.', narrowLead: 'full', class: 'lg:items-start' } }).body;
+    expect(full).toMatch(/<p class="max-w-prose text-body text-muted-foreground">Pitch\.<\/p>/);
+    // `class` lands on the grid, where alignment classes take effect.
+    expect(full).toMatch(/<div class="[^"]*grid [^"]*lg:items-start[^"]*">/);
     expect(body).toContain('<div>search</div>');
     expect(body).toContain('<aside>qr</aside>');
   });
@@ -236,12 +287,61 @@ describe('built-in copy', () => {
 describe('card type scale', () => {
   it('the tile and row use the app type utilities, not text-sm / text-xs', () => {
     const tile = render(DiscoverTile, { props: { item: { ...item, remixCount: 3 }, href: '/discover/t1' } }).body;
-    expect(tile).toMatch(/<h3 class="m-0 truncate text-headline text-foreground">/);
+    expect(tile).toMatch(/<h3 class="m-0 truncate text-headline text-foreground[ "]/);
     expect(tile).toContain('text-footnote');
     expect(tile).toContain('text-caption-1');
     expect(tile).toContain('rounded-[10px]');
     const row = render(DiscoverRow, { props: { item } }).body;
     expect(row).toContain('text-body font-semibold');
     for (const html of [tile, row]) expect(html).not.toMatch(/\btext-(sm|xs)\b/);
+  });
+});
+
+describe('compact tile and the creator line', () => {
+  const made: DiscoverItem = {
+    ...item,
+    id: 'g1',
+    kind: 'game',
+    liveUrl: 'https://snake.example.com',
+    remixCount: 4,
+    creator: { name: 'Asha Rao', avatarUrl: 'https://cdn.example.com/asha.png' },
+    createdAt: '2026-10-22T23:30:00Z',
+  };
+
+  it('the tile queries its own width: clamped title, hidden line and meta, actions under the text', () => {
+    const tile = render(DiscoverTile, { props: { item: made, onremix: () => {}, onreport: () => {} } }).body;
+    expect(tile).toContain('@container/tile');
+    expect(tile).toContain('@max-[15rem]/tile:line-clamp-2');
+    expect(tile).toMatch(/<p class="[^"]*@max-\[15rem\]\/tile:hidden">Bill a client/);
+    expect(tile).toMatch(/<p class="[^"]*@max-\[15rem\]\/tile:hidden" data-testid="discover-meta"/);
+    expect(tile).toContain('@max-[15rem]/tile:flex-col');
+    // The Remix icon hides on a compact tile; the ⋯ menu (which holds Remix) stays.
+    expect(tile).toMatch(/<button[^>]*class="[^"]*@max-\[15rem\]\/tile:hidden[^"]*"[^>]*aria-label="Remix Invoice maker"/);
+    expect(tile).toContain('aria-label="More for Invoice maker"');
+  });
+
+  it('draws "by <name>" with an initials avatar, and the published date in UTC', () => {
+    const tile = render(DiscoverTile, { props: { item: made } }).body;
+    expect(tile).toContain('data-testid="discover-creator"');
+    expect(tile).toContain('by Asha Rao');
+    expect(tile).toContain('>AR<');
+    expect(tile).toContain('4 remixes');
+    expect(tile).toContain('Oct 22, 2026');
+    const row = render(DiscoverRow, { props: { item: made } }).body;
+    expect(row).toContain('by Asha Rao');
+    expect(row).toContain('Oct 22, 2026');
+  });
+
+  it('leaves the creator line and the date out when the listing has none', () => {
+    for (const C of [DiscoverTile, DiscoverRow]) {
+      const body = render(C as typeof DiscoverTile, { props: { item } }).body;
+      expect(body).not.toContain('discover-creator');
+      expect(body).not.toMatch(/\b20\d\d\b/);
+    }
+  });
+
+  it('never points the avatar at a non-http url', () => {
+    const body = render(DiscoverTile, { props: { item: { ...made, creator: { name: 'X', avatarUrl: 'javascript:alert(1)' } } } }).body;
+    expect(body).not.toContain('javascript:');
   });
 });

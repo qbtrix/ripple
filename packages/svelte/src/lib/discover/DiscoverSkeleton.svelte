@@ -1,7 +1,8 @@
 <!-- discover/DiscoverSkeleton.svelte — the Discover loading state in the exact
      geometry of what replaces it: skeleton rows in the bordered list for the list
      view, tile skeletons (16:9 picture, title bar, line bar) in the grid
-     otherwise. One role="status" wrapper carries the label; the shapes are
+     otherwise; under 15rem a tile skeleton takes the compact tile's shape
+     (title bar, then a small action pill instead of the line). One role="status" wrapper carries the label; the shapes are
      decorative. Classes are paw-enterprise's Skeleton and TemplateTileSkeleton. -->
 <script lang="ts">
   import { cn } from '$lib/utils.js';
@@ -39,10 +40,11 @@
   {:else}
     <div class={GRID_CLASS}>
       {#each slots as i (i)}
-        <div class="flex flex-col gap-3" aria-hidden="true">
+        <div class="@container/tile flex flex-col gap-3 @max-[15rem]/tile:gap-2" aria-hidden="true">
           <div data-slot="skeleton" class={cn(bone, 'aspect-video w-full rounded-2xl')}></div>
           <div data-slot="skeleton" class={cn(bone, 'h-4 w-2/3 rounded-md')}></div>
-          <div data-slot="skeleton" class={cn(bone, 'h-3 w-full rounded-md')}></div>
+          <div data-slot="skeleton" class={cn(bone, 'h-3 w-full rounded-md @max-[15rem]/tile:hidden')}></div>
+          <div data-slot="skeleton" class={cn(bone, 'hidden h-7 w-16 rounded-full @max-[15rem]/tile:block')}></div>
         </div>
       {/each}
     </div>

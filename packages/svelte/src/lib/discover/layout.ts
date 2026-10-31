@@ -14,7 +14,7 @@ export interface DiscoverOption {
   href?: string;
 }
 
-export const GRID_CLASS = 'grid grid-cols-[repeat(auto-fill,minmax(min(240px,100%),1fr))] gap-x-5 gap-y-8';
+export const GRID_CLASS = 'grid grid-cols-[repeat(auto-fill,minmax(min(240px,calc((100%-1.25rem)/2)),1fr))] gap-x-5 gap-y-8';
 export const LIST_CLASS = 'flex flex-col divide-y divide-border rounded-xl border border-border';
 /** Bleeds into the page's px-6 gutter (-mx-6 px-6), so the parent must pad px-6. */
 export const SHELF_CLASS =

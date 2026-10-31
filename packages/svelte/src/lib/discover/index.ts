@@ -36,6 +36,10 @@ export {
   showUsage,
   remixLabel,
   usedLabel,
+  formatDiscoverDate,
+  publishedDate,
+  updatedDate,
+  creatorInitials,
   type DiscoverPrimary,
   type DiscoverRenderer,
 } from './item.js';
