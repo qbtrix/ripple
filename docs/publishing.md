@@ -6,8 +6,8 @@
 
 Four packages, always in this order, each after what it depends on:
 
-1. `@ripple-ui/core` `0.6.0`
-2. `@ripple-ui/svelte` `0.8.2` (depends on core)
+1. `@ripple-ui/core` `0.6.1`
+2. `@ripple-ui/svelte` `0.9.0` (depends on core)
 3. `@ripple-ui/embed` `0.1.0` (bundles svelte and core, so it has no runtime
    dependencies; it still goes after them so the release is consistent)
 4. `@ripple-ui/react` `0.1.0` (depends on embed)
@@ -72,8 +72,8 @@ npm whoami
 bun install --frozen-lockfile
 bun run build
 bun run pack:release
-#   ok  @ripple-ui/core@0.6.0    .../release/ripple-ui-core-0.6.0.tgz    228 files, ~263 kB packed
-#   ok  @ripple-ui/svelte@0.8.2  .../release/ripple-ui-svelte-0.8.2.tgz  1814 files, ~1.6 MB packed
+#   ok  @ripple-ui/core@0.6.1    .../release/ripple-ui-core-0.6.1.tgz    228 files, ~263 kB packed
+#   ok  @ripple-ui/svelte@0.9.0  .../release/ripple-ui-svelte-0.9.0.tgz  1814 files, ~1.6 MB packed
 #   ok  @ripple-ui/embed@0.1.0   .../release/ripple-ui-embed-0.1.0.tgz   2025 files, ~3.2 MB packed
 #   ok  @ripple-ui/react@0.1.0   .../release/ripple-ui-react-0.1.0.tgz   5 files, ~3 kB packed
 git status --short   # package.json files unchanged; the build always bumps the
@@ -81,19 +81,19 @@ git status --short   # package.json files unchanged; the build always bumps the
                      # git checkout that file to clear it
 
 # 3. Optional rehearsal, no upload.
-npm publish --dry-run --access public ./release/ripple-ui-core-0.6.0.tgz
+npm publish --dry-run --access public ./release/ripple-ui-core-0.6.1.tgz
 
 # 4. Publish in order. Keep the ./ prefix: without it npm reads
 #    release/x.tgz as a GitHub repo shorthand.
-npm publish --access public ./release/ripple-ui-core-0.6.0.tgz
-npm publish --access public ./release/ripple-ui-svelte-0.8.2.tgz
+npm publish --access public ./release/ripple-ui-core-0.6.1.tgz
+npm publish --access public ./release/ripple-ui-svelte-0.9.0.tgz
 npm publish --access public ./release/ripple-ui-embed-0.1.0.tgz
 npm publish --access public ./release/ripple-ui-react-0.1.0.tgz
 
 # 5. Verify.
-npm view @ripple-ui/core version            # 0.6.0
-npm view @ripple-ui/svelte version          # 0.8.2
-npm view @ripple-ui/svelte dependencies     # '@ripple-ui/core': '^0.6.0', no file:
+npm view @ripple-ui/core version            # 0.6.1
+npm view @ripple-ui/svelte version          # 0.9.0
+npm view @ripple-ui/svelte dependencies     # '@ripple-ui/core': '^0.6.1', no file:
 npm view @ripple-ui/embed version           # 0.1.0
 npm view @ripple-ui/embed dependencies      # nothing: the renderer is bundled
 npm view @ripple-ui/react dependencies      # '@ripple-ui/embed': '^0.1.0'
