@@ -1,7 +1,8 @@
 // discover/whatsapp-card.ts — the WhatsApp QR card (WhatsAppQrCard) as pure logic,
 // shared by the app's /discover hero and the public Discover page:
-//   - the calling codes offered (sorted by country name), the default country from
-//     the browser's languages (en-GB → GB, else India), and the country a pasted
+//   - the calling codes offered (sorted by country name), the default country (the
+//     host's country, then the time zone, then the browser languages, else India),
+//     and the country a pasted
 //     international number starts with (longest code wins; a code several countries
 //     share, like +1, keeps the country already picked);
 //   - the number: a pasted "+44 7700 900123" or "0044…" splits into country and
@@ -105,13 +106,92 @@ export const DEFAULT_DIAL_ISO = 'IN';
 export const dialCodeFor = (iso: string): DialCode =>
   DIAL_CODES.find((d) => d.iso === iso) ?? DIAL_CODES.find((d) => d.iso === DEFAULT_DIAL_ISO)!;
 
-/** The first browser language with a region we list (en-GB → GB), else India. */
-export function defaultDialIso(languages: readonly string[] | undefined): string {
+/** Common IANA zones → the country they mean. A zone outside this map (or a whole
+ *  region in ZONE_REGIONS) says nothing, and the next signal decides. */
+const ZONE_COUNTRY: Readonly<Record<string, string>> = {
+  'Asia/Kolkata': 'IN', 'Asia/Calcutta': 'IN', 'Asia/Dubai': 'AE', 'Asia/Singapore': 'SG',
+  'Asia/Karachi': 'PK', 'Asia/Dhaka': 'BD', 'Asia/Kathmandu': 'NP', 'Asia/Katmandu': 'NP',
+  'Asia/Colombo': 'LK', 'Asia/Tokyo': 'JP', 'Asia/Shanghai': 'CN', 'Asia/Hong_Kong': 'HK',
+  'Asia/Seoul': 'KR', 'Asia/Taipei': 'TW', 'Asia/Bangkok': 'TH', 'Asia/Jakarta': 'ID',
+  'Asia/Kuala_Lumpur': 'MY', 'Asia/Manila': 'PH', 'Asia/Ho_Chi_Minh': 'VN', 'Asia/Saigon': 'VN',
+  'Asia/Riyadh': 'SA', 'Asia/Qatar': 'QA', 'Asia/Kuwait': 'KW', 'Asia/Bahrain': 'BH',
+  'Asia/Muscat': 'OM', 'Asia/Jerusalem': 'IL', 'Asia/Baghdad': 'IQ', 'Asia/Amman': 'JO',
+  'Asia/Beirut': 'LB', 'Europe/London': 'GB', 'Europe/Dublin': 'IE', 'Europe/Paris': 'FR',
+  'Europe/Berlin': 'DE', 'Europe/Madrid': 'ES', 'Europe/Rome': 'IT', 'Europe/Amsterdam': 'NL',
+  'Europe/Brussels': 'BE', 'Europe/Vienna': 'AT', 'Europe/Zurich': 'CH', 'Europe/Lisbon': 'PT',
+  'Europe/Stockholm': 'SE', 'Europe/Oslo': 'NO', 'Europe/Copenhagen': 'DK', 'Europe/Helsinki': 'FI',
+  'Europe/Warsaw': 'PL', 'Europe/Prague': 'CZ', 'Europe/Budapest': 'HU', 'Europe/Athens': 'GR',
+  'Europe/Bucharest': 'RO', 'Europe/Istanbul': 'TR', 'Europe/Kiev': 'UA', 'Europe/Kyiv': 'UA',
+  'Europe/Moscow': 'RU', 'Africa/Lagos': 'NG', 'Africa/Nairobi': 'KE', 'Africa/Johannesburg': 'ZA',
+  'Africa/Cairo': 'EG', 'Africa/Accra': 'GH', 'Africa/Casablanca': 'MA', 'Africa/Algiers': 'DZ',
+  'Africa/Addis_Ababa': 'ET', 'Africa/Dar_es_Salaam': 'TZ', 'Africa/Kampala': 'UG', 'Africa/Harare': 'ZW',
+  'Pacific/Auckland': 'NZ', 'America/Toronto': 'CA', 'America/Vancouver': 'CA', 'America/Edmonton': 'CA',
+  'America/Winnipeg': 'CA', 'America/Halifax': 'CA', 'America/Regina': 'CA', 'America/St_Johns': 'CA',
+  'America/Bogota': 'CO', 'America/Lima': 'PE', 'America/Santiago': 'CL',
+  // The United States, listed: browsers report CLDR ids, and America/* spans the
+  // whole continent, so a catch-all would make Argentina or Mexico read as US.
+  'America/New_York': 'US', 'America/Chicago': 'US', 'America/Denver': 'US', 'America/Los_Angeles': 'US',
+  'America/Phoenix': 'US', 'America/Anchorage': 'US', 'America/Detroit': 'US', 'America/Boise': 'US',
+  'America/Juneau': 'US', 'America/Adak': 'US', 'Pacific/Honolulu': 'US',
+  'America/Buenos_Aires': 'AR', 'America/Cordoba': 'AR',
+  'America/Mexico_City': 'MX', 'America/Monterrey': 'MX', 'America/Cancun': 'MX', 'America/Tijuana': 'MX',
+  'America/Merida': 'MX', 'America/Chihuahua': 'MX', 'America/Hermosillo': 'MX', 'America/Mazatlan': 'MX',
+  'America/Matamoros': 'MX', 'America/Bahia_Banderas': 'MX',
+  'America/Sao_Paulo': 'BR', 'America/Recife': 'BR', 'America/Fortaleza': 'BR', 'America/Manaus': 'BR',
+  'America/Bahia': 'BR', 'America/Belem': 'BR', 'America/Maceio': 'BR', 'America/Cuiaba': 'BR',
+  'America/Campo_Grande': 'BR', 'America/Porto_Velho': 'BR', 'America/Rio_Branco': 'BR', 'America/Araguaina': 'BR',
+};
+/** Zone prefixes that mean one country when no exact zone matched. Any other
+ *  America/* zone says nothing, and the language decides. */
+const ZONE_REGIONS: readonly (readonly [string, string])[] = [
+  ['America/Argentina/', 'AR'],
+  ['America/Indiana/', 'US'],
+  ['America/Kentucky/', 'US'],
+  ['America/North_Dakota/', 'US'],
+  ['Australia/', 'AU'],
+];
+
+const listed = (iso: string | undefined): string | null =>
+  iso && DIAL_CODES.some((d) => d.iso === iso) ? iso : null;
+
+/** The country an IANA time zone means (Asia/Kolkata → IN), or null. */
+export function countryFromTimeZone(zone: string | undefined): string | null {
+  if (!zone) return null;
+  if (ZONE_COUNTRY[zone]) return listed(ZONE_COUNTRY[zone]);
+  return listed(ZONE_REGIONS.find(([prefix]) => zone.startsWith(prefix))?.[1]);
+}
+
+/** A host-supplied country, as an ISO code ("in", "IN") or a listed name ("India"). */
+function countryFromHost(country: string | undefined): string | null {
+  const t = country?.trim();
+  if (!t) return null;
+  return listed(t.toUpperCase()) ?? DIAL_CODES.find((d) => d.name.toLowerCase() === t.toLowerCase())?.iso ?? null;
+}
+
+/** The default country: the host's (workspace or user) country, then the time zone,
+ *  then the first browser language with a region we list (en-GB → GB), else India.
+ *  The zone outranks the language because an Indian user's browser often speaks
+ *  en-GB or en-US. */
+export function defaultDialIso(
+  languages: readonly string[] | undefined,
+  hints: { country?: string; timeZone?: string } = {},
+): string {
+  const fromHints = countryFromHost(hints.country) ?? countryFromTimeZone(hints.timeZone);
+  if (fromHints) return fromHints;
   for (const tag of languages ?? []) {
-    const region = tag.split(/[-_]/)[1]?.toUpperCase();
-    if (region && DIAL_CODES.some((d) => d.iso === region)) return region;
+    const region = listed(tag.split(/[-_]/)[1]?.toUpperCase());
+    if (region) return region;
   }
   return DEFAULT_DIAL_ISO;
+}
+
+/** The browser's IANA time zone, or undefined where Intl can't say. */
+export function browserTimeZone(): string | undefined {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 /** The listed country an international number's digits start with, longest code

@@ -2,8 +2,8 @@
      a working WhatsApp QR card for a shop counter. The app's /discover and the public
      Discover page both mount this one component (in DiscoverHeader's `aside`).
 
-     The shop name, a calling code (Select; default from the browser's languages, read
-     on mount, else India) and the number build a wa.me link with an optional
+     The shop name, a calling code (Select; default read on mount from the host's
+     `country`, then the browser's time zone, then its languages, else India) and the number build a wa.me link with an optional
      pre-filled message; a pasted "+44 7700 900123" picks the country itself. Until the
      number is valid the preview shows a placeholder and every export is disabled, so
      no QR ever points at a wrong number; the reason shows under the field (aria-live)
@@ -13,7 +13,7 @@
 
      Server render: India and the example "Sharma Sweets" / "98765 43210", so a page
      with JS off shows a real example card and link. On mount the number is cleared
-     and the country follows the browser. All logic is in ./whatsapp-card; exports in
+     and the country follows the host or the browser. All logic is in ./whatsapp-card; exports in
      ./whatsapp-card-export (PNG 300 dpi, SVG in mm, Print one 148 × 105 mm page).
      Host hooks: `oncopy`, `onopenlink`, `ondownload` replace the browser defaults
      (clipboard, a target=_blank link, an anchor download); the "Make a full menu or
@@ -59,6 +59,7 @@
     cardFooter,
     cardLayout,
     checkPhone,
+    browserTimeZone,
     defaultDialIso,
     dialCodeFor,
     splitInternational,
@@ -73,6 +74,7 @@
     ondownload,
     onmake,
     makeHref,
+    country,
     class: className,
   }: {
     /** The product named in "Make a full menu or site with …" and on the card's foot. */
@@ -87,13 +89,26 @@
     onmake?: (shop: string) => void;
     /** The same action as a link, for a host without a callback. */
     makeHref?: string;
+    /** The workspace or user country (ISO code or listed name). It outranks the
+     *  browser's time zone and languages for the default code, and a later value
+     *  applies until the owner picks a code themselves. */
+    country?: string;
     class?: string;
   } = $props();
 
   const uid = $props.id();
 
   let shop = $state(DEFAULT_SHOP);
-  let iso = $state(DEFAULT_DIAL_ISO);
+  /** The owner's own pick (the select, or a pasted international number). Until
+   *  there is one, the code follows the host's `country` and the browser, so a
+   *  `country` the host learns after mount still applies (a $derived, no effect). */
+  let picked = $state<string | null>(null);
+  /** The browser's languages and zone, read on mount (the server renders India). */
+  let browser = $state<{ languages: readonly string[]; timeZone: string | undefined } | null>(null);
+  const iso = $derived(
+    picked ??
+      (browser ? defaultDialIso(browser.languages, { country, timeZone: browser.timeZone }) : DEFAULT_DIAL_ISO),
+  );
   let phone = $state(EXAMPLE_PHONE);
   let message = $state(DEFAULT_MESSAGE);
   let touched = $state(false);
@@ -105,7 +120,7 @@
   const FULL_FROM = 480;
 
   onMount(() => {
-    iso = defaultDialIso(navigator.languages);
+    browser = { languages: navigator.languages, timeZone: browserTimeZone() };
     phone = '';
     // Without ::details-content the CSS cannot show a closed card's body, so a
     // wide card opens itself. Browsers that have it never change state here.
@@ -123,7 +138,7 @@
   function onPhoneInput(e: Event & { currentTarget: HTMLInputElement }) {
     const split = splitInternational(e.currentTarget.value, iso);
     if (!split) return;
-    iso = split.iso;
+    picked = split.iso;
     phone = split.national;
   }
 
@@ -185,7 +200,7 @@
       <div class="flex min-w-0 flex-col gap-1.5">
         <Label for="{uid}-phone">WhatsApp number</Label>
         <div class="flex gap-1.5">
-          <Select.Root type="single" value={iso} onValueChange={(v) => (iso = v)}>
+          <Select.Root type="single" value={iso} onValueChange={(v) => (picked = v)}>
             <Select.Trigger class="w-[5.5rem] shrink-0 tabular-nums" aria-label={`Country code, ${dial.name}`} data-testid="discover-qr-country">
               {dial.iso} +{dial.code}
             </Select.Trigger>
