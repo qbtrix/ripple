@@ -1,9 +1,11 @@
 // discover/discover-detail.ssr.test.ts — the item view through `svelte/server`,
 // the path the website's item page takes: ItemDetail renders each renderer
-// (media, frame, art) in page and overlay layouts, the compact overlay swaps
-// the frame for an Open link, the actions follow the primary rules without
-// doubling up, and LiveFrame serves the poster and the full-screen link with
-// no iframe and no load button (those need a click after hydration). Also
+// (media, frame, art) in page and overlay layouts; the page is two regions
+// (preview, info panel) with the live frame already in the server HTML; the
+// overlay keeps click-to-load, and the compact overlay swaps the frame for an
+// Open link (or See full page with pageHref); the actions follow the primary
+// rules without doubling up; LiveFrame serves the poster and the full-screen
+// link with no iframe and no load button unless `autoload` is set. Also
 // checks the card ⋯ menu renders its trigger on the server. Runs in the `ssr`
 // vitest project.
 import { render as ssr } from 'svelte/server';
@@ -52,23 +54,65 @@ const video: DiscoverItem = {
 const count = (body: string, re: RegExp) => (body.match(re) ?? []).length;
 
 describe('ItemDetail — renderers', () => {
-  it.each([
-    ['page', 'h1'],
-    ['overlay', 'h2'],
-  ] as const)('frame item in %s layout: poster, full-screen link, no iframe, %s heading', (layout, h) => {
-    const { body } = render(ItemDetail, { props: { item: site, layout } });
+  it('frame item in overlay layout: poster, full-screen link, no iframe, h2 heading', () => {
+    const { body } = render(ItemDetail, { props: { item: site, layout: 'overlay' } });
     expect(body).toContain('data-renderer="frame"');
     expect(body).toContain('discover-live-frame');
     expect(body).not.toContain('<iframe');
     expect(body).toContain('src="https://cdn.example.com/dentist.png"');
     expect(body).toMatch(/<a [^>]*href="https:\/\/dentist\.pawsites\.workers\.dev\/"[^>]*>.*Open full screen/s);
-    expect(body).toContain(`<${h} `);
-    expect(body).toContain('Bright Smile Dental');
+    expect(body).toContain('<h2 ');
+    expect(body).not.toContain('discover-page-card');
   });
 
-  it('page layout is wide and padded, overlay has no outer padding', () => {
-    expect(render(ItemDetail, { props: { item: site, layout: 'page' } }).body).toMatch(/<article [^>]*class="[^"]*max-w-4xl[^"]*px-6/);
+  it.each([site, game, tool])('page layout for a $kind: preview and info regions, the frame loaded on the server, h1', (item) => {
+    const { body } = render(ItemDetail, { props: { item, layout: 'page' } });
+    expect(body).toContain('data-layout="page"');
+    expect(body).toContain('data-testid="discover-page-card"');
+    const preview = body.indexOf('data-testid="discover-page-preview"');
+    const info = body.indexOf('data-testid="discover-page-info"');
+    const frame = body.indexOf('<iframe');
+    expect(preview).toBeGreaterThan(-1);
+    expect(info).toBeGreaterThan(preview);
+    // The iframe sits in the preview region, before the info panel.
+    expect(frame).toBeGreaterThan(preview);
+    expect(frame).toBeLessThan(info);
+    const tag = body.slice(frame, body.indexOf('>', frame));
+    expect(tag).toContain(`src="${new URL(item.liveUrl!).href}"`);
+    expect(tag).toContain('sandbox="allow-scripts allow-forms allow-popups allow-pointer-lock allow-same-origin"');
+    expect(tag).toContain('allow="fullscreen; gamepad; autoplay"');
+    expect(tag).toContain('referrerpolicy="no-referrer"');
+    expect(body).toContain('<h1 ');
+    // The info panel carries the title, then the actions, then the metadata.
+    const panel = body.slice(info);
+    expect(panel).toContain(item.title);
+    expect(panel).toContain('discover-detail-actions');
+  });
+
+  it('page layout keeps media and art in the preview region, with no iframe', () => {
+    for (const item of [video, { ...tool, liveUrl: null }]) {
+      const { body } = render(ItemDetail, { props: { item, layout: 'page' } });
+      expect(body).toContain('discover-page-preview');
+      expect(body).not.toContain('<iframe');
+    }
+  });
+
+  it('page layout queries its own container and ignores pageHref; overlay has no outer padding', () => {
+    const page = render(ItemDetail, { props: { item: site, layout: 'page', pageHref: '/discover/dentist' } }).body;
+    expect(page).toMatch(/<article [^>]*class="[^"]*@container\/item-page/);
+    expect(page).not.toContain('See full page');
     expect(render(ItemDetail, { props: { item: site, layout: 'overlay' } }).body).not.toMatch(/<article [^>]*class="[^"]*px-6/);
+  });
+
+  it('overlay with pageHref links See full page to the item page; compact leads with it instead of Open', () => {
+    const wide = render(ItemDetail, { props: { item: site, layout: 'overlay', href: '/discover/dentist', pageHref: '/discover/dentist' } }).body;
+    expect(wide).toMatch(/<a [^>]*href="\/discover\/dentist"[^>]*data-testid="discover-detail-page-link"[^>]*>.*See full page<\/a>/s);
+    const sheet = render(ItemDetail, { props: { item: game, layout: 'overlay', compact: true, href: '/discover/snake', pageHref: '/discover/snake' } }).body;
+    expect(sheet).toContain('See full page');
+    expect(sheet).not.toMatch(/>Open<\/a>/);
+    expect(count(sheet, /See full page/g)).toBe(1);
+    const unsafe = render(ItemDetail, { props: { item: game, layout: 'overlay', pageHref: 'javascript:alert(1)' } }).body;
+    expect(unsafe).not.toContain('javascript:');
   });
 
   it('headingLevel overrides the layout default', () => {
@@ -115,6 +159,35 @@ describe('ItemDetail — meta', () => {
     expect(body).toContain('aria-label="Tags"');
     expect(body).toContain('health');
     expect(body).toContain('booking');
+  });
+
+  it('draws the creator row: avatar, name, published and (a day later) updated dates', () => {
+    const item = { ...site, creator: { name: 'Asha Rao', avatarUrl: 'https://cdn.example.com/a.png' }, createdAt: '2026-10-01T09:00:00Z', updatedAt: '2026-10-22T09:00:00Z' };
+    const { body } = render(ItemDetail, { props: { item, layout: 'page' } });
+    expect(body).toContain('data-testid="discover-detail-creator"');
+    expect(body).toContain('data-testid="discover-creator-avatar"');
+    expect(body).toContain('>AR<');
+    expect(body).toContain('By Asha Rao');
+    expect(body).toMatch(/data-testid="discover-detail-dates"[^>]*>Published Oct 1, 2026 · Updated Oct 22, 2026</);
+    const same = render(ItemDetail, { props: { item: { ...item, updatedAt: '2026-10-01T18:00:00Z' }, layout: 'page' } }).body;
+    expect(same).toContain('Published Oct 1, 2026');
+    expect(same).not.toContain('Updated');
+  });
+
+  it('draws the madeWith line only when the consumer passes one', () => {
+    expect(render(ItemDetail, { props: { item: site, layout: 'page' } }).body).not.toContain('discover-detail-made-with');
+    const { body } = render(ItemDetail, { props: { item: site, layout: 'page', madeWith: 'Made with Paw Sites' } });
+    expect(body).toMatch(/data-testid="discover-detail-made-with">Made with Paw Sites</);
+  });
+
+  it('links each tag with tagHref, and leaves them plain without it', () => {
+    const plain = render(ItemDetail, { props: { item: site, layout: 'page' } }).body;
+    expect(plain).not.toMatch(/<a [^>]*href="\/discover\?tag=/);
+    const { body } = render(ItemDetail, { props: { item: site, layout: 'page', tagHref: (t: string) => `/discover?tag=${t}` } });
+    expect(body).toMatch(/<a [^>]*href="\/discover\?tag=health"[^>]*>.*health/s);
+    expect(body).toMatch(/<a [^>]*href="\/discover\?tag=booking"/);
+    const bad = render(ItemDetail, { props: { item: site, layout: 'page', tagHref: () => 'javascript:alert(1)' } }).body;
+    expect(bad).not.toContain('javascript:');
   });
 
   it('leaves them out when absent, and hides usage at zero', () => {
@@ -182,6 +255,26 @@ describe('LiveFrame on the server', () => {
     const { body } = render(LiveFrame, { props: { ...props, url: 'javascript:alert(1)' } });
     expect(body).not.toContain('<a ');
     expect(body).not.toContain('javascript:');
+  });
+
+  it('autoload puts the sandboxed iframe in the server HTML, eager, and no load button', () => {
+    const { body } = render(LiveFrame, { props: { ...props, autoload: true } });
+    expect(body).toMatch(
+      /<iframe [^>]*src="https:\/\/snake\.pawsites\.workers\.dev\/"[^>]*sandbox="allow-scripts allow-forms allow-popups allow-pointer-lock allow-same-origin"[^>]*allow="fullscreen; gamepad; autoplay"[^>]*loading="eager"[^>]*referrerpolicy="no-referrer"/,
+    );
+    expect(body).not.toContain('<button');
+  });
+
+  it('autoload never frames a non-http url', () => {
+    const { body } = render(LiveFrame, { props: { ...props, url: 'javascript:alert(1)', autoload: true } });
+    expect(body).not.toContain('<iframe');
+    expect(body).not.toContain('javascript:');
+  });
+
+  it('tall sizes the frame for the page, not 16:9', () => {
+    const { body } = render(LiveFrame, { props: { ...props, autoload: true, tall: true } });
+    expect(body).toContain('h-[min(72vh,760px)]');
+    expect(body).not.toContain('aspect-video');
   });
 });
 

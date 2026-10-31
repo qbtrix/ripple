@@ -3,7 +3,10 @@
 // navigator, and the server frame is a meaningful example (India, "Sharma Sweets",
 // "98765 43210", a real QR path and wa.me link, exports enabled), so a page with JS
 // off still shows a working card. The make action renders only when the host gives
-// one, and `brand` names the product. Runs in the `ssr` vitest project.
+// one, and `brand` names the product. The card sits in a closed <details> whose
+// summary is the phone teaser; the markup carries no `open`, at any width, so
+// hydration never changes it (CSS shows the body from 30rem). Runs in the `ssr`
+// vitest project.
 import { render } from 'svelte/server';
 import { describe, expect, it } from 'vitest';
 import WhatsAppQrCard from './WhatsAppQrCard.svelte';
@@ -27,6 +30,18 @@ describe('WhatsAppQrCard — SSR', () => {
     expect(body).not.toMatch(/data-testid="discover-qr-png"[^>]*disabled/);
     expect(body).toContain('Free · runs in your browser');
     expect(body).toContain('Made with Paw · pocketpaw.xyz');
+  });
+
+  it('wraps the card in a closed details with the one-line teaser as its summary', () => {
+    const { body } = render(WhatsAppQrCard);
+    expect(body).toContain('@container/qr-card');
+    expect(body).toMatch(/<details class="qr-details[^"]*"[^>]*data-testid="discover-qr-details"/);
+    expect(body).not.toMatch(/<details[^>]*\bopen\b/);
+    expect(body).toMatch(/<summary[^>]*data-testid="discover-qr-teaser"[^>]*>[\s\S]*Make a WhatsApp QR card for your shop[\s\S]*<\/summary>/);
+    // Everything else lives after the summary, inside the details.
+    const summaryEnd = body.indexOf('</summary>');
+    expect(body.indexOf('data-testid="discover-qr-preview"')).toBeGreaterThan(summaryEnd);
+    expect(body.indexOf('</details>')).toBeGreaterThan(body.indexOf('data-testid="discover-qr-png"'));
   });
 
   it('shows the make action only when the host gives one, as a link with makeHref', () => {

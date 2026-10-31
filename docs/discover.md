@@ -1,4 +1,4 @@
-<!-- docs/discover.md: the ./discover export subpath, a server-renderable Discover library (cards, the item view, the page layout, the hero's WhatsApp QR card, the shared catalogue copy) for a public catalogue. Lists the surface, the purity rule, link mode, the item view, the live frame's sandbox, the QR card and the type scale. -->
+<!-- docs/discover.md: the ./discover export subpath, a server-renderable Discover library (cards, the item view, the page layout, the hero's WhatsApp QR card, the shared catalogue copy) for a public catalogue. Lists the surface, the purity rule, link mode, the item view, creator and dates, narrow-container behaviour, the live frame's sandbox, the QR card and the type scale. -->
 
 # Discover
 
@@ -31,7 +31,7 @@ Props in, markup out. A component derives everything it shows from the
 produce (`WhatsAppQrCard` is a form, the one stateful component, and reads
 the browser languages on mount; the other exceptions only change things after
 hydration: `ItemArt`'s load-failure flag, `LiveFrame`'s load button and
-width toggle, and `ItemDetail`'s "Link copied" note; the server frame is the same either way).
+width toggle, `ItemDetail`'s "Link copied" note, and `DiscoverFilters` sliding a selected tab into view; the server frame is the same either way).
 Only `http(s)` urls reach an `href` or a `src`: `imageUrl`, `mediaUrl` and
 `liveUrl` all pass through `httpUrl`, so a `javascript:`, `data:` or
 protocol-relative value renders the placeholder, no media, or no action.
@@ -82,12 +82,24 @@ website can redirect them.
 
 `ItemDetail` is one item in full, and the same body serves two places:
 
-- `layout="page"`: the item's own route. Wide (`max-w-4xl`, padded), `h1`.
+- `layout="page"`: the item's own route, `h1`. One bordered card (up to
+  `max-w-7xl`, container `item-page`; the consumer supplies the page padding)
+  with two regions: the preview on the left, large (a site, game or tool
+  loads straight away in a tall `LiveFrame`, `autoload` + `tall`; studio
+  media plays; else the picture), and a sticky info panel on the right
+  (title and line, the actions, then creator, usage, made-with, remixed-from
+  and tags). From 56rem of container the panel sits beside the preview;
+  narrower, it stacks underneath. The related row is the consumer's, below
+  the card.
 - `layout="overlay"`: inside the consumer's `Dialog` (desktop) or bottom
-  `Sheet` (narrow). No outer padding, `h2`. ItemDetail never draws the
-  overlay itself. Pass `compact` in the narrow sheet: a site, game or tool
-  then shows its picture and an **Open** link to `href` (the full page)
-  instead of loading the live frame there. Studio media still plays.
+  `Sheet` (narrow). No outer padding, `h2`, frames stay click-to-load.
+  ItemDetail never draws the overlay itself. Pass `pageHref` to add a
+  **See full page** link to the item's page, and `onpage(item)` to take a
+  plain click on it (close the overlay, then navigate; modified clicks and
+  JS-off follow the link). Pass `compact` in the narrow sheet: a site, game
+  or tool then shows its picture instead of loading the live frame, and
+  See full page leads the actions (without `pageHref`, an **Open** link to
+  `href` does). Studio media still plays.
 
 ```svelte
 <script>
@@ -102,7 +114,7 @@ website can redirect them.
 {/each}
 <Dialog.Root open={!!open} onOpenChange={(o) => !o && (open = null)}>
   <Dialog.Content>
-    {#if open}<ItemDetail item={open} layout="overlay" href={itemHref(open.kind, open.slug ?? open.id)} onremix={remix} />{/if}
+    {#if open}<ItemDetail item={open} layout="overlay" href={itemHref(open.kind, open.slug ?? open.id)} pageHref={itemHref(open.kind, open.slug ?? open.id)} onremix={remix} />{/if}
   </Dialog.Content>
 </Dialog.Root>
 ```
@@ -110,9 +122,12 @@ website can redirect them.
 The body is picked by `rendererFor(item)`: `'media'` (a studio item with a
 playable `mediaUrl`, via `DetailMedia`), `'frame'` (a site, game or tool with
 an http(s) `liveUrl`, via `LiveFrame`), else `'art'` (`ItemArt`). Below it:
-title, line, "By <name>" when `creator` is set, the usage line when
-`showUsage(item)` (never "No remixes yet"), "Remixed from <title>" linking to
-that item's page, and `tags` as chips.
+title and line; a creator row when `creator` is set (avatar, "By <name>",
+"Published <date>", and "· Updated <date>" when the update is more than a day
+after the first publish); the usage line when `showUsage(item)` (never "No
+remixes yet"); "Remixed from <title>" linking to that item's page; the
+`madeWith` line when the consumer passes one ("Made with Paw Sites"); and
+`tags` as chips, each a link when `tagHref(tag)` is given.
 
 Actions: the primary from `primaryFor` (Use / Play link to the live page;
 Claim / Use this recipe as the `remixHref` link or the `onremix` button), a
@@ -125,22 +140,79 @@ into the app); the app passes `onremix`.
 On a card, `onopen` with `href` makes a plain left click on the art or title
 call `onopen(item)` and `preventDefault`; ctrl/cmd/shift/alt and middle clicks
 still follow the link, and with JS off the link is all there is
-(`isPlainClick` is the rule). The card ⋯ menu holds Report and, with `href`
-and `oncopylink`, Copy link. Site cards have no Remix icon: Claim already
-copies.
+(`isPlainClick` is the rule). The card ⋯ menu holds Remix (tools and games,
+with `remixHref` or `onremix`), Report and, with `href` and `oncopylink`, Copy
+link. Site cards have no Remix icon: Claim already copies. Cards take
+`remixHref` too, as `ItemDetail` does: with it, Claim / Use this recipe, the
+Remix icon and the Remix menu item are links to it (it wins over `onremix`),
+so a static site gets its Claim button with no script.
+
+## Creator and dates
+
+`DiscoverItem` carries optional `creator: { name, handle?, avatarUrl? }`,
+`createdAt` and `updatedAt` (ISO timestamps). A tile and a row draw a creator
+line under the title (a small round avatar, the picture only when
+`avatarUrl` is http(s), the name's initials otherwise, then "by <name>");
+without a creator there is no line and no placeholder. The meta line under
+it is the usage (only when `showUsage`) and the published date
+(`createdAt`, else `updatedAt`).
+
+Dates are absolute, English and UTC: `formatDiscoverDate(iso)` prints
+"Oct 22, 2026" on the server and in every browser, so hydration never
+rewrites a card. There is no relative "3 days ago"; the server's clock and
+the visitor's differ. `publishedDate(item)` and `updatedDate(item)` (null
+unless more than a day after the first publish) are the rules the detail
+view uses.
+
+## Narrow containers
+
+Every piece sizes off its own box (Tailwind container queries), not the
+viewport, because the app shell and the public page give the same component
+different widths.
+
+- `DiscoverHeader` (container `discover-header`): under 36rem the title is
+  `text-title-2`, the lead is hidden (still in the HTML; pass
+  `narrowLead="full"` to keep it, as a landing hero should) and the gaps
+  tighten. From 56rem the `aside` sits beside the pitch. `class` lands on the
+  inner grid.
+- `DiscoverChips`: one row that scrolls sideways (snap, no visible bar, a fade
+  on the trailing edge). Tab reaches every chip.
+- `DiscoverFilters` (container `discover-filters`): the kind tabs scroll in
+  their own faded track; the selected segment paints its own surface, so it
+  is right in the server markup and lines up at any width. On mount the track
+  slides a selected tab past its edge into view. The view toggle never
+  shrinks and is icon-only under 36rem (labels stay for screen readers and as
+  `title`).
+- The grid (`DiscoverGrid`, `DiscoverSkeleton`) never drops below two
+  columns: each track's floor is the smaller of 240px and half the grid less
+  the gap, so a phone gets two columns and wider containers auto-fill 240px
+  tracks as before. No container query, so the class works anywhere.
+- `DiscoverTile` (container `tile`, on the tile itself): under 15rem it goes
+  compact. The title clamps to two lines, the description and the meta line
+  hide, and the actions drop under the text: a small primary and the ⋯ menu
+  (the Remix icon hides; Remix is in ⋯). A shelf (16rem tiles) and a wide
+  grid keep the full tile.
+- `DiscoverSection`: the "All … →" link stays on the title's row,
+  right-aligned (it wraps under the title, still right-aligned, only when the
+  row is too narrow), painted `text-primary`, the host's accent, which reads
+  on the app's and the public site's surfaces alike.
+- `WhatsAppQrCard` (container `qr-card`, see below) collapses to a teaser.
 
 ### The live frame
 
 `LiveFrame` shows the poster first and creates no iframe until the visitor
-presses "Load site", "Play" or "Open tool". That button appears after
-hydration, so with JS off the page shows the poster and the "Open full
-screen" link, which always points at the live page (`target="_blank"`,
+presses "Load site", "Play" or "Open tool" (grids, overlays and sheets).
+With `autoload` (the item page) the iframe is in the server HTML instead,
+`loading="eager"`, so it loads with JS off; `tall` makes it
+`min(72vh, 760px)` high rather than 16:9. The load button appears after
+hydration, so without autoload and with JS off the page shows the poster and
+the "Open full screen" link, which always points at the live page (`target="_blank"`,
 `rel="nofollow ugc noopener noreferrer"`). Sites get a Desktop / Phone width
 toggle (phone is a 390px centred frame) once loaded.
 
 The iframe gets `sandbox="allow-scripts allow-forms allow-popups
 allow-pointer-lock"`, `allow="fullscreen; gamepad; autoplay"`,
-`referrerpolicy="no-referrer"`, `loading="lazy"`. `allow-same-origin` is added
+`referrerpolicy="no-referrer"`, `loading="lazy"` (eager with `autoload`). `allow-same-origin` is added
 only when the url is https and its hostname ends in
 `LIVE_FRAME_TRUSTED_HOST_SUFFIX` (`.pawsites.workers.dev`, a subdomain match:
 the bare domain, `pawsites.workers.dev.evil.com` and http do not qualify).
@@ -189,6 +261,14 @@ mount the same component in `DiscoverHeader`'s `aside` (with
   real QR and link, so a page with JS off shows a
   meaningful example ("Test it" is a plain link). On mount the number clears and
   the country follows the browser.
+- **Collapsed on phones.** The card sits in a `<details>` whose `<summary>` is
+  a one-line teaser ("Make a WhatsApp QR card for your shop" and a chevron).
+  Under 30rem of the card's own box the details start closed and the teaser
+  opens them. From 30rem the teaser hides and the body shows while the
+  details stay closed, through `::details-content`, so the server markup is
+  identical at every width and nothing jumps on hydration; it all works with
+  JS off. A browser without `::details-content` keeps the teaser at every
+  width, and on mount a wide card there opens itself.
 
 Props, all optional: `brand` (`'Paw'`; named in "Make a full menu or site with
 …" and on the card's foot), `oncopy(text)` (default: the clipboard API),
@@ -240,13 +320,13 @@ with identical declarations, so nothing changes. Hosts must scan ripple's
 
 | Name | Kind | What it is |
 |---|---|---|
-| `DiscoverTile` | component | One item in a grid or shelf: art, title, one line, usage (hidden at zero), actions. Props: `item`, `href?`, `target?`, `rel?`, `onremix?`, `onreport?`, `onopen?`, `oncopylink?` (`(item, href) => void`), `busy?`, `class?`. |
+| `DiscoverTile` | component | One item in a grid or shelf: art, title, one line, the creator line, usage (hidden at zero) and published date, actions; compact under 15rem. Props: `item`, `href?`, `target?`, `rel?`, `remixHref?` (Remix as a link; wins over `onremix`), `onremix?`, `onreport?`, `onopen?`, `oncopylink?` (`(item, href) => void`), `busy?`, `class?`. |
 | `DiscoverRow` | component | The same item as a list row (`role="listitem"`). Same props as the tile. |
 | `ItemArt` | component | The 16:9 picture: the image, a tinted placeholder with the title's initial, a music cover, or a play badge on a video. Props: `imageUrl`, `title`, `mediaKind?`, `tint`, `initial`, `class?`. |
 | `DetailMedia` | component | The detail view's media: `<video>` with poster, music cover plus `<audio>`, or the full image. Props: `item`, `class?`. |
-| `ItemDetail` | component | One item in full, for its page or an overlay body. Props: `item`, `layout` (`'page'` or `'overlay'`), `compact?`, `href?`, `remixHref?`, `onremix?`, `onreport?`, `oncopylink?` (`(item) => void`), `busy?`, `headingLevel?` (`'h1'` or `'h2'`), `class?`. |
-| `LiveFrame` | component | A live page behind a poster: click to load the sandboxed iframe, a width toggle for sites, an "Open full screen" link. Props: `url`, `title`, `kind`, `poster?`, `tint`, `initial`, `class?`. |
-| `DiscoverHeader` | component | The pitch: a title with an optional primary-coloured `accent`, a lead, children (search, chips) and an `aside` beside it on wide screens. Props: `title`, `accent?`, `lead?`, `as?` (`'h2'` default, `'h1'` on a page without its own header), `children?`, `aside?`, `class?`. |
+| `ItemDetail` | component | One item in full, for its page or an overlay body. Props: `item`, `layout` (`'page'` or `'overlay'`), `compact?`, `href?`, `remixHref?`, `onremix?`, `onreport?`, `oncopylink?` (`(item) => void`), `busy?`, `headingLevel?` (`'h1'` or `'h2'`), `madeWith?` (a line such as "Made with Paw Sites"), `tagHref?` (`(tag) => string`; tags become links), `pageHref?` and `onpage?` (`(item) => void`; overlay only, the See full page link), `class?`. |
+| `LiveFrame` | component | A live page behind a poster: click to load the sandboxed iframe, a width toggle for sites, an "Open full screen" link. Props: `url`, `title`, `kind`, `poster?`, `tint`, `initial`, `autoload?` (iframe at once, server HTML included), `tall?` (the page's tall frame), `class?`. |
+| `DiscoverHeader` | component | The pitch: a title with an optional primary-coloured `accent`, a lead, children (search, chips) and an `aside` beside it on wide containers; compact under 36rem. Props: `title`, `accent?`, `lead?`, `as?` (`'h2'` default, `'h1'` on a page without its own header), `narrowLead?` (`'hide'` default, `'full'`), `children?`, `aside?`, `class?` (on the inner grid). |
 | `DiscoverSearch` | component | Search in filter mode. Props: `value?`, `oninput?`, `action?` (GET form target), `name?` (`q`), `hidden?` (kept params), `placeholder?`, `class?`. |
 | `DiscoverChips` | component | Audience toggle chips. Props: `options` (`{ value, label, href? }[]`), `value?`, `onchange?`, `label?`, `class?`. |
 | `DiscoverFilters` | component | The sticky type bar: kind tabs and the Grid / Shelves / List toggle. Props: `kinds`, `kind`, `onkind?`, `view?`, `onview?`, `viewHref?`, `class?`. The toggle shows only with `onview` or `viewHref`. |
@@ -270,6 +350,8 @@ with identical declarations, so nothing changes. Hosts must scan ripple's
 | `mediaFor(item)` | helper | The playable media `{ kind, url }` for a studio item, or `null`. |
 | `usageLabel(item)`, `remixLabel(n)`, `usedLabel(n)` | helper | The usage line: `No remixes yet`, `1 remix`, `1.2k remixes`; `Not used yet`, `1 used`, `1.2k used`. |
 | `isStudioKind(kind)` | helper | True for `image`, `video` and `music`. |
+| `formatDiscoverDate(iso)`, `publishedDate(item)`, `updatedDate(item)` | helper | Hydration-stable dates: "Oct 22, 2026" in English and UTC, or `null`; the published date (`createdAt`, else `updatedAt`); the update date only when more than a day after the first publish. |
+| `creatorInitials(name)` | helper | Up to two initials for the avatar fallback: `Asha Rao` gives `AR`. |
 | `tintFor(id)`, `initialFor(title)`, `CARD_PALETTE` | helper | Placeholder art: a stable coloured theme token per id and the title's first letter. |
 | `DiscoverItem`, `DiscoverKind`, `DiscoverMediaKind`, `StudioKind`, `DiscoverPrimary` | type | The item shape and its unions. Consumers map their wire format onto `DiscoverItem`. |
 | `DiscoverView`, `DiscoverOption` | type | A view mode; a filter choice `{ value, label, href? }`. |
