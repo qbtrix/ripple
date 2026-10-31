@@ -6,8 +6,8 @@
 
 Four packages, always in this order, each after what it depends on:
 
-1. `@ripple-ui/core` `0.6.1`
-2. `@ripple-ui/svelte` `0.9.0` (depends on core)
+1. `@ripple-ui/core` `0.6.1-next.0` (pre-release; latest stable 0.6.0)
+2. `@ripple-ui/svelte` `0.9.0-next.0` (pre-release; latest stable 0.8.2; depends on core)
 3. `@ripple-ui/embed` `0.1.0` (bundles svelte and core, so it has no runtime
    dependencies; it still goes after them so the release is consistent)
 4. `@ripple-ui/react` `0.1.0` (depends on embed)
@@ -128,9 +128,17 @@ the version number stays burned.
    manifests to a GitHub release. It needs an `NPM_TOKEN` repo secret: a
    granular access token, read and write on the `@ripple-ui` scope only, with
    an expiry. A plain tag push builds the release but does not publish to npm.
-3. Provenance is off: the workflow publishes with `bun publish`, which has no
+3. Pre-releases: give the version a suffix (`0.9.0-next.0`, `1.0.0-rc.1`) and
+   dispatch the workflow with the matching tag (`v0.9.0-next.0`). Any version
+   with a `-` publishes under its identifier as the npm dist-tag (`next`,
+   `rc`), never `latest`, so `npm install @ripple-ui/svelte` keeps resolving
+   the last stable; a host opts in with the exact version or `@next`. The tag
+   makes a GitHub pre-release. A `^` range on a pre-release only matches
+   pre-releases of that same version, so pin pre-releases exactly in hosts.
+   To go stable, drop the suffix (`0.9.0`) and dispatch `v0.9.0`.
+4. Provenance is off: the workflow publishes with `bun publish`, which has no
    `--provenance`.
-4. After this first publish the plan is npm Trusted Publishing (OIDC from
+5. After this first publish the plan is npm Trusted Publishing (OIDC from
    GitHub Actions), which needs no stored token. Once it is configured for each
    package on npmjs.com, the `NPM_TOKEN` repo secret gets deleted. The workflow
    itself has not changed yet.
