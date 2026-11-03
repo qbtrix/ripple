@@ -3,7 +3,9 @@
 # manifests (manifest.json, manifest.slim.json), the manifest zip, and a packed
 # tarball of @ripple-ui/core, svelte, embed and react, so the release alone is
 # installable. npm publishing runs only on a manual dispatch with
-# publish_npm: true, and needs the NPM_TOKEN repo secret.
+# publish_npm: true. That run enters the npm-publish environment, which holds
+# NPM_TOKEN, only lets main deploy, and waits for a required reviewer, so no
+# one can publish to npm without that approval.
 #
 # Invariants:
 # - Pack runs before publish, and the publish steps upload those exact
@@ -46,6 +48,9 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    # Only an npm-publishing dispatch enters the gated environment; tag pushes
+    # and release-only dispatches run without it (an empty name means none).
+    environment: ${{ (github.event_name == 'workflow_dispatch' && inputs.publish_npm) && 'npm-publish' || '' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
