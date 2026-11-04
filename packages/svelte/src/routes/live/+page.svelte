@@ -2,8 +2,7 @@
   @file routes/live/+page.svelte
   @description /live, the site's one gallery ("Gallery" in the nav), laid out
     like Paw OS Discover: a compact hero (lib/discover's DiscoverHeader) with
-    lede, a one-line legend for the three tile tags (Recorded, Hand-written,
-    Widget demo) and filter chips (All plus gallery.ts GROUPS; the choice kept
+    lede, a one-line legend for the two tile tags (Recorded, Widget demo) and filter chips (All plus gallery.ts GROUPS; the choice kept
     in `?group=`, the chip row fades at its edge on a phone), then one titled
     section of tiles (GalleryGrid) per group.
     Items come from gallery.ts, one card per widget type: the runs, then the
@@ -130,7 +129,7 @@
 
 <svelte:window onpopstate={onPop} />
 
-<SeoHead title="Gallery · Ripple" description="What Ripple can render: recorded model runs replayed as they stream, hand-written card specs and live widget demos, from trip plans and bookings to games, trackers, step-by-step flows and annotated drawings." />
+<SeoHead title="Gallery · Ripple" description="What Ripple can render: recorded model runs replayed as they stream and live widget demos, from trip plans and bookings to games, trackers, step-by-step flows and annotated drawings." />
 
 {#snippet credit()}
 	<p class="credit">Isometric drawings inspired by <a href="https://skills.wheresryan.sh/anatomy" rel="noopener">Anatomy</a> by Ryan.</p>
@@ -162,10 +161,9 @@
 		{#if isoKeys.has(open.key)}{@render credit()}{/if}
 	{:else}
 		<DiscoverHeader as="h1" title="What Ripple" accent="can render" class="hero">
-			<p class="lede">Recorded model runs, hand-written card specs and live widget demos. Each one opens here.</p>
+			<p class="lede">Recorded model runs and live widget demos. Each one opens here.</p>
 			<dl class="legend">
 				<div><dt>Recorded</dt><dd>a model's real output, replayed as it streamed</dd></div>
-				<div><dt>Hand-written</dt><dd>a card spec we wrote, streamed the same way</dd></div>
 				<div><dt>Widget demo</dt><dd>a widget rendered live on the page, not replayed</dd></div>
 			</dl>
 			<div class="filters" role="group" aria-label="Filter by group">

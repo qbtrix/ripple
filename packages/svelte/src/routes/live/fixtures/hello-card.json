@@ -3,7 +3,7 @@
  "title": "Welcome card",
  "prompt": "Make me a small welcome card: three sample stats for revenue, signups and churn, a box for my name that greets me as I type, and a button that says hello",
  "model": "sonnet",
- "recordedAt": "2026-11-04T15:14:15.816Z",
+ "recordedAt": "2026-11-04T15:52:00.671Z",
  "chunks": [
   {
    "t": 0,
@@ -23,275 +23,291 @@
   },
   {
    "t": 0,
-   "text": "ome\",\"description\":\"A"
+   "text": "ome back"
   },
   {
    "t": 0,
-   "text": " quick look"
+   "text": "\",\"description\":\"Here's a"
   },
   {
    "t": 0,
-   "text": " at how"
+   "text": " quick look at how"
   },
   {
    "t": 0,
-   "text": " things are going\"},\"children\":"
+   "text": " things are going"
   },
   {
    "t": 0,
-   "text": "[{\"type\":\"flex"
+   "text": "\"},\"children\":[{\""
   },
   {
    "t": 0,
-   "text": "\",\"props\":{\"direction\":"
+   "text": "type\":\"flex\",\"props\":"
   },
   {
    "t": 0,
-   "text": "\"column\",\"gap\":\"16"
+   "text": "{\"direction\":\"column\",\""
   },
   {
-   "t": 0,
+   "t": 1,
+   "text": "gap\":\"16"
+  },
+  {
+   "t": 1,
    "text": "px\"},\"children\":[{"
   },
   {
-   "t": 0,
+   "t": 11,
    "text": "\"type\":\"grid\",\"props"
   },
   {
-   "t": 0,
+   "t": 149,
    "text": "\":{\"columns\":\"rep"
   },
   {
-   "t": 0,
+   "t": 149,
    "text": "eat(auto-fit"
   },
   {
-   "t": 0,
-   "text": ", minmax(150"
+   "t": 149,
+   "text": ", minmax(150px,"
   },
   {
-   "t": 0,
-   "text": "px, 1fr))\",\""
+   "t": 149,
+   "text": " 1fr))\",\"gap"
   },
   {
-   "t": 0,
-   "text": "gap\":\"12px\"},"
+   "t": 188,
+   "text": "\":\"12px\"},\"children"
   },
   {
-   "t": 0,
-   "text": "\"children\":[{\"type\":"
+   "t": 211,
+   "text": "\":[{\"type\":\"st"
   },
   {
-   "t": 0,
-   "text": "\"stat\",\"props\":{\""
+   "t": 245,
+   "text": "at\",\"props\":{\"label\":"
   },
   {
-   "t": 0,
-   "text": "label\":\"Revenue\",\""
+   "t": 350,
+   "text": "\"Revenue\",\"value\":"
   },
   {
-   "t": 0,
-   "text": "value\":48"
+   "t": 350,
+   "text": "48250"
   },
   {
-   "t": 0,
-   "text": "200"
-  },
-  {
-   "t": 0,
+   "t": 440,
    "text": ",\"format\":\"currency\",\""
   },
   {
-   "t": 0,
+   "t": 440,
    "text": "de"
   },
   {
-   "t": 0,
+   "t": 440,
    "text": "ltaPercent\":8"
   },
   {
-   "t": 0,
-   "text": ".4"
+   "t": 443,
+   "text": ".4,\"direction\":\""
   },
   {
-   "t": 0,
-   "text": ",\"direction\":\"up-"
+   "t": 648,
+   "text": "up\"}},{\"type\":"
   },
   {
-   "t": 0,
-   "text": "good\"}},{\"type\":"
-  },
-  {
-   "t": 0,
+   "t": 648,
    "text": "\"stat\",\"props\":{\""
   },
   {
-   "t": 0,
+   "t": 648,
    "text": "label\":\"Signups\",\"value"
   },
   {
-   "t": 0,
-   "text": "\":1240,\"format\":\""
+   "t": 648,
+   "text": "\":1320"
   },
   {
-   "t": 0,
-   "text": "number\",\"deltaPercent"
+   "t": 649,
+   "text": ",\"format\":\"number\",\"de"
   },
   {
-   "t": 0,
-   "text": "\":12."
+   "t": 649,
+   "text": "ltaPercent\":12."
   },
   {
-   "t": 0,
+   "t": 679,
    "text": "1,\"direction\":\"up"
   },
   {
-   "t": 0,
-   "text": "-good\"}},{\"type"
+   "t": 711,
+   "text": "\"}},{\"type\":\""
   },
   {
-   "t": 0,
-   "text": "\":\"stat\",\"props\":{"
+   "t": 750,
+   "text": "stat\",\"props\":{\"label"
   },
   {
-   "t": 0,
-   "text": "\"label\":\"Churn\",\""
+   "t": 778,
+   "text": "\":\"Churn\",\"value\":"
   },
   {
-   "t": 0,
-   "text": "value\":2.3"
+   "t": 814,
+   "text": "0.023,\"format\":\""
   },
   {
-   "t": 0,
-   "text": ",\"format\":\"percent\",\""
+   "t": 847,
+   "text": "percent\",\"deltaPerc"
   },
   {
-   "t": 0,
-   "text": "deltaPercent\":-"
+   "t": 879,
+   "text": "ent\":-0.4"
   },
   {
-   "t": 0,
-   "text": "0.4,\"direction\":"
+   "t": 911,
+   "text": ",\"direction\":\"down-"
   },
   {
-   "t": 1,
-   "text": "\"down-good\"}}]"
+   "t": 944,
+   "text": "good\"}}]},{\""
   },
   {
-   "t": 1,
-   "text": "},{\"type\":\"separator"
+   "t": 982,
+   "text": "type\":\"separ"
   },
   {
-   "t": 1,
-   "text": "\",\""
+   "t": 1011,
+   "text": "ator\",\""
   },
   {
-   "t": 1,
+   "t": 1047,
    "text": "props\":{}"
   },
   {
-   "t": 1,
+   "t": 1205,
    "text": "},{\"type\":\"input\",\""
   },
   {
-   "t": 1,
+   "t": 1205,
    "text": "props\":{\"label\":\""
   },
   {
-   "t": 1,
+   "t": 1205,
    "text": "Your name\",\"placeholder\":"
   },
   {
-   "t": 1,
+   "t": 1205,
    "text": "\"Type your name\"},\""
   },
   {
-   "t": 1,
+   "t": 1211,
    "text": "bind\":\"{"
   },
   {
-   "t": 1,
+   "t": 1268,
    "text": "state.name}\"},{\""
   },
   {
-   "t": 1,
-   "text": "type\":\"heading\",\"props\":"
+   "t": 1279,
+   "text": "type\":\"text\",\"props\":{"
   },
   {
-   "t": 1,
-   "text": "{\"level\":3,\"text"
+   "t": 1314,
+   "text": "\"text\":\"{state.name"
   },
   {
-   "t": 1,
-   "text": "\":\"{state.name"
+   "t": 1347,
+   "text": " ? 'Hello,"
   },
   {
-   "t": 1,
-   "text": " ? "
+   "t": 1380,
+   "text": " ' + state.name + '"
   },
   {
-   "t": 1,
-   "text": "'Hello, ' +"
+   "t": 1416,
+   "text": "! Nice to see"
   },
   {
-   "t": 1,
-   "text": " state.name + '!' :"
+   "t": 1448,
+   "text": " you.' : 'H"
   },
   {
-   "t": 1,
-   "text": " 'Hello there!'"
+   "t": 1521,
+   "text": "ello there"
   },
   {
-   "t": 1,
-   "text": "}\"}},{\"type\":"
+   "t": 1521,
+   "text": "! T"
   },
   {
-   "t": 1,
-   "text": "\"button\",\"props\":{\"label"
+   "t": 1543,
+   "text": "ell me your name."
   },
   {
-   "t": 1,
-   "text": "\":\"Say hello\",\""
+   "t": 1577,
+   "text": "'}\",\"size\":\""
   },
   {
-   "t": 1,
-   "text": "variant\":\"default\"},\""
+   "t": 1609,
+   "text": "lg\",\"weight\":\"sem"
   },
   {
-   "t": 1,
-   "text": "on_click\":{\"action\":"
+   "t": 1643,
+   "text": "ibold\"}"
   },
   {
-   "t": 1,
-   "text": "\"toast\",\"message\":\""
+   "t": 1676,
+   "text": "},{\"type\":\"button\",\""
   },
   {
-   "t": 1,
-   "text": "Hello, {state.name}"
+   "t": 1710,
+   "text": "props\":{\"label\":\""
   },
   {
-   "t": 1,
-   "text": "! Welcome a"
+   "t": 1743,
+   "text": "Say hello\",\"variant\":\""
   },
   {
-   "t": 1,
-   "text": "bo"
+   "t": 1916,
+   "text": "default\"},\"on_click\":"
   },
   {
-   "t": 1,
-   "text": "ard.\",\"variant\":\"success"
+   "t": 1916,
+   "text": "{\"action\":\"toast\",\""
   },
   {
-   "t": 1,
-   "text": "\"}}]}"
+   "t": 1916,
+   "text": "message\":\"{state.name "
   },
   {
-   "t": 1,
-   "text": "]},\"state\":{\"name"
+   "t": 1916,
+   "text": "? 'Hello, "
   },
   {
-   "t": 1,
-   "text": "\":\"\"}}"
+   "t": 1916,
+   "text": "' + state.name + '!"
+  },
+  {
+   "t": 1943,
+   "text": "' : 'Hello there"
+  },
+  {
+   "t": 1977,
+   "text": "!'}\",\"variant\":\""
+  },
+  {
+   "t": 2011,
+   "text": "success\"}}]}]"
+  },
+  {
+   "t": 2044,
+   "text": "},\"state\":{\"name\":"
+  },
+  {
+   "t": 2091,
+   "text": "\"\"}}"
   }
  ]
 }

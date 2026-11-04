@@ -110,6 +110,7 @@ EXPRESSIONS (verified against the engine; follow exactly)
 - For an amount that applies only when a flag is true, multiply by the flag (true counts as 1): item.drinks * state.drinksTotal / state.drinkers.
 - Use a ternary only as the whole expression (to pick a label or value), never inside arithmetic.
 - For money, compute the raw number and show it with the "stat" widget using "format": "currency" (it formats to 2 decimals), e.g. {"type":"stat","props":{"label":"Each pays","value":"{state.total * (1 + state.tipPercent / 100) / state.people.length}","format":"currency"}}.
+- A stat with "format": "percent" takes a fraction: 0.034 shows 3.4%, so 2.3% churn is "value": 0.023, never 2.3.
 - A computed number that can have decimals (any division or rate) is shown with a "stat" (format "number", "currency" or "percent"), never inside a text template, which prints every digit.
 - Division by zero yields 0. Keep numeric state as numbers, not strings.
 - There is no exponent operator (no ** or ^) and no Math functions. Write compound growth as repeated multiplication starting from a state path, e.g. three years at a yearly rate: state.start * (1 + state.rate / 100) * (1 + state.rate / 100) * (1 + state.rate / 100).
