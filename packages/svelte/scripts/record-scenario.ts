@@ -19,8 +19,8 @@
 // recording. Keeps only the assistant's text deltas, timestamps each one in
 // ms since the first delta, and clamps any single gap to MAX_GAP_MS.
 //
-// The model sees the spec envelope, the action grammar and the widgets in
-// CATEGORIES plus the DATA_WIDGETS listed by name, and the 3D model library's
+// The model sees the spec envelope, the action grammar and the widgets
+// recorder-widgets.ts offers (every widget the /live gallery uses), and the 3D model library's
 // asset ids and anchor names (model-assets.ts); it prints the size of that
 // manifest slice. The fixture is written to src/routes/live/fixtures/<id>.json
 // (or --out) ONLY when the
@@ -35,23 +35,15 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { validateCatalog } from '../../core/src/core/validate-catalog.ts';
 import { MODEL_ASSETS } from '../src/lib/widgets/media/model-assets.ts';
+import { offered } from './recorder-widgets.ts';
 
 const MAX_GAP_MS = 400;
-// Widget categories offered to the model. The full manifest is ~250 KB; these
-// cover small interactive tools without the marketing/research/vertical sets.
-// --widgets adds named widgets from outside them (approval-gate, invoice-lines)
-// for a scenario that needs one, without paying for the whole category.
+// The widgets offered to the model are recorder-widgets.ts: the primitive
+// categories plus data and gallery widgets by name. --widgets adds more by name
+// for one scenario without paying for a whole category.
 // --context appends what the model already knows when it draws (an agent's
 // tool results, a shop's opening hours) as a SCENARIO CONTEXT section, and the
 // fixture keeps that text so the page can show what the model was given.
-const CATEGORIES = new Set(['layout', 'display', 'input', 'data', 'control', 'overlay', 'interactive']);
-// Plus these by name (whole composite + research categories would add ~100 KB):
-// the data widgets and the summary pieces the SYSTEM rules point at.
-const DATA_WIDGETS = new Set([
-	'itinerary', 'booking', 'menu-order', 'growth-projection', 'bill-split', 'recipe', 'meal-plan', 'interval-workout', 'flashcard-deck',
-	'word-guess', 'quiz', 'memory-match', 'habit-tracker', 'focus-timer', 'notes', 'board-game',
-	'comparison-layout', 'exec-dashboard', 'entity-detail', 'timeline', 'kv-table', 'model-viewer'
-]);
 // model-viewer names a built-in model by id and labels it by anchor name; the
 // model sees ids, titles and anchor names only (no files, no coordinates).
 const MODEL_LIBRARY = Object.values(MODEL_ASSETS)
@@ -89,7 +81,7 @@ const reference = {
 	spec: manifest.spec,
 	actions: manifest.actions,
 	widgets: manifest.widgets
-		.filter((w: { category: string; type: string }) => CATEGORIES.has(w.category) || DATA_WIDGETS.has(w.type) || extra.has(w.type))
+		.filter((w: { category: string; type: string }) => offered(w, extra))
 		.map(({ pocket: _pocket, ...w }: Record<string, unknown>) => w)
 };
 const referenceBytes = JSON.stringify(reference).length;
@@ -141,6 +133,12 @@ CARD SHAPE (pick this first)
   - sales, KPIs or a dashboard over records: exec-dashboard with "rows", "measures", "dimensions" (bind "filters")
   - choosing between options: comparison-layout
 - A summary of one thing (a person, an account, an order) starts with entity-detail (title, status, kpis, meta) and puts its sections in its children; dated events go in a timeline, plain facts in a kv-table.
+  - a weather forecast: weather-forecast; places to go (cafes, restaurants): place-results; products, deals or a catalog to shop: product-grid
+  - a week on a calendar: week-schedule; a meeting agenda: agenda; music to play: music-player
+  - films, documentaries, podcasts or books to pick from: media-grid; where an order or parcel is: order-status
+  - a log of events, actions or alerts: audit-log; a company or stock snapshot: company-header, ticker, range-bar, analyst-bar and news-card
+- How something works inside, when the figure catalog has it (the heart, bike gears, a rocket engine, a plasma or ion thruster, a fusion or fission reactor, a particle collider): figure with that catalog id, starting "params" for its sliders and "labels" on its anchors (both listed in the figure entry of the manifest), bound to state so the sliders work.
+- Any other machine to watch moving with sliders (an engine, a pump, a drivetrain the figure catalog lacks): iso-scene.
 - A real object to turn around in 3D (a vehicle, an instrument, a skeleton): model-viewer with an "asset" from the 3D LIBRARY below, labelled with "annotations".
 - A drawing, animated icon or small scene: illustration, with "svg" written in single-quoted attributes (<svg viewBox='0 0 200 120'>) and every animation dur 0.5s or more.
 - A small tool no data widget covers (a calculator, a checklist, an explainer) is built from primitives with the rules above.
