@@ -1,0 +1,153 @@
+{
+ "id": "memory-match",
+ "title": "Memory match",
+ "prompt": "Make me a memory match game pairing Spanish animal words with their emoji",
+ "model": "sonnet",
+ "recordedAt": "2026-11-04T15:08:28.651Z",
+ "chunks": [
+  {
+   "t": 0,
+   "text": "{\"version\":\"1.0"
+  },
+  {
+   "t": 0,
+   "text": "\",\"ui\":{\"type"
+  },
+  {
+   "t": 0,
+   "text": "\":\"memory-match\",\"b"
+  },
+  {
+   "t": 0,
+   "text": "ind\":\"{state."
+  },
+  {
+   "t": 0,
+   "text": "game}\",\"props\":{\"title"
+  },
+  {
+   "t": 0,
+   "text": "\":\"Spanish animals"
+  },
+  {
+   "t": 0,
+   "text": "\",\"pairs\":[{\""
+  },
+  {
+   "t": 0,
+   "text": "id\":\"dog\",\"a\":"
+  },
+  {
+   "t": 0,
+   "text": "\"perro\",\"b\":\""
+  },
+  {
+   "t": 3,
+   "text": "🐶\"},{\"id\":"
+  },
+  {
+   "t": 3,
+   "text": "\"cat\",\"a\":\"g"
+  },
+  {
+   "t": 3,
+   "text": "ato\",\"b\":\"🐱"
+  },
+  {
+   "t": 3,
+   "text": "\"},{\"id\":\"hor"
+  },
+  {
+   "t": 3,
+   "text": "se\",\"a\":\"caballo"
+  },
+  {
+   "t": 3,
+   "text": "\",\"b\":\"🐴\""
+  },
+  {
+   "t": 3,
+   "text": "},{\"id\":\"bird"
+  },
+  {
+   "t": 3,
+   "text": "\",\"a\":\"pájaro"
+  },
+  {
+   "t": 4,
+   "text": "\",\"b\":\"🐦\""
+  },
+  {
+   "t": 4,
+   "text": "},{\"id\":\"fish"
+  },
+  {
+   "t": 4,
+   "text": "\",\"a\":\"pez\",\"b"
+  },
+  {
+   "t": 5,
+   "text": "\":\"🐟\"},{"
+  },
+  {
+   "t": 5,
+   "text": "\"id\":\"cow\",\"a"
+  },
+  {
+   "t": 5,
+   "text": "\":\"vaca\",\"b\":"
+  },
+  {
+   "t": 5,
+   "text": "\"🐮\"},{\""
+  },
+  {
+   "t": 5,
+   "text": "id\":\"r"
+  },
+  {
+   "t": 5,
+   "text": "abbit\",\"a\":\"con"
+  },
+  {
+   "t": 6,
+   "text": "ejo\",\"b\":\""
+  },
+  {
+   "t": 6,
+   "text": "🐰\"},{\"id\":\""
+  },
+  {
+   "t": 6,
+   "text": "pig\",\"a\":\"c"
+  },
+  {
+   "t": 7,
+   "text": "erdo\",\"b\":\""
+  },
+  {
+   "t": 7,
+   "text": "🐷\"}]}},\""
+  },
+  {
+   "t": 7,
+   "text": "state\":{\"game\":{\""
+  },
+  {
+   "t": 7,
+   "text": "moves\":0,\"matched"
+  },
+  {
+   "t": 7,
+   "text": "\":[],\"completed\":false"
+  },
+  {
+   "t": 7,
+   "text": ",\"seconds\":0}"
+  },
+  {
+   "t": 7,
+   "text": "}}"
+  }
+ ]
+}

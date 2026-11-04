@@ -11,8 +11,8 @@
 // "Help me plan a trip step by step") that pocketpaw's card_spec.py accepted.
 // The `illustration` cases follow card_spec.py's _check_illustration and the
 // widget contract's hostile set and caps; its notes follow checkIllustrationAnnotations,
-// and a node-level on_select may ask. The play cards (play-cards.ts) all pass, and a
-// game's on_complete may never ask. fixtures/headphones-comparison-card.json is a live
+// and a node-level on_select may ask. Every chat answer (answerPool, all real
+// recordings) passes at each streamed chunk, and a game's on_complete may never ask. fixtures/headphones-comparison-card.json is a live
 // model card (2026-10-10, "Shop headphones") whose comparison Choose click asks.
 // A `model-viewer` names a built-in asset and its anchors, never a file or a point.
 // fixtures/map-route-card.json is a live model card (2026-10-12, Haiku, a walking
@@ -22,17 +22,17 @@
 import { describe, expect, test } from 'vitest';
 import { HOST_EVENTS, MAX_CARD_NODES, MAX_DEPTH, PATH_TARGET_ACTIONS, decodeEntities, refuseCard } from './card-policy.js';
 import { gearsCard, gearsSvg, laptopAnswerCard, laptopFlowCard, tripFlowCard } from './flow-cards.js';
-import { connectFourCard, focusTimerCard, habitCard, heartCard, heartSvg, memoryMatchCard, playScenarios, quizCard, ticTacToeCard, wordGuessCard, isoCard, isoScenarios } from './play-cards.js';
+import { playScenarios } from './play-cards.js';
 import { checkIllustrationAnnotations, checkIllustrationSvg } from '$lib/security/illustration-svg.js';
 import { parsePartialSpec } from '$lib/streaming/json-parse.js';
-import { pickScenario } from './recorded.js';
+import { answerPool, cardChunks, pickScenario } from './recorded.js';
 import { CHAT_WIDGET_TYPES } from './widget-types.js';
 import { weatherForecastEntry } from '$lib/manifest/entries/weather-forecast.js';
 import { weekScheduleEntry } from '$lib/manifest/entries/week-schedule.js';
 import { agendaEntry } from '$lib/manifest/entries/agenda.js';
 import { standupBoardEntry } from '$lib/manifest/entries/standup-board.js';
 import { isoSceneEntry } from '$lib/manifest/entries/iso-scene.js';
-import { bikeScene, engineScene, heartScene } from '$lib/widgets/composite/iso-scenes.js';
+import { bikeScene, heartScene } from '$lib/widgets/composite/iso-scenes.js';
 import liveHeadphonesCard from './fixtures/headphones-comparison-card.json';
 import liveTripCard from './fixtures/trip-flow-card.json';
 import liveMapCard from './fixtures/map-route-card.json';
@@ -920,29 +920,11 @@ describe('game on_complete', () => {
 	});
 });
 
-describe('play cards', () => {
-	test.each([
-		['memory match', memoryMatchCard],
-		['guess the word', wordGuessCard],
-		['space trivia', quizCard],
-		['tic-tac-toe', ticTacToeCard],
-		['connect four', connectFourCard],
-		['habit tracker', habitCard],
-		['focus timer', focusTimerCard],
-		['how a heart pumps', heartCard]
-	])('%s passes, at final and at every streamed prefix', (_name, card) => {
-		expect(refuseCard(card)).toBeNull();
-		const wire = JSON.stringify(card);
-		for (let i = 1; i < wire.length; i += 97) {
-			const { value } = parsePartialSpec(wire.slice(0, i));
-			if (value) expect(refuseCard(value, { partial: true }), wire.slice(0, i)).toBeNull();
-		}
-	});
-
-	test('every play scenario passes at each streamed chunk, as the chat receives it', () => {
-		for (const s of playScenarios) {
+describe('chat answers', () => {
+	test('every answer the chat replays passes at each streamed chunk, as the chat receives it', () => {
+		for (const s of answerPool.filter((x) => !x.needsStore)) {
 			let wire = '';
-			for (const c of s.fixture.chunks) {
+			for (const c of cardChunks(s.fixture)) {
 				wire += c.text;
 				const { value } = parsePartialSpec(wire);
 				if (value) expect(refuseCard(value, { partial: true }), `${s.id}: ${wire}`).toBeNull();
@@ -952,41 +934,12 @@ describe('play cards', () => {
 	});
 
 	test('the board games use the canonical board-game type with game set, never an alias', () => {
-		for (const [card, name] of [[ticTacToeCard, 'tic-tac-toe'], [connectFourCard, 'connect-four']] as const) {
-			const game = card.ui.children[0];
-			expect(game.type).toBe('board-game');
-			expect(game.props).toHaveProperty('game', name);
-			expect(game).not.toHaveProperty('on_complete');
-		}
-	});
-
-	test('the heart is drawn to the contract: single quotes, currentColor text, ids on parts, 4 to 6 notes', () => {
-		expect(checkIllustrationSvg(heartSvg)).toEqual({ ok: true });
-		expect(heartSvg).not.toMatch(/[{\\"]|url\((?!#)/);
-		expect(heartSvg).toContain("fill='currentColor'");
-		const notes = heartCard.ui.children[0].props.annotations!;
-		expect(notes.length).toBeGreaterThanOrEqual(4);
-		expect(notes.length).toBeLessThanOrEqual(6);
-		for (const n of notes) expect(heartSvg).toContain(`id='${n.target}'`);
-		expect(checkIllustrationAnnotations({ svg: heartSvg, annotations: notes })).toEqual({ ok: true });
-	});
-
-	test('every iso-scene gallery run replays to a card the policy accepts', () => {
-		const keys = ['bike', 'heart', 'engine'];
-		expect(isoScenarios.map((s) => s.id)).toEqual(['iso-bike', 'iso-heart', 'iso-engine']);
-		for (const [i, s] of isoScenarios.entries()) {
-			expect(s.fixture.model).toBe('hand-written');
-			const card = JSON.parse(s.fixture.chunks.map((c) => c.text).join(''));
-			expect(card).toEqual(JSON.parse(JSON.stringify({ version: '1.0', ...isoCard(keys[i]!, [bikeScene, heartScene, engineScene][i]!) })));
-			expect(refuseCard(card)).toBeNull();
-		}
-	});
-
-	test('every play scenario replays to its card', () => {
-		const cards = [memoryMatchCard, wordGuessCard, quizCard, ticTacToeCard, connectFourCard, habitCard, focusTimerCard];
-		for (const [i, s] of playScenarios.entries()) {
-			expect(s.fixture.model).toBe('hand-written');
-			expect(JSON.parse(s.fixture.chunks.map((c) => c.text).join(''))).toEqual({ version: '1.0', ...cards[i] });
+		for (const [id, name] of [['tic-tac-toe', 'tic-tac-toe'], ['connect-four', 'connect-four']] as const) {
+			const spec = JSON.parse(playScenarios.find((s) => s.id === id)!.fixture.chunks.map((c) => c.text).join(''));
+			const game = JSON.stringify(spec);
+			expect(game).toContain('"type":"board-game"');
+			expect(game).toContain(`"game":"${name}"`);
+			expect(game).not.toContain('on_complete');
 		}
 	});
 });

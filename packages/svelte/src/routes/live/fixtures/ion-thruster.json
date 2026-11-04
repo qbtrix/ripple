@@ -2,80 +2,424 @@
  "id": "ion-thruster",
  "title": "How a plasma thruster works",
  "prompt": "How does a plasma thruster work? Show me inside and let me change the grid voltage and the xenon flow.",
- "model": "hand-written",
- "recordedAt": "2026-10-13T12:00:00.000Z",
+ "model": "sonnet",
+ "recordedAt": "2026-11-04T15:10:44.871Z",
  "chunks": [
   {
    "t": 0,
-   "text": "{\"version\":\"1.0\",\"state\":{\"figure\":null},\"ui\":{\"type\":\"figure\",\"bi"
+   "text": "{\"version\":\""
   },
   {
-   "t": 18,
-   "text": "nd\":\"{state.figure}\",\"props\":{\"figure\":\"ion-thruster\",\"params\":{\"v"
+   "t": 0,
+   "text": "1.0\",\"ui\":{"
   },
   {
-   "t": 36,
-   "text": "oltage\":1100,\"flow\":2},\"labels\":[{\"anchor\":\"cathode\",\"note\":\"Sends"
+   "t": 0,
+   "text": "\"type\":\"figure\",\"props"
   },
   {
-   "t": 54,
-   "text": " electrons into the xenon. They knock electrons off the atoms and "
+   "t": 0,
+   "text": "\":{\"figure\":\""
   },
   {
-   "t": 72,
-   "text": "turn the gas into plasma.\"},{\"anchor\":\"magnets\",\"note\":\"Ring magne"
+   "t": 0,
+   "text": "ion-thruster\",\"params\":"
   },
   {
-   "t": 90,
-   "text": "ts bend the electrons' paths, so each one hits more atoms before i"
+   "t": 0,
+   "text": "{\"voltage\":1200"
   },
   {
-   "t": 108,
-   "text": "t reaches the wall.\"},{\"anchor\":\"screen-grid\",\"note\":\"Holds the pl"
+   "t": 0,
+   "text": ",\"flow\":1"
   },
   {
-   "t": 126,
-   "text": "asma in, sitting at the full grid voltage. Ions slip out through i"
+   "t": 0,
+   "text": ".5},\"labels\":["
   },
   {
-   "t": 144,
-   "text": "ts holes.\"},{\"anchor\":\"accel-grid\",\"note\":\"Negative, a millimetre "
+   "t": 0,
+   "text": "{\"anchor\":\"x"
   },
   {
-   "t": 162,
-   "text": "behind the screen grid. The gap between them throws the ions out a"
+   "t": 0,
+   "text": "enon-tank\",\"note\":"
   },
   {
-   "t": 180,
-   "text": "t tens of km/s.\"},{\"anchor\":\"neutraliser\",\"note\":\"Adds one electro"
+   "t": 0,
+   "text": "\"Stores x"
   },
   {
-   "t": 198,
-   "text": "n for every ion that leaves, so the spacecraft does not charge up."
+   "t": 0,
+   "text": "enon gas,"
   },
   {
-   "t": 216,
-   "text": "\"},{\"anchor\":\"thrust-dial\",\"note\":\"Reads the push: less than a ten"
+   "t": 0,
+   "text": " an in"
   },
   {
-   "t": 234,
-   "text": "th of a newton, about the weight of a few coins.\"}],\"caption\":\"Xen"
+   "t": 0,
+   "text": "ert heavy atom that "
   },
   {
-   "t": 252,
-   "text": "on becomes plasma in the chamber, and two grids pull its ions out "
+   "t": 0,
+   "text": "ionises easily.\"},{\""
   },
   {
-   "t": 270,
-   "text": "at about 40 km/s. The push is tiny, but that exhaust is about ten "
+   "t": 0,
+   "text": "anchor\":\"flow-"
   },
   {
-   "t": 288,
-   "text": "times faster than a chemical rocket's, so a tank of xenon lasts fa"
+   "t": 0,
+   "text": "controller\",\"note\":\"Me"
+  },
+  {
+   "t": 0,
+   "text": "ters the xenon flow into"
+  },
+  {
+   "t": 0,
+   "text": " the th"
+  },
+  {
+   "t": 0,
+   "text": "ruster. More"
+  },
+  {
+   "t": 0,
+   "text": " flow means"
+  },
+  {
+   "t": 0,
+   "text": " more th"
+  },
+  {
+   "t": 0,
+   "text": "rust but"
+  },
+  {
+   "t": 0,
+   "text": " a"
+  },
+  {
+   "t": 0,
+   "text": " lower exhaust speed"
+  },
+  {
+   "t": 0,
+   "text": ".\"},{\"anchor\":"
+  },
+  {
+   "t": 1,
+   "text": "\"discharge-chamber"
+  },
+  {
+   "t": 1,
+   "text": "\",\"note"
+  },
+  {
+   "t": 1,
+   "text": "\":\"Elect"
+  },
+  {
+   "t": 1,
+   "text": "rons kn"
+  },
+  {
+   "t": 1,
+   "text": "ock elect"
+  },
+  {
+   "t": 1,
+   "text": "rons off"
+  },
+  {
+   "t": 1,
+   "text": " xenon atoms, making"
+  },
+  {
+   "t": 1,
+   "text": " a plasma of"
+  },
+  {
+   "t": 1,
+   "text": " ions and elect"
+  },
+  {
+   "t": 1,
+   "text": "rons.\"},{\"anch"
+  },
+  {
+   "t": 1,
+   "text": "or\":\"magnets\",\"note"
+  },
+  {
+   "t": 1,
+   "text": "\":\"Magnets keep"
+  },
+  {
+   "t": 1,
+   "text": " electrons circ"
+  },
+  {
+   "t": 1,
+   "text": "ling"
+  },
+  {
+   "t": 1,
+   "text": " inside the"
+  },
+  {
+   "t": 1,
+   "text": " chamber so"
+  },
+  {
+   "t": 1,
+   "text": " more at"
+  },
+  {
+   "t": 1,
+   "text": "oms get"
+  },
+  {
+   "t": 1,
+   "text": " ionised.\"},{\"an"
+  },
+  {
+   "t": 1,
+   "text": "chor\":\"screen-gr"
+  },
+  {
+   "t": 1,
+   "text": "id\",\"note\":\"Hol"
+  },
+  {
+   "t": 1,
+   "text": "ds the pl"
+  },
+  {
+   "t": 1,
+   "text": "asma back"
+  },
+  {
+   "t": 2,
+   "text": " and lets positive x"
+  },
+  {
+   "t": 254,
+   "text": "enon ions dr"
+  },
+  {
+   "t": 254,
+   "text": "ift through"
+  },
+  {
+   "t": 254,
+   "text": " its"
+  },
+  {
+   "t": 254,
+   "text": " holes.\"},{\"anch"
+  },
+  {
+   "t": 254,
+   "text": "or\":\"accel-grid"
+  },
+  {
+   "t": 254,
+   "text": "\",\"note\":\"The"
+  },
+  {
+   "t": 254,
+   "text": " grid voltage p"
+  },
+  {
+   "t": 254,
+   "text": "ulls "
+  },
+  {
+   "t": 254,
+   "text": "ions across"
+  },
+  {
+   "t": 283,
+   "text": " the"
   },
   {
    "t": 306,
-   "text": "r longer. Drawn hugely slowed.\"}}}"
+   "text": " gap,"
+  },
+  {
+   "t": 343,
+   "text": " so hig"
+  },
+  {
+   "t": 603,
+   "text": "her voltage means a"
+  },
+  {
+   "t": 603,
+   "text": " faster exhaust.\"},"
+  },
+  {
+   "t": 603,
+   "text": "{\"anchor\":\"ne"
+  },
+  {
+   "t": 603,
+   "text": "utraliser\",\"note\":\""
+  },
+  {
+   "t": 603,
+   "text": "Emits electrons into the"
+  },
+  {
+   "t": 606,
+   "text": " beam so the sp"
+  },
+  {
+   "t": 606,
+   "text": "acecraft does"
+  },
+  {
+   "t": 606,
+   "text": " not build up a net"
+  },
+  {
+   "t": 641,
+   "text": " charge.\"},{\"anch"
+  },
+  {
+   "t": 674,
+   "text": "or\":\"thrust-d"
+  },
+  {
+   "t": 708,
+   "text": "ial\",\"note\":\""
+  },
+  {
+   "t": 741,
+   "text": "Shows the t"
+  },
+  {
+   "t": 1009,
+   "text": "iny thrust, mill"
+  },
+  {
+   "t": 1009,
+   "text": "in"
+  },
+  {
+   "t": 1009,
+   "text": "ewtons, p"
+  },
+  {
+   "t": 1009,
+   "text": "ushing"
+  },
+  {
+   "t": 1009,
+   "text": " back on the stand.\"}],"
+  },
+  {
+   "t": 1009,
+   "text": "\"caption\":\"X"
+  },
+  {
+   "t": 1009,
+   "text": "enon bec"
+  },
+  {
+   "t": 1018,
+   "text": "omes pl"
+  },
+  {
+   "t": 1039,
+   "text": "asma, the"
+  },
+  {
+   "t": 1075,
+   "text": " grids acc"
+  },
+  {
+   "t": 1111,
+   "text": "elerate its"
+  },
+  {
+   "t": 1139,
+   "text": " ions out"
+  },
+  {
+   "t": 1353,
+   "text": " the"
+  },
+  {
+   "t": 1353,
+   "text": " back, and the push"
+  },
+  {
+   "t": 1353,
+   "text": " on"
+  },
+  {
+   "t": 1353,
+   "text": " the th"
+  },
+  {
+   "t": 1353,
+   "text": "ruster is the"
+  },
+  {
+   "t": 1353,
+   "text": " thrust. Sl"
+  },
+  {
+   "t": 1373,
+   "text": "ide the gr"
+  },
+  {
+   "t": 1406,
+   "text": "id voltage and the x"
+  },
+  {
+   "t": 1452,
+   "text": "enon flow to see ex"
+  },
+  {
+   "t": 1490,
+   "text": "haust speed, thr"
+  },
+  {
+   "t": 1512,
+   "text": "ust and power change"
+  },
+  {
+   "t": 1551,
+   "text": ".\"},\"bind\":\"{"
+  },
+  {
+   "t": 1951,
+   "text": "state.th"
+  },
+  {
+   "t": 1952,
+   "text": "ruster}\"},\"state\":"
+  },
+  {
+   "t": 1952,
+   "text": "{\"thruster\":{\""
+  },
+  {
+   "t": 1952,
+   "text": "voltage\":1200,\""
+  },
+  {
+   "t": 1952,
+   "text": "flow\":1.5}}"
+  },
+  {
+   "t": 1952,
+   "text": "}"
   }
  ]
 }

@@ -1,0 +1,297 @@
+{
+ "id": "hello-card",
+ "title": "Welcome card",
+ "prompt": "Make me a small welcome card: three sample stats for revenue, signups and churn, a box for my name that greets me as I type, and a button that says hello",
+ "model": "sonnet",
+ "recordedAt": "2026-11-04T15:14:15.816Z",
+ "chunks": [
+  {
+   "t": 0,
+   "text": "{\"version\":\""
+  },
+  {
+   "t": 0,
+   "text": "1.0\",\"ui\":{"
+  },
+  {
+   "t": 0,
+   "text": "\"type\":\"card\",\"props\":"
+  },
+  {
+   "t": 0,
+   "text": "{\"title\":\"Welc"
+  },
+  {
+   "t": 0,
+   "text": "ome\",\"description\":\"A"
+  },
+  {
+   "t": 0,
+   "text": " quick look"
+  },
+  {
+   "t": 0,
+   "text": " at how"
+  },
+  {
+   "t": 0,
+   "text": " things are going\"},\"children\":"
+  },
+  {
+   "t": 0,
+   "text": "[{\"type\":\"flex"
+  },
+  {
+   "t": 0,
+   "text": "\",\"props\":{\"direction\":"
+  },
+  {
+   "t": 0,
+   "text": "\"column\",\"gap\":\"16"
+  },
+  {
+   "t": 0,
+   "text": "px\"},\"children\":[{"
+  },
+  {
+   "t": 0,
+   "text": "\"type\":\"grid\",\"props"
+  },
+  {
+   "t": 0,
+   "text": "\":{\"columns\":\"rep"
+  },
+  {
+   "t": 0,
+   "text": "eat(auto-fit"
+  },
+  {
+   "t": 0,
+   "text": ", minmax(150"
+  },
+  {
+   "t": 0,
+   "text": "px, 1fr))\",\""
+  },
+  {
+   "t": 0,
+   "text": "gap\":\"12px\"},"
+  },
+  {
+   "t": 0,
+   "text": "\"children\":[{\"type\":"
+  },
+  {
+   "t": 0,
+   "text": "\"stat\",\"props\":{\""
+  },
+  {
+   "t": 0,
+   "text": "label\":\"Revenue\",\""
+  },
+  {
+   "t": 0,
+   "text": "value\":48"
+  },
+  {
+   "t": 0,
+   "text": "200"
+  },
+  {
+   "t": 0,
+   "text": ",\"format\":\"currency\",\""
+  },
+  {
+   "t": 0,
+   "text": "de"
+  },
+  {
+   "t": 0,
+   "text": "ltaPercent\":8"
+  },
+  {
+   "t": 0,
+   "text": ".4"
+  },
+  {
+   "t": 0,
+   "text": ",\"direction\":\"up-"
+  },
+  {
+   "t": 0,
+   "text": "good\"}},{\"type\":"
+  },
+  {
+   "t": 0,
+   "text": "\"stat\",\"props\":{\""
+  },
+  {
+   "t": 0,
+   "text": "label\":\"Signups\",\"value"
+  },
+  {
+   "t": 0,
+   "text": "\":1240,\"format\":\""
+  },
+  {
+   "t": 0,
+   "text": "number\",\"deltaPercent"
+  },
+  {
+   "t": 0,
+   "text": "\":12."
+  },
+  {
+   "t": 0,
+   "text": "1,\"direction\":\"up"
+  },
+  {
+   "t": 0,
+   "text": "-good\"}},{\"type"
+  },
+  {
+   "t": 0,
+   "text": "\":\"stat\",\"props\":{"
+  },
+  {
+   "t": 0,
+   "text": "\"label\":\"Churn\",\""
+  },
+  {
+   "t": 0,
+   "text": "value\":2.3"
+  },
+  {
+   "t": 0,
+   "text": ",\"format\":\"percent\",\""
+  },
+  {
+   "t": 0,
+   "text": "deltaPercent\":-"
+  },
+  {
+   "t": 0,
+   "text": "0.4,\"direction\":"
+  },
+  {
+   "t": 1,
+   "text": "\"down-good\"}}]"
+  },
+  {
+   "t": 1,
+   "text": "},{\"type\":\"separator"
+  },
+  {
+   "t": 1,
+   "text": "\",\""
+  },
+  {
+   "t": 1,
+   "text": "props\":{}"
+  },
+  {
+   "t": 1,
+   "text": "},{\"type\":\"input\",\""
+  },
+  {
+   "t": 1,
+   "text": "props\":{\"label\":\""
+  },
+  {
+   "t": 1,
+   "text": "Your name\",\"placeholder\":"
+  },
+  {
+   "t": 1,
+   "text": "\"Type your name\"},\""
+  },
+  {
+   "t": 1,
+   "text": "bind\":\"{"
+  },
+  {
+   "t": 1,
+   "text": "state.name}\"},{\""
+  },
+  {
+   "t": 1,
+   "text": "type\":\"heading\",\"props\":"
+  },
+  {
+   "t": 1,
+   "text": "{\"level\":3,\"text"
+  },
+  {
+   "t": 1,
+   "text": "\":\"{state.name"
+  },
+  {
+   "t": 1,
+   "text": " ? "
+  },
+  {
+   "t": 1,
+   "text": "'Hello, ' +"
+  },
+  {
+   "t": 1,
+   "text": " state.name + '!' :"
+  },
+  {
+   "t": 1,
+   "text": " 'Hello there!'"
+  },
+  {
+   "t": 1,
+   "text": "}\"}},{\"type\":"
+  },
+  {
+   "t": 1,
+   "text": "\"button\",\"props\":{\"label"
+  },
+  {
+   "t": 1,
+   "text": "\":\"Say hello\",\""
+  },
+  {
+   "t": 1,
+   "text": "variant\":\"default\"},\""
+  },
+  {
+   "t": 1,
+   "text": "on_click\":{\"action\":"
+  },
+  {
+   "t": 1,
+   "text": "\"toast\",\"message\":\""
+  },
+  {
+   "t": 1,
+   "text": "Hello, {state.name}"
+  },
+  {
+   "t": 1,
+   "text": "! Welcome a"
+  },
+  {
+   "t": 1,
+   "text": "bo"
+  },
+  {
+   "t": 1,
+   "text": "ard.\",\"variant\":\"success"
+  },
+  {
+   "t": 1,
+   "text": "\"}}]}"
+  },
+  {
+   "t": 1,
+   "text": "]},\"state\":{\"name"
+  },
+  {
+   "t": 1,
+   "text": "\":\"\"}}"
+  }
+ ]
+}

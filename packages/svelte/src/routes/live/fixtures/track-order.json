@@ -1,0 +1,389 @@
+{
+ "id": "track-order",
+ "title": "Track my order",
+ "prompt": "Where is my order? Show me the delivery status of my sample parcel with the steps so far",
+ "model": "sonnet",
+ "recordedAt": "2026-11-04T15:12:09.573Z",
+ "chunks": [
+  {
+   "t": 0,
+   "text": "{\"version\":\"1.0"
+  },
+  {
+   "t": 4,
+   "text": "\",\"ui\":{\"type"
+  },
+  {
+   "t": 269,
+   "text": "\":\"order-status\",\"props\":"
+  },
+  {
+   "t": 270,
+   "text": "{\"title\":\"Your"
+  },
+  {
+   "t": 270,
+   "text": " sample parcel is on its"
+  },
+  {
+   "t": 270,
+   "text": " way\",\"orderId\":\"S"
+  },
+  {
+   "t": 270,
+   "text": "M"
+  },
+  {
+   "t": 270,
+   "text": "P-20418"
+  },
+  {
+   "t": 270,
+   "text": "\",\"status\":\"in-transit"
+  },
+  {
+   "t": 270,
+   "text": "\",\"eta\":\"T"
+  },
+  {
+   "t": 270,
+   "text": "omorrow, 10"
+  },
+  {
+   "t": 270,
+   "text": " A"
+  },
+  {
+   "t": 270,
+   "text": "M to 2"
+  },
+  {
+   "t": 284,
+   "text": " PM\",\"tracking\":"
+  },
+  {
+   "t": 608,
+   "text": "{\"carrier\":\""
+  },
+  {
+   "t": 609,
+   "text": "S"
+  },
+  {
+   "t": 609,
+   "text": "ample Carrier\",\"number\":"
+  },
+  {
+   "t": 609,
+   "text": "\"SC"
+  },
+  {
+   "t": 609,
+   "text": "0000"
+  },
+  {
+   "t": 609,
+   "text": "123"
+  },
+  {
+   "t": 609,
+   "text": "456789"
+  },
+  {
+   "t": 609,
+   "text": "\"},\"origin\":{\""
+  },
+  {
+   "t": 609,
+   "text": "name\":\"Sample war"
+  },
+  {
+   "t": 612,
+   "text": "ehouse\",\"address\":\""
+  },
+  {
+   "t": 644,
+   "text": "O"
+  },
+  {
+   "t": 677,
+   "text": "akland, CA\",\""
+  },
+  {
+   "t": 975,
+   "text": "lat\":37.8"
+  },
+  {
+   "t": 975,
+   "text": "044"
+  },
+  {
+   "t": 975,
+   "text": ",\"lng\":-122."
+  },
+  {
+   "t": 975,
+   "text": "2"
+  },
+  {
+   "t": 975,
+   "text": "712},\"destination\":{\""
+  },
+  {
+   "t": 975,
+   "text": "name\":\"Home\",\"address\":"
+  },
+  {
+   "t": 975,
+   "text": "\"San Francisco, C"
+  },
+  {
+   "t": 975,
+   "text": "A\",\"lat\":37.7"
+  },
+  {
+   "t": 982,
+   "text": "749,\"lng\":-122"
+  },
+  {
+   "t": 1012,
+   "text": ".4194},\"tracker"
+  },
+  {
+   "t": 1045,
+   "text": "\":{\"l"
+  },
+  {
+   "t": 1078,
+   "text": "at\":37.79"
+  },
+  {
+   "t": 1359,
+   "text": ",\"lng\":-122."
+  },
+  {
+   "t": 1359,
+   "text": "34"
+  },
+  {
+   "t": 1359,
+   "text": ",\"he"
+  },
+  {
+   "t": 1359,
+   "text": "ading\":250"
+  },
+  {
+   "t": 1359,
+   "text": ",\"label\":\"Parc"
+  },
+  {
+   "t": 1359,
+   "text": "el\"},\"route"
+  },
+  {
+   "t": 1359,
+   "text": "\":[[37.8"
+  },
+  {
+   "t": 1359,
+   "text": "044,-122.2712],"
+  },
+  {
+   "t": 1379,
+   "text": "[37.798"
+  },
+  {
+   "t": 1411,
+   "text": ",-122.31"
+  },
+  {
+   "t": 1445,
+   "text": "],[37.79"
+  },
+  {
+   "t": 1481,
+   "text": ",-122.34],[37"
+  },
+  {
+   "t": 1881,
+   "text": ".7"
+  },
+  {
+   "t": 1881,
+   "text": "749"
+  },
+  {
+   "t": 1881,
+   "text": ",-122.4194]],"
+  },
+  {
+   "t": 1881,
+   "text": "\"m"
+  },
+  {
+   "t": 1881,
+   "text": "apHeight\":220"
+  },
+  {
+   "t": 1881,
+   "text": ",\"events\":[{\"time"
+  },
+  {
+   "t": 1881,
+   "text": "\":\"Today "
+  },
+  {
+   "t": 1881,
+   "text": "8"
+  },
+  {
+   "t": 1881,
+   "text": ":15 AM\",\"label\":"
+  },
+  {
+   "t": 1881,
+   "text": "\"In"
+  },
+  {
+   "t": 1881,
+   "text": " transit to"
+  },
+  {
+   "t": 1881,
+   "text": " local dep"
+  },
+  {
+   "t": 1881,
+   "text": "ot\",\"location\":\"Oak"
+  },
+  {
+   "t": 1882,
+   "text": "land, CA\",\""
+  },
+  {
+   "t": 1882,
+   "text": "icon\":\"truck\"},"
+  },
+  {
+   "t": 1882,
+   "text": "{\"time\":\"Y"
+  },
+  {
+   "t": 1882,
+   "text": "esterday 6:40"
+  },
+  {
+   "t": 1882,
+   "text": " PM\",\"label\":\""
+  },
+  {
+   "t": 1882,
+   "text": "Departed sorting facility\",\""
+  },
+  {
+   "t": 1882,
+   "text": "location\":\"Oakland,"
+  },
+  {
+   "t": 1883,
+   "text": " CA\"},{\"time\":"
+  },
+  {
+   "t": 1883,
+   "text": "\"Yesterday 2"
+  },
+  {
+   "t": 1883,
+   "text": ":05"
+  },
+  {
+   "t": 1883,
+   "text": " PM\",\"label\":\""
+  },
+  {
+   "t": 1883,
+   "text": "Packed and hand"
+  },
+  {
+   "t": 1884,
+   "text": "ed to car"
+  },
+  {
+   "t": 1884,
+   "text": "rier\",\"location\":\"O"
+  },
+  {
+   "t": 1884,
+   "text": "akland, CA\"},{"
+  },
+  {
+   "t": 1884,
+   "text": "\"time\":\"N"
+  },
+  {
+   "t": 1884,
+   "text": "ov 2"
+  },
+  {
+   "t": 1884,
+   "text": ","
+  },
+  {
+   "t": 1884,
+   "text": " 11"
+  },
+  {
+   "t": 1884,
+   "text": ":20"
+  },
+  {
+   "t": 1885,
+   "text": " AM\",\"label\":\""
+  },
+  {
+   "t": 1885,
+   "text": "Order confirmed\",\"location\":"
+  },
+  {
+   "t": 1885,
+   "text": "\"Online"
+  },
+  {
+   "t": 1885,
+   "text": "\"},"
+  },
+  {
+   "t": 1885,
+   "text": "{\"time\":\"Nov"
+  },
+  {
+   "t": 1885,
+   "text": " 2"
+  },
+  {
+   "t": 1885,
+   "text": ", 11"
+  },
+  {
+   "t": 1885,
+   "text": ":02"
+  },
+  {
+   "t": 1885,
+   "text": " AM\",\"label\":\""
+  },
+  {
+   "t": 1886,
+   "text": "Order placed\",\""
+  },
+  {
+   "t": 1886,
+   "text": "location\":\"Online\"}]"
+  },
+  {
+   "t": 1886,
+   "text": "}}}"
+  }
+ ]
+}

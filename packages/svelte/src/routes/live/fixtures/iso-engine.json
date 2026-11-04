@@ -1,0 +1,825 @@
+{
+ "id": "iso-engine",
+ "title": "Inside a piston engine",
+ "prompt": "Show me how a one-cylinder piston engine moves, with an engine speed slider",
+ "model": "sonnet",
+ "recordedAt": "2026-11-04T15:09:23.128Z",
+ "chunks": [
+  {
+   "t": 0,
+   "text": "{"
+  },
+  {
+   "t": 1,
+   "text": "\"version"
+  },
+  {
+   "t": 1,
+   "text": "\":\"1.0\",\"ui"
+  },
+  {
+   "t": 1,
+   "text": "\":{\"type"
+  },
+  {
+   "t": 2,
+   "text": "\":\"iso-scene\",\""
+  },
+  {
+   "t": 2,
+   "text": "props\":{\"title"
+  },
+  {
+   "t": 2,
+   "text": "\":\"One-cylinder"
+  },
+  {
+   "t": 3,
+   "text": " piston engine\",\"caption\":"
+  },
+  {
+   "t": 3,
+   "text": "\"The"
+  },
+  {
+   "t": 3,
+   "text": " sp"
+  },
+  {
+   "t": 3,
+   "text": "inning crank p"
+  },
+  {
+   "t": 3,
+   "text": "ulls the piston up"
+  },
+  {
+   "t": 4,
+   "text": " and down through the connecting r"
+  },
+  {
+   "t": 7,
+   "text": "od. Drag the slider"
+  },
+  {
+   "t": 8,
+   "text": " to change eng"
+  },
+  {
+   "t": 8,
+   "text": "ine speed.\",\"params"
+  },
+  {
+   "t": 8,
+   "text": "\":[{\"key"
+  },
+  {
+   "t": 8,
+   "text": "\":\"r"
+  },
+  {
+   "t": 8,
+   "text": "pm\",\"label\":\"Eng"
+  },
+  {
+   "t": 8,
+   "text": "ine speed ("
+  },
+  {
+   "t": 8,
+   "text": "slow mot"
+  },
+  {
+   "t": 8,
+   "text": "ion)\",\"min\":10"
+  },
+  {
+   "t": 8,
+   "text": ",\"max\":120,\"step"
+  },
+  {
+   "t": 8,
+   "text": "\":5,\"unit\":\""
+  },
+  {
+   "t": 8,
+   "text": "rpm\",\"value\":50"
+  },
+  {
+   "t": 8,
+   "text": "}],\"parts\":[{"
+  },
+  {
+   "t": 8,
+   "text": "\"id"
+  },
+  {
+   "t": 8,
+   "text": "\":\"base\",\"kind\":\""
+  },
+  {
+   "t": 8,
+   "text": "slab\",\"at\":[0,"
+  },
+  {
+   "t": 8,
+   "text": "0,-30],\"w\":"
+  },
+  {
+   "t": 8,
+   "text": "120"
+  },
+  {
+   "t": 8,
+   "text": ",\"d"
+  },
+  {
+   "t": 8,
+   "text": "\":70"
+  },
+  {
+   "t": 8,
+   "text": ",\"h\":4,\"r"
+  },
+  {
+   "t": 8,
+   "text": "\":6},{\"id\":\""
+  },
+  {
+   "t": 8,
+   "text": "crankcase\",\"kind\":"
+  },
+  {
+   "t": 8,
+   "text": "\"box\",\"at\":[0,"
+  },
+  {
+   "t": 8,
+   "text": "0,-"
+  },
+  {
+   "t": 8,
+   "text": "4"
+  },
+  {
+   "t": 8,
+   "text": "],\"w\":64"
+  },
+  {
+   "t": 8,
+   "text": ",\"d\":30,\"h"
+  },
+  {
+   "t": 8,
+   "text": "\":44"
+  },
+  {
+   "t": 8,
+   "text": ",\"ghost\":true,"
+  },
+  {
+   "t": 8,
+   "text": "\"color\":\"metal\"},"
+  },
+  {
+   "t": 14,
+   "text": "{\"id\":\"flywhe"
+  },
+  {
+   "t": 15,
+   "text": "el\",\"kind\":\"disc"
+  },
+  {
+   "t": 15,
+   "text": "\",\"at\":[0,0,"
+  },
+  {
+   "t": 15,
+   "text": "0],\"r\":24,\""
+  },
+  {
+   "t": 15,
+   "text": "h\":6,\"axis\":"
+  },
+  {
+   "t": 15,
+   "text": "\"y\",\"color\":\"metal"
+  },
+  {
+   "t": 15,
+   "text": "\"},{\"id\":\"sh"
+  },
+  {
+   "t": 15,
+   "text": "aft\",\"kind\":\"c"
+  },
+  {
+   "t": 16,
+   "text": "ylinder\",\"at\":[0"
+  },
+  {
+   "t": 16,
+   "text": ",0,0],\"r\":"
+  },
+  {
+   "t": 16,
+   "text": "3,\"h\":50"
+  },
+  {
+   "t": 16,
+   "text": ",\"axis\":\"y\",\""
+  },
+  {
+   "t": 16,
+   "text": "color\":\"met"
+  },
+  {
+   "t": 16,
+   "text": "al\",\"on\":\"flywhe"
+  },
+  {
+   "t": 16,
+   "text": "el\"},{\"id\":\""
+  },
+  {
+   "t": 16,
+   "text": "pin\",\"kind\":\"c"
+  },
+  {
+   "t": 16,
+   "text": "ylinder\",\"at\":[0"
+  },
+  {
+   "t": 16,
+   "text": ",0,16"
+  },
+  {
+   "t": 16,
+   "text": "],\"r\":3,\"h"
+  },
+  {
+   "t": 16,
+   "text": "\":12,\"axis\":\""
+  },
+  {
+   "t": 16,
+   "text": "y\",\"color\":\"amber\",\""
+  },
+  {
+   "t": 16,
+   "text": "on\":\"flywheel\""
+  },
+  {
+   "t": 16,
+   "text": "},{\"id\":\"counter"
+  },
+  {
+   "t": 16,
+   "text": "weight\",\"kind\":\"c"
+  },
+  {
+   "t": 16,
+   "text": "ylinder\",\"at\":[0"
+  },
+  {
+   "t": 16,
+   "text": ",0,-14"
+  },
+  {
+   "t": 16,
+   "text": "],\"r\":6"
+  },
+  {
+   "t": 16,
+   "text": ",\"h\":8,\"ax"
+  },
+  {
+   "t": 16,
+   "text": "is\":\"y\",\"color\":\""
+  },
+  {
+   "t": 16,
+   "text": "red\",\"on\":\"flywhe"
+  },
+  {
+   "t": 16,
+   "text": "el\"},{\"id\":\""
+  },
+  {
+   "t": 16,
+   "text": "conrod\",\"kind\":\""
+  },
+  {
+   "t": 16,
+   "text": "rod\",\"from\":[0,"
+  },
+  {
+   "t": 16,
+   "text": "0,54],\"to\":["
+  },
+  {
+   "t": 16,
+   "text": "0,0,16],\"r"
+  },
+  {
+   "t": 17,
+   "text": "\":2"
+  },
+  {
+   "t": 17,
+   "text": ".6"
+  },
+  {
+   "t": 17,
+   "text": ",\"color\":\"bl"
+  },
+  {
+   "t": 17,
+   "text": "ue\"},{\"id\":\""
+  },
+  {
+   "t": 18,
+   "text": "piston\",\"kind\":\"c"
+  },
+  {
+   "t": 18,
+   "text": "ylinder\",\"at\":[0"
+  },
+  {
+   "t": 18,
+   "text": ",0,54],\"r\":"
+  },
+  {
+   "t": 19,
+   "text": "13,\"h\":12,\""
+  },
+  {
+   "t": 19,
+   "text": "color\":\"accent\""
+  },
+  {
+   "t": 19,
+   "text": "},{\"id\":\"c"
+  },
+  {
+   "t": 19,
+   "text": "ylinder\",\"kind\":\""
+  },
+  {
+   "t": 20,
+   "text": "cylinder\",\"at\":["
+  },
+  {
+   "t": 20,
+   "text": "0,0,62"
+  },
+  {
+   "t": 20,
+   "text": "],\"r\":15,\"h"
+  },
+  {
+   "t": 20,
+   "text": "\":58"
+  },
+  {
+   "t": 20,
+   "text": ",\"ghost\":true},"
+  },
+  {
+   "t": 20,
+   "text": "{\"id\":\"head\",\"k"
+  },
+  {
+   "t": 22,
+   "text": "ind\":\"disc\",\"at\":"
+  },
+  {
+   "t": 22,
+   "text": "[0,0,93"
+  },
+  {
+   "t": 22,
+   "text": "],\"r\":17"
+  },
+  {
+   "t": 23,
+   "text": ",\"h\":5"
+  },
+  {
+   "t": 23,
+   "text": ",\"color\":\"metal\""
+  },
+  {
+   "t": 23,
+   "text": "},{\"id\":\"plug"
+  },
+  {
+   "t": 23,
+   "text": "\",\"kind\":\"rod\",\""
+  },
+  {
+   "t": 23,
+   "text": "from\":[0,0,96"
+  },
+  {
+   "t": 23,
+   "text": "],\"to\":[0,0"
+  },
+  {
+   "t": 23,
+   "text": ",108"
+  },
+  {
+   "t": 23,
+   "text": "],\"r\":2.4,"
+  },
+  {
+   "t": 23,
+   "text": "\"color\":\"ne"
+  },
+  {
+   "t": 23,
+   "text": "utral\"},{\"id\":"
+  },
+  {
+   "t": 23,
+   "text": "\"burn"
+  },
+  {
+   "t": 23,
+   "text": "\",\"kind\":\"sphere"
+  },
+  {
+   "t": 23,
+   "text": "\",\"at\":[0,0,"
+  },
+  {
+   "t": 23,
+   "text": "84],\"r\":7"
+  },
+  {
+   "t": 23,
+   "text": ",\"color\":\"red\"}"
+  },
+  {
+   "t": 24,
+   "text": "],\"motions\":[{\""
+  },
+  {
+   "t": 25,
+   "text": "part\":\"flywheel\",\""
+  },
+  {
+   "t": 25,
+   "text": "kind\":\"spin\",\"ax"
+  },
+  {
+   "t": 25,
+   "text": "is\":\"y\",\"speed\":"
+  },
+  {
+   "t": 27,
+   "text": "\"rpm / 60\""
+  },
+  {
+   "t": 28,
+   "text": "},{\"part\":\"piston"
+  },
+  {
+   "t": 28,
+   "text": "\",\"kind\":\"slide\",\""
+  },
+  {
+   "t": 28,
+   "text": "axis\":\"z\",\"dri"
+  },
+  {
+   "t": 28,
+   "text": "ven\":\"flywheel\",\""
+  },
+  {
+   "t": 29,
+   "text": "throw\":16"
+  },
+  {
+   "t": 29,
+   "text": "},{\"part\":\"conr"
+  },
+  {
+   "t": 29,
+   "text": "od\",\"kind\":\"link\",\""
+  },
+  {
+   "t": 30,
+   "text": "from\":\"piston\",\"to\":"
+  },
+  {
+   "t": 63,
+   "text": "\"pin\"},{\"part"
+  },
+  {
+   "t": 70,
+   "text": "\":\"burn\",\"kind\":"
+  },
+  {
+   "t": 103,
+   "text": "\"pulse\",\"speed\":"
+  },
+  {
+   "t": 136,
+   "text": "\"rpm / 120\",\""
+  },
+  {
+   "t": 174,
+   "text": "range\":0.5"
+  },
+  {
+   "t": 202,
+   "text": "}],\"readouts\":["
+  },
+  {
+   "t": 241,
+   "text": "{\"label\":\"Crank"
+  },
+  {
+   "t": 273,
+   "text": " turns per"
+  },
+  {
+   "t": 302,
+   "text": " second\",\"value\":\"rpm"
+  },
+  {
+   "t": 336,
+   "text": " / 60\",\"unit\":\""
+  },
+  {
+   "t": 376,
+   "text": "rev/"
+  },
+  {
+   "t": 405,
+   "text": "s\",\"decimals\":2},"
+  },
+  {
+   "t": 441,
+   "text": "{\"label\":\"Power str"
+  },
+  {
+   "t": 479,
+   "text": "okes\",\""
+  },
+  {
+   "t": 512,
+   "text": "value\":\"rpm / "
+  },
+  {
+   "t": 538,
+   "text": "2\",\"unit\":\"/min"
+  },
+  {
+   "t": 572,
+   "text": "\",\"decimals\":0"
+  },
+  {
+   "t": 606,
+   "text": "},{\"label\":\"M"
+  },
+  {
+   "t": 639,
+   "text": "ean piston speed\",\"value\":"
+  },
+  {
+   "t": 674,
+   "text": "\"rpm * 0."
+  },
+  {
+   "t": 707,
+   "text": "056"
+  },
+  {
+   "t": 736,
+   "text": " * 2 / 60"
+  },
+  {
+   "t": 773,
+   "text": "\",\"unit\":\"m/s"
+  },
+  {
+   "t": 808,
+   "text": "\",\"decimals\":2"
+  },
+  {
+   "t": 841,
+   "text": "}],\"labels\":[{"
+  },
+  {
+   "t": 876,
+   "text": "\"part\":\"pi"
+  },
+  {
+   "t": 906,
+   "text": "ston\",\"label"
+  },
+  {
+   "t": 940,
+   "text": "\":\"Piston\",\"note\":"
+  },
+  {
+   "t": 969,
+   "text": "\"P"
+  },
+  {
+   "t": 1040,
+   "text": "ushed down"
+  },
+  {
+   "t": 1061,
+   "text": " by the bur"
+  },
+  {
+   "t": 1079,
+   "text": "ning f"
+  },
+  {
+   "t": 1110,
+   "text": "uel, then push"
+  },
+  {
+   "t": 1150,
+   "text": "ed back up by the crank.\""
+  },
+  {
+   "t": 1175,
+   "text": "},{\"part\":\"conr"
+  },
+  {
+   "t": 1206,
+   "text": "od\",\"label\":\"Connec"
+  },
+  {
+   "t": 1240,
+   "text": "ting rod\",\"note\":\""
+  },
+  {
+   "t": 1278,
+   "text": "Turns the"
+  },
+  {
+   "t": 1325,
+   "text": " pi"
+  },
+  {
+   "t": 1354,
+   "text": "ston's up and down motion into"
+  },
+  {
+   "t": 1378,
+   "text": " r"
+  },
+  {
+   "t": 1413,
+   "text": "otation.\""
+  },
+  {
+   "t": 1457,
+   "text": "},{\"part\":\"pin"
+  },
+  {
+   "t": 1482,
+   "text": "\",\"label\":\"Crank p"
+  },
+  {
+   "t": 1508,
+   "text": "in\",\"note\":\""
+  },
+  {
+   "t": 1541,
+   "text": "Sits off-"
+  },
+  {
+   "t": 1573,
+   "text": "cent"
+  },
+  {
+   "t": 1605,
+   "text": "re on"
+  },
+  {
+   "t": 1643,
+   "text": " the fl"
+  },
+  {
+   "t": 1675,
+   "text": "ywheel, so it sw"
+  },
+  {
+   "t": 1707,
+   "text": "ings in"
+  },
+  {
+   "t": 1741,
+   "text": " a circle.\"},{\"part"
+  },
+  {
+   "t": 1777,
+   "text": "\":\"flywheel\",\"label"
+  },
+  {
+   "t": 1803,
+   "text": "\":\"Flywheel and"
+  },
+  {
+   "t": 1846,
+   "text": " crank"
+  },
+  {
+   "t": 1872,
+   "text": "shaft\",\"note\":\""
+  },
+  {
+   "t": 1907,
+   "text": "St"
+  },
+  {
+   "t": 1939,
+   "text": "ores energy so the eng"
+  },
+  {
+   "t": 1973,
+   "text": "ine turns smoothly between"
+  },
+  {
+   "t": 2015,
+   "text": " power"
+  },
+  {
+   "t": 2039,
+   "text": " strokes.\"},{\"part"
+  },
+  {
+   "t": 2091,
+   "text": "\":\"burn\",\"label\":\""
+  },
+  {
+   "t": 2104,
+   "text": "Combustion\",\"note\":\""
+  },
+  {
+   "t": 2143,
+   "text": "In a four-stroke eng"
+  },
+  {
+   "t": 2176,
+   "text": "ine this fires once every two tur"
+  },
+  {
+   "t": 2208,
+   "text": "ns.\"},{\"part\":\""
+  },
+  {
+   "t": 2243,
+   "text": "pl"
+  },
+  {
+   "t": 2273,
+   "text": "ug\",\"label\":\"Spark"
+  },
+  {
+   "t": 2376,
+   "text": " plug\",\"note\":\""
+  },
+  {
+   "t": 2376,
+   "text": "Ignites the f"
+  },
+  {
+   "t": 2377,
+   "text": "uel and"
+  },
+  {
+   "t": 2415,
+   "text": " air mixture at the top of"
+  },
+  {
+   "t": 2442,
+   "text": " the stroke.\"}]},"
+  },
+  {
+   "t": 2473,
+   "text": "\"bind\":\"state.eng"
+  },
+  {
+   "t": 2507,
+   "text": "ine\"},"
+  },
+  {
+   "t": 2544,
+   "text": "\"state\":{\"engine\":"
+  },
+  {
+   "t": 2944,
+   "text": "{}}}"
+  }
+ ]
+}

@@ -1,0 +1,225 @@
+{
+ "id": "lisbon-weather",
+ "title": "Lisbon weather",
+ "prompt": "Show me a 7-day weather forecast for Lisbon with highs, lows and chance of rain (sample data)",
+ "model": "sonnet",
+ "recordedAt": "2026-11-04T15:10:24.252Z",
+ "chunks": [
+  {
+   "t": 0,
+   "text": "{\"version\":\""
+  },
+  {
+   "t": 0,
+   "text": "1.0\",\"ui\":{"
+  },
+  {
+   "t": 0,
+   "text": "\"type\":\"weather-for"
+  },
+  {
+   "t": 0,
+   "text": "ecast\",\"props\":{\"place"
+  },
+  {
+   "t": 0,
+   "text": "\":\"Lisbon\",\""
+  },
+  {
+   "t": 0,
+   "text": "unit\":\"C\",\"note\":"
+  },
+  {
+   "t": 0,
+   "text": "\"Sample forecast\",\""
+  },
+  {
+   "t": 1,
+   "text": "now\":{\"temp\":19"
+  },
+  {
+   "t": 1,
+   "text": ",\"condition\":\"partly"
+  },
+  {
+   "t": 1,
+   "text": "-cloudy\",\"feel"
+  },
+  {
+   "t": 1,
+   "text": "sLike\":18,\"hum"
+  },
+  {
+   "t": 1,
+   "text": "idity\":68"
+  },
+  {
+   "t": 1,
+   "text": ",\"wind\":\"15"
+  },
+  {
+   "t": 1,
+   "text": " km/h NW\"},"
+  },
+  {
+   "t": 1,
+   "text": "\"days\":[{\"day\":"
+  },
+  {
+   "t": 1,
+   "text": "\"Wed\",\"condition\":"
+  },
+  {
+   "t": 1,
+   "text": "\"partly-cloudy"
+  },
+  {
+   "t": 1,
+   "text": "\",\"high\":21"
+  },
+  {
+   "t": 1,
+   "text": ",\"low\":14"
+  },
+  {
+   "t": 1,
+   "text": ",\"rainChance\":15"
+  },
+  {
+   "t": 1,
+   "text": ",\"sunrise\":\""
+  },
+  {
+   "t": 1,
+   "text": "07:12"
+  },
+  {
+   "t": 1,
+   "text": "\",\"sunset\":\"17"
+  },
+  {
+   "t": 1,
+   "text": ":28"
+  },
+  {
+   "t": 1,
+   "text": "\"},{\"day\":\""
+  },
+  {
+   "t": 1,
+   "text": "Thu\",\"condition\":\"s"
+  },
+  {
+   "t": 1,
+   "text": "unny\",\"high\":22,\""
+  },
+  {
+   "t": 1,
+   "text": "low\":14"
+  },
+  {
+   "t": 2,
+   "text": ",\"rainChance\":5"
+  },
+  {
+   "t": 2,
+   "text": "},{\"day\":\"F"
+  },
+  {
+   "t": 2,
+   "text": "ri\",\"condition\":\"clo"
+  },
+  {
+   "t": 2,
+   "text": "udy\",\"high\":20"
+  },
+  {
+   "t": 2,
+   "text": ",\"low\":15,\"r"
+  },
+  {
+   "t": 2,
+   "text": "ainChance\":30},{\""
+  },
+  {
+   "t": 2,
+   "text": "day\":\"Sat\",\"cond"
+  },
+  {
+   "t": 2,
+   "text": "ition\":\"rain\",\"high\":"
+  },
+  {
+   "t": 2,
+   "text": "17,\"low\":13,\""
+  },
+  {
+   "t": 3,
+   "text": "rainChance\":80"
+  },
+  {
+   "t": 3,
+   "text": "},{\"day\":\"S"
+  },
+  {
+   "t": 7,
+   "text": "un\",\"condition\":\"heav"
+  },
+  {
+   "t": 7,
+   "text": "y-rain\",\"high\":16"
+  },
+  {
+   "t": 7,
+   "text": ",\"low\":12,\"r"
+  },
+  {
+   "t": 7,
+   "text": "ainChance\":90"
+  },
+  {
+   "t": 7,
+   "text": "},{\"day\":\"M"
+  },
+  {
+   "t": 7,
+   "text": "on\",\"condition\":\"part"
+  },
+  {
+   "t": 7,
+   "text": "ly-cloudy\",\"high"
+  },
+  {
+   "t": 7,
+   "text": "\":18"
+  },
+  {
+   "t": 7,
+   "text": ",\"low\":12"
+  },
+  {
+   "t": 7,
+   "text": ",\"rainChance\":25"
+  },
+  {
+   "t": 7,
+   "text": "},{\"day\":\"T"
+  },
+  {
+   "t": 7,
+   "text": "ue\",\"condition\":\"sun"
+  },
+  {
+   "t": 7,
+   "text": "ny\",\"high\":20,\"low"
+  },
+  {
+   "t": 7,
+   "text": "\":13,\"rainChance"
+  },
+  {
+   "t": 7,
+   "text": "\":10}]}}}"
+  }
+ ]
+}

@@ -2,72 +2,504 @@
  "id": "rocket-engine",
  "title": "Inside a rocket engine",
  "prompt": "How does a rocket engine work? Show me inside one and let me throttle it.",
- "model": "hand-written",
- "recordedAt": "2026-10-13T12:00:00.000Z",
+ "model": "sonnet",
+ "recordedAt": "2026-11-04T15:10:40.108Z",
  "chunks": [
   {
    "t": 0,
-   "text": "{\"version\":\"1.0\",\"state\":{\"figure\":null},\"ui\":{\"type\":\"figure\",\""
+   "text": "{\"version\":\""
   },
   {
-   "t": 18,
-   "text": "bind\":\"{state.figure}\",\"props\":{\"figure\":\"rocket-engine\",\"params"
+   "t": 0,
+   "text": "1.0\",\"ui\":{"
   },
   {
-   "t": 36,
-   "text": "\":{\"throttle\":100,\"mixture\":2.6},\"labels\":[{\"anchor\":\"turbopump\""
+   "t": 0,
+   "text": "\"type\":\"fig"
   },
   {
-   "t": 54,
-   "text": ",\"note\":\"One shaft: a turbine in the middle drives the oxygen pu"
+   "t": 0,
+   "text": "ure\",\"b"
   },
   {
-   "t": 72,
-   "text": "mp on one side and the kerosene pump on the other.\"},{\"anchor\":\""
+   "t": 0,
+   "text": "ind\":\"{state."
   },
   {
-   "t": 90,
-   "text": "preburner\",\"note\":\"Burns all the oxygen with a little kerosene. "
+   "t": 0,
+   "text": "eng"
   },
   {
-   "t": 108,
-   "text": "The hot gas spins the turbine, then goes on to the injector.\"},{"
+   "t": 0,
+   "text": "ine}\",\"props\":{\"fig"
   },
   {
-   "t": 126,
-   "text": "\"anchor\":\"injector\",\"note\":\"Hundreds of small holes mix the hot "
+   "t": 0,
+   "text": "ure\":\"rocket-eng"
   },
   {
-   "t": 144,
-   "text": "gas and the kerosene so they burn evenly.\"},{\"anchor\":\"throat\",\""
+   "t": 0,
+   "text": "ine\",\"params\":{\"thrott"
   },
   {
-   "t": 162,
-   "text": "note\":\"The narrowest point. The gas reaches the speed of sound h"
+   "t": 0,
+   "text": "le\":80,\"mixture"
   },
   {
-   "t": 180,
-   "text": "ere.\"},{\"anchor\":\"cooling-channels\",\"note\":\"Kerosene runs throug"
+   "t": 0,
+   "text": "\":2.6"
   },
   {
-   "t": 198,
-   "text": "h the nozzle wall first, so the metal survives the heat.\"},{\"anc"
+   "t": 0,
+   "text": "},\"lab"
   },
   {
-   "t": 216,
-   "text": "hor\":\"load-cell\",\"note\":\"All the thrust passes through here, so "
+   "t": 0,
+   "text": "els\":[{\"anchor"
   },
   {
-   "t": 234,
-   "text": "the stand can weigh it.\"}],\"caption\":\"Move the throttle and the "
+   "t": 0,
+   "text": "\":\"oxidiser-"
   },
   {
-   "t": 252,
-   "text": "mixture and watch the thrust, the chamber pressure and the pump "
+   "t": 0,
+   "text": "tank\",\"label"
   },
   {
-   "t": 270,
-   "text": "speed. The shaft is drawn far slower than it really turns.\"}}}"
+   "t": 0,
+   "text": "\":\"Liquid ox"
+  },
+  {
+   "t": 0,
+   "text": "ygen tank\",\"note\":\""
+  },
+  {
+   "t": 0,
+   "text": "Stores the o"
+  },
+  {
+   "t": 0,
+   "text": "xidiser, super-"
+  },
+  {
+   "t": 0,
+   "text": "cold li"
+  },
+  {
+   "t": 0,
+   "text": "quid oxygen,"
+  },
+  {
+   "t": 0,
+   "text": " which"
+  },
+  {
+   "t": 0,
+   "text": " burns the"
+  },
+  {
+   "t": 0,
+   "text": " fuel.\"},{\"an"
+  },
+  {
+   "t": 1,
+   "text": "chor\":\"fuel-"
+  },
+  {
+   "t": 1,
+   "text": "tank\",\"label\":\"K"
+  },
+  {
+   "t": 1,
+   "text": "erosene tank\",\"note\":"
+  },
+  {
+   "t": 1,
+   "text": "\"Stores the fuel"
+  },
+  {
+   "t": 1,
+   "text": ". R"
+  },
+  {
+   "t": 1,
+   "text": "ocket engines car"
+  },
+  {
+   "t": 2,
+   "text": "ry their"
+  },
+  {
+   "t": 2,
+   "text": " own oxid"
+  },
+  {
+   "t": 2,
+   "text": "iser, so they work"
+  },
+  {
+   "t": 2,
+   "text": " in space.\"},{\"anch"
+  },
+  {
+   "t": 2,
+   "text": "or\":\"turbopump\",\""
+  },
+  {
+   "t": 2,
+   "text": "label\":\"Turbopump"
+  },
+  {
+   "t": 3,
+   "text": "\",\"note\":\"A"
+  },
+  {
+   "t": 3,
+   "text": " turbine sp"
+  },
+  {
+   "t": 207,
+   "text": "ins p"
+  },
+  {
+   "t": 208,
+   "text": "umps that push"
+  },
+  {
+   "t": 208,
+   "text": " prop"
+  },
+  {
+   "t": 208,
+   "text": "ellant"
+  },
+  {
+   "t": 208,
+   "text": " into the chamber at very"
+  },
+  {
+   "t": 208,
+   "text": " high pressure"
+  },
+  {
+   "t": 208,
+   "text": ".\"},{\"anchor\":"
+  },
+  {
+   "t": 208,
+   "text": "\"preburner\",\"label\":\""
+  },
+  {
+   "t": 208,
+   "text": "Preburner\",\"note\":\""
+  },
+  {
+   "t": 215,
+   "text": "Burns a little prop"
+  },
+  {
+   "t": 250,
+   "text": "ellant to make"
+  },
+  {
+   "t": 284,
+   "text": " h"
+  },
+  {
+   "t": 578,
+   "text": "ot gas that drives the tur"
+  },
+  {
+   "t": 578,
+   "text": "bine,"
+  },
+  {
+   "t": 578,
+   "text": " then that"
+  },
+  {
+   "t": 578,
+   "text": " gas go"
+  },
+  {
+   "t": 578,
+   "text": "es on"
+  },
+  {
+   "t": 578,
+   "text": " to the chamber.\"},{"
+  },
+  {
+   "t": 578,
+   "text": "\"anchor\":\"injector"
+  },
+  {
+   "t": 578,
+   "text": "\",\"label\":\"Injector\",\""
+  },
+  {
+   "t": 583,
+   "text": "note\":\"S"
+  },
+  {
+   "t": 614,
+   "text": "prays f"
+  },
+  {
+   "t": 648,
+   "text": "uel and oxyg"
+  },
+  {
+   "t": 696,
+   "text": "en into the chamber as"
+  },
+  {
+   "t": 1015,
+   "text": " a"
+  },
+  {
+   "t": 1015,
+   "text": " fine mist so"
+  },
+  {
+   "t": 1015,
+   "text": " they mix and"
+  },
+  {
+   "t": 1015,
+   "text": " burn ev"
+  },
+  {
+   "t": 1015,
+   "text": "enly.\"},{\"anch"
+  },
+  {
+   "t": 1015,
+   "text": "or\":\"combustion-ch"
+  },
+  {
+   "t": 1016,
+   "text": "amber\",\"label\":\"Comb"
+  },
+  {
+   "t": 1016,
+   "text": "ustion chamber\",\"note\":"
+  },
+  {
+   "t": 1016,
+   "text": "\"Prop"
+  },
+  {
+   "t": 1029,
+   "text": "ellants"
+  },
+  {
+   "t": 1048,
+   "text": " burn here"
+  },
+  {
+   "t": 1083,
+   "text": " at th"
+  },
+  {
+   "t": 1308,
+   "text": "ousands of degrees and"
+  },
+  {
+   "t": 1308,
+   "text": " very"
+  },
+  {
+   "t": 1308,
+   "text": " high pressure.\"},{\""
+  },
+  {
+   "t": 1308,
+   "text": "anchor\":\"throat\",\""
+  },
+  {
+   "t": 1308,
+   "text": "label\":\"Thro"
+  },
+  {
+   "t": 1309,
+   "text": "at\",\"note\":\"The narr"
+  },
+  {
+   "t": 1315,
+   "text": "owest point. The gas spe"
+  },
+  {
+   "t": 1358,
+   "text": "eds up to"
+  },
+  {
+   "t": 1383,
+   "text": " the"
+  },
+  {
+   "t": 1416,
+   "text": " speed of sound here"
+  },
+  {
+   "t": 1449,
+   "text": ".\"},{\"anchor\":"
+  },
+  {
+   "t": 1483,
+   "text": "\"nozzle\",\"label\":"
+  },
+  {
+   "t": 1883,
+   "text": "\"Nozzle\",\"note"
+  },
+  {
+   "t": 1883,
+   "text": "\":\"The bell wid"
+  },
+  {
+   "t": 1883,
+   "text": "ens so"
+  },
+  {
+   "t": 1883,
+   "text": " the gas expands and acc"
+  },
+  {
+   "t": 1883,
+   "text": "elerates to"
+  },
+  {
+   "t": 1883,
+   "text": " supersonic speed."
+  },
+  {
+   "t": 1885,
+   "text": " Pushing it"
+  },
+  {
+   "t": 1885,
+   "text": " out the"
+  },
+  {
+   "t": 1885,
+   "text": " back pushes the r"
+  },
+  {
+   "t": 1885,
+   "text": "ocket forward.\"},{\""
+  },
+  {
+   "t": 1885,
+   "text": "anchor\":\"cooling"
+  },
+  {
+   "t": 1885,
+   "text": "-channels\",\"label\":\""
+  },
+  {
+   "t": 1885,
+   "text": "Cooling channels\",\"note\":"
+  },
+  {
+   "t": 1886,
+   "text": "\"C"
+  },
+  {
+   "t": 1886,
+   "text": "old fuel fl"
+  },
+  {
+   "t": 1887,
+   "text": "ows through the ch"
+  },
+  {
+   "t": 1887,
+   "text": "amber walls first"
+  },
+  {
+   "t": 1890,
+   "text": ", ke"
+  },
+  {
+   "t": 1890,
+   "text": "eping the metal from mel"
+  },
+  {
+   "t": 1890,
+   "text": "ting.\"}],\"caption\":"
+  },
+  {
+   "t": 1890,
+   "text": "\"Move"
+  },
+  {
+   "t": 1890,
+   "text": " Throttle to change"
+  },
+  {
+   "t": 1891,
+   "text": " how h"
+  },
+  {
+   "t": 1891,
+   "text": "ard the engine p"
+  },
+  {
+   "t": 1891,
+   "text": "ushes,"
+  },
+  {
+   "t": 1891,
+   "text": " and Mixture to change"
+  },
+  {
+   "t": 1892,
+   "text": " the"
+  },
+  {
+   "t": 1892,
+   "text": " oxygen to fuel"
+  },
+  {
+   "t": 1892,
+   "text": " ratio. Watch th"
+  },
+  {
+   "t": 1892,
+   "text": "rust, ch"
+  },
+  {
+   "t": 1894,
+   "text": "amber pressure and p"
+  },
+  {
+   "t": 1895,
+   "text": "ump spe"
+  },
+  {
+   "t": 1898,
+   "text": "ed resp"
+  },
+  {
+   "t": 1898,
+   "text": "ond.\"}},\"state\":{"
+  },
+  {
+   "t": 1899,
+   "text": "\"engine\":{\""
+  },
+  {
+   "t": 1905,
+   "text": "throttle\":80,\"m"
+  },
+  {
+   "t": 2305,
+   "text": "ixture\":2.6}}"
+  },
+  {
+   "t": 2305,
+   "text": "}"
   }
  ]
 }

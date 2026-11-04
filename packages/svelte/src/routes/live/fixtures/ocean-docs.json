@@ -1,0 +1,465 @@
+{
+ "id": "ocean-docs",
+ "title": "Ocean documentaries",
+ "prompt": "Recommend 6 ocean documentaries with ratings and running time (sample titles)",
+ "model": "sonnet",
+ "recordedAt": "2026-11-04T15:10:36.901Z",
+ "chunks": [
+  {
+   "t": 0,
+   "text": "{\"version\":\""
+  },
+  {
+   "t": 0,
+   "text": "1.0\",\"ui\":{"
+  },
+  {
+   "t": 0,
+   "text": "\"type\":\"media-grid"
+  },
+  {
+   "t": 0,
+   "text": "\",\"b"
+  },
+  {
+   "t": 0,
+   "text": "ind\":\"{state."
+  },
+  {
+   "t": 0,
+   "text": "list}\",\"props\":{\"title"
+  },
+  {
+   "t": 0,
+   "text": "\":\"Ocean document"
+  },
+  {
+   "t": 0,
+   "text": "aries (sample titles)"
+  },
+  {
+   "t": 0,
+   "text": "\",\"kind\":\"documentary"
+  },
+  {
+   "t": 0,
+   "text": "\",\"items\":[{\"id\":"
+  },
+  {
+   "t": 0,
+   "text": "\"d1\",\"title\":\"The"
+  },
+  {
+   "t": 0,
+   "text": " Deep Blue H"
+  },
+  {
+   "t": 0,
+   "text": "ours\",\"by\":\"Mara"
+  },
+  {
+   "t": 0,
+   "text": " Ellison\",\"year\":2"
+  },
+  {
+   "t": 0,
+   "text": "021,\"minutes\":94"
+  },
+  {
+   "t": 0,
+   "text": ",\"rating\":4.5"
+  },
+  {
+   "t": 0,
+   "text": ",\"genres\":[\""
+  },
+  {
+   "t": 0,
+   "text": "Ocean\",\"N"
+  },
+  {
+   "t": 1,
+   "text": "ature\"],\"blurb\":"
+  },
+  {
+   "t": 1,
+   "text": "\"A year with"
+  },
+  {
+   "t": 1,
+   "text": " the night feeders of a k"
+  },
+  {
+   "t": 1,
+   "text": "elp forest.\",\"color\":"
+  },
+  {
+   "t": 1,
+   "text": "\"teal\"},{\"id"
+  },
+  {
+   "t": 1,
+   "text": "\":\"d2\",\"title\":\""
+  },
+  {
+   "t": 23,
+   "text": "Salt and Ice\",\""
+  },
+  {
+   "t": 355,
+   "text": "by\":\"Tomas"
+  },
+  {
+   "t": 355,
+   "text": " Reyes\",\"year\":2019"
+  },
+  {
+   "t": 355,
+   "text": ",\"minutes\":82,"
+  },
+  {
+   "t": 355,
+   "text": "\"rating\":4.2,"
+  },
+  {
+   "t": 355,
+   "text": "\"genres\":[\"Clim"
+  },
+  {
+   "t": 355,
+   "text": "ate\",\"Polar\"],\""
+  },
+  {
+   "t": 355,
+   "text": "blurb\":\"Resear"
+  },
+  {
+   "t": 356,
+   "text": "chers track"
+  },
+  {
+   "t": 356,
+   "text": " melting s"
+  },
+  {
+   "t": 356,
+   "text": "ea ice across"
+  },
+  {
+   "t": 385,
+   "text": " the Arctic.\",\"color"
+  },
+  {
+   "t": 417,
+   "text": "\":\"blue\"},{\""
+  },
+  {
+   "t": 705,
+   "text": "id\":\"d3\",\"title\":"
+  },
+  {
+   "t": 706,
+   "text": "\"Reef Ke"
+  },
+  {
+   "t": 706,
+   "text": "epers\",\"by\":\"An"
+  },
+  {
+   "t": 706,
+   "text": "ika"
+  },
+  {
+   "t": 706,
+   "text": " R"
+  },
+  {
+   "t": 706,
+   "text": "ao"
+  },
+  {
+   "t": 706,
+   "text": "\",\"year\":2022"
+  },
+  {
+   "t": 706,
+   "text": ",\"minutes\":88"
+  },
+  {
+   "t": 716,
+   "text": ",\"rating\":4.4"
+  },
+  {
+   "t": 749,
+   "text": ",\"genres\":[\"Con"
+  },
+  {
+   "t": 783,
+   "text": "servation\",\"Co"
+  },
+  {
+   "t": 816,
+   "text": "ral\"],\"blurb\":"
+  },
+  {
+   "t": 1056,
+   "text": "\"Divers race"
+  },
+  {
+   "t": 1056,
+   "text": " to replant a"
+  },
+  {
+   "t": 1056,
+   "text": " b"
+  },
+  {
+   "t": 1056,
+   "text": "leaching coral reef."
+  },
+  {
+   "t": 1056,
+   "text": "\",\"color\":\"r"
+  },
+  {
+   "t": 1056,
+   "text": "ose\"},{\"id\":\""
+  },
+  {
+   "t": 1056,
+   "text": "d4\",\"title\":\"Song"
+  },
+  {
+   "t": 1082,
+   "text": "s of the Hum"
+  },
+  {
+   "t": 1118,
+   "text": "pback"
+  },
+  {
+   "t": 1149,
+   "text": "\",\"by\":\"Lena"
+  },
+  {
+   "t": 1181,
+   "text": " Ok"
+  },
+  {
+   "t": 1216,
+   "text": "afor\",\"year\":2018,"
+  },
+  {
+   "t": 1457,
+   "text": "\"minutes\":76,\""
+  },
+  {
+   "t": 1458,
+   "text": "rating\":4.1"
+  },
+  {
+   "t": 1458,
+   "text": ",\"genres\":[\"W"
+  },
+  {
+   "t": 1458,
+   "text": "ildlife\",\"Wh"
+  },
+  {
+   "t": 1458,
+   "text": "ales\"],\"blurb\":"
+  },
+  {
+   "t": 1458,
+   "text": "\"Following"
+  },
+  {
+   "t": 1458,
+   "text": " a"
+  },
+  {
+   "t": 1482,
+   "text": " wh"
+  },
+  {
+   "t": 1515,
+   "text": "ale migration through its"
+  },
+  {
+   "t": 1549,
+   "text": " ha"
+  },
+  {
+   "t": 1581,
+   "text": "unting cal"
+  },
+  {
+   "t": 1615,
+   "text": "ls.\",\"color\":\"viol"
+  },
+  {
+   "t": 2015,
+   "text": "et\"},{\"id\":\""
+  },
+  {
+   "t": 2015,
+   "text": "d5\",\"title\":\"Be"
+  },
+  {
+   "t": 2015,
+   "text": "neath the Trench"
+  },
+  {
+   "t": 2015,
+   "text": "\",\"by\":\"Jon"
+  },
+  {
+   "t": 2015,
+   "text": "as Wh"
+  },
+  {
+   "t": 2015,
+   "text": "itfield\",\"year\":2023"
+  },
+  {
+   "t": 2015,
+   "text": ",\"minutes\":105,"
+  },
+  {
+   "t": 2015,
+   "text": "\"rating\":4.7"
+  },
+  {
+   "t": 2016,
+   "text": ",\"genres\":[\"De"
+  },
+  {
+   "t": 2016,
+   "text": "ep s"
+  },
+  {
+   "t": 2016,
+   "text": "ea\",\"Ex"
+  },
+  {
+   "t": 2016,
+   "text": "ploration\"],\"blurb"
+  },
+  {
+   "t": 2016,
+   "text": "\":\"A crew"
+  },
+  {
+   "t": 2016,
+   "text": "ed desc"
+  },
+  {
+   "t": 2016,
+   "text": "ent into the dar"
+  },
+  {
+   "t": 2016,
+   "text": "kest part of the "
+  },
+  {
+   "t": 2016,
+   "text": "ocean.\",\"color\":\"sl"
+  },
+  {
+   "t": 2016,
+   "text": "ate\"},{\"id\":\""
+  },
+  {
+   "t": 2017,
+   "text": "d6\",\"title\":\"T"
+  },
+  {
+   "t": 2017,
+   "text": "ides"
+  },
+  {
+   "t": 2017,
+   "text": " of"
+  },
+  {
+   "t": 2017,
+   "text": " Plastic\",\"by\":\""
+  },
+  {
+   "t": 2017,
+   "text": "Priya N"
+  },
+  {
+   "t": 2017,
+   "text": "air\",\"year\":2020,\""
+  },
+  {
+   "t": 2018,
+   "text": "minutes\":71,\"r"
+  },
+  {
+   "t": 2018,
+   "text": "ating\":3.9,\"gen"
+  },
+  {
+   "t": 2018,
+   "text": "res\":[\"Clim"
+  },
+  {
+   "t": 2018,
+   "text": "ate\",\"Pollution\"],"
+  },
+  {
+   "t": 2018,
+   "text": "\"blurb\":\"Following"
+  },
+  {
+   "t": 2018,
+   "text": " a"
+  },
+  {
+   "t": 2019,
+   "text": " b"
+  },
+  {
+   "t": 2019,
+   "text": "ottle from"
+  },
+  {
+   "t": 2019,
+   "text": " a"
+  },
+  {
+   "t": 2019,
+   "text": " city"
+  },
+  {
+   "t": 2019,
+   "text": " dr"
+  },
+  {
+   "t": 2020,
+   "text": "ain to the open"
+  },
+  {
+   "t": 2020,
+   "text": " sea.\",\"color\":\"am"
+  },
+  {
+   "t": 2021,
+   "text": "ber\"}]}"
+  },
+  {
+   "t": 2021,
+   "text": "},\"state\":{\"list"
+  },
+  {
+   "t": 2022,
+   "text": "\":{\"saved\":[]"
+  },
+  {
+   "t": 2022,
+   "text": "}}}"
+  }
+ ]
+}

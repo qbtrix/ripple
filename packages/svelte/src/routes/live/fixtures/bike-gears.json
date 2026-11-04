@@ -2,64 +2,324 @@
  "id": "bike-gears",
  "title": "How bike gears work",
  "prompt": "How do bike gears work? Show me the drivetrain and let me change the gear and my cadence.",
- "model": "hand-written",
- "recordedAt": "2026-10-13T12:00:00.000Z",
+ "model": "sonnet",
+ "recordedAt": "2026-11-04T15:08:35.386Z",
  "chunks": [
   {
    "t": 0,
-   "text": "{\"version\":\"1.0\",\"state\":{\"figure\":null},\"ui\":{\"type\":\"figure\",\""
+   "text": "{\"version\":\"1.0"
   },
   {
-   "t": 18,
-   "text": "bind\":\"{state.figure}\",\"props\":{\"figure\":\"bike-gears\",\"params\":{"
+   "t": 0,
+   "text": "\",\"ui\":{\"type\":"
   },
   {
-   "t": 36,
-   "text": "\"cadence\":85,\"ring\":50,\"gear\":4},\"labels\":[{\"anchor\":\"chainring\""
+   "t": 0,
+   "text": "\"figure\",\"b"
   },
   {
-   "t": 54,
-   "text": ",\"note\":\"The pedals turn this ring. The 50 pulls more chain each"
+   "t": 0,
+   "text": "ind\":\"{state.b"
   },
   {
-   "t": 72,
-   "text": " turn than the 34.\"},{\"anchor\":\"cassette\",\"note\":\"The chain turn"
+   "t": 0,
+   "text": "ike}\",\"props\":{\"fig"
   },
   {
-   "t": 90,
-   "text": "s one of these cogs on the back wheel. A smaller cog means more "
+   "t": 0,
+   "text": "ure\":\"bike-gears"
   },
   {
-   "t": 108,
-   "text": "wheel turns.\"},{\"anchor\":\"rear-derailleur\",\"note\":\"Lifts the cha"
+   "t": 0,
+   "text": "\",\"params\":{\"cad"
   },
   {
-   "t": 126,
-   "text": "in from cog to cog and keeps it tight.\"},{\"anchor\":\"front-derail"
+   "t": 0,
+   "text": "ence\":80,\"ring\":"
   },
   {
-   "t": 144,
-   "text": "leur\",\"note\":\"Pushes the chain between the two rings.\"},{\"anchor"
+   "t": 0,
+   "text": "50,\"gear\":4"
   },
   {
-   "t": 162,
-   "text": "\":\"wheel\",\"note\":\"Every wheel turn rolls about 2.1 m of road.\"}]"
+   "t": 0,
+   "text": "},\"labels\":[{\""
   },
   {
-   "t": 180,
-   "text": ",\"caption\":\"The gear ratio is ring teeth over cog teeth: each pe"
+   "t": 0,
+   "text": "anchor\":\"chainring"
   },
   {
-   "t": 198,
-   "text": "dal turn spins the wheel that many times. Change the gear and th"
+   "t": 0,
+   "text": "\",\"label"
   },
   {
-   "t": 216,
-   "text": "e cadence and watch the speed. Drawn at a quarter of real speed."
+   "t": 0,
+   "text": "\":\"Ch"
   },
   {
-   "t": 234,
-   "text": "\"}}}"
+   "t": 0,
+   "text": "ainring\",\"note\":\"The front"
+  },
+  {
+   "t": 0,
+   "text": " g"
+  },
+  {
+   "t": 0,
+   "text": "ear you push"
+  },
+  {
+   "t": 0,
+   "text": " with. A"
+  },
+  {
+   "t": 0,
+   "text": " bigger ring mo"
+  },
+  {
+   "t": 0,
+   "text": "ves the chain further"
+  },
+  {
+   "t": 0,
+   "text": " on every p"
+  },
+  {
+   "t": 0,
+   "text": "edal turn.\"},{\""
+  },
+  {
+   "t": 0,
+   "text": "anchor\":\"ch"
+  },
+  {
+   "t": 0,
+   "text": "ain\",\"label\":\"Chain"
+  },
+  {
+   "t": 0,
+   "text": "\",\"note\":\""
+  },
+  {
+   "t": 0,
+   "text": "Carries the power from the front"
+  },
+  {
+   "t": 0,
+   "text": " "
+  },
+  {
+   "t": 0,
+   "text": "ring to the rear cog.\""
+  },
+  {
+   "t": 4,
+   "text": "},{\"anchor\":\""
+  },
+  {
+   "t": 4,
+   "text": "cassette\",\"label\":\""
+  },
+  {
+   "t": 4,
+   "text": "Cassette\",\"note\":\"The"
+  },
+  {
+   "t": 4,
+   "text": " st"
+  },
+  {
+   "t": 4,
+   "text": "ack of rear cogs."
+  },
+  {
+   "t": 4,
+   "text": " Small"
+  },
+  {
+   "t": 4,
+   "text": " cogs are h"
+  },
+  {
+   "t": 5,
+   "text": "ard to"
+  },
+  {
+   "t": 5,
+   "text": " tur"
+  },
+  {
+   "t": 5,
+   "text": "n but fast, big cog"
+  },
+  {
+   "t": 5,
+   "text": "s are easy but"
+  },
+  {
+   "t": 5,
+   "text": " slow.\"},{\"anch"
+  },
+  {
+   "t": 5,
+   "text": "or\":\"rear-derail"
+  },
+  {
+   "t": 5,
+   "text": "leur\",\"label\":\"R"
+  },
+  {
+   "t": 5,
+   "text": "ear derailleur\",\"note\":"
+  },
+  {
+   "t": 5,
+   "text": "\"P"
+  },
+  {
+   "t": 5,
+   "text": "ushes the chain s"
+  },
+  {
+   "t": 5,
+   "text": "ideways onto a different"
+  },
+  {
+   "t": 6,
+   "text": " cog and ke"
+  },
+  {
+   "t": 7,
+   "text": "eps it"
+  },
+  {
+   "t": 7,
+   "text": " tight.\"},{\"anch"
+  },
+  {
+   "t": 7,
+   "text": "or\":\"cr"
+  },
+  {
+   "t": 8,
+   "text": "ank\",\"label\":\"Crank"
+  },
+  {
+   "t": 8,
+   "text": "\",\"note\":\"The arm"
+  },
+  {
+   "t": 8,
+   "text": " that turns your le"
+  },
+  {
+   "t": 9,
+   "text": "g push"
+  },
+  {
+   "t": 13,
+   "text": " into r"
+  },
+  {
+   "t": 13,
+   "text": "otation.\""
+  },
+  {
+   "t": 13,
+   "text": "}],\"caption\":\""
+  },
+  {
+   "t": 13,
+   "text": "G"
+  },
+  {
+   "t": 13,
+   "text": "ear 1 is the bi"
+  },
+  {
+   "t": 13,
+   "text": "ggest cog (28 te"
+  },
+  {
+   "t": 13,
+   "text": "eth),"
+  },
+  {
+   "t": 13,
+   "text": " eas"
+  },
+  {
+   "t": 13,
+   "text": "i"
+  },
+  {
+   "t": 13,
+   "text": "est to"
+  },
+  {
+   "t": 13,
+   "text": " tur"
+  },
+  {
+   "t": 13,
+   "text": "n."
+  },
+  {
+   "t": 13,
+   "text": " Gear 7 is the"
+  },
+  {
+   "t": 13,
+   "text": " smallest (11 tee"
+  },
+  {
+   "t": 13,
+   "text": "th), h"
+  },
+  {
+   "t": 13,
+   "text": "ardest but"
+  },
+  {
+   "t": 13,
+   "text": " fastest. Change"
+  },
+  {
+   "t": 13,
+   "text": " g"
+  },
+  {
+   "t": 13,
+   "text": "ear,"
+  },
+  {
+   "t": 13,
+   "text": " ring and cadence to see"
+  },
+  {
+   "t": 13,
+   "text": " speed change"
+  },
+  {
+   "t": 13,
+   "text": ".\"}},\"state\":{\""
+  },
+  {
+   "t": 13,
+   "text": "bike\":{\"cadence"
+  },
+  {
+   "t": 13,
+   "text": "\":80,\"ring\":50"
+  },
+  {
+   "t": 13,
+   "text": ",\"gear\":4}}"
+  },
+  {
+   "t": 13,
+   "text": "}"
   }
  ]
 }

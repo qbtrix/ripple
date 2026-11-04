@@ -1,0 +1,241 @@
+{
+ "id": "focus-music",
+ "title": "Focus music",
+ "prompt": "Make me a focus music player with a few calm tracks",
+ "model": "sonnet",
+ "recordedAt": "2026-11-04T15:10:31.337Z",
+ "chunks": [
+  {
+   "t": 0,
+   "text": "{\"version\":\""
+  },
+  {
+   "t": 0,
+   "text": "1.0\",\"ui\":{"
+  },
+  {
+   "t": 0,
+   "text": "\"type\":\"music-player\",\""
+  },
+  {
+   "t": 0,
+   "text": "props\":{\"title\":\""
+  },
+  {
+   "t": 0,
+   "text": "Focus mix\",\"tracks"
+  },
+  {
+   "t": 0,
+   "text": "\":[{\"title"
+  },
+  {
+   "t": 1,
+   "text": "\":\"Soft rain\",\""
+  },
+  {
+   "t": 1,
+   "text": "artist\":\""
+  },
+  {
+   "t": 1,
+   "text": "Ambient\",\"sound\":\"r"
+  },
+  {
+   "t": 1,
+   "text": "ain\",\"minutes\":10"
+  },
+  {
+   "t": 1,
+   "text": ",\"color\":\"bl"
+  },
+  {
+   "t": 1,
+   "text": "ue\"},{\"title\":\""
+  },
+  {
+   "t": 1,
+   "text": "De"
+  },
+  {
+   "t": 1,
+   "text": "ep foc"
+  },
+  {
+   "t": 401,
+   "text": "us dr"
+  },
+  {
+   "t": 401,
+   "text": "one\",\"artist\":\""
+  },
+  {
+   "t": 401,
+   "text": "Ambient\",\"sound\":\"dr"
+  },
+  {
+   "t": 401,
+   "text": "one\",\"minutes\":8,"
+  },
+  {
+   "t": 401,
+   "text": "\"color\":\"violet\"},"
+  },
+  {
+   "t": 401,
+   "text": "{\"title\":\"Late night"
+  },
+  {
+   "t": 401,
+   "text": " keys\",\"artist\":\""
+  },
+  {
+   "t": 401,
+   "text": "L"
+  },
+  {
+   "t": 401,
+   "text": "o-fi\",\"sound\":"
+  },
+  {
+   "t": 401,
+   "text": "\"lofi\",\"minutes"
+  },
+  {
+   "t": 401,
+   "text": "\":4"
+  },
+  {
+   "t": 401,
+   "text": ",\"color\":\"am"
+  },
+  {
+   "t": 401,
+   "text": "ber\"},{\"title\":\""
+  },
+  {
+   "t": 401,
+   "text": "Still water\",\"artist\":\""
+  },
+  {
+   "t": 401,
+   "text": "Nature\",\"sound\":\""
+  },
+  {
+   "t": 401,
+   "text": "ocean\",\"minutes\":"
+  },
+  {
+   "t": 401,
+   "text": "8"
+  },
+  {
+   "t": 401,
+   "text": ",\"color\":\"teal\""
+  },
+  {
+   "t": 401,
+   "text": "},{\"title\":\"Qu"
+  },
+  {
+   "t": 401,
+   "text": "iet forest\",\"artist\":"
+  },
+  {
+   "t": 401,
+   "text": "\"Nature\",\"sound\":"
+  },
+  {
+   "t": 401,
+   "text": "\"forest\",\"minutes\":"
+  },
+  {
+   "t": 401,
+   "text": "10"
+  },
+  {
+   "t": 401,
+   "text": ",\"color\":\"green\"},"
+  },
+  {
+   "t": 402,
+   "text": "{\"title\":\"Slow"
+  },
+  {
+   "t": 402,
+   "text": " piano\",\"artist\":\""
+  },
+  {
+   "t": 402,
+   "text": "Piano\",\"sound\":\"pi"
+  },
+  {
+   "t": 402,
+   "text": "ano\",\"minutes\":5,"
+  },
+  {
+   "t": 402,
+   "text": "\"color\":\"slate\"},"
+  },
+  {
+   "t": 403,
+   "text": "{\"title\":\"Brown"
+  },
+  {
+   "t": 404,
+   "text": " noise\",\"artist\":\""
+  },
+  {
+   "t": 404,
+   "text": "Noise\",\"sound\":\"br"
+  },
+  {
+   "t": 404,
+   "text": "own-noise\",\"minutes"
+  },
+  {
+   "t": 405,
+   "text": "\":15,\"color\":\"r"
+  },
+  {
+   "t": 405,
+   "text": "ose\"}],"
+  },
+  {
+   "t": 405,
+   "text": "\"volume\":0.6"
+  },
+  {
+   "t": 405,
+   "text": "},"
+  },
+  {
+   "t": 405,
+   "text": "\"bind\":\"{"
+  },
+  {
+   "t": 405,
+   "text": "state.music}\"},"
+  },
+  {
+   "t": 405,
+   "text": "\"state\":{\"music\":{"
+  },
+  {
+   "t": 405,
+   "text": "\"index\":0,\"playing"
+  },
+  {
+   "t": 405,
+   "text": "\":false,\"shuffle"
+  },
+  {
+   "t": 405,
+   "text": "\":false,\"repeat\":"
+  },
+  {
+   "t": 408,
+   "text": "false}}}"
+  }
+ ]
+}

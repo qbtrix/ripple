@@ -2,92 +2,380 @@
  "id": "fission-reactor",
  "title": "How a nuclear fission reactor works",
  "prompt": "How does a nuclear reactor make electricity? Show me the plant and let me move the control rods and the pump speed.",
- "model": "hand-written",
- "recordedAt": "2026-10-13T12:00:00.000Z",
+ "model": "sonnet",
+ "recordedAt": "2026-11-04T15:11:00.155Z",
  "chunks": [
   {
    "t": 0,
-   "text": "{\"version\":\"1.0\",\"state\":{\"figure\":null},\"ui\":{\"type\":\"figure\",\""
+   "text": "{\"version\":\"1.0"
   },
   {
-   "t": 18,
-   "text": "bind\":\"{state.figure}\",\"props\":{\"figure\":\"fission-reactor\",\"para"
+   "t": 0,
+   "text": "\",\"ui\":{\"type"
   },
   {
-   "t": 36,
-   "text": "ms\":{\"rods\":20,\"pump\":100},\"labels\":[{\"anchor\":\"control-rods\",\"n"
+   "t": 0,
+   "text": "\":\"figure\",\"b"
   },
   {
-   "t": 54,
-   "text": "ote\":\"Slide them in to soak up neutrons and slow the chain react"
+   "t": 0,
+   "text": "ind\":\"{state.re"
   },
   {
-   "t": 72,
-   "text": "ion. Pull them out for more power.\"},{\"anchor\":\"fuel\",\"note\":\"Ur"
+   "t": 0,
+   "text": "actor}\",\"props\":{\""
   },
   {
-   "t": 90,
-   "text": "anium fuel. Splitting its atoms here makes the heat.\"},{\"anchor\""
+   "t": 0,
+   "text": "figure\":\"fission-re"
   },
   {
-   "t": 108,
-   "text": ":\"reactor-vessel\",\"note\":\"A thick steel vessel. Water at 155 bar"
+   "t": 0,
+   "text": "actor\",\"params\":{\"r"
   },
   {
-   "t": 126,
-   "text": " flows through the core without boiling.\"},{\"anchor\":\"pressurise"
+   "t": 0,
+   "text": "ods\":50"
   },
   {
-   "t": 144,
-   "text": "r\",\"note\":\"Holds the pressure up so the hot water stays liquid.\""
+   "t": 0,
+   "text": ",\"pump\":80"
   },
   {
-   "t": 162,
-   "text": "},{\"anchor\":\"steam-generator\",\"note\":\"Hot water from the core bo"
+   "t": 0,
+   "text": "},\"labels\":[{\""
   },
   {
-   "t": 180,
-   "text": "ils a separate loop of water into steam.\"},{\"anchor\":\"coolant-pu"
+   "t": 0,
+   "text": "anchor\":\"control-r"
   },
   {
-   "t": 198,
-   "text": "mp\",\"note\":\"Pushes the water round the loop. Slower pumps let th"
+   "t": 0,
+   "text": "ods\",\"label"
   },
   {
-   "t": 216,
-   "text": "e core run hotter.\"},{\"anchor\":\"turbine\",\"note\":\"The steam spins"
+   "t": 0,
+   "text": "\":\"Control"
   },
   {
-   "t": 234,
-   "text": " the turbine.\"},{\"anchor\":\"generator\",\"note\":\"Turns the spin int"
+   "t": 0,
+   "text": " rods\",\"note\":\"Ne"
   },
   {
-   "t": 252,
-   "text": "o electricity.\"},{\"anchor\":\"condenser\",\"note\":\"Cools the used st"
+   "t": 0,
+   "text": "utron-absorbing r"
   },
   {
-   "t": 270,
-   "text": "eam back into water for the next trip.\"},{\"anchor\":\"cooling-towe"
+   "t": 0,
+   "text": "ods."
   },
   {
-   "t": 288,
-   "text": "r\",\"note\":\"Carries the leftover heat away into the air.\"}],\"capt"
+   "t": 0,
+   "text": " Pushing them in so"
   },
   {
-   "t": 306,
-   "text": "ion\":\"Splitting uranium heats water that never boils; it boils a"
+   "t": 0,
+   "text": "aks up"
   },
   {
-   "t": 324,
-   "text": " second loop into steam that spins the turbine. Move the control"
+   "t": 1,
+   "text": " neutrons and slows the"
   },
   {
-   "t": 342,
-   "text": " rods and the pump speed and watch the power and the coolant tem"
+   "t": 1,
+   "text": " chain reaction; p"
   },
   {
-   "t": 360,
-   "text": "perature.\"}}}"
+   "t": 1,
+   "text": "ulling them out lets"
+  },
+  {
+   "t": 1,
+   "text": " power"
+  },
+  {
+   "t": 2,
+   "text": " rise.\"},{\"anch"
+  },
+  {
+   "t": 2,
+   "text": "or\":\"fuel\",\"label"
+  },
+  {
+   "t": 2,
+   "text": "\":\"Fuel\",\""
+  },
+  {
+   "t": 2,
+   "text": "note\":\"U"
+  },
+  {
+   "t": 2,
+   "text": "ranium f"
+  },
+  {
+   "t": 2,
+   "text": "uel spl"
+  },
+  {
+   "t": 2,
+   "text": "its in a"
+  },
+  {
+   "t": 2,
+   "text": " chain reaction and"
+  },
+  {
+   "t": 2,
+   "text": " releases heat.\""
+  },
+  {
+   "t": 2,
+   "text": "},{\"anchor\":\""
+  },
+  {
+   "t": 3,
+   "text": "coolant-pump\",\"label"
+  },
+  {
+   "t": 3,
+   "text": "\":\"Coolant pump"
+  },
+  {
+   "t": 3,
+   "text": "\",\"note\":\"Dr"
+  },
+  {
+   "t": 3,
+   "text": "ives p"
+  },
+  {
+   "t": 3,
+   "text": "ressurised water through"
+  },
+  {
+   "t": 3,
+   "text": " the core."
+  },
+  {
+   "t": 3,
+   "text": " Faster fl"
+  },
+  {
+   "t": 3,
+   "text": "ow carries heat away more"
+  },
+  {
+   "t": 3,
+   "text": " quickly.\"},{\"an"
+  },
+  {
+   "t": 3,
+   "text": "chor\":\"steam-gener"
+  },
+  {
+   "t": 3,
+   "text": "ator\",\"label\":\"Steam"
+  },
+  {
+   "t": 3,
+   "text": " generator\",\"note\":\"H"
+  },
+  {
+   "t": 3,
+   "text": "ot prim"
+  },
+  {
+   "t": 4,
+   "text": "ary water bo"
+  },
+  {
+   "t": 4,
+   "text": "ils a"
+  },
+  {
+   "t": 4,
+   "text": " separate sec"
+  },
+  {
+   "t": 4,
+   "text": "ondary loop into"
+  },
+  {
+   "t": 4,
+   "text": " steam without"
+  },
+  {
+   "t": 4,
+   "text": " the"
+  },
+  {
+   "t": 4,
+   "text": " two "
+  },
+  {
+   "t": 4,
+   "text": "ever mixing.\"},{\""
+  },
+  {
+   "t": 4,
+   "text": "anchor\":\"turbine"
+  },
+  {
+   "t": 4,
+   "text": "\",\"label\":\"Turbine"
+  },
+  {
+   "t": 4,
+   "text": "\",\"note\":\"Steam sp"
+  },
+  {
+   "t": 4,
+   "text": "ins the tur"
+  },
+  {
+   "t": 4,
+   "text": "bine, tur"
+  },
+  {
+   "t": 4,
+   "text": "ning heat into mot"
+  },
+  {
+   "t": 4,
+   "text": "ion.\"},{\"anchor"
+  },
+  {
+   "t": 6,
+   "text": "\":\"generator\",\"label\":\""
+  },
+  {
+   "t": 6,
+   "text": "Generator\",\"note\":\"The"
+  },
+  {
+   "t": 6,
+   "text": " spinning turbine dr"
+  },
+  {
+   "t": 6,
+   "text": "ives the"
+  },
+  {
+   "t": 6,
+   "text": " generator, which mak"
+  },
+  {
+   "t": 6,
+   "text": "es the"
+  },
+  {
+   "t": 6,
+   "text": " electricity.\"},{\"an"
+  },
+  {
+   "t": 6,
+   "text": "chor\":\"condenser\",\""
+  },
+  {
+   "t": 6,
+   "text": "label\":\"Condenser\",\""
+  },
+  {
+   "t": 6,
+   "text": "note\":\"C"
+  },
+  {
+   "t": 6,
+   "text": "ools the used"
+  },
+  {
+   "t": 6,
+   "text": " steam back into water so"
+  },
+  {
+   "t": 6,
+   "text": " it can be p"
+  },
+  {
+   "t": 6,
+   "text": "umped round"
+  },
+  {
+   "t": 6,
+   "text": " again.\"}],\"caption\":"
+  },
+  {
+   "t": 6,
+   "text": "\"He"
+  },
+  {
+   "t": 6,
+   "text": "at from"
+  },
+  {
+   "t": 6,
+   "text": " fission bo"
+  },
+  {
+   "t": 6,
+   "text": "ils water, the"
+  },
+  {
+   "t": 6,
+   "text": " steam sp"
+  },
+  {
+   "t": 6,
+   "text": "ins a turbine, and a"
+  },
+  {
+   "t": 6,
+   "text": " generator makes electricity."
+  },
+  {
+   "t": 6,
+   "text": " Sl"
+  },
+  {
+   "t": 6,
+   "text": "ide the control"
+  },
+  {
+   "t": 6,
+   "text": " rods and"
+  },
+  {
+   "t": 6,
+   "text": " co"
+  },
+  {
+   "t": 141,
+   "text": "olant pump to see power"
+  },
+  {
+   "t": 141,
+   "text": " and"
+  },
+  {
+   "t": 141,
+   "text": " coolant temperature change.\""
+  },
+  {
+   "t": 141,
+   "text": "}},"
+  },
+  {
+   "t": 141,
+   "text": "\"state\":{\"reactor"
+  },
+  {
+   "t": 141,
+   "text": "\":{\"rods\":50,"
+  },
+  {
+   "t": 141,
+   "text": "\"pump\":80}}}"
   }
  ]
 }

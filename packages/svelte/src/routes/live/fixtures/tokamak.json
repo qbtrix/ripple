@@ -2,92 +2,384 @@
  "id": "tokamak",
  "title": "How a fusion reactor works",
  "prompt": "How does a fusion reactor work? Show me a tokamak cut open and let me change the plasma current and the heating.",
- "model": "hand-written",
- "recordedAt": "2026-10-13T12:00:00.000Z",
+ "model": "sonnet",
+ "recordedAt": "2026-11-04T15:10:56.206Z",
  "chunks": [
   {
    "t": 0,
-   "text": "{\"version\":\"1.0\",\"state\":{\"figure\":null},\"ui\":{\"type\":\"figure\",\""
+   "text": "{\"version\":\""
   },
   {
-   "t": 18,
-   "text": "bind\":\"{state.figure}\",\"props\":{\"figure\":\"tokamak\",\"params\":{\"cu"
+   "t": 0,
+   "text": "1.0\",\"ui\":{"
   },
   {
-   "t": 36,
-   "text": "rrent\":15,\"heating\":50},\"labels\":[{\"anchor\":\"plasma\",\"note\":\"Deu"
+   "t": 0,
+   "text": "\"type\":\"figure\",\"b"
   },
   {
-   "t": 54,
-   "text": "terium and tritium hotter than 150 million °C. Their nuclei hit "
+   "t": 0,
+   "text": "ind\":\"{state.t"
   },
   {
-   "t": 72,
-   "text": "hard enough to fuse into helium and a fast neutron.\"},{\"anchor\":"
+   "t": 0,
+   "text": "okamak}\",\"props\":{"
   },
   {
-   "t": 90,
-   "text": "\"tf-coil\",\"note\":\"Eighteen superconducting coils make the main f"
+   "t": 0,
+   "text": "\"figure\":\"tokam"
   },
   {
-   "t": 108,
-   "text": "ield. It runs the long way round the ring and keeps the plasma o"
+   "t": 1,
+   "text": "ak\",\"params\":{\"current\":"
   },
   {
-   "t": 126,
-   "text": "ff the walls.\"},{\"anchor\":\"central-solenoid\",\"note\":\"A changing "
+   "t": 1,
+   "text": "15,\"heating\":50"
   },
   {
-   "t": 144,
-   "text": "current here drives the plasma current, like a transformer whose"
+   "t": 1,
+   "text": "},\"labels\":[{\""
   },
   {
-   "t": 162,
-   "text": " second winding is the plasma ring.\"},{\"anchor\":\"pf-coil\",\"note\""
+   "t": 1,
+   "text": "anchor\":\"plasma"
   },
   {
-   "t": 180,
-   "text": ":\"Ring coils that shape the plasma and hold it in place.\"},{\"anc"
+   "t": 1,
+   "text": "\",\"label"
   },
   {
-   "t": 198,
-   "text": "hor\":\"blanket\",\"note\":\"Neutrons carry four fifths of the energy."
+   "t": 1,
+   "text": "\":\"Plasma\",\""
   },
   {
-   "t": 216,
-   "text": " The blanket stops them, turns them into heat and breeds tritium"
+   "t": 1,
+   "text": "note\":\"Hyd"
   },
   {
-   "t": 234,
-   "text": " from lithium.\"},{\"anchor\":\"divertor\",\"note\":\"The plasma edge is"
+   "t": 1,
+   "text": "rogen he"
   },
   {
-   "t": 252,
-   "text": " led down here to shed heat and the helium ash.\"},{\"anchor\":\"hea"
+   "t": 1,
+   "text": "ated to over"
   },
   {
-   "t": 270,
-   "text": "ting-beam\",\"note\":\"Fires fast neutral atoms into the plasma. The"
+   "t": 1,
+   "text": " 100 million degrees,"
   },
   {
-   "t": 288,
-   "text": "y collide with its particles and heat it.\"},{\"anchor\":\"vacuum-ve"
+   "t": 1,
+   "text": " so its nuclei coll"
   },
   {
-   "t": 306,
-   "text": "ssel\",\"note\":\"A double steel wall that holds the vacuum.\"}],\"cap"
+   "t": 1,
+   "text": "ide h"
   },
   {
-   "t": 324,
-   "text": "tion\":\"Deuterium plus tritium gives helium, which stays and heat"
+   "t": 1,
+   "text": "ard enough to fuse and"
   },
   {
-   "t": 342,
-   "text": "s the plasma, and a neutron, which escapes. Q is fusion power ov"
+   "t": 1,
+   "text": " release energ"
   },
   {
-   "t": 360,
-   "text": "er heating power.\"}}}"
+   "t": 1,
+   "text": "y.\"},{\"anchor"
+  },
+  {
+   "t": 1,
+   "text": "\":\"tf-coil\",\""
+  },
+  {
+   "t": 1,
+   "text": "label\":\"Toroidal"
+  },
+  {
+   "t": 1,
+   "text": " field"
+  },
+  {
+   "t": 1,
+   "text": " coils\",\"note\":\"Super"
+  },
+  {
+   "t": 1,
+   "text": "conducting magnets that"
+  },
+  {
+   "t": 1,
+   "text": " w"
+  },
+  {
+   "t": 1,
+   "text": "rap around"
+  },
+  {
+   "t": 1,
+   "text": " the "
+  },
+  {
+   "t": 1,
+   "text": "ring and h"
+  },
+  {
+   "t": 1,
+   "text": "old the h"
+  },
+  {
+   "t": 1,
+   "text": "ot plasma away from the wal"
+  },
+  {
+   "t": 1,
+   "text": "ls.\"},{\"anchor"
+  },
+  {
+   "t": 1,
+   "text": "\":\"central-solenoid"
+  },
+  {
+   "t": 1,
+   "text": "\",\"label\":\"Central solen"
+  },
+  {
+   "t": 1,
+   "text": "oid\",\"note\":\"Its"
+  },
+  {
+   "t": 1,
+   "text": " chang"
+  },
+  {
+   "t": 1,
+   "text": "ing mag"
+  },
+  {
+   "t": 1,
+   "text": "netic field drives the"
+  },
+  {
+   "t": 1,
+   "text": " plasma current,"
+  },
+  {
+   "t": 1,
+   "text": " which he"
+  },
+  {
+   "t": 1,
+   "text": "ats the plasma and tw"
+  },
+  {
+   "t": 1,
+   "text": "ists the"
+  },
+  {
+   "t": 1,
+   "text": " field that"
+  },
+  {
+   "t": 1,
+   "text": " confines it.\"},{\"an"
+  },
+  {
+   "t": 1,
+   "text": "chor\":\"heating-be"
+  },
+  {
+   "t": 1,
+   "text": "am\",\"label\":\"Heating"
+  },
+  {
+   "t": 1,
+   "text": " beam\",\"note\":\"Ext"
+  },
+  {
+   "t": 1,
+   "text": "ra he"
+  },
+  {
+   "t": 1,
+   "text": "ating"
+  },
+  {
+   "t": 1,
+   "text": " from"
+  },
+  {
+   "t": 1,
+   "text": " fast neutral partic"
+  },
+  {
+   "t": 1,
+   "text": "les or radio waves p"
+  },
+  {
+   "t": 1,
+   "text": "ushes the plasma toward"
+  },
+  {
+   "t": 1,
+   "text": " f"
+  },
+  {
+   "t": 1,
+   "text": "usion temperat"
+  },
+  {
+   "t": 1,
+   "text": "ures.\"},{\"anchor"
+  },
+  {
+   "t": 1,
+   "text": "\":\"blanket\",\"label\":"
+  },
+  {
+   "t": 1,
+   "text": "\"Blanket\",\"note\":"
+  },
+  {
+   "t": 1,
+   "text": "\"Catches the fusion"
+  },
+  {
+   "t": 1,
+   "text": " neutrons and car"
+  },
+  {
+   "t": 1,
+   "text": "ries their heat away"
+  },
+  {
+   "t": 1,
+   "text": ". In"
+  },
+  {
+   "t": 1,
+   "text": " a power"
+  },
+  {
+   "t": 1,
+   "text": " plant it would"
+  },
+  {
+   "t": 1,
+   "text": " also breed f"
+  },
+  {
+   "t": 1,
+   "text": "uel.\"},{\"anch"
+  },
+  {
+   "t": 1,
+   "text": "or\":\"divertor\",\"label"
+  },
+  {
+   "t": 1,
+   "text": "\":\"Divertor\",\"note"
+  },
+  {
+   "t": 1,
+   "text": "\":\"P"
+  },
+  {
+   "t": 1,
+   "text": "um"
+  },
+  {
+   "t": 1,
+   "text": "ps out ash and ex"
+  },
+  {
+   "t": 1,
+   "text": "haust he"
+  },
+  {
+   "t": 1,
+   "text": "at at the bottom of the"
+  },
+  {
+   "t": 1,
+   "text": " v"
+  },
+  {
+   "t": 1,
+   "text": "essel.\"}],\"caption"
+  },
+  {
+   "t": 1,
+   "text": "\":\""
+  },
+  {
+   "t": 1,
+   "text": "Raise the plasma current to"
+  },
+  {
+   "t": 1,
+   "text": " conf"
+  },
+  {
+   "t": 1,
+   "text": "ine the plasma better and he"
+  },
+  {
+   "t": 1,
+   "text": "at it. Raise the he"
+  },
+  {
+   "t": 1,
+   "text": "ating power"
+  },
+  {
+   "t": 1,
+   "text": " to"
+  },
+  {
+   "t": 1,
+   "text": " push"
+  },
+  {
+   "t": 1,
+   "text": " the"
+  },
+  {
+   "t": 11,
+   "text": " core"
+  },
+  {
+   "t": 12,
+   "text": " h"
+  },
+  {
+   "t": 12,
+   "text": "otter. Watch the tem"
+  },
+  {
+   "t": 12,
+   "text": "perature,"
+  },
+  {
+   "t": 12,
+   "text": " fusion power and g"
+  },
+  {
+   "t": 12,
+   "text": "ain Q.\"}},\"state"
+  },
+  {
+   "t": 12,
+   "text": "\":{\"tokamak\":"
+  },
+  {
+   "t": 12,
+   "text": "{\"current\":15,\"he"
+  },
+  {
+   "t": 12,
+   "text": "ating\":50}}}"
   }
  ]
 }

@@ -2,14 +2,16 @@
 // the landing's suggestion chips. Each fixture is a real model stream recorded
 // offline by scripts/record-scenario.ts. Other tasks import these types and this
 // list, so the shapes below are a contract: add fields, never rename or remove.
-// `chatPrompts` are chips with no recording: live, they go to the chat (the
-// `needsStore` ones only with a store); in replay mode they open Paw OS with
-// their prompt, like typed text. `group` is the /live
-// gallery's group; on the landing, `suggestionGroups` decides which group a chip sits in, its order, its lucide icon and
-// (optionally) a shorter chip title; it names chips by id, because the play cards
-// (pawbar/play-cards.ts) import from here and this file runs in node for the
-// recorder. `groupedSuggestions` resolves it against whatever chips are on offer,
-// dropping missing ids, so a group with nothing available never renders.
+// `scenarios` are the landing's "Recorded runs" tiles (each needs a gallery
+// thumb); `chatRecordings` are recordings of the widget demos and the
+// playground example, chat only. `chatPrompts` are chips with no recording:
+// live, they go to the chat (the `needsStore` ones only with a store); in replay
+// mode they open Paw OS with their prompt, like typed text. `group` is the /live
+// gallery's group; on the landing, `suggestionGroups` decides which group a chip
+// sits in, its order, its lucide icon and (optionally) a shorter chip title; it
+// names chips by id, and a chip whose topic has a recording uses the
+// recording's id. `groupedSuggestions` resolves it against whatever chips are on
+// offer, dropping missing ids, so a group with nothing available never renders.
 // Prompts are visitor-facing: plain words, fictional products, no dashes.
 
 import billSplitter from './fixtures/bill-splitter.json';
@@ -27,6 +29,15 @@ import incidentRollback from './fixtures/incident-rollback.json';
 import returnExchange from './fixtures/return-exchange.json';
 import bookAppointment from './fixtures/book-appointment.json';
 import quoteBuilder from './fixtures/quote-builder.json';
+import appointment from './fixtures/appointment.json';
+import cafeMenu from './fixtures/cafe-menu.json';
+import compareTech from './fixtures/compare-tech.json';
+import findRecipe from './fixtures/find-recipe.json';
+import trackOrder from './fixtures/track-order.json';
+import missionControl from './fixtures/mission-control.json';
+import companySnapshot from './fixtures/company-snapshot.json';
+import newsletterSignup from './fixtures/newsletter-signup.json';
+import helloCard from './fixtures/hello-card.json';
 
 export interface ScenarioFixture {
 	id: string;
@@ -54,6 +65,8 @@ export interface Scenario {
 	steps?: boolean;
 	/** The /live gallery's group (Do, Learn, Play, Track); the landing groups by suggestionGroups. */
 	group?: string;
+	/** For a chat recording: the /live widget demo (live/demos/<id>.svelte) it answers for. */
+	demo?: string;
 }
 
 /** A hero chip with no recording behind it: live chat only. */
@@ -79,26 +92,40 @@ export const scenarios: Scenario[] = [
 	{ id: 'bike-gears', title: 'How bike gears work', category: 'Learning', fixture: bikeGears, prompt: 'How do bike gears work?', group: 'Learn' }
 ];
 
+/**
+ * Recordings of the /live widget demos (the hand-built components in
+ * live/demos) and the playground's example spec, so the chat can answer every
+ * gallery example with a real model run. Chat only: they are not gallery runs,
+ * so the grid keeps showing the demos themselves.
+ */
+const chat = (category: string, fixture: ScenarioFixture, demo: string): Scenario => ({ id: fixture.id, title: fixture.title, category, fixture, demo });
+export const chatRecordings: Scenario[] = [
+	chat('Booking', appointment, 'booking'),
+	chat('Food', cafeMenu, 'menu-order'),
+	chat('Shopping', compareTech, 'comparison-layout'),
+	chat('Food', findRecipe, 'recipe'),
+	chat('Shopping', trackOrder, 'order-status'),
+	chat('Work', missionControl, 'mission-control'),
+	chat('Money', companySnapshot, 'classic'),
+	chat('Work', newsletterSignup, 'flow'),
+	chat('Everyday', helloCard, 'playground')
+];
+/** Demos with no chat recording: a flow step is a live multi-step host flow (the laptop and trip chips). */
+export const LIVE_ONLY_DEMOS = ['choice-cards'];
+
 export const chatPrompts: ChatPrompt[] = [
 	{ id: 'book-table', title: 'Book a table', prompt: 'Book a table for 4 on Saturday evening', steps: true, needsStore: true, group: 'Do' },
 	{ id: 'plan-trip', title: 'Plan a trip with me', prompt: 'Help me plan a trip step by step', steps: true, group: 'Do' },
 	{ id: 'pick-laptop', title: 'Help me pick a laptop', prompt: 'Help me choose a laptop: ask me a few questions first', steps: true, group: 'Do' },
 	{ id: 'shop-headphones', title: 'Shop headphones', prompt: 'Show me wireless headphones under $200 side by side so I can compare and pick one (sample products)' },
-	{ id: 'browse-products', title: 'Browse products', prompt: 'Show me a small catalog of home office gear I can filter by price and category (sample products)' },
-	{ id: 'compare-tech', title: 'Compare tech', prompt: 'Compare three tablets side by side on screen size, battery life, weight and price (sample specs)' },
 	{ id: 'find-deals', title: 'Find deals', prompt: 'Show me the best deals on kitchen gadgets this week, sorted by biggest discount (sample prices)' },
 	{ id: 'restaurant-search', title: 'Restaurant search', prompt: 'Find Italian restaurants near me with ratings, price range and distance (sample places)' },
-	{ id: 'coffee-shops', title: 'Find coffee shops', prompt: 'Show me coffee shops downtown with wifi, opening hours and distance (sample places)' },
-	{ id: 'directions', title: 'Get directions', prompt: 'Show me on a map a walking route from Rossio station to São Jorge Castle in Lisbon, with the turns (approximate)' },
-	{ id: 'weather', title: 'Weather forecast', prompt: 'Show me a 7-day weather forecast for Lisbon with highs, lows and chance of rain (sample data)' },
 	{ id: 'draft-announcement', title: 'Draft announcement', prompt: 'Draft a short team announcement about our new office opening, with a title and a few lines I can edit' },
 	{ id: 'create-survey', title: 'Create survey', prompt: 'Make me a 5-question customer feedback survey with star ratings and a comment box' },
 	{ id: 'drawing-pad', title: 'Drawing pad', prompt: 'Give me a simple drawing pad with a few colors, a brush size and a clear button' },
 	{ id: 'pack-list', title: 'Pack for trip', prompt: 'Make me a packing checklist for a 4-day beach weekend, grouped into clothes, toiletries and gear' },
 	{ id: 'project-timeline', title: 'Project timeline', prompt: 'Show a timeline for a 6-week website redesign with milestones and owners (sample project)' },
 	{ id: 'task-checklist', title: 'Task checklist', prompt: 'Make me a checklist for moving apartments that I can tick off as I go' },
-	{ id: 'weekly-schedule', title: 'Weekly schedule', prompt: 'Lay out my weekly schedule on a week calendar: work blocks on weekdays, the gym three times and family dinner on Sunday' },
-	{ id: 'take-notes', title: 'Take notes', prompt: 'Give me a notepad for ideas with tags, start with two sample notes' },
 	{ id: 'view-calendar', title: 'View calendar', prompt: 'Show me a month calendar with a few sample events on it' },
 	{ id: 'take-quiz', title: 'Take a quiz', prompt: 'Quiz me with 5 world geography questions and show my score at the end' },
 	{ id: 'explain-concept', title: 'Explain concept', prompt: 'Explain how compound interest works in a few lines, with a simple chart' },
@@ -112,15 +139,10 @@ export const chatPrompts: ChatPrompt[] = [
 	{ id: 'review-nda', title: 'Review NDA', prompt: 'Review a sample mutual NDA and flag the clauses I should read closely, with a short note on each' },
 	{ id: 'due-diligence', title: 'Due diligence', prompt: 'Make me a due diligence checklist for buying a small online shop, with a status for each item' },
 	{ id: 'compliance-check', title: 'Compliance check', prompt: 'Run a privacy check on a sample signup form and list what passes and what needs fixing' },
-	{ id: 'meeting-agenda', title: 'Meeting agenda', prompt: 'Draft a 30-minute weekly team meeting agenda starting at 10:00, with timed items and owners' },
 	{ id: 'pizza', title: 'Order pizza', prompt: 'Build me a pizza: pick a size, crust and toppings and show the price (sample menu)' },
-	{ id: 'find-recipe', title: 'Find a recipe', prompt: 'Find me a quick vegetarian dinner recipe with ingredients and steps' },
 	{ id: 'yoga', title: 'Yoga session', prompt: 'Guide me through a 15-minute morning yoga session, one pose at a time with a timer' },
 	{ id: 'track-progress', title: 'Track progress', prompt: 'Track my running over the last 8 weeks: distance and pace in a chart (sample data)' },
-	{ id: 'documentaries', title: 'Find documentaries', prompt: 'Recommend 6 nature documentaries with ratings and running time (sample titles)' },
-	{ id: 'play-music', title: 'Play music', prompt: 'Make me a focus music player with a few calm tracks' },
 	{ id: 'podcasts', title: 'Podcast discovery', prompt: 'Suggest science podcasts I might like, with topics and episode lengths (sample shows)' },
-	{ id: 'appointment', title: 'Book appointment', prompt: 'Help me pick a time for a dentist appointment next week from the open slots (sample calendar)' },
 	{ id: 'weekend-getaway', title: 'Weekend getaway', prompt: 'Plan a weekend getaway to the mountains: where to stay, what to do and a rough budget (sample places)' }
 ];
 
@@ -134,13 +156,14 @@ export const suggestionGroups: { label: string; chips: GroupChip[] }[] = [
 		chips: [
 			['pick-laptop', 'laptop'],
 			['shop-headphones', 'headphones'],
-			['browse-products', 'shopping-bag'],
+			['desk-deals', 'shopping-bag', 'Browse products'],
 			['compare-tech', 'columns-2'],
 			['find-deals', 'tag'],
+			['track-order', 'navigation', 'Track my order'],
 			['restaurant-search', 'utensils-crossed'],
-			['coffee-shops', 'coffee'],
-			['directions', 'navigation'],
-			['weather', 'cloud']
+			['coffee-nearby', 'coffee', 'Find coffee shops'],
+			['lisbon-walk', 'navigation', 'Get directions'],
+			['lisbon-weather', 'cloud', 'Weather forecast']
 		]
 	},
 	{
@@ -148,7 +171,9 @@ export const suggestionGroups: { label: string; chips: GroupChip[] }[] = [
 		chips: [
 			['draft-announcement', 'megaphone'],
 			['create-survey', 'clipboard-list'],
-			['drawing-pad', 'pencil']
+			['drawing-pad', 'pencil'],
+			['newsletter-signup', 'megaphone', 'Newsletter signup'],
+			['hello-card', 'square-check', 'Welcome card']
 		]
 	},
 	{
@@ -157,9 +182,9 @@ export const suggestionGroups: { label: string; chips: GroupChip[] }[] = [
 			['pack-list', 'briefcase'],
 			['project-timeline', 'git-branch'],
 			['task-checklist', 'square-check'],
-			['weekly-schedule', 'list-checks'],
+			['my-week', 'list-checks', 'Weekly schedule'],
 			['focus-timer', 'timer'],
-			['take-notes', 'sticky-note'],
+			['idea-notes', 'sticky-note', 'Take notes'],
 			['view-calendar', 'calendar'],
 			['habit-tracker', 'list-todo']
 		]
@@ -175,7 +200,13 @@ export const suggestionGroups: { label: string; chips: GroupChip[] }[] = [
 			['heart-pump', 'heart-pulse', 'How a heart pumps'],
 			['plane-3d', 'box'],
 			['heart-3d', 'box'],
-			['skeleton-3d', 'box']
+			['skeleton-3d', 'box'],
+			['rocket-engine', 'rocket', 'Inside a rocket engine'],
+			['ion-thruster', 'rocket', 'How a plasma thruster works'],
+			['tokamak', 'lightbulb', 'How a fusion reactor works'],
+			['fission-reactor', 'lightbulb', 'How a fission reactor works'],
+			['particle-collider', 'circle-dot', 'How a particle collider works'],
+			['iso-engine', 'activity', 'Inside a piston engine']
 		]
 	},
 	{
@@ -189,22 +220,25 @@ export const suggestionGroups: { label: string; chips: GroupChip[] }[] = [
 			['review-nda', 'file-search'],
 			['due-diligence', 'search'],
 			['compliance-check', 'shield'],
-			['meeting-agenda', 'file-text'],
+			['team-sync', 'file-text', 'Meeting agenda'],
 			['bill-splitter', 'split'],
-			['savings-calculator', 'piggy-bank']
+			['savings-calculator', 'piggy-bank'],
+			['company-snapshot', 'trending-up', 'Company snapshot'],
+			['mission-control', 'rocket', 'Mission control']
 		]
 	},
 	{
 		label: 'Lifestyle',
 		chips: [
 			['pizza', 'pizza'],
+			['cafe-menu', 'coffee', 'Order from a cafe'],
 			['meal-plan', 'salad', 'Meal planning'],
 			['find-recipe', 'chef-hat'],
 			['hiit-workout', 'dumbbell', 'HIIT workout'],
 			['yoga', 'person-standing'],
 			['track-progress', 'activity'],
-			['documentaries', 'film'],
-			['play-music', 'music'],
+			['ocean-docs', 'film', 'Find documentaries'],
+			['focus-music', 'music', 'Play music'],
 			['podcasts', 'podcast']
 		]
 	},
@@ -226,6 +260,16 @@ export const suggestionGroups: { label: string; chips: GroupChip[] }[] = [
 			['space-trivia', 'rocket'],
 			['tic-tac-toe', 'hash'],
 			['connect-four', 'circle-dot']
+		]
+	},
+	{
+		label: 'For business',
+		chips: [
+			['refund-approval', 'receipt'],
+			['incident-rollback', 'shield'],
+			['return-exchange', 'shopping-bag'],
+			['book-appointment', 'calendar-check'],
+			['quote-builder', 'file-text']
 		]
 	}
 ];
@@ -256,8 +300,8 @@ export function groupedSuggestions(pool: (Scenario | ChatPrompt)[]): SuggestionC
 /**
  * Runs set inside a business: an agent asking before it acts, a shop's own
  * widget, a work app. They play on /live under "For business", each in its
- * business's brand (brands.ts). Not on the landing: its chips and answers
- * come from `scenarios` and `playScenarios` only.
+ * business's brand (brands.ts). The landing's chat replays them unbranded,
+ * from the For business chip group.
  */
 export const BUSINESS_GROUP = 'For business';
 export const businessScenarios: Scenario[] = [

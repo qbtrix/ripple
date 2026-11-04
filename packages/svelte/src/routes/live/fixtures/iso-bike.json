@@ -1,0 +1,269 @@
+{
+ "id": "iso-bike",
+ "title": "Bicycle drivetrain",
+ "prompt": "Show how a bike's chain drive works as a live drawing, with a cadence slider and how far one pedal turn takes you",
+ "model": "sonnet",
+ "recordedAt": "2026-11-04T15:09:13.925Z",
+ "chunks": [
+  {
+   "t": 0,
+   "text": "{"
+  },
+  {
+   "t": 1,
+   "text": "\"version\":\"1.0\",\""
+  },
+  {
+   "t": 1,
+   "text": "ui\":{\"type\":\""
+  },
+  {
+   "t": 1,
+   "text": "figure\",\"props\":{\"fig"
+  },
+  {
+   "t": 1,
+   "text": "ure\":\"bike-gears"
+  },
+  {
+   "t": 2,
+   "text": "\",\"params\":{\"cadence"
+  },
+  {
+   "t": 2,
+   "text": "\":80,\"ring\":50"
+  },
+  {
+   "t": 2,
+   "text": ",\"gear\":4"
+  },
+  {
+   "t": 2,
+   "text": "},\"labels\":[{\""
+  },
+  {
+   "t": 2,
+   "text": "anchor\":\"chainring"
+  },
+  {
+   "t": 2,
+   "text": "\",\"label\":\"Ch"
+  },
+  {
+   "t": 2,
+   "text": "ainring\",\"note\":\"The front"
+  },
+  {
+   "t": 2,
+   "text": " gear."
+  },
+  {
+   "t": 402,
+   "text": " Your"
+  },
+  {
+   "t": 403,
+   "text": " p"
+  },
+  {
+   "t": 403,
+   "text": "edals turn it, and it"
+  },
+  {
+   "t": 403,
+   "text": " pulls the chain.\"},"
+  },
+  {
+   "t": 404,
+   "text": "{\"anchor\":\"ch"
+  },
+  {
+   "t": 404,
+   "text": "ain\",\"label\":\"Chain"
+  },
+  {
+   "t": 404,
+   "text": "\",\"note\":\""
+  },
+  {
+   "t": 407,
+   "text": "Carries the p"
+  },
+  {
+   "t": 407,
+   "text": "ull from the chainring to the"
+  },
+  {
+   "t": 407,
+   "text": " rear cog.\"},{\""
+  },
+  {
+   "t": 407,
+   "text": "anchor\":\"cassette"
+  },
+  {
+   "t": 407,
+   "text": "\",\"label\":\"Rear c"
+  },
+  {
+   "t": 407,
+   "text": "og\",\"note\":\"A"
+  },
+  {
+   "t": 409,
+   "text": " smaller cog sp"
+  },
+  {
+   "t": 409,
+   "text": "ins fa"
+  },
+  {
+   "t": 409,
+   "text": "ster, so"
+  },
+  {
+   "t": 409,
+   "text": " each"
+  },
+  {
+   "t": 409,
+   "text": " pedal turn takes you"
+  },
+  {
+   "t": 410,
+   "text": " further.\"},{\"anchor"
+  },
+  {
+   "t": 412,
+   "text": "\":\"crank\",\"label\":\""
+  },
+  {
+   "t": 412,
+   "text": "Crank\",\""
+  },
+  {
+   "t": 412,
+   "text": "note\":\"The arm that tur"
+  },
+  {
+   "t": 412,
+   "text": "ns your"
+  },
+  {
+   "t": 412,
+   "text": " le"
+  },
+  {
+   "t": 412,
+   "text": "g push"
+  },
+  {
+   "t": 412,
+   "text": " into r"
+  },
+  {
+   "t": 412,
+   "text": "otation.\"},{\"anch"
+  },
+  {
+   "t": 412,
+   "text": "or\":\"rear-derail"
+  },
+  {
+   "t": 412,
+   "text": "leur\",\"label\":\"R"
+  },
+  {
+   "t": 413,
+   "text": "ear derailleur\",\"note\":"
+  },
+  {
+   "t": 413,
+   "text": "\"Mo"
+  },
+  {
+   "t": 413,
+   "text": "ves the chain between"
+  },
+  {
+   "t": 413,
+   "text": " c"
+  },
+  {
+   "t": 413,
+   "text": "ogs when"
+  },
+  {
+   "t": 414,
+   "text": " you change gear"
+  },
+  {
+   "t": 414,
+   "text": ".\"}],\"caption\":\""
+  },
+  {
+   "t": 414,
+   "text": "Dr"
+  },
+  {
+   "t": 423,
+   "text": "ag cadence to sp"
+  },
+  {
+   "t": 423,
+   "text": "in the pedals faster."
+  },
+  {
+   "t": 423,
+   "text": " Swit"
+  },
+  {
+   "t": 423,
+   "text": "ch the"
+  },
+  {
+   "t": 423,
+   "text": " ring or gear to see how"
+  },
+  {
+   "t": 423,
+   "text": " far"
+  },
+  {
+   "t": 423,
+   "text": " one pedal turn car"
+  },
+  {
+   "t": 423,
+   "text": "ries you"
+  },
+  {
+   "t": 423,
+   "text": ".\"},"
+  },
+  {
+   "t": 423,
+   "text": "\"bind\":\"{"
+  },
+  {
+   "t": 423,
+   "text": "state.figure}\"},\""
+  },
+  {
+   "t": 423,
+   "text": "state\":{\"figure\":{"
+  },
+  {
+   "t": 423,
+   "text": "\"cadence\":80,\""
+  },
+  {
+   "t": 423,
+   "text": "ring\":50,\"gear"
+  },
+  {
+   "t": 426,
+   "text": "\":4}}}"
+  }
+ ]
+}

@@ -29,14 +29,13 @@
 // an animated `illustration` of the chain drive and a short text (gearsCard).
 // "map" + "route" answers with a live model card, a walking route in Lisbon
 // (routes/pawbar/fixtures/map-route-card.json).
-// The play chips (memory match, guess the word, space trivia, tic-tac-toe, connect
-// four, habit tracker, focus timer, how a heart pumps) fall through to pickScenario, which answers them with their
-// hand-written cards (routes/pawbar/play-cards.ts) streamed like a recording.
+// A message that is exactly a recording's prompt (every chip with a recording)
+// skips those shortcuts and the store cards: pickScenario replays its recording.
 // Point the site at it: PUBLIC_PAWBAR_LIVE=1 PUBLIC_PAWBAR_ENDPOINT=http://localhost:5288
 // PUBLIC_PAWBAR_WIDGET_ID=demo PUBLIC_PAWBAR_SITE_KEY=demo bun run dev
 
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
-import { pickScenario, recordedEvents, type RecordedMode } from '../src/routes/pawbar/recorded.ts';
+import { answerPool, pickScenario, recordedEvents, type RecordedMode } from '../src/routes/pawbar/recorded.ts';
 import { gearsCard, laptopAnswerCard, laptopFlowCard, tripFlowCard } from '../src/routes/pawbar/flow-cards.ts';
 import mapRouteCard from '../src/routes/pawbar/fixtures/map-route-card.json';
 
@@ -257,13 +256,15 @@ async function handle(req: IncomingMessage, res: ServerResponse) {
 		res.end();
 	};
 
-	const inline = mode === 'normal' ? inlineCard(message) : null;
+	// A recording made for this exact prompt wins over the shortcuts below.
+	const exact = answerPool.some((s) => s.fixture.prompt === message || s.prompt === message);
+	const inline = mode === 'normal' && !exact ? inlineCard(message) : null;
 	if (inline) {
 		console.info(`[mock-pawbar] inline card: ${inline[0]}`);
 		return streamCard(...inline);
 	}
 
-	const kind = mode === 'normal' ? storeCardKind(message) : null;
+	const kind = mode === 'normal' && !exact ? storeCardKind(message) : null;
 	if (kind) {
 		console.info(`[mock-pawbar] store card: ${kind} from ${STORE}`);
 		let card: unknown;

@@ -4,8 +4,9 @@
 // them straight to the chat store, so both exercise the same client path.
 // `findScenario` is an exact prompt match or else a plain keyword-overlap match
 // (null when nothing overlaps); `pickScenario` defaults that to the bill
-// splitter. Their pool is the recordings plus the hand-written play cards
-// (play-cards.ts). `cardChunks` re-cuts a fixture (a whole `{version,state,ui}`
+// splitter. Their pool (answerPool) is every /live gallery run plus the chat-only
+// recordings of the widget demos and the playground example (chatRecordings),
+// all real model streams: the chat never replays a hand-written card as an answer. `cardChunks` re-cuts a fixture (a whole `{version,state,ui}`
 // spec) into the card wire shape `{state,ui}` on the fixture's own chunk
 // boundaries and timing. `mode` drives the mock's failure paths.
 // `recordedExchange` is the same normal answer as one untimed frame list, for
@@ -16,8 +17,8 @@
 // goes in that set, or it reads as loud as a real answer.
 
 import { replay } from '../live/replay.js';
-import { scenarios, type Scenario, type ScenarioFixture } from '../live/scenarios.js';
-import { playScenarios } from './play-cards.js';
+import { chatRecordings, type Scenario, type ScenarioFixture } from '../live/scenarios.js';
+import { liveRuns } from '../live/gallery.js';
 import { FENCE_OPEN, type SSEFrame } from './sse.js';
 
 export type RecordedMode = 'normal' | 'reject' | 'truncate' | 'legacy';
@@ -46,8 +47,8 @@ const words = (s: string) =>
 			.filter((w) => w.length > 2 && !STOP.has(w))
 	);
 
-/** Everything the chat can answer with offline: the recordings and the hand-written play cards. */
-export const answerPool: Scenario[] = [...scenarios, ...playScenarios];
+/** Everything the chat can answer with offline: every gallery run and the chat-only recordings. */
+export const answerPool: Scenario[] = [...liveRuns, ...chatRecordings];
 
 /** The scenario that best matches the message, or null when no word overlaps. */
 export function findScenario(message: string, pool: Scenario[] = answerPool): Scenario | null {

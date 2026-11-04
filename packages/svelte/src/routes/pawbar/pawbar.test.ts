@@ -248,9 +248,9 @@ describe('recorded scenarios', () => {
 	test('pickScenario matches by keywords and defaults to the bill splitter', () => {
 		expect(pickScenario('plan my trip to Tokyo').id).toBe('tokyo-trip');
 		expect(pickScenario('spanish flashcards please').id).toBe('flashcards');
-		expect(pickScenario('hello there').id).toBe('bill-splitter');
+		expect(pickScenario('zebra').id).toBe('bill-splitter');
 		// findScenario says when the default was a fallback, so the intro can be honest.
-		expect(findScenario('hello there')).toBeNull();
+		expect(findScenario('zebra')).toBeNull();
 		expect(findScenario('plan my trip to Tokyo')?.id).toBe('tokyo-trip');
 	});
 

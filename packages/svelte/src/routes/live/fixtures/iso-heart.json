@@ -1,0 +1,261 @@
+{
+ "id": "iso-heart",
+ "title": "The heart as two pumps",
+ "prompt": "Draw the heart as two pumps I can watch beating, with a heart rate slider and labels on the chambers",
+ "model": "sonnet",
+ "recordedAt": "2026-11-04T15:09:14.732Z",
+ "chunks": [
+  {
+   "t": 0,
+   "text": "{\"version\":\""
+  },
+  {
+   "t": 0,
+   "text": "1.0\",\"ui\":{"
+  },
+  {
+   "t": 0,
+   "text": "\"type\":\"figure\",\"b"
+  },
+  {
+   "t": 0,
+   "text": "ind\":\"{state."
+  },
+  {
+   "t": 0,
+   "text": "he"
+  },
+  {
+   "t": 1,
+   "text": "art}\",\"props\":{\"fig"
+  },
+  {
+   "t": 1,
+   "text": "ure\":\"heart\",\"params\":"
+  },
+  {
+   "t": 1,
+   "text": "{\"bpm\":72},"
+  },
+  {
+   "t": 2,
+   "text": "\"labels\":[{\"an"
+  },
+  {
+   "t": 5,
+   "text": "chor\":\"right-atr"
+  },
+  {
+   "t": 5,
+   "text": "ium\",\"label\":\"Right at"
+  },
+  {
+   "t": 5,
+   "text": "rium\",\"note\":\"Rece"
+  },
+  {
+   "t": 6,
+   "text": "ives oxygen-poor"
+  },
+  {
+   "t": 6,
+   "text": " blood retur"
+  },
+  {
+   "t": 6,
+   "text": "ning from the body.\"},{\""
+  },
+  {
+   "t": 6,
+   "text": "anchor\":\"right-"
+  },
+  {
+   "t": 6,
+   "text": "ventricle\",\"label\":\""
+  },
+  {
+   "t": 6,
+   "text": "Right ventricle\",\"note\":"
+  },
+  {
+   "t": 8,
+   "text": "\"Pumps oxyg"
+  },
+  {
+   "t": 9,
+   "text": "en-poor blood to the"
+  },
+  {
+   "t": 9,
+   "text": " lungs. This is the first"
+  },
+  {
+   "t": 9,
+   "text": " pump.\""
+  },
+  {
+   "t": 9,
+   "text": "},{\"anchor\":\""
+  },
+  {
+   "t": 10,
+   "text": "left-atrium\",\"label\":"
+  },
+  {
+   "t": 11,
+   "text": "\"Left atrium\",\"note"
+  },
+  {
+   "t": 13,
+   "text": "\":\"Receives oxyg"
+  },
+  {
+   "t": 14,
+   "text": "en-rich blood back"
+  },
+  {
+   "t": 15,
+   "text": " from the lungs.\"},{"
+  },
+  {
+   "t": 15,
+   "text": "\"anchor\":\"left-"
+  },
+  {
+   "t": 16,
+   "text": "ventricle\",\"label\":\""
+  },
+  {
+   "t": 16,
+   "text": "Left ventricle\",\"note"
+  },
+  {
+   "t": 16,
+   "text": "\":\"Pumps ox"
+  },
+  {
+   "t": 16,
+   "text": "ygen-rich blood to"
+  },
+  {
+   "t": 16,
+   "text": " the whole body. This is the"
+  },
+  {
+   "t": 18,
+   "text": " second pump,"
+  },
+  {
+   "t": 18,
+   "text": " with the"
+  },
+  {
+   "t": 18,
+   "text": " thic"
+  },
+  {
+   "t": 19,
+   "text": "ker wall.\"},{\"an"
+  },
+  {
+   "t": 91,
+   "text": "chor\":\"aorta\",\""
+  },
+  {
+   "t": 91,
+   "text": "label\":\"Aorta\",\""
+  },
+  {
+   "t": 91,
+   "text": "note\":\"The main"
+  },
+  {
+   "t": 91,
+   "text": " artery car"
+  },
+  {
+   "t": 91,
+   "text": "rying bl"
+  },
+  {
+   "t": 92,
+   "text": "ood out to the body.\""
+  },
+  {
+   "t": 92,
+   "text": "},{\"anchor\":\""
+  },
+  {
+   "t": 92,
+   "text": "pulmonary-artery"
+  },
+  {
+   "t": 492,
+   "text": "\",\"label\":\"Pulm"
+  },
+  {
+   "t": 493,
+   "text": "onary artery\",\"note\":\""
+  },
+  {
+   "t": 493,
+   "text": "Carries bl"
+  },
+  {
+   "t": 493,
+   "text": "ood from the right ventricle"
+  },
+  {
+   "t": 493,
+   "text": " to the lungs.\"}],"
+  },
+  {
+   "t": 493,
+   "text": "\"caption\":\"The"
+  },
+  {
+   "t": 493,
+   "text": " right side pumps bl"
+  },
+  {
+   "t": 493,
+   "text": "ood to the lungs, the"
+  },
+  {
+   "t": 493,
+   "text": " left side pumps it to the"
+  },
+  {
+   "t": 493,
+   "text": " body. Drag the heart"
+  },
+  {
+   "t": 493,
+   "text": " rate slider to change"
+  },
+  {
+   "t": 493,
+   "text": " how"
+  },
+  {
+   "t": 493,
+   "text": " fast both"
+  },
+  {
+   "t": 493,
+   "text": " pumps beat.\"}},"
+  },
+  {
+   "t": 493,
+   "text": "\"state\":{\"heart\":"
+  },
+  {
+   "t": 493,
+   "text": "{\"bpm\":72}"
+  },
+  {
+   "t": 493,
+   "text": "}}"
+  }
+ ]
+}

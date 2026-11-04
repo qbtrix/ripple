@@ -1,0 +1,313 @@
+{
+ "id": "idea-notes",
+ "title": "Idea notes",
+ "prompt": "Give me a notepad for ideas with tags, start with a few sample notes",
+ "model": "sonnet",
+ "recordedAt": "2026-11-04T15:10:15.715Z",
+ "chunks": [
+  {
+   "t": 0,
+   "text": "{\"version\":\""
+  },
+  {
+   "t": 0,
+   "text": "1.0\",\"ui\":{"
+  },
+  {
+   "t": 0,
+   "text": "\"type\":\"notes\",\"b"
+  },
+  {
+   "t": 0,
+   "text": "ind\":\"{state."
+  },
+  {
+   "t": 0,
+   "text": "notes}\",\"props\":{\""
+  },
+  {
+   "t": 0,
+   "text": "title\":\"Ideas\",\""
+  },
+  {
+   "t": 0,
+   "text": "tags\":[\"idea\",\"tod"
+  },
+  {
+   "t": 0,
+   "text": "o\",\"read\",\"project\"],\""
+  },
+  {
+   "t": 0,
+   "text": "plac"
+  },
+  {
+   "t": 0,
+   "text": "eholder\":\"Write"
+  },
+  {
+   "t": 0,
+   "text": " down"
+  },
+  {
+   "t": 2,
+   "text": " an idea…\",\"notes\":"
+  },
+  {
+   "t": 2,
+   "text": "[{\"id\":\"n1"
+  },
+  {
+   "t": 2,
+   "text": "\",\"title\":\"Weekend"
+  },
+  {
+   "t": 2,
+   "text": " side"
+  },
+  {
+   "t": 2,
+   "text": " project\",\"text\":\"Build"
+  },
+  {
+   "t": 2,
+   "text": " a t"
+  },
+  {
+   "t": 2,
+   "text": "iny habit app"
+  },
+  {
+   "t": 2,
+   "text": " that"
+  },
+  {
+   "t": 2,
+   "text": " only"
+  },
+  {
+   "t": 2,
+   "text": " t"
+  },
+  {
+   "t": 2,
+   "text": "racks three"
+  },
+  {
+   "t": 2,
+   "text": " things"
+  },
+  {
+   "t": 2,
+   "text": " a day.\\nSketch"
+  },
+  {
+   "t": 2,
+   "text": " the scre"
+  },
+  {
+   "t": 2,
+   "text": "ens on"
+  },
+  {
+   "t": 2,
+   "text": " paper first.\",\"tags\":"
+  },
+  {
+   "t": 2,
+   "text": "[\"idea\",\"project\"],\""
+  },
+  {
+   "t": 2,
+   "text": "pinned\":true,\"color"
+  },
+  {
+   "t": 2,
+   "text": "\":\"yellow\"},{"
+  },
+  {
+   "t": 2,
+   "text": "\"id\":\"n2\",\"title"
+  },
+  {
+   "t": 2,
+   "text": "\":\"Books to read\",\"text"
+  },
+  {
+   "t": 2,
+   "text": "\":\"The Overstory\\"
+  },
+  {
+   "t": 2,
+   "text": "nA Psalm for"
+  },
+  {
+   "t": 2,
+   "text": " the Wild-Built\\"
+  },
+  {
+   "t": 2,
+   "text": "nB"
+  },
+  {
+   "t": 2,
+   "text": "ra"
+  },
+  {
+   "t": 2,
+   "text": "i"
+  },
+  {
+   "t": 2,
+   "text": "ding S"
+  },
+  {
+   "t": 2,
+   "text": "weetgrass\",\"tags"
+  },
+  {
+   "t": 2,
+   "text": "\":[\"read\"],\"color\":"
+  },
+  {
+   "t": 2,
+   "text": "\"green"
+  },
+  {
+   "t": 2,
+   "text": "\"},{\"id\":\"n"
+  },
+  {
+   "t": 2,
+   "text": "3\",\"title\":\"This"
+  },
+  {
+   "t": 2,
+   "text": " week\",\"text\":\"Book"
+  },
+  {
+   "t": 2,
+   "text": " d"
+  },
+  {
+   "t": 2,
+   "text": "entist appointment.\\n"
+  },
+  {
+   "t": 2,
+   "text": "Reply"
+  },
+  {
+   "t": 2,
+   "text": " to the land"
+  },
+  {
+   "t": 2,
+   "text": "l"
+  },
+  {
+   "t": 2,
+   "text": "ord about"
+  },
+  {
+   "t": 2,
+   "text": " the lease.\\nP"
+  },
+  {
+   "t": 2,
+   "text": "lan"
+  },
+  {
+   "t": 2,
+   "text": " Sunday meal pr"
+  },
+  {
+   "t": 2,
+   "text": "ep.\",\"tags\":[\"tod"
+  },
+  {
+   "t": 2,
+   "text": "o\"],\"color\":\"bl"
+  },
+  {
+   "t": 2,
+   "text": "ue\"},{\"id\":\""
+  },
+  {
+   "t": 2,
+   "text": "n4\",\"title\":\"G"
+  },
+  {
+   "t": 2,
+   "text": "ift ideas\",\"text\":\""
+  },
+  {
+   "t": 2,
+   "text": "H"
+  },
+  {
+   "t": 2,
+   "text": "and-b"
+  },
+  {
+   "t": 2,
+   "text": "ound not"
+  },
+  {
+   "t": 2,
+   "text": "ebook for"
+  },
+  {
+   "t": 2,
+   "text": " Mia, a plant c"
+  },
+  {
+   "t": 2,
+   "text": "utting"
+  },
+  {
+   "t": 2,
+   "text": " for"
+  },
+  {
+   "t": 2,
+   "text": " Dad, and a m"
+  },
+  {
+   "t": 2,
+   "text": "ix"
+  },
+  {
+   "t": 2,
+   "text": "t"
+  },
+  {
+   "t": 2,
+   "text": "ape-"
+  },
+  {
+   "t": 2,
+   "text": "style playlist for Sam"
+  },
+  {
+   "t": 2,
+   "text": ".\",\"tags\":[\"idea"
+  },
+  {
+   "t": 2,
+   "text": "\"],\"color\":\"pink"
+  },
+  {
+   "t": 2,
+   "text": "\"}]}},\"state\":"
+  },
+  {
+   "t": 2,
+   "text": "{\"notes\":[]}"
+  },
+  {
+   "t": 2,
+   "text": "}"
+  }
+ ]
+}

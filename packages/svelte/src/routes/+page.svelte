@@ -22,7 +22,7 @@
     first send the row folds into a toggle left of the composer, so a tall answer
     card gets that height (foldChips). Live, every chip
     shows (the store ones only with a store). In replay mode every chip shows
-    too: one with a recorded or hand-written answer replays it, any other opens
+    too: one with a recorded answer replays it, any other opens
     Paw OS with its prompt like typed text (marked "Opens in Paw OS"), and the
     replayable chips sort first, so the collapsed row leads with them and
     groups with none sink to the end. The chat calls the Paw Bar API only when

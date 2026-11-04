@@ -1,0 +1,773 @@
+{
+ "id": "desk-deals",
+ "title": "Desk gear deals",
+ "prompt": "Show me deals on home office gear I can filter and compare (sample products)",
+ "model": "sonnet",
+ "recordedAt": "2026-11-04T15:10:01.838Z",
+ "chunks": [
+  {
+   "t": 0,
+   "text": "{\"version\":\"1.0"
+  },
+  {
+   "t": 0,
+   "text": "\",\"ui\":{\"type"
+  },
+  {
+   "t": 0,
+   "text": "\":\"product-grid\",\"props"
+  },
+  {
+   "t": 0,
+   "text": "\":{\"title\":\"Home"
+  },
+  {
+   "t": 0,
+   "text": " office deals ("
+  },
+  {
+   "t": 0,
+   "text": "sample products"
+  },
+  {
+   "t": 0,
+   "text": ")\",\"currency\":\"USD"
+  },
+  {
+   "t": 0,
+   "text": "\",\"products\":[{\"id\":"
+  },
+  {
+   "t": 0,
+   "text": "\"o1\",\"name\":\""
+  },
+  {
+   "t": 0,
+   "text": "Ergo M"
+  },
+  {
+   "t": 0,
+   "text": "esh Chair\",\"brand"
+  },
+  {
+   "t": 0,
+   "text": "\":\"S"
+  },
+  {
+   "t": 0,
+   "text": "ample"
+  },
+  {
+   "t": 0,
+   "text": "\",\""
+  },
+  {
+   "t": 90,
+   "text": "category\":\"Ch"
+  },
+  {
+   "t": 90,
+   "text": "airs\",\"price\":249"
+  },
+  {
+   "t": 90,
+   "text": ",\"was\":349"
+  },
+  {
+   "t": 90,
+   "text": ",\"rating\":4.5"
+  },
+  {
+   "t": 90,
+   "text": ",\"reviews\":1"
+  },
+  {
+   "t": 90,
+   "text": "280,\"badge\":\""
+  },
+  {
+   "t": 90,
+   "text": "Best seller\",\"color\":\"sl"
+  },
+  {
+   "t": 90,
+   "text": "ate\",\"specs\":[\"L"
+  },
+  {
+   "t": 90,
+   "text": "umbar support\",\"Adj"
+  },
+  {
+   "t": 90,
+   "text": "ustable arms\"]},{"
+  },
+  {
+   "t": 91,
+   "text": "\"id\":\"o2\",\"name"
+  },
+  {
+   "t": 91,
+   "text": "\":\"Task"
+  },
+  {
+   "t": 234,
+   "text": " Chair L"
+  },
+  {
+   "t": 235,
+   "text": "ite\",\"brand\":\"S"
+  },
+  {
+   "t": 236,
+   "text": "ample\",\"category\":\"Chair"
+  },
+  {
+   "t": 236,
+   "text": "s\",\"price\":129,\"was"
+  },
+  {
+   "t": 236,
+   "text": "\":159"
+  },
+  {
+   "t": 236,
+   "text": ",\"rating\":4.1"
+  },
+  {
+   "t": 236,
+   "text": ",\"reviews\":642"
+  },
+  {
+   "t": 236,
+   "text": ",\"color\":\"blue\",\""
+  },
+  {
+   "t": 236,
+   "text": "specs\":[\"M"
+  },
+  {
+   "t": 451,
+   "text": "esh back"
+  },
+  {
+   "t": 451,
+   "text": "\",\"Tilt l"
+  },
+  {
+   "t": 451,
+   "text": "ock\"]},{\"id\":"
+  },
+  {
+   "t": 629,
+   "text": "\"o3\",\"name\":\""
+  },
+  {
+   "t": 630,
+   "text": "Electric Stand"
+  },
+  {
+   "t": 630,
+   "text": "ing Desk\",\"brand\":"
+  },
+  {
+   "t": 630,
+   "text": "\"Sample\",\"category\":\""
+  },
+  {
+   "t": 630,
+   "text": "Desks\",\"price\":389"
+  },
+  {
+   "t": 630,
+   "text": ",\"was\":529"
+  },
+  {
+   "t": 630,
+   "text": ",\"rating\":4.6"
+  },
+  {
+   "t": 633,
+   "text": ",\"reviews\":2015"
+  },
+  {
+   "t": 633,
+   "text": ",\"bad"
+  },
+  {
+   "t": 654,
+   "text": "ge\":\"Top"
+  },
+  {
+   "t": 692,
+   "text": " r"
+  },
+  {
+   "t": 723,
+   "text": "ated\",\"color\":\"teal\",\""
+  },
+  {
+   "t": 924,
+   "text": "specs\":[\"48"
+  },
+  {
+   "t": 924,
+   "text": " "
+  },
+  {
+   "t": 924,
+   "text": "x 24"
+  },
+  {
+   "t": 925,
+   "text": " in\",\"4 memory pres"
+  },
+  {
+   "t": 925,
+   "text": "ets\"]},{\"id\":"
+  },
+  {
+   "t": 925,
+   "text": "\"o4\",\"name\":\""
+  },
+  {
+   "t": 951,
+   "text": "Compact Desk "
+  },
+  {
+   "t": 984,
+   "text": "40"
+  },
+  {
+   "t": 1016,
+   "text": "\",\""
+  },
+  {
+   "t": 1047,
+   "text": "brand\":\"Sample\",\""
+  },
+  {
+   "t": 1081,
+   "text": "category\":\"Desks\",\"price"
+  },
+  {
+   "t": 1112,
+   "text": "\":139"
+  },
+  {
+   "t": 1318,
+   "text": ",\"was\":179"
+  },
+  {
+   "t": 1318,
+   "text": ",\"rating\":4.2"
+  },
+  {
+   "t": 1318,
+   "text": ",\"reviews\":397"
+  },
+  {
+   "t": 1319,
+   "text": ",\"color\":\"am"
+  },
+  {
+   "t": 1319,
+   "text": "ber\",\"specs\":[\"40"
+  },
+  {
+   "t": 1319,
+   "text": " in"
+  },
+  {
+   "t": 1348,
+   "text": " w"
+  },
+  {
+   "t": 1382,
+   "text": "ide\",\"Cable t"
+  },
+  {
+   "t": 1414,
+   "text": "ray\"]},{\"id\":"
+  },
+  {
+   "t": 1450,
+   "text": "\"o5\",\"name\":\"27"
+  },
+  {
+   "t": 1482,
+   "text": "in"
+  },
+  {
+   "t": 1515,
+   "text": " 4K Monitor\",\""
+  },
+  {
+   "t": 1915,
+   "text": "brand\":\"Sample\",\""
+  },
+  {
+   "t": 1915,
+   "text": "category\":\"Monitors\",\""
+  },
+  {
+   "t": 1915,
+   "text": "price\":299"
+  },
+  {
+   "t": 1915,
+   "text": ",\"was\":399"
+  },
+  {
+   "t": 1915,
+   "text": ",\"rating\":4.5"
+  },
+  {
+   "t": 1915,
+   "text": ",\"reviews\":1"
+  },
+  {
+   "t": 1916,
+   "text": "736"
+  },
+  {
+   "t": 1916,
+   "text": ",\"bad"
+  },
+  {
+   "t": 1917,
+   "text": "ge\":\"25"
+  },
+  {
+   "t": 1918,
+   "text": "% off\",\"color\":\"viol"
+  },
+  {
+   "t": 1924,
+   "text": "et\",\"specs\":[\"US"
+  },
+  {
+   "t": 1927,
+   "text": "B-C "
+  },
+  {
+   "t": 1928,
+   "text": "65"
+  },
+  {
+   "t": 1929,
+   "text": " "
+  },
+  {
+   "t": 1929,
+   "text": "W\",\"IPS pan"
+  },
+  {
+   "t": 1931,
+   "text": "el\"]},{\"id\":"
+  },
+  {
+   "t": 1931,
+   "text": "\"o6\",\"name\":\"24"
+  },
+  {
+   "t": 1932,
+   "text": "in Full"
+  },
+  {
+   "t": 1935,
+   "text": " HD Monitor\",\"br"
+  },
+  {
+   "t": 1937,
+   "text": "and\":\"Sample\",\"category"
+  },
+  {
+   "t": 1937,
+   "text": "\":\"Monitors\",\"price"
+  },
+  {
+   "t": 1937,
+   "text": "\":109"
+  },
+  {
+   "t": 1938,
+   "text": ",\"was\":139"
+  },
+  {
+   "t": 1941,
+   "text": ",\"rating\":4.2"
+  },
+  {
+   "t": 1941,
+   "text": ",\"reviews\":2"
+  },
+  {
+   "t": 1941,
+   "text": "210"
+  },
+  {
+   "t": 1941,
+   "text": ",\"color\":\"green\",\"spec"
+  },
+  {
+   "t": 1943,
+   "text": "s\":[\"75 Hz"
+  },
+  {
+   "t": 1944,
+   "text": "\",\"Eye-care"
+  },
+  {
+   "t": 1945,
+   "text": " mode\"]},{\"id"
+  },
+  {
+   "t": 1945,
+   "text": "\":\"o7\",\"name\":\""
+  },
+  {
+   "t": 1945,
+   "text": "Mechanical Key"
+  },
+  {
+   "t": 1946,
+   "text": "board\",\"brand\":\""
+  },
+  {
+   "t": 1949,
+   "text": "Sample\",\"category\":\"Acc"
+  },
+  {
+   "t": 1949,
+   "text": "essories\",\"price\":69"
+  },
+  {
+   "t": 1949,
+   "text": ",\"was\":89"
+  },
+  {
+   "t": 1949,
+   "text": ",\"rating\":4.4"
+  },
+  {
+   "t": 1960,
+   "text": ",\"reviews\":958"
+  },
+  {
+   "t": 1963,
+   "text": ",\"color\":\"orange\",\""
+  },
+  {
+   "t": 1967,
+   "text": "specs\":[\"Hot-"
+  },
+  {
+   "t": 1969,
+   "text": "swap"
+  },
+  {
+   "t": 1969,
+   "text": "\",\""
+  },
+  {
+   "t": 1969,
+   "text": "Wireless\"]},{"
+  },
+  {
+   "t": 1971,
+   "text": "\"id\":\"o8\",\"name"
+  },
+  {
+   "t": 1971,
+   "text": "\":\"Ergon"
+  },
+  {
+   "t": 1971,
+   "text": "omic Mouse\",\"br"
+  },
+  {
+   "t": 1976,
+   "text": "and\":\"Sample\",\"category"
+  },
+  {
+   "t": 1977,
+   "text": "\":\"Accessories\",\"price"
+  },
+  {
+   "t": 1977,
+   "text": "\":39"
+  },
+  {
+   "t": 1979,
+   "text": ",\"was\":55"
+  },
+  {
+   "t": 1980,
+   "text": ",\"rating\":4.3"
+  },
+  {
+   "t": 1981,
+   "text": ",\"reviews\":1"
+  },
+  {
+   "t": 1983,
+   "text": "144,\"color\":\"rose"
+  },
+  {
+   "t": 1985,
+   "text": "\",\"specs\":[\"Vert"
+  },
+  {
+   "t": 1986,
+   "text": "ical gr"
+  },
+  {
+   "t": 1987,
+   "text": "ip\",\""
+  },
+  {
+   "t": 1987,
+   "text": "Bluetooth\"]},"
+  },
+  {
+   "t": 1989,
+   "text": "{\"id\":\"o9\",\""
+  },
+  {
+   "t": 1989,
+   "text": "name\":\""
+  },
+  {
+   "t": 1993,
+   "text": "Aluminum Monitor"
+  },
+  {
+   "t": 1993,
+   "text": " Arm\",\"brand\":\""
+  },
+  {
+   "t": 1994,
+   "text": "Sample\",\"category\":\""
+  },
+  {
+   "t": 1994,
+   "text": "Accessories\",\"price\":59"
+  },
+  {
+   "t": 1999,
+   "text": ",\"was\":79,\"r"
+  },
+  {
+   "t": 2000,
+   "text": "ating\":4.4"
+  },
+  {
+   "t": 2011,
+   "text": ",\"reviews\":803"
+  },
+  {
+   "t": 2013,
+   "text": ",\"color\":\"slate\",\""
+  },
+  {
+   "t": 2014,
+   "text": "specs\":[\"Gas sp"
+  },
+  {
+   "t": 2016,
+   "text": "ring\",\"F"
+  },
+  {
+   "t": 2018,
+   "text": "its up"
+  },
+  {
+   "t": 2018,
+   "text": " to 32 in\"]},"
+  },
+  {
+   "t": 2020,
+   "text": "{\"id\":\"o10\",\""
+  },
+  {
+   "t": 2021,
+   "text": "name\":\"L"
+  },
+  {
+   "t": 2021,
+   "text": "ED Desk Lamp"
+  },
+  {
+   "t": 2021,
+   "text": "\",\"brand\":\"Sample"
+  },
+  {
+   "t": 2022,
+   "text": "\",\"category\":\"L"
+  },
+  {
+   "t": 2025,
+   "text": "ighting\",\"price\":34"
+  },
+  {
+   "t": 2025,
+   "text": ",\"was\":49,\"r"
+  },
+  {
+   "t": 2029,
+   "text": "ating\":4.3"
+  },
+  {
+   "t": 2029,
+   "text": ",\"reviews\":1"
+  },
+  {
+   "t": 2032,
+   "text": "521"
+  },
+  {
+   "t": 2032,
+   "text": ",\"bad"
+  },
+  {
+   "t": 2034,
+   "text": "ge\":\"30"
+  },
+  {
+   "t": 2037,
+   "text": "% off\",\"color\":\"am"
+  },
+  {
+   "t": 2038,
+   "text": "ber\",\"specs\":[\"5 "
+  },
+  {
+   "t": 2038,
+   "text": "color modes\",\"US"
+  },
+  {
+   "t": 2038,
+   "text": "B port\"]},{\"id"
+  },
+  {
+   "t": 2038,
+   "text": "\":\"o11\",\"name\":\""
+  },
+  {
+   "t": 2041,
+   "text": "Web"
+  },
+  {
+   "t": 2042,
+   "text": "cam "
+  },
+  {
+   "t": 2044,
+   "text": "1080p\",\"brand\":\""
+  },
+  {
+   "t": 2044,
+   "text": "Sample\",\"category\":\""
+  },
+  {
+   "t": 2044,
+   "text": "Accessories\",\"price\":45"
+  },
+  {
+   "t": 2045,
+   "text": ",\"was\":60"
+  },
+  {
+   "t": 2045,
+   "text": ",\"rating\":4.0"
+  },
+  {
+   "t": 2045,
+   "text": ",\"reviews\":689"
+  },
+  {
+   "t": 2045,
+   "text": ",\"color\":\"blue\",\""
+  },
+  {
+   "t": 2045,
+   "text": "specs\":[\"Privacy"
+  },
+  {
+   "t": 2045,
+   "text": " sh"
+  },
+  {
+   "t": 2046,
+   "text": "utter\",\"D"
+  },
+  {
+   "t": 2047,
+   "text": "ual mic"
+  },
+  {
+   "t": 2047,
+   "text": "\"]},{\"id\":\""
+  },
+  {
+   "t": 2047,
+   "text": "o12\",\"name\":\"An"
+  },
+  {
+   "t": 2047,
+   "text": "ti-Fatigue"
+  },
+  {
+   "t": 2047,
+   "text": " Mat\",\"brand\":\""
+  },
+  {
+   "t": 2047,
+   "text": "Sample\",\"category\":\"Acc"
+  },
+  {
+   "t": 2048,
+   "text": "essories\",\"price\":29,\""
+  },
+  {
+   "t": 2048,
+   "text": "was\":42"
+  },
+  {
+   "t": 2048,
+   "text": ",\"rating\":4.2"
+  },
+  {
+   "t": 2048,
+   "text": ",\"reviews\":512"
+  },
+  {
+   "t": 2050,
+   "text": ",\"color\":\"teal\",\""
+  },
+  {
+   "t": 2051,
+   "text": "specs\":[\"Non-sl"
+  },
+  {
+   "t": 2052,
+   "text": "ip\",\"3"
+  },
+  {
+   "t": 2052,
+   "text": "/"
+  },
+  {
+   "t": 2052,
+   "text": "4 in fo"
+  },
+  {
+   "t": 2052,
+   "text": "am\"]}]}}"
+  },
+  {
+   "t": 2052,
+   "text": "}"
+  }
+ ]
+}

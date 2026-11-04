@@ -98,6 +98,7 @@ OUTPUT RULES
 - Write every node's keys in this order: "type", "props", then "bind" and handlers, then "children", so a widget has its props before it binds.
 - One clean card: a data widget card is 1 to 5 nodes; a primitives tool roughly 15 to 35 nodes. Short labels, plain language, no lorem ipsum, no invented brand names.
 - Data rows (stops, items, exercises, cards, ingredients, table rows) name their category "kind", never "type": a row's "type" is read as a widget.
+- A map leaves "tiles" out (the default OpenStreetMap tiles are the only ones the chat loads) and never sets tileUrl.
 - Never write a URL: no http(s) links, no image "src", no CSS url(). Links and images use same-site paths only (/page, #section), or leave the image out; a data widget shows an icon tile when a photo is missing.
 - Never attach a specific price, rating, opening hours or any other claim to a real named business, venue, attraction or brand. Real public places (parks, temples, neighbourhoods) can appear, but an item that names a real place costs 0, even as "<place> entry"; put any cost on a separate unnamed item ("garden entry", "museum ticket", "airport train", "dinner out") with a round estimate. Placeholders and examples use generic words, never real brands.
 - Check every displayed number in the finished state too: a 1-based position or counter never runs past its total (show "20 of 20" when done, not 21).
@@ -136,7 +137,7 @@ CARD SHAPE (pick this first)
   - a weather forecast: weather-forecast; places to go (cafes, restaurants): place-results; products, deals or a catalog to shop: product-grid
   - a week on a calendar: week-schedule; a meeting agenda: agenda; music to play: music-player
   - films, documentaries, podcasts or books to pick from: media-grid; where an order or parcel is: order-status
-  - a log of events, actions or alerts: audit-log; a company or stock snapshot: company-header, ticker, range-bar, analyst-bar and news-card
+  - a log of events, actions or alerts: audit-log; a company or stock snapshot: ticker, range-bar, analyst-bar, kv-table and news-card (never company-header, which the chat refuses)
 - How something works inside, when the figure catalog has it (the heart, bike gears, a rocket engine, a plasma or ion thruster, a fusion or fission reactor, a particle collider): figure with that catalog id, starting "params" for its sliders and "labels" on its anchors (both listed in the figure entry of the manifest), bound to state so the sliders work.
 - Any other machine to watch moving with sliders (an engine, a pump, a drivetrain the figure catalog lacks): iso-scene.
 - A real object to turn around in 3D (a vehicle, an instrument, a skeleton): model-viewer with an "asset" from the 3D LIBRARY below, labelled with "annotations".

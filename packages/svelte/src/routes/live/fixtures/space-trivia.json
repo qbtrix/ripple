@@ -1,0 +1,505 @@
+{
+ "id": "space-trivia",
+ "title": "Space trivia",
+ "prompt": "Quiz me with 6 space trivia questions, and explain each answer",
+ "model": "sonnet",
+ "recordedAt": "2026-11-04T15:08:51.238Z",
+ "chunks": [
+  {
+   "t": 0,
+   "text": "{\"version\":\"1.0"
+  },
+  {
+   "t": 1,
+   "text": "\",\"ui\":{\"type"
+  },
+  {
+   "t": 1,
+   "text": "\":\"quiz\",\"b"
+  },
+  {
+   "t": 1,
+   "text": "ind\":\"{state."
+  },
+  {
+   "t": 1,
+   "text": "quiz}\",\"props\":{"
+  },
+  {
+   "t": 1,
+   "text": "\"title\":\"Space triv"
+  },
+  {
+   "t": 1,
+   "text": "ia\",\"topic\":\"Ast"
+  },
+  {
+   "t": 1,
+   "text": "ronomy\",\"sh"
+  },
+  {
+   "t": 1,
+   "text": "uffle_choices\":false"
+  },
+  {
+   "t": 1,
+   "text": ",\"questions\":[{\""
+  },
+  {
+   "t": 1,
+   "text": "prompt\":\"Which plan"
+  },
+  {
+   "t": 1,
+   "text": "et has the shortest day?"
+  },
+  {
+   "t": 1,
+   "text": "\",\"choices\":[\"Earth"
+  },
+  {
+   "t": 1,
+   "text": "\",\"Jupiter\",\""
+  },
+  {
+   "t": 1,
+   "text": "Mars\",\"Venus\"],"
+  },
+  {
+   "t": 1,
+   "text": "\"answer\":1,\"why"
+  },
+  {
+   "t": 1,
+   "text": "\":\"Jupiter sp"
+  },
+  {
+   "t": 1,
+   "text": "ins once in under 10 h"
+  },
+  {
+   "t": 1,
+   "text": "ours, the fastest r"
+  },
+  {
+   "t": 1,
+   "text": "otation of any planet."
+  },
+  {
+   "t": 1,
+   "text": " Venus is"
+  },
+  {
+   "t": 1,
+   "text": " the slowest, with a"
+  },
+  {
+   "t": 1,
+   "text": " day longer than its"
+  },
+  {
+   "t": 1,
+   "text": " year.\"},{\"prompt"
+  },
+  {
+   "t": 1,
+   "text": "\":\"What is the closest star"
+  },
+  {
+   "t": 1,
+   "text": " to the Sun?\",\"cho"
+  },
+  {
+   "t": 1,
+   "text": "ices\":[\"Sirius\",\""
+  },
+  {
+   "t": 1,
+   "text": "Betelgeuse\",\""
+  },
+  {
+   "t": 1,
+   "text": "Proxima Centauri"
+  },
+  {
+   "t": 1,
+   "text": "\",\"Alpha And"
+  },
+  {
+   "t": 1,
+   "text": "romed"
+  },
+  {
+   "t": 1,
+   "text": "ae\"],\"answer\":2"
+  },
+  {
+   "t": 1,
+   "text": ",\"why\":\"Prox"
+  },
+  {
+   "t": 1,
+   "text": "ima Centauri is about "
+  },
+  {
+   "t": 1,
+   "text": "4.2 light years away."
+  },
+  {
+   "t": 1,
+   "text": " Sirius is the"
+  },
+  {
+   "t": 1,
+   "text": " brightest star in"
+  },
+  {
+   "t": 1,
+   "text": " our"
+  },
+  {
+   "t": 1,
+   "text": " night sky, but it s"
+  },
+  {
+   "t": 1,
+   "text": "its ro"
+  },
+  {
+   "t": 1,
+   "text": "ughly tw"
+  },
+  {
+   "t": 1,
+   "text": "ice as"
+  },
+  {
+   "t": 1,
+   "text": " far.\"},{\"prompt"
+  },
+  {
+   "t": 1,
+   "text": "\":\"How long does sunl"
+  },
+  {
+   "t": 1,
+   "text": "ight take to reach Earth"
+  },
+  {
+   "t": 1,
+   "text": "?\",\"choices\":[\"8 "
+  },
+  {
+   "t": 1,
+   "text": "seconds\",\"About 8 "
+  },
+  {
+   "t": 1,
+   "text": "minutes\",\"About 8 "
+  },
+  {
+   "t": 1,
+   "text": "hours\",\"About 8 days"
+  },
+  {
+   "t": 1,
+   "text": "\"],\"answer\":1,"
+  },
+  {
+   "t": 1,
+   "text": "\"why\":\"Light trav"
+  },
+  {
+   "t": 1,
+   "text": "els about 300"
+  },
+  {
+   "t": 1,
+   "text": ",000 km per"
+  },
+  {
+   "t": 1,
+   "text": " second and covers the 150 "
+  },
+  {
+   "t": 1,
+   "text": "million km to"
+  },
+  {
+   "t": 1,
+   "text": " Earth in roughly "
+  },
+  {
+   "t": 1,
+   "text": "8 minutes 20 "
+  },
+  {
+   "t": 1,
+   "text": "seconds.\"},{\"pr"
+  },
+  {
+   "t": 1,
+   "text": "ompt\":\""
+  },
+  {
+   "t": 1,
+   "text": "Which planet is the h"
+  },
+  {
+   "t": 1,
+   "text": "ottest in our solar system?"
+  },
+  {
+   "t": 1,
+   "text": "\",\"choices\":[\"M"
+  },
+  {
+   "t": 1,
+   "text": "ercury\",\"Venus\",\""
+  },
+  {
+   "t": 1,
+   "text": "Mars\",\"Jupiter"
+  },
+  {
+   "t": 1,
+   "text": "\"],\"answer\":1,"
+  },
+  {
+   "t": 1,
+   "text": "\"why\":\"Venus has"
+  },
+  {
+   "t": 1,
+   "text": " a"
+  },
+  {
+   "t": 1,
+   "text": " thick car"
+  },
+  {
+   "t": 1,
+   "text": "bon dioxide atm"
+  },
+  {
+   "t": 1,
+   "text": "osphere that traps heat"
+  },
+  {
+   "t": 1,
+   "text": ", ke"
+  },
+  {
+   "t": 1,
+   "text": "eping the"
+  },
+  {
+   "t": 1,
+   "text": " surface near"
+  },
+  {
+   "t": 1,
+   "text": " 465 °"
+  },
+  {
+   "t": 1,
+   "text": "C."
+  },
+  {
+   "t": 1,
+   "text": " That"
+  },
+  {
+   "t": 1,
+   "text": " is h"
+  },
+  {
+   "t": 1,
+   "text": "otter than Mercury,"
+  },
+  {
+   "t": 1,
+   "text": " even though Mercury is clos"
+  },
+  {
+   "t": 1,
+   "text": "er to the Sun.\"},"
+  },
+  {
+   "t": 1,
+   "text": "{\"prompt\":\"What"
+  },
+  {
+   "t": 1,
+   "text": " is the larg"
+  },
+  {
+   "t": 1,
+   "text": "est mo"
+  },
+  {
+   "t": 1,
+   "text": "on in the"
+  },
+  {
+   "t": 1,
+   "text": " solar system?\",\"choices\":"
+  },
+  {
+   "t": 1,
+   "text": "[\"Titan\",\"Europ"
+  },
+  {
+   "t": 1,
+   "text": "a\",\""
+  },
+  {
+   "t": 1,
+   "text": "Ganymede\",\"The"
+  },
+  {
+   "t": 1,
+   "text": " Moon\"],\"answer"
+  },
+  {
+   "t": 1,
+   "text": "\":2,\"why\":\""
+  },
+  {
+   "t": 2,
+   "text": "Ganymede, a"
+  },
+  {
+   "t": 2,
+   "text": " moon of Jupiter"
+  },
+  {
+   "t": 2,
+   "text": ", is w"
+  },
+  {
+   "t": 6,
+   "text": "ider than the"
+  },
+  {
+   "t": 6,
+   "text": " planet Mercury."
+  },
+  {
+   "t": 6,
+   "text": " Titan,"
+  },
+  {
+   "t": 6,
+   "text": " which"
+  },
+  {
+   "t": 6,
+   "text": " orbits Saturn,"
+  },
+  {
+   "t": 6,
+   "text": " is second larg"
+  },
+  {
+   "t": 6,
+   "text": "est.\"},{\"prompt"
+  },
+  {
+   "t": 6,
+   "text": "\":\"What"
+  },
+  {
+   "t": 6,
+   "text": " is"
+  },
+  {
+   "t": 6,
+   "text": " a light"
+  },
+  {
+   "t": 7,
+   "text": " year a"
+  },
+  {
+   "t": 9,
+   "text": " measure of?\",\"choices\":"
+  },
+  {
+   "t": 9,
+   "text": "[\"Time\",\"Distance\",\""
+  },
+  {
+   "t": 12,
+   "text": "Br"
+  },
+  {
+   "t": 20,
+   "text": "ightness\",\"Speed\"],"
+  },
+  {
+   "t": 22,
+   "text": "\"answer\":1,\"why"
+  },
+  {
+   "t": 44,
+   "text": "\":\"A"
+  },
+  {
+   "t": 44,
+   "text": " light year is the distance light"
+  },
+  {
+   "t": 44,
+   "text": " travels in one"
+  },
+  {
+   "t": 44,
+   "text": " year, about 9.46"
+  },
+  {
+   "t": 44,
+   "text": " trillion km"
+  },
+  {
+   "t": 44,
+   "text": ". Despite the"
+  },
+  {
+   "t": 44,
+   "text": " name"
+  },
+  {
+   "t": 44,
+   "text": ", it meas"
+  },
+  {
+   "t": 44,
+   "text": "ures distance, not time.\"}"
+  },
+  {
+   "t": 44,
+   "text": "]}},"
+  },
+  {
+   "t": 44,
+   "text": "\"state\":{\"quiz"
+  },
+  {
+   "t": 44,
+   "text": "\":{\"index\":0,\""
+  },
+  {
+   "t": 44,
+   "text": "answers\":[],\"score\":"
+  },
+  {
+   "t": 44,
+   "text": "0,\"done\":false}}"
+  },
+  {
+   "t": 44,
+   "text": "}"
+  }
+ ]
+}

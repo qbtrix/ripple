@@ -1,0 +1,129 @@
+{
+ "id": "habit-tracker",
+ "title": "Habit tracker",
+ "prompt": "Track my habits this week: reading, running, water and sleep, each with a weekly target",
+ "model": "sonnet",
+ "recordedAt": "2026-11-04T15:08:53.506Z",
+ "chunks": [
+  {
+   "t": 0,
+   "text": "{\"version\":\""
+  },
+  {
+   "t": 0,
+   "text": "1.0\",\"ui\":{"
+  },
+  {
+   "t": 0,
+   "text": "\"type"
+  },
+  {
+   "t": 0,
+   "text": "\":\"habit-tracker"
+  },
+  {
+   "t": 0,
+   "text": "\",\"b"
+  },
+  {
+   "t": 0,
+   "text": "ind\":\"{"
+  },
+  {
+   "t": 0,
+   "text": "state.habits}\",\"props\":"
+  },
+  {
+   "t": 0,
+   "text": "{\"title\":\"My week\",\""
+  },
+  {
+   "t": 0,
+   "text": "week_start\":\"m"
+  },
+  {
+   "t": 0,
+   "text": "on\",\"weeks\":1,"
+  },
+  {
+   "t": 0,
+   "text": "\"habits\":[{\"id"
+  },
+  {
+   "t": 0,
+   "text": "\":\"read\",\"name\":\""
+  },
+  {
+   "t": 0,
+   "text": "Read "
+  },
+  {
+   "t": 0,
+   "text": "20 pages\",\"icon\":"
+  },
+  {
+   "t": 0,
+   "text": "\"read\",\"target_per_week"
+  },
+  {
+   "t": 0,
+   "text": "\":5},{\"id\":\""
+  },
+  {
+   "t": 0,
+   "text": "run\",\"name\":\"Run\",\""
+  },
+  {
+   "t": 0,
+   "text": "icon\":\"run\",\"target_"
+  },
+  {
+   "t": 0,
+   "text": "per_week\":3},{\""
+  },
+  {
+   "t": 0,
+   "text": "id\":\"water\",\"name\":\""
+  },
+  {
+   "t": 0,
+   "text": "Drink 2L water\",\""
+  },
+  {
+   "t": 0,
+   "text": "icon\":\"water\",\"target_"
+  },
+  {
+   "t": 0,
+   "text": "per_week\":7},{\""
+  },
+  {
+   "t": 0,
+   "text": "id\":\"sleep\",\"name"
+  },
+  {
+   "t": 0,
+   "text": "\":\"Sleep 8"
+  },
+  {
+   "t": 0,
+   "text": " hours\",\"icon\":\""
+  },
+  {
+   "t": 0,
+   "text": "sleep\",\"target_per_"
+  },
+  {
+   "t": 1,
+   "text": "week\":6"
+  },
+  {
+   "t": 1,
+   "text": "}]}},\"state\":{"
+  },
+  {
+   "t": 1,
+   "text": "\"habits\":{}}}"
+  }
+ ]
+}

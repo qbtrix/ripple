@@ -1,0 +1,569 @@
+{
+ "id": "find-recipe",
+ "title": "Find a recipe",
+ "prompt": "Find me a quick vegetarian dinner recipe with ingredients and steps",
+ "model": "sonnet",
+ "recordedAt": "2026-11-04T15:11:45.387Z",
+ "chunks": [
+  {
+   "t": 0,
+   "text": "{\"version\":\""
+  },
+  {
+   "t": 0,
+   "text": "1.0\",\"ui\":{"
+  },
+  {
+   "t": 0,
+   "text": "\"type\":\"recipe\",\""
+  },
+  {
+   "t": 0,
+   "text": "bind\":\"{"
+  },
+  {
+   "t": 0,
+   "text": "state.servings}\",\"props\":"
+  },
+  {
+   "t": 0,
+   "text": "{\"name\":\"Gar"
+  },
+  {
+   "t": 0,
+   "text": "lic ch"
+  },
+  {
+   "t": 0,
+   "text": "ickpea sp"
+  },
+  {
+   "t": 0,
+   "text": "inach sk"
+  },
+  {
+   "t": 0,
+   "text": "illet\",\"subtitle\":"
+  },
+  {
+   "t": 0,
+   "text": "\"One pan"
+  },
+  {
+   "t": 0,
+   "text": ", 20"
+  },
+  {
+   "t": 0,
+   "text": " minutes, great"
+  },
+  {
+   "t": 0,
+   "text": " over"
+  },
+  {
+   "t": 0,
+   "text": " rice or with"
+  },
+  {
+   "t": 0,
+   "text": " toast\",\"verdict\":{"
+  },
+  {
+   "t": 1,
+   "text": "\"text\":\"A"
+  },
+  {
+   "t": 1,
+   "text": " prot"
+  },
+  {
+   "t": 1,
+   "text": "ein-r"
+  },
+  {
+   "t": 1,
+   "text": "ich, one-pan v"
+  },
+  {
+   "t": 1,
+   "text": "egetarian dinner "
+  },
+  {
+   "t": 1,
+   "text": "ready in about"
+  },
+  {
+   "t": 1,
+   "text": " 20"
+  },
+  {
+   "t": 1,
+   "text": " minutes.\",\"status\":"
+  },
+  {
+   "t": 1,
+   "text": "\"good\"},\"kind\":"
+  },
+  {
+   "t": 1,
+   "text": "\"dinner\",\"ser"
+  },
+  {
+   "t": 1,
+   "text": "ves\":4,\"minutes"
+  },
+  {
+   "t": 1,
+   "text": "\":20,\"kcal\":"
+  },
+  {
+   "t": 1,
+   "text": "390"
+  },
+  {
+   "t": 1,
+   "text": ",\"protein_g\":16"
+  },
+  {
+   "t": 1,
+   "text": ",\"difficulty\":\""
+  },
+  {
+   "t": 1,
+   "text": "easy\",\"tags\":[\"v"
+  },
+  {
+   "t": 1,
+   "text": "egetarian\",\"one pan"
+  },
+  {
+   "t": 1,
+   "text": "\",\"quick\"],\"ing"
+  },
+  {
+   "t": 1,
+   "text": "redients\":[{\"name\":"
+  },
+  {
+   "t": 2,
+   "text": "\"olive oil\",\"qty"
+  },
+  {
+   "t": 2,
+   "text": "\":2,\"unit\":\""
+  },
+  {
+   "t": 2,
+   "text": "tbsp\",\"aisle"
+  },
+  {
+   "t": 2,
+   "text": "\":\"pantry\"},{"
+  },
+  {
+   "t": 2,
+   "text": "\"name\":\"onion\",\"q"
+  },
+  {
+   "t": 2,
+   "text": "ty\":1,\"note\":\""
+  },
+  {
+   "t": 3,
+   "text": "diced\",\"aisle\":\""
+  },
+  {
+   "t": 3,
+   "text": "produce\"},{\"name\":"
+  },
+  {
+   "t": 3,
+   "text": "\"garlic cloves\",\""
+  },
+  {
+   "t": 3,
+   "text": "qty\":4,\"note\":"
+  },
+  {
+   "t": 3,
+   "text": "\"minced\",\"aisle\":"
+  },
+  {
+   "t": 3,
+   "text": "\"produce\"},{\"name"
+  },
+  {
+   "t": 3,
+   "text": "\":\"smoked paprika"
+  },
+  {
+   "t": 3,
+   "text": "\",\"qty\":1,\"un"
+  },
+  {
+   "t": 3,
+   "text": "it\":\"tsp\",\"a"
+  },
+  {
+   "t": 3,
+   "text": "isle\":\"pantry\""
+  },
+  {
+   "t": 3,
+   "text": "},{\"name\":\"ground"
+  },
+  {
+   "t": 3,
+   "text": " cumin\",\"qty\":1"
+  },
+  {
+   "t": 3,
+   "text": ",\"unit\":\"ts"
+  },
+  {
+   "t": 3,
+   "text": "p\",\"aisle\":\"p"
+  },
+  {
+   "t": 3,
+   "text": "antry\"},{\"name\":"
+  },
+  {
+   "t": 3,
+   "text": "\"canned chickpeas"
+  },
+  {
+   "t": 3,
+   "text": "\",\"qty\":2,\"un"
+  },
+  {
+   "t": 3,
+   "text": "it\":\"can\",\"note\":\""
+  },
+  {
+   "t": 3,
+   "text": "drained and rinsed\",\""
+  },
+  {
+   "t": 3,
+   "text": "aisle\":\"pantry"
+  },
+  {
+   "t": 3,
+   "text": "\"},{\"name\":\"can"
+  },
+  {
+   "t": 3,
+   "text": "ned di"
+  },
+  {
+   "t": 3,
+   "text": "ced tomatoes\",\"q"
+  },
+  {
+   "t": 3,
+   "text": "ty\":1,\"unit\":"
+  },
+  {
+   "t": 3,
+   "text": "\"can\",\"aisle\":\""
+  },
+  {
+   "t": 3,
+   "text": "pantry\"},{\"name"
+  },
+  {
+   "t": 3,
+   "text": "\":\"baby spinach\",\""
+  },
+  {
+   "t": 3,
+   "text": "qty\":6,\"unit"
+  },
+  {
+   "t": 3,
+   "text": "\":\"cup\",\"aisle"
+  },
+  {
+   "t": 4,
+   "text": "\":\"produce\"},{\""
+  },
+  {
+   "t": 4,
+   "text": "name\":\"lemon\",\"q"
+  },
+  {
+   "t": 4,
+   "text": "ty\":1,\"note\":\""
+  },
+  {
+   "t": 4,
+   "text": "jui"
+  },
+  {
+   "t": 4,
+   "text": "ced\",\"aisle\":\"produ"
+  },
+  {
+   "t": 4,
+   "text": "ce\"},{\"name\":\""
+  },
+  {
+   "t": 4,
+   "text": "cooked rice\",\"qty"
+  },
+  {
+   "t": 4,
+   "text": "\":3"
+  },
+  {
+   "t": 4,
+   "text": ",\"unit\":\"cup"
+  },
+  {
+   "t": 4,
+   "text": "\",\"note"
+  },
+  {
+   "t": 4,
+   "text": "\":\"for serving\",\"ais"
+  },
+  {
+   "t": 4,
+   "text": "le\":\"grains\"},"
+  },
+  {
+   "t": 4,
+   "text": "{\"name\":\"salt and"
+  },
+  {
+   "t": 5,
+   "text": " pepper\",\"unit\":\""
+  },
+  {
+   "t": 5,
+   "text": "to taste\",\"aisle\":"
+  },
+  {
+   "t": 5,
+   "text": "\"pantry\"}],\""
+  },
+  {
+   "t": 6,
+   "text": "steps\":[{\"text\":"
+  },
+  {
+   "t": 7,
+   "text": "\"Heat the"
+  },
+  {
+   "t": 7,
+   "text": " olive oil in a large sk"
+  },
+  {
+   "t": 7,
+   "text": "illet over medium heat."
+  },
+  {
+   "t": 7,
+   "text": " C"
+  },
+  {
+   "t": 7,
+   "text": "ook the on"
+  },
+  {
+   "t": 7,
+   "text": "ion until so"
+  },
+  {
+   "t": 7,
+   "text": "ft and gol"
+  },
+  {
+   "t": 7,
+   "text": "den.\",\"minutes\":5"
+  },
+  {
+   "t": 7,
+   "text": "},"
+  },
+  {
+   "t": 7,
+   "text": "{\"text\":\"St"
+  },
+  {
+   "t": 7,
+   "text": "ir in the garlic,"
+  },
+  {
+   "t": 14,
+   "text": " smoked paprika and c"
+  },
+  {
+   "t": 16,
+   "text": "umin and"
+  },
+  {
+   "t": 16,
+   "text": " cook until fragrant."
+  },
+  {
+   "t": 16,
+   "text": "\",\"minutes\":1,"
+  },
+  {
+   "t": 16,
+   "text": "\"tip\":\"Ke"
+  },
+  {
+   "t": 16,
+   "text": "ep it mo"
+  },
+  {
+   "t": 99,
+   "text": "ving so the"
+  },
+  {
+   "t": 99,
+   "text": " garlic does"
+  },
+  {
+   "t": 109,
+   "text": " not burn.\"},{\"text"
+  },
+  {
+   "t": 142,
+   "text": "\":\"Add the chickp"
+  },
+  {
+   "t": 174,
+   "text": "eas and di"
+  },
+  {
+   "t": 516,
+   "text": "ced tomatoes with"
+  },
+  {
+   "t": 516,
+   "text": " their juice. Simmer"
+  },
+  {
+   "t": 516,
+   "text": ","
+  },
+  {
+   "t": 516,
+   "text": " mashing a"
+  },
+  {
+   "t": 516,
+   "text": " few chickpeas to"
+  },
+  {
+   "t": 516,
+   "text": " thicken the s"
+  },
+  {
+   "t": 516,
+   "text": "auce.\",\"minutes\":"
+  },
+  {
+   "t": 520,
+   "text": "8"
+  },
+  {
+   "t": 521,
+   "text": "},{\"text\":\"F"
+  },
+  {
+   "t": 521,
+   "text": "old in the sp"
+  },
+  {
+   "t": 540,
+   "text": "inach a"
+  },
+  {
+   "t": 572,
+   "text": " handful at a time until wil"
+  },
+  {
+   "t": 607,
+   "text": "ted,"
+  },
+  {
+   "t": 767,
+   "text": " then st"
+  },
+  {
+   "t": 767,
+   "text": "ir in the lemon juice"
+  },
+  {
+   "t": 767,
+   "text": ","
+  },
+  {
+   "t": 767,
+   "text": " salt and pepper.\",\""
+  },
+  {
+   "t": 772,
+   "text": "minutes\":3},{\""
+  },
+  {
+   "t": 806,
+   "text": "text\":\"Sp"
+  },
+  {
+   "t": 839,
+   "text": "oon over"
+  },
+  {
+   "t": 873,
+   "text": " war"
+  },
+  {
+   "t": 906,
+   "text": "m rice and ser"
+  },
+  {
+   "t": 939,
+   "text": "ve.\",\"minutes\":1"
+  },
+  {
+   "t": 972,
+   "text": ",\"tip\":\"Top"
+  },
+  {
+   "t": 1006,
+   "text": " with y"
+  },
+  {
+   "t": 1406,
+   "text": "ogurt or crumbled"
+  },
+  {
+   "t": 1406,
+   "text": " feta if"
+  },
+  {
+   "t": 1406,
+   "text": " you like"
+  },
+  {
+   "t": 1406,
+   "text": ".\"}]}"
+  },
+  {
+   "t": 1406,
+   "text": "},\"state\":{\"servings"
+  },
+  {
+   "t": 1406,
+   "text": "\":4}}"
+  }
+ ]
+}

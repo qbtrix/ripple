@@ -1,0 +1,485 @@
+{
+ "id": "heart",
+ "title": "How a heart pumps blood",
+ "prompt": "How does the heart pump blood? Draw an animated picture with numbered notes on the chambers and valves.",
+ "model": "sonnet",
+ "recordedAt": "2026-11-04T15:11:05.521Z",
+ "chunks": [
+  {
+   "t": 0,
+   "text": "{"
+  },
+  {
+   "t": 0,
+   "text": "\"version"
+  },
+  {
+   "t": 0,
+   "text": "\":\"1"
+  },
+  {
+   "t": 0,
+   "text": ".0\",\"ui\":{\""
+  },
+  {
+   "t": 0,
+   "text": "type\":\"figure\",\"props\":"
+  },
+  {
+   "t": 0,
+   "text": "{\"figure\":\"heart"
+  },
+  {
+   "t": 1,
+   "text": "\",\"params\":{\"bpm"
+  },
+  {
+   "t": 1,
+   "text": "\":72,\"stroke\":"
+  },
+  {
+   "t": 1,
+   "text": "70},\"labels\":[{"
+  },
+  {
+   "t": 1,
+   "text": "\"anchor\":\"right-"
+  },
+  {
+   "t": 1,
+   "text": "atrium\",\"label\":\""
+  },
+  {
+   "t": 1,
+   "text": "Right atrium\",\"note\":\""
+  },
+  {
+   "t": 1,
+   "text": "Receives oxygen-"
+  },
+  {
+   "t": 1,
+   "text": "poor blood from the body"
+  },
+  {
+   "t": 1,
+   "text": " through"
+  },
+  {
+   "t": 1,
+   "text": " the vena cava.\""
+  },
+  {
+   "t": 1,
+   "text": "},{\"anchor\":\""
+  },
+  {
+   "t": 1,
+   "text": "tricuspid\",\"label\":"
+  },
+  {
+   "t": 1,
+   "text": "\"Tricuspid val"
+  },
+  {
+   "t": 1,
+   "text": "ve\",\"note\":\"Opens"
+  },
+  {
+   "t": 1,
+   "text": " so"
+  },
+  {
+   "t": 1,
+   "text": " bl"
+  },
+  {
+   "t": 1,
+   "text": "ood pass"
+  },
+  {
+   "t": 1,
+   "text": "es from the right atrium to"
+  },
+  {
+   "t": 1,
+   "text": " the right ventricle,"
+  },
+  {
+   "t": 1,
+   "text": " then closes to"
+  },
+  {
+   "t": 1,
+   "text": " st"
+  },
+  {
+   "t": 1,
+   "text": "op back"
+  },
+  {
+   "t": 1,
+   "text": "flow.\"},{\"anch"
+  },
+  {
+   "t": 1,
+   "text": "or\":\"right-ventric"
+  },
+  {
+   "t": 1,
+   "text": "le\",\"label\":\"Right "
+  },
+  {
+   "t": 1,
+   "text": "ventricle\",\"note\":\""
+  },
+  {
+   "t": 1,
+   "text": "Contracts and"
+  },
+  {
+   "t": 1,
+   "text": " pushes oxygen-"
+  },
+  {
+   "t": 1,
+   "text": "poor blood to"
+  },
+  {
+   "t": 1,
+   "text": "ward the lungs.\"},{"
+  },
+  {
+   "t": 11,
+   "text": "\"anchor\":\"pul"
+  },
+  {
+   "t": 199,
+   "text": "monary-valve\",\"label"
+  },
+  {
+   "t": 199,
+   "text": "\":\"Pulmonary"
+  },
+  {
+   "t": 199,
+   "text": " valve\",\"note\":\"Op"
+  },
+  {
+   "t": 199,
+   "text": "ens as"
+  },
+  {
+   "t": 199,
+   "text": " the right"
+  },
+  {
+   "t": 199,
+   "text": " ventricle squ"
+  },
+  {
+   "t": 238,
+   "text": "eezes, s"
+  },
+  {
+   "t": 293,
+   "text": "ending blood into"
+  },
+  {
+   "t": 300,
+   "text": " the pulmonary artery"
+  },
+  {
+   "t": 332,
+   "text": ".\"},{\"anchor\":"
+  },
+  {
+   "t": 366,
+   "text": "\"lungs\",\"label\":\""
+  },
+  {
+   "t": 400,
+   "text": "Lungs\",\"note\":\""
+  },
+  {
+   "t": 568,
+   "text": "Blood picks up ox"
+  },
+  {
+   "t": 568,
+   "text": "ygen and drops off"
+  },
+  {
+   "t": 568,
+   "text": " carbon dioxide.\""
+  },
+  {
+   "t": 568,
+   "text": "},{\"anchor\":\""
+  },
+  {
+   "t": 576,
+   "text": "left-atrium\",\"label\":"
+  },
+  {
+   "t": 603,
+   "text": "\"Left atrium\",\"note"
+  },
+  {
+   "t": 640,
+   "text": "\":\"Coll"
+  },
+  {
+   "t": 669,
+   "text": "ects oxygen-rich"
+  },
+  {
+   "t": 701,
+   "text": " blood returning from the lung"
+  },
+  {
+   "t": 735,
+   "text": "s.\""
+  },
+  {
+   "t": 782,
+   "text": "},{\"anchor\":\""
+  },
+  {
+   "t": 802,
+   "text": "mitral\",\"label\":\""
+  },
+  {
+   "t": 950,
+   "text": "Mitral valve\",\"note\":"
+  },
+  {
+   "t": 950,
+   "text": "\"L"
+  },
+  {
+   "t": 950,
+   "text": "ets blood fl"
+  },
+  {
+   "t": 951,
+   "text": "ow from the left atrium into"
+  },
+  {
+   "t": 968,
+   "text": " the left ventricle, then"
+  },
+  {
+   "t": 1003,
+   "text": " sh"
+  },
+  {
+   "t": 1035,
+   "text": "uts as"
+  },
+  {
+   "t": 1071,
+   "text": " the"
+  },
+  {
+   "t": 1101,
+   "text": " ventricle contracts.\""
+  },
+  {
+   "t": 1134,
+   "text": "},{\"anchor\":\""
+  },
+  {
+   "t": 1176,
+   "text": "left-ventricle\",\"label"
+  },
+  {
+   "t": 1202,
+   "text": "\":\"Left ventricle"
+  },
+  {
+   "t": 1299,
+   "text": "\",\"note\":\"The strongest"
+  },
+  {
+   "t": 1299,
+   "text": " chamber."
+  },
+  {
+   "t": 1305,
+   "text": " It pum"
+  },
+  {
+   "t": 1336,
+   "text": "ps oxygen-rich"
+  },
+  {
+   "t": 1368,
+   "text": " blood out"
+  },
+  {
+   "t": 1407,
+   "text": " to the whole body.\"},{"
+  },
+  {
+   "t": 1439,
+   "text": "\"anchor\":\"aort"
+  },
+  {
+   "t": 1475,
+   "text": "ic-valve\",\"label\":\""
+  },
+  {
+   "t": 1510,
+   "text": "Aortic valve\",\"note"
+  },
+  {
+   "t": 1534,
+   "text": "\":\"Opens to"
+  },
+  {
+   "t": 1567,
+   "text": " let bl"
+  },
+  {
+   "t": 1599,
+   "text": "ood into"
+  },
+  {
+   "t": 1999,
+   "text": " the aorta, then closes"
+  },
+  {
+   "t": 2003,
+   "text": " so"
+  },
+  {
+   "t": 2003,
+   "text": " it c"
+  },
+  {
+   "t": 2003,
+   "text": "annot fall back.\""
+  },
+  {
+   "t": 2003,
+   "text": "},{\"anchor\":\""
+  },
+  {
+   "t": 2003,
+   "text": "aorta\",\"label\":\""
+  },
+  {
+   "t": 2003,
+   "text": "Aorta\",\"note\":\"The"
+  },
+  {
+   "t": 2003,
+   "text": " main"
+  },
+  {
+   "t": 2004,
+   "text": " artery that"
+  },
+  {
+   "t": 2006,
+   "text": " carries o"
+  },
+  {
+   "t": 2006,
+   "text": "xygen-rich blood"
+  },
+  {
+   "t": 2007,
+   "text": " to the"
+  },
+  {
+   "t": 2007,
+   "text": " body.\"}],\"caption\":"
+  },
+  {
+   "t": 2008,
+   "text": "\""
+  },
+  {
+   "t": 2008,
+   "text": "Bl"
+  },
+  {
+   "t": 2008,
+   "text": "ood en"
+  },
+  {
+   "t": 2008,
+   "text": "ters the at"
+  },
+  {
+   "t": 2009,
+   "text": "ria, pass"
+  },
+  {
+   "t": 2009,
+   "text": "es through the valves into"
+  },
+  {
+   "t": 2009,
+   "text": " the ventricles, then"
+  },
+  {
+   "t": 2009,
+   "text": " is p"
+  },
+  {
+   "t": 2009,
+   "text": "ush"
+  },
+  {
+   "t": 2009,
+   "text": "ed out to"
+  },
+  {
+   "t": 2009,
+   "text": " the lungs and body"
+  },
+  {
+   "t": 2009,
+   "text": ". Change the heart rate"
+  },
+  {
+   "t": 2009,
+   "text": " and stroke vol"
+  },
+  {
+   "t": 2010,
+   "text": "ume to see"
+  },
+  {
+   "t": 2010,
+   "text": " the"
+  },
+  {
+   "t": 2010,
+   "text": " output change.\"},\"bind\":"
+  },
+  {
+   "t": 2014,
+   "text": "\"{state.figure}\""
+  },
+  {
+   "t": 2014,
+   "text": "},\"state\":{\"figure"
+  },
+  {
+   "t": 2014,
+   "text": "\":{\"bpm\":72"
+  },
+  {
+   "t": 2014,
+   "text": ",\"stroke\":70}"
+  },
+  {
+   "t": 2015,
+   "text": "}}"
+  }
+ ]
+}
