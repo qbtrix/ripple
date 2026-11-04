@@ -740,7 +740,7 @@ describe('illustration', () => {
 		expect(refuseCard({ ui: { type: 'flex', children: [art({}).ui] } })).toBeNull();
 	});
 
-	test("the mock's bike gears card passes the checker and the policy, and its chip routes to it", () => {
+	test('the bike gears illustration passes the checker and the policy, and the gears chip routes to its recording', () => {
 		expect(checkIllustrationSvg(gearsSvg)).toEqual({ ok: true });
 		expect(gearsSvg).not.toMatch(/[{\\]|url\(/);
 		expect(refuseCard(gearsCard)).toBeNull();

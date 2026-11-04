@@ -11,7 +11,7 @@
 // Drawings keeps its card, and every iso drawing (isoKeys) sits in Drawings.
 // OFF_GRID keys repeat a topic another card already shows and get no card:
 // the heart and bike gears show as their hand-built figures (heart-pump,
-// bike-gears), so the older iso-scene cards (iso-heart, iso-bike), the recorded
+// bike-gears), so the older same-topic runs (iso-heart, iso-bike), the recorded
 // gears explainer, the heart drawing and the illustration
 // demo (its thumb is that same heart) open by key only. A business run (For
 // business) is always its own card in its own group. Pruned items still open:

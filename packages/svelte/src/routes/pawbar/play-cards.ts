@@ -1,6 +1,7 @@
 // routes/pawbar/play-cards.ts: The recorded answers behind the landing's play and
 // habit chips (memory match, guess the word, space trivia, tic-tac-toe, connect
-// four, habit tracker, focus timer) and the /live iso drawings (isoScenarios).
+// four, habit tracker, focus timer) and the /live machine drawings (isoScenarios:
+// the bike and heart came back as figures, the piston engine as an iso-scene).
 // Every fixture is a real model stream from scripts/record-scenario.ts, the same
 // as live/scenarios.ts; this file only groups them. A chip's prompt equals its
 // fixture prompt, so pickScenario's exact match routes it. Each card must pass
@@ -32,5 +33,5 @@ export const playScenarios: Scenario[] = [
 	recorded('Habits', 'Track', focusTimer)
 ];
 
-/** Live drawings of machines and the heart: gallery runs, not landing chips. */
+/** The machine drawings: gallery runs, not landing chips. */
 export const isoScenarios: Scenario[] = [recorded('Learning', 'Learn', isoBike), recorded('Learning', 'Learn', isoHeart), recorded('Learning', 'Learn', isoEngine)];
