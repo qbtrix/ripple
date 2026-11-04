@@ -1,12 +1,18 @@
 // routes/pawbar/play-cards.test.ts: Every answer the chat can replay (answerPool:
 // the gallery runs and the chat-only recordings) is a real model recording, and
 // each one's final card renders through <Ripple> the way the chat shows it: its
-// top widget mounts with visible content and nothing logs an error.
+// top widget mounts with visible content and nothing logs an error. The figure
+// modules load before any test, so none resolves after the environment is gone.
 
 import { render } from '@testing-library/svelte';
-import { expect, test, vi } from 'vitest';
+import { beforeAll, expect, test, vi } from 'vitest';
 import Ripple from '$lib/Ripple.svelte';
+import { FIGURES } from '$lib/figures/index.js';
 import { answerPool, cardChunks } from './recorded.js';
+
+// A figure card lazy-loads its geometry; load every one up front, so no import
+// is still in flight when a test unmounts or the file's environment tears down.
+beforeAll(() => Promise.all(Object.values(FIGURES).map((f) => f.load())));
 
 const waitFor = <T>(fn: () => T | Promise<T>) => vi.waitFor(fn, { timeout: 8000 });
 
