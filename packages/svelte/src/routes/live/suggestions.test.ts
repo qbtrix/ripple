@@ -1,40 +1,62 @@
 // routes/live/suggestions.test.ts — The landing's suggestion groups resolve as the brief lists them.
-// Every chip (recorded, chat-only, play) sits in its group in order, in live
-// and replay mode alike; ids missing from a pool drop out, and so do groups
-// left empty. Every chip on offer has a place in suggestionGroups and an icon,
-// and no topic has two chips (bike gears and the heart each open their figure).
+// Every chip (recorded or chat-only) sits in its group in order, in live and
+// replay mode alike; ids missing from a pool drop out, and so do groups left
+// empty. Every chip on offer has a place in suggestionGroups and an icon, every
+// gallery grid card has a chip that replays its recording, and no topic has two
+// chips (bike gears and the heart each open their figure).
 
 import { expect, test } from 'vitest';
-import { chatPrompts, groupedSuggestions, scenarios, suggestionGroups } from './scenarios.js';
+import { chatPrompts, chatRecordings, groupedSuggestions, LIVE_ONLY_DEMOS, scenarios, suggestionGroups } from './scenarios.js';
 import { playScenarios } from '../pawbar/play-cards.js';
-import { pickScenario } from '../pawbar/recorded.js';
+import { answerPool, pickScenario } from '../pawbar/recorded.js';
 import { chipIcons } from '../pawbar/chip-icons.js';
+import { galleryItems } from './gallery.js';
 
-const all = [...scenarios, ...chatPrompts, ...playScenarios];
+const placedIds = new Set(suggestionGroups.flatMap((g) => g.chips.map(([id]) => id)));
+/** Every chip on offer: the chat-only prompts and the recordings that have a chip. */
+const all = [...chatPrompts, ...answerPool.filter((s) => placedIds.has(s.id))];
 const byGroup = (chips: ReturnType<typeof groupedSuggestions>) => {
 	const out: Record<string, string[]> = {};
 	for (const c of chips) (out[c.group] ??= []).push(c.title);
 	return out;
 };
 
-test('live, all 8 groups render with the listed chips in order', () => {
+test('live, all 9 groups render with the listed chips in order', () => {
 	const groups = byGroup(groupedSuggestions(all));
-	expect(Object.keys(groups)).toEqual(['Browse & discover', 'Create & build', 'Organize', 'Learn & explore', 'Work & productivity', 'Lifestyle', 'Planning', 'Play']);
-	expect(groups['Browse & discover']).toEqual(['Help me pick a laptop', 'Shop headphones', 'Browse products', 'Compare tech', 'Find deals', 'Restaurant search', 'Find coffee shops', 'Get directions', 'Weather forecast']);
-	expect(groups['Create & build']).toEqual(['Draft announcement', 'Create survey', 'Drawing pad']);
+	expect(Object.keys(groups)).toEqual(['Browse & discover', 'Create & build', 'Organize', 'Learn & explore', 'Work & productivity', 'Lifestyle', 'Planning', 'Play', 'For business']);
+	expect(groups['Browse & discover']).toEqual(['Help me pick a laptop', 'Shop headphones', 'Browse products', 'Compare tech', 'Find deals', 'Track my order', 'Restaurant search', 'Find coffee shops', 'Get directions', 'Weather forecast']);
+	expect(groups['Create & build']).toEqual(['Draft announcement', 'Create survey', 'Drawing pad', 'Newsletter signup', 'Welcome card']);
 	expect(groups['Organize']).toEqual(['Pack for trip', 'Project timeline', 'Task checklist', 'Weekly schedule', 'Focus timer', 'Take notes', 'View calendar', 'Habit tracker']);
-	expect(groups['Learn & explore']).toEqual(['Spanish flashcards', 'Take a quiz', 'Explain concept', 'Study plan', 'How bike gears work', 'How a heart pumps', 'See a plane in 3D', 'Explore the heart in 3D', 'Explore a skeleton in 3D']);
-	expect(groups['Work & productivity']).toEqual(['Health summary', 'Expense breakdown', 'Executive dashboard', 'Create invoice', 'Financial summary', 'Review NDA', 'Due diligence', 'Compliance check', 'Meeting agenda', 'Split the bill', 'Watch savings grow']);
-	expect(groups['Lifestyle']).toEqual(['Order pizza', 'Meal planning', 'Find a recipe', 'HIIT workout', 'Yoga session', 'Track progress', 'Find documentaries', 'Play music', 'Podcast discovery']);
+	expect(groups['Learn & explore']).toEqual([
+		'Spanish flashcards', 'Take a quiz', 'Explain concept', 'Study plan', 'How bike gears work', 'How a heart pumps', 'See a plane in 3D', 'Explore the heart in 3D', 'Explore a skeleton in 3D',
+		'Inside a rocket engine', 'How a plasma thruster works', 'How a fusion reactor works', 'How a fission reactor works', 'How a particle collider works', 'Inside a piston engine'
+	]);
+	expect(groups['Work & productivity']).toEqual(['Health summary', 'Expense breakdown', 'Executive dashboard', 'Create invoice', 'Financial summary', 'Review NDA', 'Due diligence', 'Compliance check', 'Meeting agenda', 'Split the bill', 'Watch savings grow', 'Company snapshot', 'Mission control']);
+	expect(groups['Lifestyle']).toEqual(['Order pizza', 'Order from a cafe', 'Meal planning', 'Find a recipe', 'HIIT workout', 'Yoga session', 'Track progress', 'Find documentaries', 'Play music', 'Podcast discovery']);
 	expect(groups['Planning']).toEqual(['Book a table', 'Plan a trip with me', 'Book appointment', 'Plan Tokyo trip', 'Weekend getaway']);
 	expect(groups['Play']).toEqual(['Memory match', 'Guess the word', 'Space trivia', 'Tic-tac-toe', 'Connect four']);
+	expect(groups['For business']).toEqual(['Approve a refund', 'Roll back a bad deploy', 'Swap a size', 'Book a haircut', 'Draft a client quote']);
 });
 
 test('ids missing from the pool drop out, and so do groups left empty', () => {
-	const recorded = [...scenarios, ...playScenarios].filter((s) => !s.needsStore);
-	const groups = byGroup(groupedSuggestions(recorded));
+	const groups = byGroup(groupedSuggestions([...scenarios, ...playScenarios].filter((s) => !s.needsStore)));
 	expect(Object.keys(groups)).toEqual(['Organize', 'Learn & explore', 'Work & productivity', 'Lifestyle', 'Planning', 'Play']);
 	expect(groups['Lifestyle']).toEqual(['Meal planning', 'HIIT workout']);
+});
+
+test('every gallery grid card, and the playground example, has a chip that replays a real recording', () => {
+	const recordingFor = (key: string) => {
+		const item = galleryItems.find((i) => i.key === key)!;
+		return item.kind === 'run' ? answerPool.find((s) => s.id === key) : chatRecordings.find((s) => s.demo === item.widget);
+	};
+	for (const item of galleryItems) {
+		if (item.kind === 'demo' && LIVE_ONLY_DEMOS.includes(item.widget)) continue;
+		const s = recordingFor(item.key);
+		expect(s?.fixture.model, item.key).toMatch(/^(sonnet|opus)$/);
+		expect(placedIds.has(s!.id), item.key).toBe(true);
+		expect(pickScenario(s!.prompt ?? s!.fixture.prompt).id, item.key).toBe(s!.id);
+	}
+	expect(chatRecordings.find((s) => s.demo === 'playground')?.fixture.model).toBe('sonnet');
 });
 
 test('every chip on offer has a group, an icon and a prompt; step chips keep their tag', () => {
@@ -58,7 +80,7 @@ test('no duplicate chips: one bike gears chip and one heart chip, each opening i
 	const bike = chips.find((c) => c.title === 'How bike gears work')!;
 	const heart = chips.find((c) => c.title === 'How a heart pumps')!;
 	expect([bike.id, heart.id]).toEqual(['bike-gears', 'heart-pump']);
-	// Both replay the hand-built figure, not the older drawing.
+	// Both replay a recorded figure, not the older drawing.
 	expect(pickScenario(bike.prompt).id).toBe('bike-gears');
 	expect(pickScenario(heart.prompt).id).toBe('heart-pump');
 	expect(pickScenario(heart.prompt).fixture.chunks.map((c) => c.text).join('')).toContain('"type":"figure"');

@@ -1,0 +1,65 @@
+{
+ "id": "connect-four",
+ "title": "Connect four",
+ "prompt": "Play connect four against me, best of 3",
+ "model": "sonnet",
+ "recordedAt": "2026-11-04T15:08:54.442Z",
+ "chunks": [
+  {
+   "t": 0,
+   "text": "{\"version\":\""
+  },
+  {
+   "t": 0,
+   "text": "1.0\",\"ui\":{"
+  },
+  {
+   "t": 0,
+   "text": "\"type\":\"board-game\",\""
+  },
+  {
+   "t": 0,
+   "text": "b"
+  },
+  {
+   "t": 0,
+   "text": "ind\":\"{state.game}"
+  },
+  {
+   "t": 0,
+   "text": "\",\"props\":{\"game\":\""
+  },
+  {
+   "t": 0,
+   "text": "connect-four\",\"title\":\""
+  },
+  {
+   "t": 0,
+   "text": "Connect Four:"
+  },
+  {
+   "t": 0,
+   "text": " best of 3\",\"player\":\""
+  },
+  {
+   "t": 0,
+   "text": "red\",\"first\":\"player\",\"dif"
+  },
+  {
+   "t": 0,
+   "text": "ficulty\":\"medium\",\""
+  },
+  {
+   "t": 0,
+   "text": "best_of\":3}},\""
+  },
+  {
+   "t": 0,
+   "text": "state\":{\"game\":{}"
+  },
+  {
+   "t": 0,
+   "text": "}}"
+  }
+ ]
+}

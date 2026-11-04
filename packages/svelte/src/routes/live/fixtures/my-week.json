@@ -1,0 +1,389 @@
+{
+ "id": "my-week",
+ "title": "My week",
+ "prompt": "Lay out my week on a calendar: work blocks, the gym three times and family dinner on Sunday",
+ "model": "sonnet",
+ "recordedAt": "2026-11-04T15:10:21.800Z",
+ "chunks": [
+  {
+   "t": 0,
+   "text": "{\"version\":\"1.0"
+  },
+  {
+   "t": 0,
+   "text": "\",\"ui\":{\"type"
+  },
+  {
+   "t": 0,
+   "text": "\":\"week-schedule\",\""
+  },
+  {
+   "t": 1,
+   "text": "b"
+  },
+  {
+   "t": 1,
+   "text": "ind\":\"{state."
+  },
+  {
+   "t": 1,
+   "text": "selected}\",\"props\":{\""
+  },
+  {
+   "t": 1,
+   "text": "title\":\"My week\",\"startH"
+  },
+  {
+   "t": 3,
+   "text": "our\":7"
+  },
+  {
+   "t": 3,
+   "text": ",\"endHour\":21,"
+  },
+  {
+   "t": 4,
+   "text": "\"events\":[{\"id"
+  },
+  {
+   "t": 4,
+   "text": "\":\"w"
+  },
+  {
+   "t": 5,
+   "text": "1\",\"day\":\"Mon"
+  },
+  {
+   "t": 5,
+   "text": "\",\"start\":\"09:00\",\""
+  },
+  {
+   "t": 5,
+   "text": "end\":\"12:30"
+  },
+  {
+   "t": 5,
+   "text": "\",\"title\":\"Work"
+  },
+  {
+   "t": 5,
+   "text": " block"
+  },
+  {
+   "t": 5,
+   "text": "\",\"color\":\"blue\"},"
+  },
+  {
+   "t": 5,
+   "text": "{\"id\":\"w2\",\""
+  },
+  {
+   "t": 5,
+   "text": "day\":\"Mon\",\"start"
+  },
+  {
+   "t": 5,
+   "text": "\":\"13:30\",\"end\":"
+  },
+  {
+   "t": 5,
+   "text": "\"17:00\",\"title\":\""
+  },
+  {
+   "t": 5,
+   "text": "Work block\",\"color\":\"bl"
+  },
+  {
+   "t": 5,
+   "text": "ue\"},{\"id\":\""
+  },
+  {
+   "t": 5,
+   "text": "g1\",\"day\":\"M"
+  },
+  {
+   "t": 5,
+   "text": "on\",\"start\":\"18:00"
+  },
+  {
+   "t": 5,
+   "text": "\",\"end\":\"19:00\",\""
+  },
+  {
+   "t": 5,
+   "text": "title\":\"Gym\",\"place"
+  },
+  {
+   "t": 5,
+   "text": "\":\"G"
+  },
+  {
+   "t": 5,
+   "text": "ym\",\"color\":\"green\"},"
+  },
+  {
+   "t": 5,
+   "text": "{\"id\":\"w3\",\""
+  },
+  {
+   "t": 5,
+   "text": "day\":\"Tue\",\"start"
+  },
+  {
+   "t": 5,
+   "text": "\":\"09:00\",\"end\":"
+  },
+  {
+   "t": 5,
+   "text": "\"12:30\",\"title\":\""
+  },
+  {
+   "t": 5,
+   "text": "Work block\",\"color\":\"bl"
+  },
+  {
+   "t": 5,
+   "text": "ue\"},{\"id\":\""
+  },
+  {
+   "t": 5,
+   "text": "w4\",\"day\":\"T"
+  },
+  {
+   "t": 5,
+   "text": "ue\",\"start\":\"13:30"
+  },
+  {
+   "t": 5,
+   "text": "\",\"end\":\"17:00\",\""
+  },
+  {
+   "t": 5,
+   "text": "title\":\"Work block\",\"color"
+  },
+  {
+   "t": 5,
+   "text": "\":\"blue\"},{\""
+  },
+  {
+   "t": 5,
+   "text": "id\":\"w5\",\"day\":"
+  },
+  {
+   "t": 5,
+   "text": "\"Wed\",\"start\":\""
+  },
+  {
+   "t": 5,
+   "text": "09:00\",\"end\":\"12"
+  },
+  {
+   "t": 5,
+   "text": ":30\",\"title\":\"Work"
+  },
+  {
+   "t": 5,
+   "text": " block\",\"color\":\"blue\""
+  },
+  {
+   "t": 5,
+   "text": "},{\"id\":\"w6"
+  },
+  {
+   "t": 5,
+   "text": "\",\"day\":\"Wed\",\""
+  },
+  {
+   "t": 5,
+   "text": "start\":\"13:30\",\"end"
+  },
+  {
+   "t": 5,
+   "text": "\":\"17:00\",\"title\":"
+  },
+  {
+   "t": 6,
+   "text": "\"Work block\",\"color\":\""
+  },
+  {
+   "t": 6,
+   "text": "blue\"},{\"id\":"
+  },
+  {
+   "t": 6,
+   "text": "\"g2\",\"day\":\""
+  },
+  {
+   "t": 6,
+   "text": "Wed\",\"start\":\"18:"
+  },
+  {
+   "t": 6,
+   "text": "00\",\"end\":\"19:00"
+  },
+  {
+   "t": 6,
+   "text": "\",\"title\":\"Gym\",\""
+  },
+  {
+   "t": 6,
+   "text": "place\":\"Gym\",\"color"
+  },
+  {
+   "t": 6,
+   "text": "\":\"green\"},{\"id"
+  },
+  {
+   "t": 6,
+   "text": "\":\"w7\",\"day\":\""
+  },
+  {
+   "t": 6,
+   "text": "Thu\",\"start\":\"09"
+  },
+  {
+   "t": 6,
+   "text": ":00\",\"end\":\"12:"
+  },
+  {
+   "t": 6,
+   "text": "30\",\"title\":\"Work block"
+  },
+  {
+   "t": 6,
+   "text": "\",\"color\":\"blue\"},"
+  },
+  {
+   "t": 6,
+   "text": "{\"id\":\"w8\",\""
+  },
+  {
+   "t": 6,
+   "text": "day\":\"Thu\",\"start"
+  },
+  {
+   "t": 6,
+   "text": "\":\"13:30\",\"end\":"
+  },
+  {
+   "t": 6,
+   "text": "\"17:00\",\"title\":\""
+  },
+  {
+   "t": 7,
+   "text": "Work block\",\"color\":\"bl"
+  },
+  {
+   "t": 7,
+   "text": "ue\"},{\"id\":\""
+  },
+  {
+   "t": 7,
+   "text": "w9\",\"day\":\"F"
+  },
+  {
+   "t": 7,
+   "text": "ri\",\"start\":\"09:00"
+  },
+  {
+   "t": 7,
+   "text": "\",\"end\":\"12:30\",\""
+  },
+  {
+   "t": 7,
+   "text": "title\":\"Work block\",\"color"
+  },
+  {
+   "t": 7,
+   "text": "\":\"blue\"},{\""
+  },
+  {
+   "t": 7,
+   "text": "id\":\"w10\",\"day\":"
+  },
+  {
+   "t": 7,
+   "text": "\"Fri\",\"start\":\""
+  },
+  {
+   "t": 7,
+   "text": "13:30\",\"end\":\"16"
+  },
+  {
+   "t": 10,
+   "text": ":00\",\"title\":\"Work"
+  },
+  {
+   "t": 10,
+   "text": " block\",\"color\":\"blue\""
+  },
+  {
+   "t": 10,
+   "text": "},{\"id\":\"g3"
+  },
+  {
+   "t": 10,
+   "text": "\",\"day\":\"Fri\",\""
+  },
+  {
+   "t": 10,
+   "text": "start\":\"17:30"
+  },
+  {
+   "t": 10,
+   "text": "\",\"end\":\"18:30"
+  },
+  {
+   "t": 10,
+   "text": "\",\"title\":\"Gym\",\""
+  },
+  {
+   "t": 10,
+   "text": "place\":\"Gym\",\"color"
+  },
+  {
+   "t": 10,
+   "text": "\":\"green\"},{\"id"
+  },
+  {
+   "t": 10,
+   "text": "\":\"f"
+  },
+  {
+   "t": 10,
+   "text": "1\",\"day\":\"Sun"
+  },
+  {
+   "t": 10,
+   "text": "\",\"start\":\"18"
+  },
+  {
+   "t": 10,
+   "text": ":30"
+  },
+  {
+   "t": 10,
+   "text": "\",\"end\":\"20:30\",\""
+  },
+  {
+   "t": 10,
+   "text": "title\":\"Family dinner"
+  },
+  {
+   "t": 10,
+   "text": "\",\"place\":\"Home\",\"color"
+  },
+  {
+   "t": 10,
+   "text": "\":\"pink\"}]}"
+  },
+  {
+   "t": 10,
+   "text": "},\"state\":{\"selected"
+  },
+  {
+   "t": 10,
+   "text": "\":null}}"
+  }
+ ]
+}

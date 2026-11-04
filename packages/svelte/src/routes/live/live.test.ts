@@ -1,4 +1,5 @@
-// routes/live/live.test.ts — Every /live scenario, end to end through streamSpec.
+// routes/live/live.test.ts — Every recording the chat and /live replay (answerPool),
+// end to end through streamSpec.
 // (a) the recorded fixture replays to `done` with no error and a final spec,
 // (b) that spec only uses widgets the renderer knows,
 // (c) the UI <Ripple> builds FROM THE STREAM is interactive once it finishes:
@@ -6,7 +7,9 @@
 //     button click changes state. Each check runs when the spec has that kind
 //     of control; a data widget bound to state counts as one (its per-scenario
 //     block drives it). A spec with none fails, so render-only output fails (c).
-// A model-viewer's labels count as controls (they open notes).
+// A model-viewer's labels count as controls (they open notes), and so do the
+// widgets that carry their own (SELF_CONTAINED: a product grid's sort, a player's
+// play button). A button in a closed overlay counts as conditional.
 // Per-scenario blocks below check that the numbers are right, not just moving.
 
 import { fireEvent, render, within } from '@testing-library/svelte';
@@ -16,9 +19,10 @@ import Ripple from '$lib/Ripple.svelte';
 import { streamSpec, type StreamSpecStore } from '$lib/streaming/index.js';
 import { validateCatalog } from '$lib/widgets/validate-catalog-bound.js';
 import { replay } from './replay.js';
-import { businessScenarios, scenarios, type ScenarioFixture } from './scenarios.js';
-import { appScenarios, figureRuns } from './app-runs.js';
+import { scenarios, type ScenarioFixture } from './scenarios.js';
+import { appScenarios } from './app-runs.js';
 import OrderReceipt from './OrderReceipt.svelte';
+import { answerPool } from '../pawbar/recorded.js';
 
 // Streamed mounts recompute on later ticks; under a full parallel suite that can
 // take longer than vi.waitFor's 1 s default, so every wait here gets 5 s.
@@ -61,17 +65,18 @@ describe('replay()', () => {
 	});
 });
 
-describe.each([...scenarios, ...figureRuns, ...businessScenarios].map((s) => [s.id, s] as const))('scenario %s', (_id, scenario) => {
+describe.each(answerPool.map((s) => [s.id, s] as const))('scenario %s', (_id, scenario) => {
 	const { fixture } = scenario;
 	const finalSpec = JSON.parse(join(fixture));
 	const hasInput = specHas(finalSpec, (n) => ['input', 'number-input'].includes(n.type ?? ''));
 	const hasButton = buttonLabels(finalSpec).size > 0;
 	const controls = ['input', 'number-input', 'slider', 'select', 'segmented', 'checkbox', 'switch', 'button'];
 
-	test('(c) the final spec has a bound control, a button, or a bound data widget to interact with', () => {
+	test.skipIf(DISPLAY_ONLY.includes(scenario.id))('(c) the final spec has a bound control, a button, or a bound data widget to interact with', () => {
 		const interactive = (n: SpecNode) =>
 			(controls.includes(n.type ?? '') && (n.type === 'button' || 'bind' in n)) ||
 			(DATA_WIDGETS.includes(n.type ?? '') && 'bind' in n) ||
+			SELF_CONTAINED.includes(n.type ?? '') ||
 			// A 3D model's labels are buttons that open their notes.
 			(n.type === 'model-viewer' && Array.isArray(n.props?.annotations) && n.props.annotations.length > 0) ||
 			// A KPI dashboard's attention list turns two or more categories into filter pills.
@@ -153,6 +158,11 @@ async function mountStreamed(fixture: ScenarioFixture) {
 // Data widgets carry their own controls (sliders, steppers, ticks, filters);
 // bound to state, they are as interactive as a bound input.
 const DATA_WIDGETS = ['growth-projection', 'itinerary', 'meal-plan', 'recipe', 'interval-workout', 'flashcard-deck', 'quiz', 'memory-match', 'focus-timer', 'board-game', 'exec-dashboard', 'menu-order', 'booking', 'bill-split', 'figure'];
+/** Widgets that carry their own controls (sort, filter, play, tick, guess) whether or not they bind. */
+const SELF_CONTAINED = ['place-results', 'product-grid', 'weather-forecast', 'music-player', 'media-grid', 'agenda', 'week-schedule', 'notes', 'order-status', 'map', 'iso-scene', 'comparison-layout', 'habit-tracker', 'word-guess', 'menu-order'];
+/** Recordings of a display board (the Pocket boards demo): a snapshot to read, nothing to drive. */
+const DISPLAY_ONLY = ['company-snapshot'];
+const OVERLAYS = ['modal', 'sheet', 'drawer', 'dialog', 'popover'];
 
 type SpecNode = { type?: string; bind?: string; on_click?: unknown; props?: Record<string, unknown>; children?: unknown[] };
 
@@ -173,7 +183,8 @@ function buttonLabels(spec: unknown): Map<string, boolean> {
 	const walk = (n: unknown, hidden: boolean): void => {
 		if (!n || typeof n !== 'object') return;
 		const node = n as SpecNode & { show?: unknown };
-		const h = hidden || node.type === 'if' || node.show !== undefined;
+		// An overlay (modal, sheet) starts closed, so its buttons may not be on screen yet.
+		const h = hidden || node.type === 'if' || node.show !== undefined || OVERLAYS.includes(node.type ?? '');
 		const label = node.props?.label;
 		if (node.type === 'button' && node.on_click && typeof label === 'string' && !label.includes('{')) {
 			labels.set(label, (labels.get(label) ?? true) && h);

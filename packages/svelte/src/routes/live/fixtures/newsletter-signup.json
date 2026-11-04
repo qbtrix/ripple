@@ -1,0 +1,649 @@
+{
+ "id": "newsletter-signup",
+ "title": "Newsletter signup",
+ "prompt": "Make me a newsletter signup form that checks my email and asks me to confirm before I submit",
+ "model": "sonnet",
+ "recordedAt": "2026-11-04T15:14:13.060Z",
+ "chunks": [
+  {
+   "t": 0,
+   "text": "{"
+  },
+  {
+   "t": 0,
+   "text": "\"version"
+  },
+  {
+   "t": 0,
+   "text": "\":\"1"
+  },
+  {
+   "t": 0,
+   "text": ".0\",\"ui\":{\""
+  },
+  {
+   "t": 0,
+   "text": "type\":\"card\",\"props\":{"
+  },
+  {
+   "t": 0,
+   "text": "\"title\":\"Join"
+  },
+  {
+   "t": 0,
+   "text": " the newsletter\",\"description\":"
+  },
+  {
+   "t": 2,
+   "text": "\"One short"
+  },
+  {
+   "t": 2,
+   "text": " email, no sp"
+  },
+  {
+   "t": 2,
+   "text": "am."
+  },
+  {
+   "t": 2,
+   "text": " Unsubscribe any"
+  },
+  {
+   "t": 2,
+   "text": " time.\"},\"children\":[{"
+  },
+  {
+   "t": 2,
+   "text": "\"type\":\"if\",\"cond"
+  },
+  {
+   "t": 2,
+   "text": "ition\":\"{state.subsc"
+  },
+  {
+   "t": 2,
+   "text": "ribed}\",\"children\":[{"
+  },
+  {
+   "t": 2,
+   "text": "\"type\":\"flex\",\"props"
+  },
+  {
+   "t": 2,
+   "text": "\":{\"direction\":\"column"
+  },
+  {
+   "t": 3,
+   "text": "\",\"gap\":\"12px\""
+  },
+  {
+   "t": 4,
+   "text": "},\"children\":[{\"type"
+  },
+  {
+   "t": 4,
+   "text": "\":\"alert\",\"props\":{"
+  },
+  {
+   "t": 4,
+   "text": "\"title\":\"You're subsc"
+  },
+  {
+   "t": 4,
+   "text": "ribed\",\"description\":\"We"
+  },
+  {
+   "t": 4,
+   "text": "'"
+  },
+  {
+   "t": 4,
+   "text": "ll send a wel"
+  },
+  {
+   "t": 4,
+   "text": "come note"
+  },
+  {
+   "t": 4,
+   "text": " to {state.email}.\",\""
+  },
+  {
+   "t": 4,
+   "text": "variant\":\"success\"}},"
+  },
+  {
+   "t": 4,
+   "text": "{\"type\":\"button\",\"props"
+  },
+  {
+   "t": 4,
+   "text": "\":{\"label\":\"Use"
+  },
+  {
+   "t": 5,
+   "text": " a"
+  },
+  {
+   "t": 5,
+   "text": " different email\",\"variant\":\"out"
+  },
+  {
+   "t": 5,
+   "text": "line\"},\"on_click\":"
+  },
+  {
+   "t": 5,
+   "text": "[{\"action\":\"set\",\""
+  },
+  {
+   "t": 5,
+   "text": "target\":\"subscribed\",\""
+  },
+  {
+   "t": 6,
+   "text": "value\":false},{\"action\":"
+  },
+  {
+   "t": 9,
+   "text": "\"set\",\"target\":\"email\",\""
+  },
+  {
+   "t": 9,
+   "text": "value\":\"\"}]}]}"
+  },
+  {
+   "t": 9,
+   "text": "],\"else_children\":[{"
+  },
+  {
+   "t": 9,
+   "text": "\"type\":\"form\",\"props\":"
+  },
+  {
+   "t": 9,
+   "text": "{\"fields\":{\"email"
+  },
+  {
+   "t": 9,
+   "text": "\":{\"required\":\""
+  },
+  {
+   "t": 9,
+   "text": "Please"
+  },
+  {
+   "t": 9,
+   "text": " enter your email\",\"pattern"
+  },
+  {
+   "t": 9,
+   "text": "\":\"^[^@\\\\"
+  },
+  {
+   "t": 9,
+   "text": "s]+@[^@\\"
+  },
+  {
+   "t": 9,
+   "text": "\\s]+\\\\.["
+  },
+  {
+   "t": 9,
+   "text": "^@\\\\s]{2"
+  },
+  {
+   "t": 9,
+   "text": ",}$\",\""
+  },
+  {
+   "t": 9,
+   "text": "label\":\"Email\""
+  },
+  {
+   "t": 9,
+   "text": "}},\"validateOn"
+  },
+  {
+   "t": 9,
+   "text": "\":\"submit\"},\"on"
+  },
+  {
+   "t": 9,
+   "text": "_submit\":{"
+  },
+  {
+   "t": 9,
+   "text": "\"action\":\"set\",\"target\":"
+  },
+  {
+   "t": 10,
+   "text": "\"confirmOpen\",\""
+  },
+  {
+   "t": 10,
+   "text": "value\":true},\"children\":["
+  },
+  {
+   "t": 10,
+   "text": "{\"type\":\"flex\",\""
+  },
+  {
+   "t": 11,
+   "text": "props\":{\"direction\":\""
+  },
+  {
+   "t": 12,
+   "text": "column\",\"gap\":\"14"
+  },
+  {
+   "t": 12,
+   "text": "px\"},\"children\":[{"
+  },
+  {
+   "t": 12,
+   "text": "\"type\":\"input\",\"props\":"
+  },
+  {
+   "t": 12,
+   "text": "{\"label\":\"Email address"
+  },
+  {
+   "t": 12,
+   "text": "\",\"type\":\"email\",\"place"
+  },
+  {
+   "t": 12,
+   "text": "holder\":\"you@example."
+  },
+  {
+   "t": 12,
+   "text": "com\",\"error\":\"{state."
+  },
+  {
+   "t": 12,
+   "text": "errors.email ?? "
+  },
+  {
+   "t": 12,
+   "text": "''}\",\"helper\":\"We"
+  },
+  {
+   "t": 12,
+   "text": "'ll show"
+  },
+  {
+   "t": 13,
+   "text": " it"
+  },
+  {
+   "t": 13,
+   "text": " back"
+  },
+  {
+   "t": 13,
+   "text": " to you before an"
+  },
+  {
+   "t": 13,
+   "text": "ything is s"
+  },
+  {
+   "t": 14,
+   "text": "ent.\"},\"bind\":\""
+  },
+  {
+   "t": 14,
+   "text": "state.email\"},{\"type"
+  },
+  {
+   "t": 14,
+   "text": "\":\"segmented\",\"props\":"
+  },
+  {
+   "t": 14,
+   "text": "{\"label\":\"How"
+  },
+  {
+   "t": 14,
+   "text": " often?"
+  },
+  {
+   "t": 15,
+   "text": "\",\"options\":[\"Da"
+  },
+  {
+   "t": 17,
+   "text": "ily\",\"Weekly\",\""
+  },
+  {
+   "t": 17,
+   "text": "Monthly\"]},\"b"
+  },
+  {
+   "t": 17,
+   "text": "ind\":\"{"
+  },
+  {
+   "t": 17,
+   "text": "state.frequency}\"},"
+  },
+  {
+   "t": 17,
+   "text": "{\"type\":\"checkb"
+  },
+  {
+   "t": 17,
+   "text": "ox-group\",\"props\":{\""
+  },
+  {
+   "t": 17,
+   "text": "label\":\""
+  },
+  {
+   "t": 17,
+   "text": "Topics\",\"options\":[\"Product"
+  },
+  {
+   "t": 17,
+   "text": " news\",\"T"
+  },
+  {
+   "t": 17,
+   "text": "ips and"
+  },
+  {
+   "t": 17,
+   "text": " gu"
+  },
+  {
+   "t": 17,
+   "text": "ides\",\"Community"
+  },
+  {
+   "t": 17,
+   "text": " st"
+  },
+  {
+   "t": 17,
+   "text": "ories\"]},\"bind\":"
+  },
+  {
+   "t": 18,
+   "text": "\"{state.topics}\""
+  },
+  {
+   "t": 18,
+   "text": "},{\"type\":\"button\",\""
+  },
+  {
+   "t": 18,
+   "text": "props\":{\"label\":\""
+  },
+  {
+   "t": 18,
+   "text": "Subscribe\",\"type\":\""
+  },
+  {
+   "t": 18,
+   "text": "submit\"}}]}]"
+  },
+  {
+   "t": 18,
+   "text": "}"
+  },
+  {
+   "t": 18,
+   "text": "]},{\"type\":\"mod"
+  },
+  {
+   "t": 18,
+   "text": "al\",\"props\":{\"title"
+  },
+  {
+   "t": 18,
+   "text": "\":\"Confirm your sub"
+  },
+  {
+   "t": 18,
+   "text": "scription\",\"description\":\"Check"
+  },
+  {
+   "t": 21,
+   "text": " these"
+  },
+  {
+   "t": 22,
+   "text": " details before you submit.\",\"size"
+  },
+  {
+   "t": 22,
+   "text": "\":\"sm\"},\"b"
+  },
+  {
+   "t": 22,
+   "text": "ind\":\"{state.confir"
+  },
+  {
+   "t": 22,
+   "text": "mOpen}\",\"children\":"
+  },
+  {
+   "t": 23,
+   "text": "[{\"type\":\"flex"
+  },
+  {
+   "t": 23,
+   "text": "\",\"props\":{\"direction\":"
+  },
+  {
+   "t": 23,
+   "text": "\"column\",\"gap\":\"12"
+  },
+  {
+   "t": 23,
+   "text": "px\"},\"children\":[{"
+  },
+  {
+   "t": 23,
+   "text": "\"type\":\"k"
+  },
+  {
+   "t": 24,
+   "text": "v-"
+  },
+  {
+   "t": 24,
+   "text": "table\",\"props\":{\"rows"
+  },
+  {
+   "t": 25,
+   "text": "\":[{\"key\":\""
+  },
+  {
+   "t": 25,
+   "text": "Email\",\"value\":\"{state."
+  },
+  {
+   "t": 25,
+   "text": "email}\"},{\"key\":"
+  },
+  {
+   "t": 26,
+   "text": "\"Frequency\",\"value\":"
+  },
+  {
+   "t": 26,
+   "text": "\"{state.frequency}"
+  },
+  {
+   "t": 27,
+   "text": "\"},{\"key\":\""
+  },
+  {
+   "t": 28,
+   "text": "Topics\",\"value\":\"{state"
+  },
+  {
+   "t": 28,
+   "text": ".topics.length} selected"
+  },
+  {
+   "t": 28,
+   "text": "\"}]}},"
+  },
+  {
+   "t": 30,
+   "text": "{\"type\":\"fl"
+  },
+  {
+   "t": 30,
+   "text": "ex\",\"props\":{\"g"
+  },
+  {
+   "t": 30,
+   "text": "ap\":\"8"
+  },
+  {
+   "t": 30,
+   "text": "px\",\"wrap\":true,"
+  },
+  {
+   "t": 32,
+   "text": "\"justify\":\"end\"},"
+  },
+  {
+   "t": 33,
+   "text": "\"children\":[{\"type\":"
+  },
+  {
+   "t": 33,
+   "text": "\"button\",\"props\":{\"label"
+  },
+  {
+   "t": 33,
+   "text": "\":\"Ed"
+  },
+  {
+   "t": 33,
+   "text": "it email"
+  },
+  {
+   "t": 33,
+   "text": "\",\"variant\":\"outline\""
+  },
+  {
+   "t": 33,
+   "text": "},\"on_click\":{"
+  },
+  {
+   "t": 33,
+   "text": "\"action\":\"set\",\"target\":"
+  },
+  {
+   "t": 33,
+   "text": "\"confirmOpen\",\""
+  },
+  {
+   "t": 34,
+   "text": "value\":false}},{\"type"
+  },
+  {
+   "t": 34,
+   "text": "\":\"button\",\"props\":{\""
+  },
+  {
+   "t": 34,
+   "text": "label\":\"Yes, sub"
+  },
+  {
+   "t": 34,
+   "text": "scribe me"
+  },
+  {
+   "t": 34,
+   "text": "\"},\"on_click\":["
+  },
+  {
+   "t": 34,
+   "text": "{\"action\":\"set\",\"target"
+  },
+  {
+   "t": 34,
+   "text": "\":\"confirmOpen"
+  },
+  {
+   "t": 34,
+   "text": "\",\"value\":false},{\"action"
+  },
+  {
+   "t": 34,
+   "text": "\":\"set\",\"target\":\"sub"
+  },
+  {
+   "t": 34,
+   "text": "scribed\",\"value\":true},"
+  },
+  {
+   "t": 34,
+   "text": "{\"action\":\"toast\",\""
+  },
+  {
+   "t": 34,
+   "text": "message\":\"Subscribed"
+  },
+  {
+   "t": 34,
+   "text": "."
+  },
+  {
+   "t": 35,
+   "text": " Wel"
+  },
+  {
+   "t": 35,
+   "text": "come a"
+  },
+  {
+   "t": 35,
+   "text": "board!\",\"variant\":\""
+  },
+  {
+   "t": 35,
+   "text": "success\"}]}]}]"
+  },
+  {
+   "t": 35,
+   "text": "}]}]},"
+  },
+  {
+   "t": 35,
+   "text": "\"state\":{\"email\":\""
+  },
+  {
+   "t": 35,
+   "text": "\",\"frequency\":\"We"
+  },
+  {
+   "t": 35,
+   "text": "ekly\",\"topics\":[\""
+  },
+  {
+   "t": 35,
+   "text": "Product news\"],\"confirm"
+  },
+  {
+   "t": 35,
+   "text": "Open\":false,\"sub"
+  },
+  {
+   "t": 36,
+   "text": "scribed\":false,\"err"
+  },
+  {
+   "t": 36,
+   "text": "ors\":{}}}"
+  }
+ ]
+}

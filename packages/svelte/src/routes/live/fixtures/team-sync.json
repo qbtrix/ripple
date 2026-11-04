@@ -1,0 +1,253 @@
+{
+ "id": "team-sync",
+ "title": "Team sync agenda",
+ "prompt": "Draft a 30-minute weekly team meeting agenda starting at 10:00, with timed items and owners",
+ "model": "sonnet",
+ "recordedAt": "2026-11-04T15:10:22.266Z",
+ "chunks": [
+  {
+   "t": 0,
+   "text": "{\"version\":\"1.0"
+  },
+  {
+   "t": 0,
+   "text": "\",\"ui\":{\"type"
+  },
+  {
+   "t": 0,
+   "text": "\":\"agenda\",\"b"
+  },
+  {
+   "t": 0,
+   "text": "ind\":\"{state."
+  },
+  {
+   "t": 0,
+   "text": "agenda}\",\"props\":{"
+  },
+  {
+   "t": 0,
+   "text": "\"title\":\"Weekly"
+  },
+  {
+   "t": 0,
+   "text": " team sync\",\"start\":\"10"
+  },
+  {
+   "t": 0,
+   "text": ":00\",\"items\":[{\""
+  },
+  {
+   "t": 0,
+   "text": "id\":\"a"
+  },
+  {
+   "t": 0,
+   "text": "1\",\"title\":\"Check-"
+  },
+  {
+   "t": 0,
+   "text": "in and wins from"
+  },
+  {
+   "t": 0,
+   "text": " last week\",\"owner\":\""
+  },
+  {
+   "t": 0,
+   "text": "Maya Chen\",\"minut"
+  },
+  {
+   "t": 0,
+   "text": "es\":5"
+  },
+  {
+   "t": 0,
+   "text": "},{\"id\":\"a2"
+  },
+  {
+   "t": 0,
+   "text": "\",\"title\":\"Met"
+  },
+  {
+   "t": 0,
+   "text": "rics review\",\"owner\":\""
+  },
+  {
+   "t": 0,
+   "text": "Leo Park\",\"minut"
+  },
+  {
+   "t": 0,
+   "text": "es\":6"
+  },
+  {
+   "t": 0,
+   "text": ",\"notes\":\"Sign"
+  },
+  {
+   "t": 0,
+   "text": "ups, churn, support load\""
+  },
+  {
+   "t": 0,
+   "text": "},{\"id\":\"a3"
+  },
+  {
+   "t": 0,
+   "text": "\",\"title\":\"Project updates"
+  },
+  {
+   "t": 0,
+   "text": "\",\"owner\":\"Ana"
+  },
+  {
+   "t": 0,
+   "text": " Ruiz\",\"minut"
+  },
+  {
+   "t": 0,
+   "text": "es\":8,\"notes\":"
+  },
+  {
+   "t": 0,
+   "text": "\""
+  },
+  {
+   "t": 1,
+   "text": "Status, ris"
+  },
+  {
+   "t": 1,
+   "text": "ks, and what"
+  },
+  {
+   "t": 2,
+   "text": " is"
+  },
+  {
+   "t": 3,
+   "text": " next\"},{\"id\":\""
+  },
+  {
+   "t": 3,
+   "text": "a4\",\"title\":\"Bl"
+  },
+  {
+   "t": 3,
+   "text": "ockers and as"
+  },
+  {
+   "t": 3,
+   "text": "ks\",\"owner\":\"S"
+  },
+  {
+   "t": 4,
+   "text": "am Ok"
+  },
+  {
+   "t": 4,
+   "text": "afor\",\"minutes\":5"
+  },
+  {
+   "t": 5,
+   "text": ","
+  },
+  {
+   "t": 5,
+   "text": "\"notes\":\"Ra"
+  },
+  {
+   "t": 5,
+   "text": "ise an"
+  },
+  {
+   "t": 5,
+   "text": "ything that"
+  },
+  {
+   "t": 5,
+   "text": " needs help\"},{\"id"
+  },
+  {
+   "t": 6,
+   "text": "\":\"a5\",\"title\":\""
+  },
+  {
+   "t": 6,
+   "text": "Actions and owners\",\"ow"
+  },
+  {
+   "t": 7,
+   "text": "ner\":\"Maya Ch"
+  },
+  {
+   "t": 7,
+   "text": "en\",\"minutes\":4"
+  },
+  {
+   "t": 7,
+   "text": ",\"notes\":\"Conf"
+  },
+  {
+   "t": 7,
+   "text": "irm who"
+  },
+  {
+   "t": 7,
+   "text": " does"
+  },
+  {
+   "t": 8,
+   "text": " what by"
+  },
+  {
+   "t": 8,
+   "text": " when"
+  },
+  {
+   "t": 8,
+   "text": "\"},{\"id\":\"a"
+  },
+  {
+   "t": 8,
+   "text": "6\",\"title\":\"W"
+  },
+  {
+   "t": 8,
+   "text": "rap-up and"
+  },
+  {
+   "t": 8,
+   "text": " par"
+  },
+  {
+   "t": 12,
+   "text": "king l"
+  },
+  {
+   "t": 12,
+   "text": "ot\",\"owner\":\"Pri"
+  },
+  {
+   "t": 12,
+   "text": "ya N"
+  },
+  {
+   "t": 12,
+   "text": "air\",\"minutes\":2}"
+  },
+  {
+   "t": 12,
+   "text": "]}},"
+  },
+  {
+   "t": 12,
+   "text": "\"state\":{\"agenda"
+  },
+  {
+   "t": 13,
+   "text": "\":{}}}"
+  }
+ ]
+}

@@ -34,7 +34,7 @@
 		"title": "Walk to the castle",
 		"caption": "Show me on a map a walking route from Rossio station to Sao Jorge Castle in Lisbon, with the turns (approximate)",
 		"group": "Do",
-		"tag": "Hand-written",
+		"tag": "Recorded",
 		"href": "/live?s=lisbon-walk",
 		"w": 800,
 		"h": 600
@@ -44,7 +44,7 @@
 		"title": "Coffee nearby",
 		"caption": "Find quiet coffee shops with wifi near Baixa in Lisbon, with ratings and distance (sample places)",
 		"group": "Do",
-		"tag": "Hand-written",
+		"tag": "Recorded",
 		"href": "/live?s=coffee-nearby",
 		"w": 800,
 		"h": 600
@@ -54,7 +54,7 @@
 		"title": "Desk gear deals",
 		"caption": "Show me deals on home office gear I can filter and compare (sample products)",
 		"group": "Do",
-		"tag": "Hand-written",
+		"tag": "Recorded",
 		"href": "/live?s=desk-deals",
 		"w": 800,
 		"h": 600
@@ -124,7 +124,7 @@
 		"title": "Ocean documentaries",
 		"caption": "Recommend 6 ocean documentaries with ratings and running time (sample titles)",
 		"group": "Learn",
-		"tag": "Hand-written",
+		"tag": "Recorded",
 		"href": "/live?s=ocean-docs",
 		"w": 800,
 		"h": 600
@@ -134,7 +134,7 @@
 		"title": "Memory match",
 		"caption": "Make me a memory match game pairing Spanish animal words with their emoji",
 		"group": "Play",
-		"tag": "Hand-written",
+		"tag": "Recorded",
 		"href": "/live?s=memory-match",
 		"w": 800,
 		"h": 600
@@ -144,7 +144,7 @@
 		"title": "Guess the word",
 		"caption": "Make me a 5-letter word guessing game about space, with a hint",
 		"group": "Play",
-		"tag": "Hand-written",
+		"tag": "Recorded",
 		"href": "/live?s=word-guess",
 		"w": 800,
 		"h": 600
@@ -154,7 +154,7 @@
 		"title": "Space trivia",
 		"caption": "Quiz me with 6 space trivia questions, and explain each answer",
 		"group": "Play",
-		"tag": "Hand-written",
+		"tag": "Recorded",
 		"href": "/live?s=space-trivia",
 		"w": 800,
 		"h": 600
@@ -164,7 +164,7 @@
 		"title": "Tic-tac-toe",
 		"caption": "Let's play tic-tac-toe against you, I'm X, medium difficulty",
 		"group": "Play",
-		"tag": "Hand-written",
+		"tag": "Recorded",
 		"href": "/live?s=tic-tac-toe",
 		"w": 800,
 		"h": 600
@@ -174,7 +174,7 @@
 		"title": "Focus music",
 		"caption": "Make me a focus music player with a few calm tracks",
 		"group": "Play",
-		"tag": "Hand-written",
+		"tag": "Recorded",
 		"href": "/live?s=focus-music",
 		"w": 800,
 		"h": 600
@@ -214,7 +214,7 @@
 		"title": "Habit tracker",
 		"caption": "Track my habits this week: reading, running, water and sleep, each with a weekly target",
 		"group": "Track",
-		"tag": "Hand-written",
+		"tag": "Recorded",
 		"href": "/live?s=habit-tracker",
 		"w": 800,
 		"h": 600
@@ -224,7 +224,7 @@
 		"title": "Focus timer",
 		"caption": "Make me a pomodoro focus timer: 25 minutes focus, 5 minute breaks, 4 rounds, goal of 6 today",
 		"group": "Track",
-		"tag": "Hand-written",
+		"tag": "Recorded",
 		"href": "/live?s=focus-timer",
 		"w": 800,
 		"h": 600
@@ -234,7 +234,7 @@
 		"title": "Idea notes",
 		"caption": "Give me a notepad for ideas with tags, start with a few sample notes",
 		"group": "Track",
-		"tag": "Hand-written",
+		"tag": "Recorded",
 		"href": "/live?s=idea-notes",
 		"w": 800,
 		"h": 600
@@ -244,7 +244,7 @@
 		"title": "My week",
 		"caption": "Lay out my week on a calendar: work blocks, the gym three times and family dinner on Sunday",
 		"group": "Track",
-		"tag": "Hand-written",
+		"tag": "Recorded",
 		"href": "/live?s=my-week",
 		"w": 800,
 		"h": 600
@@ -254,7 +254,7 @@
 		"title": "Team sync agenda",
 		"caption": "Draft a 30-minute weekly team meeting agenda starting at 10:00, with timed items and owners",
 		"group": "Track",
-		"tag": "Hand-written",
+		"tag": "Recorded",
 		"href": "/live?s=team-sync",
 		"w": 800,
 		"h": 600
@@ -264,7 +264,7 @@
 		"title": "Lisbon weather",
 		"caption": "Show me a 7-day weather forecast for Lisbon with highs, lows and chance of rain (sample data)",
 		"group": "Track",
-		"tag": "Hand-written",
+		"tag": "Recorded",
 		"href": "/live?s=lisbon-weather",
 		"w": 800,
 		"h": 600
@@ -324,7 +324,7 @@
 		"title": "How a heart pumps",
 		"caption": "How does the heart pump blood? Show me the two sides and the valves, and let me change the heart rate.",
 		"group": "Drawings",
-		"tag": "Hand-written",
+		"tag": "Recorded",
 		"href": "/live?s=heart-pump",
 		"w": 800,
 		"h": 600
@@ -334,7 +334,7 @@
 		"title": "How bike gears work",
 		"caption": "How do bike gears work? Show me the drivetrain and let me change the gear and my cadence.",
 		"group": "Drawings",
-		"tag": "Hand-written",
+		"tag": "Recorded",
 		"href": "/live?s=bike-gears",
 		"w": 800,
 		"h": 600
@@ -344,7 +344,7 @@
 		"title": "Inside a piston engine",
 		"caption": "Show me how a one-cylinder piston engine moves, with an engine speed slider",
 		"group": "Drawings",
-		"tag": "Hand-written",
+		"tag": "Recorded",
 		"href": "/live?s=iso-engine",
 		"w": 800,
 		"h": 600
@@ -354,7 +354,7 @@
 		"title": "Inside a rocket engine",
 		"caption": "How does a rocket engine work? Show me inside one and let me throttle it.",
 		"group": "Drawings",
-		"tag": "Hand-written",
+		"tag": "Recorded",
 		"href": "/live?s=rocket-engine",
 		"w": 800,
 		"h": 600
@@ -364,7 +364,7 @@
 		"title": "How a plasma thruster works",
 		"caption": "How does a plasma thruster work? Show me inside and let me change the grid voltage and the xenon flow.",
 		"group": "Drawings",
-		"tag": "Hand-written",
+		"tag": "Recorded",
 		"href": "/live?s=ion-thruster",
 		"w": 800,
 		"h": 600
@@ -374,7 +374,7 @@
 		"title": "How a fusion reactor works",
 		"caption": "How does a fusion reactor work? Show me a tokamak cut open and let me change the plasma current and the heating.",
 		"group": "Drawings",
-		"tag": "Hand-written",
+		"tag": "Recorded",
 		"href": "/live?s=tokamak",
 		"w": 800,
 		"h": 600
@@ -384,7 +384,7 @@
 		"title": "How a nuclear fission reactor works",
 		"caption": "How does a nuclear reactor make electricity? Show me the plant and let me move the control rods and the pump speed.",
 		"group": "Drawings",
-		"tag": "Hand-written",
+		"tag": "Recorded",
 		"href": "/live?s=fission-reactor",
 		"w": 800,
 		"h": 600
@@ -394,7 +394,7 @@
 		"title": "How a particle collider works",
 		"caption": "How does a particle collider work? Show me the beams, the magnets and the detector, and let me change the beam energy.",
 		"group": "Drawings",
-		"tag": "Hand-written",
+		"tag": "Recorded",
 		"href": "/live?s=particle-collider",
 		"w": 800,
 		"h": 600

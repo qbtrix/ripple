@@ -1,0 +1,57 @@
+{
+ "id": "tic-tac-toe",
+ "title": "Tic-tac-toe",
+ "prompt": "Let's play tic-tac-toe against you, I'm X, medium difficulty",
+ "model": "sonnet",
+ "recordedAt": "2026-11-04T15:08:52.079Z",
+ "chunks": [
+  {
+   "t": 0,
+   "text": "{\"version\":\"1."
+  },
+  {
+   "t": 0,
+   "text": "0\",\"ui\":{\"type"
+  },
+  {
+   "t": 0,
+   "text": "\":\"board-game\",\"b"
+  },
+  {
+   "t": 0,
+   "text": "ind\":\"{state.game}"
+  },
+  {
+   "t": 0,
+   "text": "\",\"props\":{\"game\":\""
+  },
+  {
+   "t": 0,
+   "text": "tic-tac-toe"
+  },
+  {
+   "t": 0,
+   "text": "\",\"title\":\"Tic-"
+  },
+  {
+   "t": 0,
+   "text": "tac-toe\",\""
+  },
+  {
+   "t": 0,
+   "text": "player\":\"X\",\"first\":\""
+  },
+  {
+   "t": 0,
+   "text": "player\",\"difficulty\":\""
+  },
+  {
+   "t": 0,
+   "text": "medium\"}},\"state\":"
+  },
+  {
+   "t": 0,
+   "text": "{\"game\":{}}}"
+  }
+ ]
+}

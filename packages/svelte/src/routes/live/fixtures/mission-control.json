@@ -1,0 +1,817 @@
+{
+ "id": "mission-control",
+ "title": "Mission control",
+ "prompt": "Make me a mission control board for a sample rocket launch: a countdown clock, gauges and an event log",
+ "model": "sonnet",
+ "recordedAt": "2026-11-04T15:12:41.182Z",
+ "chunks": [
+  {
+   "t": 0,
+   "text": "{"
+  },
+  {
+   "t": 2,
+   "text": "\"version"
+  },
+  {
+   "t": 3,
+   "text": "\":\"1.0\",\"ui"
+  },
+  {
+   "t": 3,
+   "text": "\":{\"type\":\"flex"
+  },
+  {
+   "t": 3,
+   "text": "\",\"props\":{\"direction\":"
+  },
+  {
+   "t": 3,
+   "text": "\"column\",\"gap\":\"16"
+  },
+  {
+   "t": 3,
+   "text": "px\"},\"children\":[{"
+  },
+  {
+   "t": 3,
+   "text": "\"type\":\"page"
+  },
+  {
+   "t": 3,
+   "text": "-header\",\"props\":{\"e"
+  },
+  {
+   "t": 3,
+   "text": "yebrow\":\"S"
+  },
+  {
+   "t": 3,
+   "text": "ample mission\",\""
+  },
+  {
+   "t": 4,
+   "text": "title\":\"M"
+  },
+  {
+   "t": 4,
+   "text": "ission Control:"
+  },
+  {
+   "t": 4,
+   "text": " Launch P"
+  },
+  {
+   "t": 4,
+   "text": "ad "
+  },
+  {
+   "t": 5,
+   "text": "1\",\"subtitle\":\""
+  },
+  {
+   "t": 5,
+   "text": "Drag the countdown,"
+  },
+  {
+   "t": 5,
+   "text": " t"
+  },
+  {
+   "t": 6,
+   "text": "une the"
+  },
+  {
+   "t": 6,
+   "text": " gauges, log events\"}"
+  },
+  {
+   "t": 6,
+   "text": "},{\"type\":\"flex"
+  },
+  {
+   "t": 6,
+   "text": "\",\"props\":{\"g"
+  },
+  {
+   "t": 6,
+   "text": "ap\":\"24"
+  },
+  {
+   "t": 7,
+   "text": "px\",\"align\":\"center\",\"w"
+  },
+  {
+   "t": 7,
+   "text": "rap\":true},\"children\":"
+  },
+  {
+   "t": 7,
+   "text": "[{\"type\":\"led-"
+  },
+  {
+   "t": 7,
+   "text": "clock\",\"props\":{\"value"
+  },
+  {
+   "t": 8,
+   "text": "\":\"{("
+  },
+  {
+   "t": 8,
+   "text": "state.t - state.t %"
+  },
+  {
+   "t": 15,
+   "text": " 60) / 60}\",\""
+  },
+  {
+   "t": 15,
+   "text": "label\":\"T"
+  },
+  {
+   "t": 15,
+   "text": "-MINUS M"
+  },
+  {
+   "t": 15,
+   "text": "IN\",\"d"
+  },
+  {
+   "t": 48,
+   "text": "ot\":7}"
+  },
+  {
+   "t": 448,
+   "text": "},{\"type\":\"led-"
+  },
+  {
+   "t": 449,
+   "text": "clock\",\"props\":{\"value"
+  },
+  {
+   "t": 449,
+   "text": "\":\"{state.t % "
+  },
+  {
+   "t": 449,
+   "text": "60}\",\"label\":\"S"
+  },
+  {
+   "t": 449,
+   "text": "EC\",\"dot\":7}"
+  },
+  {
+   "t": 449,
+   "text": "},{\"type\":\"badge"
+  },
+  {
+   "t": 449,
+   "text": "\",\"props\":{\"text\":\""
+  },
+  {
+   "t": 449,
+   "text": "{state.stations.length =="
+  },
+  {
+   "t": 449,
+   "text": " 4 ? '"
+  },
+  {
+   "t": 449,
+   "text": "ALL STATIONS G"
+  },
+  {
+   "t": 449,
+   "text": "O' : 'HOL"
+  },
+  {
+   "t": 449,
+   "text": "D:"
+  },
+  {
+   "t": 449,
+   "text": " ' + state.stations."
+  },
+  {
+   "t": 449,
+   "text": "length + ' of 4 "
+  },
+  {
+   "t": 449,
+   "text": "GO'}\",\"variant\":"
+  },
+  {
+   "t": 449,
+   "text": "\"success"
+  },
+  {
+   "t": 449,
+   "text": "\"}}]},{\"type"
+  },
+  {
+   "t": 449,
+   "text": "\":\"slider\",\"props\":{"
+  },
+  {
+   "t": 449,
+   "text": "\"label\":\"Countdown"
+  },
+  {
+   "t": 449,
+   "text": " (seconds to"
+  },
+  {
+   "t": 449,
+   "text": " li"
+  },
+  {
+   "t": 449,
+   "text": "ftoff)\",\"min\":0"
+  },
+  {
+   "t": 449,
+   "text": ",\"max\":600,\"step"
+  },
+  {
+   "t": 449,
+   "text": "\":1"
+  },
+  {
+   "t": 449,
+   "text": ",\"showValue\":true},"
+  },
+  {
+   "t": 449,
+   "text": "\"bind\":\"{state."
+  },
+  {
+   "t": 449,
+   "text": "t}\"},{\"type\":"
+  },
+  {
+   "t": 449,
+   "text": "\"grid\",\"props\":{\""
+  },
+  {
+   "t": 449,
+   "text": "columns\":\"repeat("
+  },
+  {
+   "t": 449,
+   "text": "auto-fit, minm"
+  },
+  {
+   "t": 449,
+   "text": "ax(150px, 1f"
+  },
+  {
+   "t": 449,
+   "text": "r))"
+  },
+  {
+   "t": 449,
+   "text": "\",\"gap\":\"12"
+  },
+  {
+   "t": 449,
+   "text": "px\"},\"children\":[{"
+  },
+  {
+   "t": 449,
+   "text": "\"type\":\"gauge\",\""
+  },
+  {
+   "t": 449,
+   "text": "props\":{\"value\":\"{"
+  },
+  {
+   "t": 449,
+   "text": "state.fuel}\",\"max"
+  },
+  {
+   "t": 449,
+   "text": "\":100,\"label\":\""
+  },
+  {
+   "t": 449,
+   "text": "Fuel loaded %\",\""
+  },
+  {
+   "t": 449,
+   "text": "height\":160}},{\"type"
+  },
+  {
+   "t": 449,
+   "text": "\":\"gauge\",\"props\":"
+  },
+  {
+   "t": 449,
+   "text": "{\"value\":\"{state."
+  },
+  {
+   "t": 449,
+   "text": "pressure}\",\"max\":100"
+  },
+  {
+   "t": 449,
+   "text": ",\"label\":\"Tank"
+  },
+  {
+   "t": 449,
+   "text": " pressure ps"
+  },
+  {
+   "t": 449,
+   "text": "i\",\"height\":160}},{"
+  },
+  {
+   "t": 449,
+   "text": "\"type\":\"gauge\",\""
+  },
+  {
+   "t": 449,
+   "text": "props\":{\"value\":\"{"
+  },
+  {
+   "t": 449,
+   "text": "state.power}\",\"max\":100"
+  },
+  {
+   "t": 450,
+   "text": ",\"label\":\"V"
+  },
+  {
+   "t": 450,
+   "text": "ehicle power %\",\"height\":"
+  },
+  {
+   "t": 451,
+   "text": "160}}]},{\"type"
+  },
+  {
+   "t": 451,
+   "text": "\":\"grid\",\"props\":{"
+  },
+  {
+   "t": 451,
+   "text": "\"columns\":\"repeat"
+  },
+  {
+   "t": 451,
+   "text": "(auto-fit,"
+  },
+  {
+   "t": 452,
+   "text": " minmax(200"
+  },
+  {
+   "t": 454,
+   "text": "px, 1fr))\",\""
+  },
+  {
+   "t": 454,
+   "text": "gap\":\"12px\"},"
+  },
+  {
+   "t": 455,
+   "text": "\"children\":[{\"type\":"
+  },
+  {
+   "t": 455,
+   "text": "\"slider\",\"props\":{\""
+  },
+  {
+   "t": 458,
+   "text": "label\":\"Fuel lo"
+  },
+  {
+   "t": 459,
+   "text": "aded\",\"min\":0,\""
+  },
+  {
+   "t": 460,
+   "text": "max\":100,\"show"
+  },
+  {
+   "t": 460,
+   "text": "Value\":true},\"bind"
+  },
+  {
+   "t": 460,
+   "text": "\":\"{state.fuel"
+  },
+  {
+   "t": 463,
+   "text": "}\"},{\"type\":\""
+  },
+  {
+   "t": 463,
+   "text": "slider\",\"props\":{\"label"
+  },
+  {
+   "t": 463,
+   "text": "\":\"Tank pressure"
+  },
+  {
+   "t": 463,
+   "text": "\",\"min\":0,\"max\":"
+  },
+  {
+   "t": 463,
+   "text": "100,\"showValue\":true"
+  },
+  {
+   "t": 463,
+   "text": "},\"bind\":\"{state"
+  },
+  {
+   "t": 463,
+   "text": ".pressure}\"},{"
+  },
+  {
+   "t": 463,
+   "text": "\"type\":\"slider\",\"props"
+  },
+  {
+   "t": 463,
+   "text": "\":{\"label\":\"V"
+  },
+  {
+   "t": 464,
+   "text": "ehicle power\",\"min\":0"
+  },
+  {
+   "t": 464,
+   "text": ",\"max\":100,\"show"
+  },
+  {
+   "t": 464,
+   "text": "Value\":true},"
+  },
+  {
+   "t": 464,
+   "text": "\"bind\":\"{state."
+  },
+  {
+   "t": 467,
+   "text": "power}\"}]},{\""
+  },
+  {
+   "t": 469,
+   "text": "type\":\"checkbox-"
+  },
+  {
+   "t": 469,
+   "text": "group\",\"props\":{\"label\":"
+  },
+  {
+   "t": 469,
+   "text": "\"Go / No-go po"
+  },
+  {
+   "t": 469,
+   "text": "ll\",\"options\":[\""
+  },
+  {
+   "t": 470,
+   "text": "Propulsion\",\"Gu"
+  },
+  {
+   "t": 470,
+   "text": "idance\",\"Range saf"
+  },
+  {
+   "t": 471,
+   "text": "ety\",\"Weather\"]},"
+  },
+  {
+   "t": 471,
+   "text": "\"bind\":\"{state."
+  },
+  {
+   "t": 472,
+   "text": "stations}\"},{\"type"
+  },
+  {
+   "t": 472,
+   "text": "\":\"flex\",\"props\":{"
+  },
+  {
+   "t": 472,
+   "text": "\"gap\":\"8"
+  },
+  {
+   "t": 472,
+   "text": "px\",\"wrap\":true},"
+  },
+  {
+   "t": 472,
+   "text": "\"children\":[{\"type\":"
+  },
+  {
+   "t": 476,
+   "text": "\"button\",\"props\":{\"label"
+  },
+  {
+   "t": 476,
+   "text": "\":\"Log:"
+  },
+  {
+   "t": 477,
+   "text": " f"
+  },
+  {
+   "t": 477,
+   "text": "uel load compl"
+  },
+  {
+   "t": 477,
+   "text": "ete\",\"variant\":\"outline"
+  },
+  {
+   "t": 477,
+   "text": "\",\""
+  },
+  {
+   "t": 478,
+   "text": "size\":\"sm\"},\""
+  },
+  {
+   "t": 479,
+   "text": "on_click\":{\"action\":"
+  },
+  {
+   "t": 480,
+   "text": "\"push\",\"target"
+  },
+  {
+   "t": 480,
+   "text": "\":\"log"
+  },
+  {
+   "t": 480,
+   "text": "\",\"value\":{\"t\":\""
+  },
+  {
+   "t": 481,
+   "text": "{state.t}\",\"msg"
+  },
+  {
+   "t": 481,
+   "text": "\":\"Fuel load compl"
+  },
+  {
+   "t": 481,
+   "text": "ete\"}}"
+  },
+  {
+   "t": 481,
+   "text": "},{\"type\":\"button\",\""
+  },
+  {
+   "t": 482,
+   "text": "props\":{\"label\":\""
+  },
+  {
+   "t": 482,
+   "text": "Log: hold\",\"variant\":"
+  },
+  {
+   "t": 484,
+   "text": "\"outline\",\"size\":\"s"
+  },
+  {
+   "t": 485,
+   "text": "m\"},\"on_click\":"
+  },
+  {
+   "t": 485,
+   "text": "{\"action\":\"push\",\"target"
+  },
+  {
+   "t": 487,
+   "text": "\":\"log\",\"value\":{\""
+  },
+  {
+   "t": 487,
+   "text": "t\":\"{state.t}"
+  },
+  {
+   "t": 493,
+   "text": "\",\"msg\":\"Hold"
+  },
+  {
+   "t": 493,
+   "text": " called\"}}},{\"type"
+  },
+  {
+   "t": 493,
+   "text": "\":\"button\",\"props\":{\""
+  },
+  {
+   "t": 493,
+   "text": "label\":\"Log: lift"
+  },
+  {
+   "t": 493,
+   "text": "off\",\"size"
+  },
+  {
+   "t": 493,
+   "text": "\":\"sm\"},\"on"
+  },
+  {
+   "t": 493,
+   "text": "_click\":["
+  },
+  {
+   "t": 493,
+   "text": "{\"action\":\"set"
+  },
+  {
+   "t": 493,
+   "text": "\",\"target\":\"t\",\"value\":"
+  },
+  {
+   "t": 493,
+   "text": "0},{\"action\":\"push"
+  },
+  {
+   "t": 493,
+   "text": "\",\"target\":\"log\",\"value\":"
+  },
+  {
+   "t": 493,
+   "text": "{\"t\":0"
+  },
+  {
+   "t": 493,
+   "text": ",\"msg\":\"Li"
+  },
+  {
+   "t": 493,
+   "text": "ftoff\"}},{\""
+  },
+  {
+   "t": 493,
+   "text": "action\":\"toast\",\"message"
+  },
+  {
+   "t": 493,
+   "text": "\":\"Liftoff!"
+  },
+  {
+   "t": 493,
+   "text": "\",\"variant\":\"success\"}"
+  },
+  {
+   "t": 494,
+   "text": "]},{\"type\":\"button"
+  },
+  {
+   "t": 494,
+   "text": "\",\"props\":{\"label\":\""
+  },
+  {
+   "t": 494,
+   "text": "Clear log\",\"variant\":"
+  },
+  {
+   "t": 494,
+   "text": "\"ghost\",\"size\":\""
+  },
+  {
+   "t": 495,
+   "text": "sm\"},\"on_click"
+  },
+  {
+   "t": 499,
+   "text": "\":{\"action\":\"set\",\""
+  },
+  {
+   "t": 500,
+   "text": "target\":\"log\",\"value\":["
+  },
+  {
+   "t": 503,
+   "text": "]}}]},{\"type"
+  },
+  {
+   "t": 507,
+   "text": "\":\"heading\",\"props\":{"
+  },
+  {
+   "t": 507,
+   "text": "\"text\":\"Event log\",\""
+  },
+  {
+   "t": 508,
+   "text": "level\":4"
+  },
+  {
+   "t": 508,
+   "text": "}},{\"type\":\"each"
+  },
+  {
+   "t": 509,
+   "text": "\",\"items"
+  },
+  {
+   "t": 509,
+   "text": "\":\"{state.log}\",\""
+  },
+  {
+   "t": 509,
+   "text": "children\":[{\"type\":\""
+  },
+  {
+   "t": 509,
+   "text": "text\",\"props\":{\"text\":"
+  },
+  {
+   "t": 509,
+   "text": "\"T-{item.t}"
+  },
+  {
+   "t": 511,
+   "text": "s  {item.msg}"
+  },
+  {
+   "t": 511,
+   "text": "\",\"size\":\"sm\"}"
+  },
+  {
+   "t": 512,
+   "text": "}]}]},"
+  },
+  {
+   "t": 512,
+   "text": "\"state\":{\"t"
+  },
+  {
+   "t": 512,
+   "text": "\":300,\"fuel\":"
+  },
+  {
+   "t": 513,
+   "text": "82,\"pressure\":64"
+  },
+  {
+   "t": 513,
+   "text": ",\"power\":91"
+  },
+  {
+   "t": 514,
+   "text": ",\"stations\":[\"Prop"
+  },
+  {
+   "t": 514,
+   "text": "ulsion\",\"Guidance"
+  },
+  {
+   "t": 514,
+   "text": "\",\"Range safety\"],\""
+  },
+  {
+   "t": 514,
+   "text": "log\":[{\"t\":600"
+  },
+  {
+   "t": 514,
+   "text": ",\"msg\":\"Range"
+  },
+  {
+   "t": 514,
+   "text": " clear\""
+  },
+  {
+   "t": 514,
+   "text": "},{\"t\":480,\""
+  },
+  {
+   "t": 516,
+   "text": "msg\":\"F"
+  },
+  {
+   "t": 516,
+   "text": "uel load started"
+  },
+  {
+   "t": 516,
+   "text": "\"},{\"t\":300,"
+  },
+  {
+   "t": 516,
+   "text": "\"msg\":\"Gu"
+  },
+  {
+   "t": 516,
+   "text": "idance a"
+  },
+  {
+   "t": 516,
+   "text": "ligned\"}]}}"
+  }
+ ]
+}

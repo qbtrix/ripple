@@ -1,0 +1,89 @@
+{
+ "id": "focus-timer",
+ "title": "Focus timer",
+ "prompt": "Make me a pomodoro focus timer: 25 minutes focus, 5 minute breaks, 4 rounds, goal of 6 today",
+ "model": "sonnet",
+ "recordedAt": "2026-11-04T15:09:10.263Z",
+ "chunks": [
+  {
+   "t": 0,
+   "text": "{\"version\":\"1.0"
+  },
+  {
+   "t": 0,
+   "text": "\",\"ui\":{\"type"
+  },
+  {
+   "t": 0,
+   "text": "\":\"focus-timer\",\""
+  },
+  {
+   "t": 0,
+   "text": "bind\":\"{state."
+  },
+  {
+   "t": 0,
+   "text": "focus}\",\"props\":{\""
+  },
+  {
+   "t": 0,
+   "text": "title\":\"Foc"
+  },
+  {
+   "t": 0,
+   "text": "us session"
+  },
+  {
+   "t": 0,
+   "text": "\",\"focus_min\":25,"
+  },
+  {
+   "t": 0,
+   "text": "\"short_break_min\":5"
+  },
+  {
+   "t": 0,
+   "text": ",\"long_break_min\":"
+  },
+  {
+   "t": 0,
+   "text": "15,\"rounds_before"
+  },
+  {
+   "t": 0,
+   "text": "_long\":4,\"goal"
+  },
+  {
+   "t": 0,
+   "text": "_rounds\":6}},"
+  },
+  {
+   "t": 0,
+   "text": "\"state\":{\"focus\":"
+  },
+  {
+   "t": 0,
+   "text": "{\"phase\":\"focus"
+  },
+  {
+   "t": 0,
+   "text": "\",\"remaining_s\":1"
+  },
+  {
+   "t": 0,
+   "text": "500,\"running\":false,\""
+  },
+  {
+   "t": 0,
+   "text": "rounds_done\":0,"
+  },
+  {
+   "t": 0,
+   "text": "\"task\":\"\",\"log\":["
+  },
+  {
+   "t": 0,
+   "text": "]}}}"
+  }
+ ]
+}

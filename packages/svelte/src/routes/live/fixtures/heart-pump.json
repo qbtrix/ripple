@@ -2,132 +2,360 @@
  "id": "heart-pump",
  "title": "How a heart pumps",
  "prompt": "How does the heart pump blood? Show me the two sides and the valves, and let me change the heart rate.",
- "model": "hand-written",
- "recordedAt": "2026-10-12T12:00:00.000Z",
+ "model": "sonnet",
+ "recordedAt": "2026-11-04T15:08:35.391Z",
  "chunks": [
   {
    "t": 0,
-   "text": "{\"version\":\"1.0\",\"state\""
+   "text": "{\"version\":\"1.0"
   },
   {
-   "t": 18,
-   "text": ":{\"figure\":null},\"ui\":{\""
+   "t": 0,
+   "text": "\",\"ui\":{\"type"
   },
   {
-   "t": 36,
-   "text": "type\":\"figure\",\"bind\":\"{"
+   "t": 0,
+   "text": "\":\"figure\",\"b"
   },
   {
-   "t": 54,
-   "text": "state.figure}\",\"props\":{"
+   "t": 0,
+   "text": "ind\":\"{state.he"
   },
   {
-   "t": 72,
-   "text": "\"figure\":\"heart\",\"params"
+   "t": 0,
+   "text": "art}\",\"props\":{\"fig"
   },
   {
-   "t": 90,
-   "text": "\":{\"bpm\":72},\"labels\":[{"
+   "t": 0,
+   "text": "ure\":\"heart\",\"params\":"
   },
   {
-   "t": 108,
-   "text": "\"anchor\":\"right-ventricl"
+   "t": 0,
+   "text": "{\"bpm\":72,"
   },
   {
-   "t": 126,
-   "text": "e\",\"note\":\"Pumps oxygen-"
+   "t": 0,
+   "text": "\"stroke\":70},\""
   },
   {
-   "t": 144,
-   "text": "poor blood to the lungs."
+   "t": 0,
+   "text": "labels\":[{\"anch"
   },
   {
-   "t": 162,
-   "text": "\"},{\"anchor\":\"left-ventr"
+   "t": 0,
+   "text": "or\":\"right-atrium"
   },
   {
-   "t": 180,
-   "text": "icle\",\"note\":\"Pumps oxyg"
+   "t": 0,
+   "text": "\",\"note\":\"Rece"
   },
   {
-   "t": 198,
-   "text": "en-rich blood out to the"
+   "t": 0,
+   "text": "ives oxygen-poor"
   },
   {
-   "t": 216,
-   "text": " whole body.\"},{\"anchor\""
+   "t": 0,
+   "text": " blood retur"
   },
   {
-   "t": 234,
-   "text": ":\"mitral\",\"note\":\"Opens "
+   "t": 0,
+   "text": "ning from the body.\"},{\""
   },
   {
-   "t": 252,
-   "text": "while the left ventricle"
+   "t": 0,
+   "text": "anchor\":\"tricu"
   },
   {
-   "t": 270,
-   "text": " fills, shuts before it "
+   "t": 0,
+   "text": "spid\",\"label\":\"T"
   },
   {
-   "t": 288,
-   "text": "squeezes.\"},{\"anchor\":\"a"
+   "t": 0,
+   "text": "ricuspid valve\",\"note"
   },
   {
-   "t": 306,
-   "text": "ortic-valve\",\"note\":\"Ope"
+   "t": 0,
+   "text": "\":\"Opens so"
   },
   {
-   "t": 324,
-   "text": "ns only while the left v"
+   "t": 0,
+   "text": " the right at"
   },
   {
-   "t": 342,
-   "text": "entricle pushes blood ou"
+   "t": 0,
+   "text": "rium can"
   },
   {
-   "t": 360,
-   "text": "t.\"},{\"anchor\":\"lungs\",\""
+   "t": 0,
+   "text": " fill the right ventricle"
   },
   {
-   "t": 378,
-   "text": "note\":\"Blood picks up ox"
+   "t": 0,
+   "text": ", then closes to"
   },
   {
-   "t": 396,
-   "text": "ygen here and comes back"
+   "t": 0,
+   "text": " stop backflow.\"},{"
   },
   {
-   "t": 414,
-   "text": " red.\"}],\"caption\":\"Two "
+   "t": 0,
+   "text": "\"anchor\":\"right-"
   },
   {
-   "t": 432,
-   "text": "pumps in one. The right "
+   "t": 0,
+   "text": "ventricle\",\"note"
   },
   {
-   "t": 450,
-   "text": "side sends blood to the "
+   "t": 0,
+   "text": "\":\"Pumps ox"
   },
   {
-   "t": 468,
-   "text": "lungs, the left side sen"
+   "t": 0,
+   "text": "ygen-poor blood to"
   },
   {
-   "t": 486,
-   "text": "ds it round the body. Mo"
+   "t": 0,
+   "text": " the lungs through the pul"
   },
   {
-   "t": 504,
-   "text": "ve the heart rate and wa"
+   "t": 0,
+   "text": "monary valve.\"},{"
   },
   {
-   "t": 522,
-   "text": "tch the output and the p"
+   "t": 0,
+   "text": "\"anchor\":\"pul"
   },
   {
-   "t": 540,
-   "text": "ressure change.\"}}}"
+   "t": 0,
+   "text": "monary-valve\",\"label"
+  },
+  {
+   "t": 0,
+   "text": "\":\"Pulmonary"
+  },
+  {
+   "t": 1,
+   "text": " valve\",\"note\":\"L"
+  },
+  {
+   "t": 1,
+   "text": "ets blood le"
+  },
+  {
+   "t": 1,
+   "text": "ave for"
+  },
+  {
+   "t": 1,
+   "text": " the lungs and"
+  },
+  {
+   "t": 1,
+   "text": " sh"
+  },
+  {
+   "t": 1,
+   "text": "uts to"
+  },
+  {
+   "t": 1,
+   "text": " ke"
+  },
+  {
+   "t": 1,
+   "text": "ep it from fal"
+  },
+  {
+   "t": 1,
+   "text": "ling back.\"},{\"anch"
+  },
+  {
+   "t": 1,
+   "text": "or\":\"left-atrium"
+  },
+  {
+   "t": 1,
+   "text": "\",\"note\":\"Receives o"
+  },
+  {
+   "t": 1,
+   "text": "xygen-rich blood"
+  },
+  {
+   "t": 1,
+   "text": " from the lungs.\"},{"
+  },
+  {
+   "t": 1,
+   "text": "\"anchor\":\"mit"
+  },
+  {
+   "t": 1,
+   "text": "ral\",\"label\":\"Mit"
+  },
+  {
+   "t": 1,
+   "text": "ral valve\",\"note\":\""
+  },
+  {
+   "t": 1,
+   "text": "Opens while the left ventric"
+  },
+  {
+   "t": 1,
+   "text": "le fills and"
+  },
+  {
+   "t": 1,
+   "text": " clos"
+  },
+  {
+   "t": 1,
+   "text": "es as"
+  },
+  {
+   "t": 1,
+   "text": " it squ"
+  },
+  {
+   "t": 1,
+   "text": "eezes.\""
+  },
+  {
+   "t": 1,
+   "text": "},{\"anchor\":\""
+  },
+  {
+   "t": 2,
+   "text": "left-ventricle\",\"note"
+  },
+  {
+   "t": 2,
+   "text": "\":\"The"
+  },
+  {
+   "t": 2,
+   "text": " strongest ch"
+  },
+  {
+   "t": 2,
+   "text": "amber."
+  },
+  {
+   "t": 2,
+   "text": " It pum"
+  },
+  {
+   "t": 2,
+   "text": "ps oxygen-rich"
+  },
+  {
+   "t": 2,
+   "text": " blood out"
+  },
+  {
+   "t": 2,
+   "text": " to the whole body.\"},{"
+  },
+  {
+   "t": 3,
+   "text": "\"anchor\":\"aort"
+  },
+  {
+   "t": 3,
+   "text": "ic-valve\",\"label\":\""
+  },
+  {
+   "t": 3,
+   "text": "Aortic valve\",\"note"
+  },
+  {
+   "t": 3,
+   "text": "\":\"Opens as"
+  },
+  {
+   "t": 3,
+   "text": " the left ventricle contrac"
+  },
+  {
+   "t": 3,
+   "text": "ts, s"
+  },
+  {
+   "t": 3,
+   "text": "ending blood into the aorta"
+  },
+  {
+   "t": 4,
+   "text": ".\"}],\"caption\":\""
+  },
+  {
+   "t": 4,
+   "text": "The right side s"
+  },
+  {
+   "t": 4,
+   "text": "ends bl"
+  },
+  {
+   "t": 4,
+   "text": "ood to the lungs, the"
+  },
+  {
+   "t": 4,
+   "text": " left side sends it to the body"
+  },
+  {
+   "t": 4,
+   "text": ". Raise the heart r"
+  },
+  {
+   "t": 4,
+   "text": "ate and the"
+  },
+  {
+   "t": 4,
+   "text": " output"
+  },
+  {
+   "t": 4,
+   "text": " per minute clim"
+  },
+  {
+   "t": 6,
+   "text": "bs, because"
+  },
+  {
+   "t": 12,
+   "text": " each be"
+  },
+  {
+   "t": 22,
+   "text": "at mo"
+  },
+  {
+   "t": 23,
+   "text": "ves ro"
+  },
+  {
+   "t": 51,
+   "text": "ughly the same amount.\""
+  },
+  {
+   "t": 51,
+   "text": "}},\"state\":{\"he"
+  },
+  {
+   "t": 51,
+   "text": "art\":{\"bpm\":"
+  },
+  {
+   "t": 51,
+   "text": "72,\"stroke\":70"
+  },
+  {
+   "t": 51,
+   "text": "}}}"
   }
  ]
 }

@@ -19,8 +19,8 @@
 // recording. Keeps only the assistant's text deltas, timestamps each one in
 // ms since the first delta, and clamps any single gap to MAX_GAP_MS.
 //
-// The model sees the spec envelope, the action grammar and the widgets in
-// CATEGORIES plus the DATA_WIDGETS listed by name, and the 3D model library's
+// The model sees the spec envelope, the action grammar and the widgets
+// recorder-widgets.ts offers (every widget the /live gallery uses), and the 3D model library's
 // asset ids and anchor names (model-assets.ts); it prints the size of that
 // manifest slice. The fixture is written to src/routes/live/fixtures/<id>.json
 // (or --out) ONLY when the
@@ -35,23 +35,15 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { validateCatalog } from '../../core/src/core/validate-catalog.ts';
 import { MODEL_ASSETS } from '../src/lib/widgets/media/model-assets.ts';
+import { offered } from './recorder-widgets.ts';
 
 const MAX_GAP_MS = 400;
-// Widget categories offered to the model. The full manifest is ~250 KB; these
-// cover small interactive tools without the marketing/research/vertical sets.
-// --widgets adds named widgets from outside them (approval-gate, invoice-lines)
-// for a scenario that needs one, without paying for the whole category.
+// The widgets offered to the model are recorder-widgets.ts: the primitive
+// categories plus data and gallery widgets by name. --widgets adds more by name
+// for one scenario without paying for a whole category.
 // --context appends what the model already knows when it draws (an agent's
 // tool results, a shop's opening hours) as a SCENARIO CONTEXT section, and the
 // fixture keeps that text so the page can show what the model was given.
-const CATEGORIES = new Set(['layout', 'display', 'input', 'data', 'control', 'overlay', 'interactive']);
-// Plus these by name (whole composite + research categories would add ~100 KB):
-// the data widgets and the summary pieces the SYSTEM rules point at.
-const DATA_WIDGETS = new Set([
-	'itinerary', 'booking', 'menu-order', 'growth-projection', 'bill-split', 'recipe', 'meal-plan', 'interval-workout', 'flashcard-deck',
-	'word-guess', 'quiz', 'memory-match', 'habit-tracker', 'focus-timer', 'notes', 'board-game',
-	'comparison-layout', 'exec-dashboard', 'entity-detail', 'timeline', 'kv-table', 'model-viewer'
-]);
 // model-viewer names a built-in model by id and labels it by anchor name; the
 // model sees ids, titles and anchor names only (no files, no coordinates).
 const MODEL_LIBRARY = Object.values(MODEL_ASSETS)
@@ -89,7 +81,7 @@ const reference = {
 	spec: manifest.spec,
 	actions: manifest.actions,
 	widgets: manifest.widgets
-		.filter((w: { category: string; type: string }) => CATEGORIES.has(w.category) || DATA_WIDGETS.has(w.type) || extra.has(w.type))
+		.filter((w: { category: string; type: string }) => offered(w, extra))
 		.map(({ pocket: _pocket, ...w }: Record<string, unknown>) => w)
 };
 const referenceBytes = JSON.stringify(reference).length;
@@ -106,6 +98,7 @@ OUTPUT RULES
 - Write every node's keys in this order: "type", "props", then "bind" and handlers, then "children", so a widget has its props before it binds.
 - One clean card: a data widget card is 1 to 5 nodes; a primitives tool roughly 15 to 35 nodes. Short labels, plain language, no lorem ipsum, no invented brand names.
 - Data rows (stops, items, exercises, cards, ingredients, table rows) name their category "kind", never "type": a row's "type" is read as a widget.
+- A map leaves "tiles" out (the default OpenStreetMap tiles are the only ones the chat loads) and never sets tileUrl.
 - Never write a URL: no http(s) links, no image "src", no CSS url(). Links and images use same-site paths only (/page, #section), or leave the image out; a data widget shows an icon tile when a photo is missing.
 - Never attach a specific price, rating, opening hours or any other claim to a real named business, venue, attraction or brand. Real public places (parks, temples, neighbourhoods) can appear, but an item that names a real place costs 0, even as "<place> entry"; put any cost on a separate unnamed item ("garden entry", "museum ticket", "airport train", "dinner out") with a round estimate. Placeholders and examples use generic words, never real brands.
 - Check every displayed number in the finished state too: a 1-based position or counter never runs past its total (show "20 of 20" when done, not 21).
@@ -117,6 +110,7 @@ EXPRESSIONS (verified against the engine; follow exactly)
 - For an amount that applies only when a flag is true, multiply by the flag (true counts as 1): item.drinks * state.drinksTotal / state.drinkers.
 - Use a ternary only as the whole expression (to pick a label or value), never inside arithmetic.
 - For money, compute the raw number and show it with the "stat" widget using "format": "currency" (it formats to 2 decimals), e.g. {"type":"stat","props":{"label":"Each pays","value":"{state.total * (1 + state.tipPercent / 100) / state.people.length}","format":"currency"}}.
+- A stat with "format": "percent" takes a fraction: 0.034 shows 3.4%, so 2.3% churn is "value": 0.023, never 2.3.
 - A computed number that can have decimals (any division or rate) is shown with a "stat" (format "number", "currency" or "percent"), never inside a text template, which prints every digit.
 - Division by zero yields 0. Keep numeric state as numbers, not strings.
 - There is no exponent operator (no ** or ^) and no Math functions. Write compound growth as repeated multiplication starting from a state path, e.g. three years at a yearly rate: state.start * (1 + state.rate / 100) * (1 + state.rate / 100) * (1 + state.rate / 100).
@@ -141,6 +135,12 @@ CARD SHAPE (pick this first)
   - sales, KPIs or a dashboard over records: exec-dashboard with "rows", "measures", "dimensions" (bind "filters")
   - choosing between options: comparison-layout
 - A summary of one thing (a person, an account, an order) starts with entity-detail (title, status, kpis, meta) and puts its sections in its children; dated events go in a timeline, plain facts in a kv-table.
+  - a weather forecast: weather-forecast; places to go (cafes, restaurants): place-results; products, deals or a catalog to shop: product-grid
+  - a week on a calendar: week-schedule; a meeting agenda: agenda; music to play: music-player
+  - films, documentaries, podcasts or books to pick from: media-grid; where an order or parcel is: order-status
+  - a log of events, actions or alerts: audit-log; a company or stock snapshot: ticker, range-bar, analyst-bar, kv-table and news-card (never company-header, which the chat refuses)
+- How something works inside, when the figure catalog has it (the heart, bike gears, a rocket engine, a plasma or ion thruster, a fusion or fission reactor, a particle collider): figure with that catalog id, starting "params" for its sliders and "labels" on its anchors (both listed in the figure entry of the manifest), bound to state so the sliders work.
+- Any other machine to watch moving with sliders (an engine, a pump, a drivetrain the figure catalog lacks): iso-scene.
 - A real object to turn around in 3D (a vehicle, an instrument, a skeleton): model-viewer with an "asset" from the 3D LIBRARY below, labelled with "annotations".
 - A drawing, animated icon or small scene: illustration, with "svg" written in single-quoted attributes (<svg viewBox='0 0 200 120'>) and every animation dur 0.5s or more.
 - A small tool no data widget covers (a calculator, a checklist, an explainer) is built from primitives with the rules above.

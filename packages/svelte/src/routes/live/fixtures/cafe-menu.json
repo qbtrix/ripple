@@ -1,0 +1,601 @@
+{
+ "id": "cafe-menu",
+ "title": "Order from a cafe",
+ "prompt": "Show me a cafe menu I can order from, with coffee, pastries and sandwiches (sample menu)",
+ "model": "sonnet",
+ "recordedAt": "2026-11-04T15:11:40.671Z",
+ "chunks": [
+  {
+   "t": 0,
+   "text": "{\"version\":\""
+  },
+  {
+   "t": 0,
+   "text": "1.0\",\"ui\":{"
+  },
+  {
+   "t": 0,
+   "text": "\"type\":\"menu-order"
+  },
+  {
+   "t": 0,
+   "text": "\",\"props\":{\"title\":\""
+  },
+  {
+   "t": 0,
+   "text": "Cor"
+  },
+  {
+   "t": 0,
+   "text": "ner C"
+  },
+  {
+   "t": 0,
+   "text": "up"
+  },
+  {
+   "t": 0,
+   "text": " C"
+  },
+  {
+   "t": 0,
+   "text": "afe\",\"subtitle\":"
+  },
+  {
+   "t": 0,
+   "text": "\"Sample menu ·"
+  },
+  {
+   "t": 0,
+   "text": " open"
+  },
+  {
+   "t": 0,
+   "text": " 7 "
+  },
+  {
+   "t": 0,
+   "text": "am to 4"
+  },
+  {
+   "t": 0,
+   "text": " pm\",\"currency\":\""
+  },
+  {
+   "t": 0,
+   "text": "USD\",\"feat"
+  },
+  {
+   "t": 0,
+   "text": "ured\":{\"id"
+  },
+  {
+   "t": 0,
+   "text": "\":\"alm"
+  },
+  {
+   "t": 0,
+   "text": "ond-cro"
+  },
+  {
+   "t": 0,
+   "text": "issant\",\"reason\":\"A"
+  },
+  {
+   "t": 0,
+   "text": " fresh-"
+  },
+  {
+   "t": 0,
+   "text": "baked pick"
+  },
+  {
+   "t": 0,
+   "text": " that pairs well"
+  },
+  {
+   "t": 0,
+   "text": " with a flat white"
+  },
+  {
+   "t": 0,
+   "text": ".\"},\"items\":[{\""
+  },
+  {
+   "t": 0,
+   "text": "product_id\":\"fl"
+  },
+  {
+   "t": 0,
+   "text": "at-white\",\"name\":\""
+  },
+  {
+   "t": 0,
+   "text": "Flat White\",\"description\":\""
+  },
+  {
+   "t": 0,
+   "text": "Double"
+  },
+  {
+   "t": 0,
+   "text": " espresso with"
+  },
+  {
+   "t": 0,
+   "text": " sil"
+  },
+  {
+   "t": 0,
+   "text": "ky ste"
+  },
+  {
+   "t": 0,
+   "text": "amed milk.\",\"price"
+  },
+  {
+   "t": 0,
+   "text": "\":4"
+  },
+  {
+   "t": 0,
+   "text": ".5"
+  },
+  {
+   "t": 0,
+   "text": ",\"kind\":\"dr"
+  },
+  {
+   "t": 0,
+   "text": "ink\",\"category\":\"Coff"
+  },
+  {
+   "t": 0,
+   "text": "ee\",\"tags\":[\"h"
+  },
+  {
+   "t": 0,
+   "text": "ot\"]},{\"product_"
+  },
+  {
+   "t": 0,
+   "text": "id\":\"latte\",\"name\":"
+  },
+  {
+   "t": 0,
+   "text": "\"Latte\",\"description\":\""
+  },
+  {
+   "t": 0,
+   "text": "Esp"
+  },
+  {
+   "t": 0,
+   "text": "resso with"
+  },
+  {
+   "t": 0,
+   "text": " ste"
+  },
+  {
+   "t": 0,
+   "text": "amed milk and"
+  },
+  {
+   "t": 0,
+   "text": " a light foam.\",\"price\":"
+  },
+  {
+   "t": 0,
+   "text": "4.75,\"kind\":"
+  },
+  {
+   "t": 0,
+   "text": "\"drink\",\"category\":\""
+  },
+  {
+   "t": 0,
+   "text": "Coffee\",\"tags\":[\""
+  },
+  {
+   "t": 0,
+   "text": "hot\""
+  },
+  {
+   "t": 0,
+   "text": "]},{\"product_id\":"
+  },
+  {
+   "t": 0,
+   "text": "\"cold-brew\",\"name"
+  },
+  {
+   "t": 0,
+   "text": "\":\"Cold Brew"
+  },
+  {
+   "t": 0,
+   "text": "\",\"description\":\"Sl"
+  },
+  {
+   "t": 0,
+   "text": "ow-ste"
+  },
+  {
+   "t": 0,
+   "text": "eped for 18"
+  },
+  {
+   "t": 0,
+   "text": " hours,"
+  },
+  {
+   "t": 0,
+   "text": " served over ice.\",\"price\":"
+  },
+  {
+   "t": 0,
+   "text": "4"
+  },
+  {
+   "t": 0,
+   "text": ".25"
+  },
+  {
+   "t": 0,
+   "text": ",\"kind\":\"drink"
+  },
+  {
+   "t": 0,
+   "text": "\",\"category\":\"Coffee"
+  },
+  {
+   "t": 1,
+   "text": "\",\"tags\":[\"iced\""
+  },
+  {
+   "t": 1,
+   "text": "]},{\"product_id\":"
+  },
+  {
+   "t": 1,
+   "text": "\"cappuccino\",\"name"
+  },
+  {
+   "t": 1,
+   "text": "\":\"Cappuccino"
+  },
+  {
+   "t": 1,
+   "text": "\",\"description\":\"Equ"
+  },
+  {
+   "t": 1,
+   "text": "al parts espresso,"
+  },
+  {
+   "t": 2,
+   "text": " steamed milk and"
+  },
+  {
+   "t": 3,
+   "text": " foam.\",\"price\":4."
+  },
+  {
+   "t": 3,
+   "text": "5,\"kind\":\"dr"
+  },
+  {
+   "t": 3,
+   "text": "ink\",\"category\":\"Coff"
+  },
+  {
+   "t": 3,
+   "text": "ee\",\"tags\":[\"hot"
+  },
+  {
+   "t": 3,
+   "text": "\"]},{\"product_id"
+  },
+  {
+   "t": 3,
+   "text": "\":\"almond-croissant"
+  },
+  {
+   "t": 3,
+   "text": "\",\"name\":\"Almond"
+  },
+  {
+   "t": 3,
+   "text": " Croissant\",\"description\":\""
+  },
+  {
+   "t": 3,
+   "text": "Bu"
+  },
+  {
+   "t": 4,
+   "text": "ttery, flaky and fil"
+  },
+  {
+   "t": 4,
+   "text": "led with almond c"
+  },
+  {
+   "t": 4,
+   "text": "ream.\",\"price\":4"
+  },
+  {
+   "t": 4,
+   "text": ".25,\"kind\":\""
+  },
+  {
+   "t": 4,
+   "text": "dessert\",\"category\":\""
+  },
+  {
+   "t": 4,
+   "text": "Pastries\",\"tags\":[\""
+  },
+  {
+   "t": 7,
+   "text": "vegetarian\"]},"
+  },
+  {
+   "t": 7,
+   "text": "{\"product_id\":\"bl"
+  },
+  {
+   "t": 7,
+   "text": "ueberry-muffin\",\""
+  },
+  {
+   "t": 7,
+   "text": "name\":\"Blueberry"
+  },
+  {
+   "t": 7,
+   "text": " Muffin\",\"description\":\""
+  },
+  {
+   "t": 7,
+   "text": "Baked da"
+  },
+  {
+   "t": 7,
+   "text": "ily with whole blueberries"
+  },
+  {
+   "t": 7,
+   "text": ".\",\"price\":3.5"
+  },
+  {
+   "t": 7,
+   "text": ",\"kind\":\"dess"
+  },
+  {
+   "t": 7,
+   "text": "ert\",\"category\":\"Past"
+  },
+  {
+   "t": 8,
+   "text": "ries\",\"tags\":[\"veg"
+  },
+  {
+   "t": 8,
+   "text": "etarian\"]},{\""
+  },
+  {
+   "t": 8,
+   "text": "product_id\":\"cinn"
+  },
+  {
+   "t": 8,
+   "text": "amon-roll\",\"name\":"
+  },
+  {
+   "t": 8,
+   "text": "\"Cinnamon"
+  },
+  {
+   "t": 8,
+   "text": " Roll\",\"description\":\"War"
+  },
+  {
+   "t": 8,
+   "text": "m roll with c"
+  },
+  {
+   "t": 8,
+   "text": "ream c"
+  },
+  {
+   "t": 8,
+   "text": "heese glaze.\",\"price"
+  },
+  {
+   "t": 8,
+   "text": "\":4"
+  },
+  {
+   "t": 8,
+   "text": ".0"
+  },
+  {
+   "t": 8,
+   "text": ",\"kind\":\"dess"
+  },
+  {
+   "t": 8,
+   "text": "ert\",\"category\":\"Past"
+  },
+  {
+   "t": 9,
+   "text": "ries\",\"tags\":[\"veg"
+  },
+  {
+   "t": 9,
+   "text": "etarian\"]},{\""
+  },
+  {
+   "t": 9,
+   "text": "product_id\":\"turkey"
+  },
+  {
+   "t": 9,
+   "text": "-sw"
+  },
+  {
+   "t": 9,
+   "text": "iss\",\"name\":\"Tur"
+  },
+  {
+   "t": 9,
+   "text": "key and"
+  },
+  {
+   "t": 12,
+   "text": " Swiss\",\"description\":\""
+  },
+  {
+   "t": 12,
+   "text": "S"
+  },
+  {
+   "t": 12,
+   "text": "liced turkey, Sw"
+  },
+  {
+   "t": 12,
+   "text": "iss, lettuce and"
+  },
+  {
+   "t": 12,
+   "text": " m"
+  },
+  {
+   "t": 12,
+   "text": "ustard on s"
+  },
+  {
+   "t": 12,
+   "text": "ourdough.\",\"price\":9"
+  },
+  {
+   "t": 12,
+   "text": ".5,\"kind\":\""
+  },
+  {
+   "t": 12,
+   "text": "main\",\"category\":\"Sand"
+  },
+  {
+   "t": 12,
+   "text": "wiches\"},{\"product"
+  },
+  {
+   "t": 12,
+   "text": "_id\":\"caprese-"
+  },
+  {
+   "t": 12,
+   "text": "panini\",\"name\":\"Ca"
+  },
+  {
+   "t": 12,
+   "text": "prese Panini\",\"description\":"
+  },
+  {
+   "t": 12,
+   "text": "\"Fresh mozz"
+  },
+  {
+   "t": 12,
+   "text": "arella, t"
+  },
+  {
+   "t": 12,
+   "text": "omato and basil pes"
+  },
+  {
+   "t": 12,
+   "text": "to, pressed.\",\"price"
+  },
+  {
+   "t": 12,
+   "text": "\":8.75,\"kind"
+  },
+  {
+   "t": 12,
+   "text": "\":\"main\",\"category\":\""
+  },
+  {
+   "t": 12,
+   "text": "Sandwiches\",\"tags"
+  },
+  {
+   "t": 12,
+   "text": "\":[\"vegetarian\""
+  },
+  {
+   "t": 12,
+   "text": "]},{\"product_id\":"
+  },
+  {
+   "t": 12,
+   "text": "\"egg-b"
+  },
+  {
+   "t": 12,
+   "text": "acon-b"
+  },
+  {
+   "t": 12,
+   "text": "ag"
+  },
+  {
+   "t": 12,
+   "text": "el\",\"name\":\"Egg"
+  },
+  {
+   "t": 12,
+   "text": " and Bacon Bag"
+  },
+  {
+   "t": 12,
+   "text": "el\",\"description\":\"F"
+  },
+  {
+   "t": 12,
+   "text": "ried egg, cr"
+  },
+  {
+   "t": 13,
+   "text": "isp bacon and che"
+  },
+  {
+   "t": 13,
+   "text": "ddar on a toasted b"
+  },
+  {
+   "t": 13,
+   "text": "agel.\",\"price\":7"
+  },
+  {
+   "t": 13,
+   "text": ".5"
+  },
+  {
+   "t": 13,
+   "text": ",\"kind\":\"main\",\""
+  },
+  {
+   "t": 13,
+   "text": "category\":\"Sandwi"
+  },
+  {
+   "t": 13,
+   "text": "ches\"}]}}}"
+  }
+ ]
+}

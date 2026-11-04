@@ -1,0 +1,429 @@
+{
+ "id": "compare-tech",
+ "title": "Compare tech",
+ "prompt": "Compare three tablets side by side on screen size, battery life, weight and price (sample specs)",
+ "model": "sonnet",
+ "recordedAt": "2026-11-04T15:11:42.291Z",
+ "chunks": [
+  {
+   "t": 0,
+   "text": "{\"version\":\"1.0"
+  },
+  {
+   "t": 0,
+   "text": "\",\"ui\":{\"type"
+  },
+  {
+   "t": 0,
+   "text": "\":\"comparison-layout"
+  },
+  {
+   "t": 0,
+   "text": "\",\"props\":{\"title\":\""
+  },
+  {
+   "t": 0,
+   "text": "Three tablets comp"
+  },
+  {
+   "t": 0,
+   "text": "ared\",\"subtitle\":\""
+  },
+  {
+   "t": 0,
+   "text": "Sample specs for"
+  },
+  {
+   "t": 0,
+   "text": " illustration\",\""
+  },
+  {
+   "t": 0,
+   "text": "verdict\":{\"text\":"
+  },
+  {
+   "t": 0,
+   "text": "\"Sl"
+  },
+  {
+   "t": 0,
+   "text": "ate"
+  },
+  {
+   "t": 0,
+   "text": " Air"
+  },
+  {
+   "t": 0,
+   "text": " "
+  },
+  {
+   "t": 1,
+   "text": "11 for batt"
+  },
+  {
+   "t": 1,
+   "text": "ery and weight; Slate"
+  },
+  {
+   "t": 1,
+   "text": " Pro 13"
+  },
+  {
+   "t": 1,
+   "text": " if"
+  },
+  {
+   "t": 1,
+   "text": " you want"
+  },
+  {
+   "t": 1,
+   "text": " the"
+  },
+  {
+   "t": 1,
+   "text": " bi"
+  },
+  {
+   "t": 1,
+   "text": "ggest screen.\",\"status\":"
+  },
+  {
+   "t": 1,
+   "text": "\"info\"},\"currency\":"
+  },
+  {
+   "t": 1,
+   "text": "\"USD\",\"winner\":{"
+  },
+  {
+   "t": 1,
+   "text": "\"id\":\"air"
+  },
+  {
+   "t": 1,
+   "text": "-11\",\"reason\":\""
+  },
+  {
+   "t": 1,
+   "text": "Lightest of"
+  },
+  {
+   "t": 1,
+   "text": " the three with"
+  },
+  {
+   "t": 1,
+   "text": " the longest battery life"
+  },
+  {
+   "t": 1,
+   "text": " and the lowest price.\",\""
+  },
+  {
+   "t": 1,
+   "text": "runner_up\":{\"id"
+  },
+  {
+   "t": 1,
+   "text": "\":\"l"
+  },
+  {
+   "t": 1,
+   "text": "ite-10"
+  },
+  {
+   "t": 1,
+   "text": "\",\"reason\":\"C"
+  },
+  {
+   "t": 2,
+   "text": "heapest scre"
+  },
+  {
+   "t": 2,
+   "text": "en size"
+  },
+  {
+   "t": 2,
+   "text": " tr"
+  },
+  {
+   "t": 2,
+   "text": "ade-"
+  },
+  {
+   "t": 2,
+   "text": "off: a"
+  },
+  {
+   "t": 2,
+   "text": " b"
+  },
+  {
+   "t": 2,
+   "text": "it he"
+  },
+  {
+   "t": 2,
+   "text": "avier and sh"
+  },
+  {
+   "t": 2,
+   "text": "orter battery, for sl"
+  },
+  {
+   "t": 2,
+   "text": "ightly less.\"}},\"pic"
+  },
+  {
+   "t": 2,
+   "text": "ks\":[{\"id\":\""
+  },
+  {
+   "t": 2,
+   "text": "pro-13\",\"label\":\""
+  },
+  {
+   "t": 2,
+   "text": "Bi"
+  },
+  {
+   "t": 2,
+   "text": "ggest screen\"},{\""
+  },
+  {
+   "t": 3,
+   "text": "id\":\"air-11\",\"label"
+  },
+  {
+   "t": 3,
+   "text": "\":\"Best battery\"},"
+  },
+  {
+   "t": 3,
+   "text": "{\"id\":\"lite-"
+  },
+  {
+   "t": 3,
+   "text": "10\",\"label\":\"Most"
+  },
+  {
+   "t": 3,
+   "text": " comp"
+  },
+  {
+   "t": 3,
+   "text": "act\"}],\"items\":["
+  },
+  {
+   "t": 3,
+   "text": "{\"id\":\"air-11"
+  },
+  {
+   "t": 3,
+   "text": "\",\"name\":\"Slate"
+  },
+  {
+   "t": 3,
+   "text": " Air 11\",\"subtitle"
+  },
+  {
+   "t": 3,
+   "text": "\":\"11"
+  },
+  {
+   "t": 3,
+   "text": "-inch everyday tabl"
+  },
+  {
+   "t": 3,
+   "text": "et\",\"price\":599"
+  },
+  {
+   "t": 4,
+   "text": ",\"screen\":11,\""
+  },
+  {
+   "t": 4,
+   "text": "battery\":14,\"weight"
+  },
+  {
+   "t": 4,
+   "text": "\":470"
+  },
+  {
+   "t": 4,
+   "text": "},"
+  },
+  {
+   "t": 4,
+   "text": "{\"id\":\"p"
+  },
+  {
+   "t": 4,
+   "text": "ro-13\",\"name\":\""
+  },
+  {
+   "t": 4,
+   "text": "Slate Pro 13\",\""
+  },
+  {
+   "t": 4,
+   "text": "subtitle\":\"13-"
+  },
+  {
+   "t": 4,
+   "text": "inch creator tablet\",\""
+  },
+  {
+   "t": 4,
+   "text": "price\":1"
+  },
+  {
+   "t": 4,
+   "text": "099"
+  },
+  {
+   "t": 4,
+   "text": ",\"screen\":13,\""
+  },
+  {
+   "t": 4,
+   "text": "battery\":10,\"weight"
+  },
+  {
+   "t": 4,
+   "text": "\":680"
+  },
+  {
+   "t": 5,
+   "text": "},{\"id\":\"lite"
+  },
+  {
+   "t": 5,
+   "text": "-10\",\"name\":\"Sl"
+  },
+  {
+   "t": 5,
+   "text": "ate Lite 10\",\"sub"
+  },
+  {
+   "t": 6,
+   "text": "title\":\"10-in"
+  },
+  {
+   "t": 6,
+   "text": "ch bud"
+  },
+  {
+   "t": 6,
+   "text": "get tablet\",\"price\":649"
+  },
+  {
+   "t": 6,
+   "text": ",\"screen\":10,\""
+  },
+  {
+   "t": 6,
+   "text": "battery\":12"
+  },
+  {
+   "t": 6,
+   "text": ",\"weight\":520}],"
+  },
+  {
+   "t": 6,
+   "text": "\"features\":[{\"key\":"
+  },
+  {
+   "t": 6,
+   "text": "\"screen\",\"label\":\""
+  },
+  {
+   "t": 7,
+   "text": "Screen size\",\"section\":\""
+  },
+  {
+   "t": 7,
+   "text": "Display\",\"kind\":\"number\",\""
+  },
+  {
+   "t": 7,
+   "text": "unit\":\""
+  },
+  {
+   "t": 7,
+   "text": " in\",\"better"
+  },
+  {
+   "t": 7,
+   "text": "\":\"higher\",\"icon\":"
+  },
+  {
+   "t": 7,
+   "text": "\"display\",\"highlight\":true"
+  },
+  {
+   "t": 7,
+   "text": "},{\"key\":\"battery"
+  },
+  {
+   "t": 8,
+   "text": "\",\"label\":\"Battery life"
+  },
+  {
+   "t": 8,
+   "text": "\",\"section\":\"Everyday"
+  },
+  {
+   "t": 8,
+   "text": "\",\"kind\":\"number\",\"un"
+  },
+  {
+   "t": 8,
+   "text": "it\":\" h\",\"better\":\""
+  },
+  {
+   "t": 8,
+   "text": "higher\",\"icon\":\"batt"
+  },
+  {
+   "t": 8,
+   "text": "ery\",\"highlight\":true},"
+  },
+  {
+   "t": 8,
+   "text": "{\"key\":\"weight\",\""
+  },
+  {
+   "t": 8,
+   "text": "label\":\"Weight\",\"section"
+  },
+  {
+   "t": 8,
+   "text": "\":\"Everyday\",\"k"
+  },
+  {
+   "t": 8,
+   "text": "ind\":\"number\",\"unit\":"
+  },
+  {
+   "t": 8,
+   "text": "\" g\",\"better\":\"lower"
+  },
+  {
+   "t": 8,
+   "text": "\",\"icon\":\"weight\",\""
+  },
+  {
+   "t": 8,
+   "text": "highlight\":true}"
+  },
+  {
+   "t": 8,
+   "text": "]}}}"
+  }
+ ]
+}

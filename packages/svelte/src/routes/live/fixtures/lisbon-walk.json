@@ -1,0 +1,565 @@
+{
+ "id": "lisbon-walk",
+ "title": "Walk to the castle",
+ "prompt": "Show me on a map a walking route from Rossio station to Sao Jorge Castle in Lisbon, with the turns (approximate)",
+ "model": "sonnet",
+ "recordedAt": "2026-11-04T15:18:03.577Z",
+ "chunks": [
+  {
+   "t": 0,
+   "text": "{"
+  },
+  {
+   "t": 13,
+   "text": "\"version"
+  },
+  {
+   "t": 49,
+   "text": "\":\"1.0\",\"ui"
+  },
+  {
+   "t": 80,
+   "text": "\":{\"type\":\"fl"
+  },
+  {
+   "t": 120,
+   "text": "ex\",\"props\":{\"direction"
+  },
+  {
+   "t": 147,
+   "text": "\":\"column\",\"gap\":\""
+  },
+  {
+   "t": 181,
+   "text": "12px\"},\"children\":["
+  },
+  {
+   "t": 213,
+   "text": "{\"type\":\"heading\",\""
+  },
+  {
+   "t": 249,
+   "text": "props\":{\"text\":\""
+  },
+  {
+   "t": 285,
+   "text": "Rossio station to São"
+  },
+  {
+   "t": 315,
+   "text": " Jorge Castle\",\""
+  },
+  {
+   "t": 347,
+   "text": "level\":3"
+  },
+  {
+   "t": 381,
+   "text": "}},{\"type\":\"text"
+  },
+  {
+   "t": 413,
+   "text": "\",\"props\":{\"text\":\""
+  },
+  {
+   "t": 452,
+   "text": "About 1.6 km,"
+  },
+  {
+   "t": 484,
+   "text": " ro"
+  },
+  {
+   "t": 517,
+   "text": "ughly 25 minutes"
+  },
+  {
+   "t": 549,
+   "text": " on foot."
+  },
+  {
+   "t": 581,
+   "text": " The last part is uphill,"
+  },
+  {
+   "t": 615,
+   "text": " and the route is approximate."
+  },
+  {
+   "t": 649,
+   "text": "\",\"size\":\"sm\"}"
+  },
+  {
+   "t": 682,
+   "text": "},{\"type\":\"map\",\""
+  },
+  {
+   "t": 715,
+   "text": "props\":{\"center\":[38"
+  },
+  {
+   "t": 759,
+   "text": ".7123,-9.1"
+  },
+  {
+   "t": 817,
+   "text": "368"
+  },
+  {
+   "t": 829,
+   "text": "],\"zoom\":15"
+  },
+  {
+   "t": 848,
+   "text": ",\"height\":\""
+  },
+  {
+   "t": 881,
+   "text": "380px\",\"mark"
+  },
+  {
+   "t": 915,
+   "text": "ers\":[{\"id\":\""
+  },
+  {
+   "t": 952,
+   "text": "start\",\"lat\":38.7"
+  },
+  {
+   "t": 982,
+   "text": "146,\"lng\":-9"
+  },
+  {
+   "t": 1015,
+   "text": ".1411,\"label\":\""
+  },
+  {
+   "t": 1052,
+   "text": "Rossio station\",\"color\":"
+  },
+  {
+   "t": 1088,
+   "text": "\"oklch("
+  },
+  {
+   "t": 1116,
+   "text": "0.65"
+  },
+  {
+   "t": 1153,
+   "text": " 0.16"
+  },
+  {
+   "t": 1181,
+   "text": " 150)\"},{\"id"
+  },
+  {
+   "t": 1221,
+   "text": "\":\"t1\",\"lat\":"
+  },
+  {
+   "t": 1251,
+   "text": "38.7138,\"lng"
+  },
+  {
+   "t": 1320,
+   "text": "\":-9.1387,\""
+  },
+  {
+   "t": 1392,
+   "text": "label\":\"1"
+  },
+  {
+   "t": 1392,
+   "text": "."
+  },
+  {
+   "t": 1479,
+   "text": " Praça da Figueira"
+  },
+  {
+   "t": 1479,
+   "text": "\"},{\"id\":\"t"
+  },
+  {
+   "t": 1480,
+   "text": "2\",\"lat\":38.7"
+  },
+  {
+   "t": 1513,
+   "text": "121,\"lng\":-9"
+  },
+  {
+   "t": 1515,
+   "text": ".1366,\"label\":\""
+  },
+  {
+   "t": 1551,
+   "text": "2. Largo da Mad"
+  },
+  {
+   "t": 1590,
+   "text": "alena\"},{\"id\":"
+  },
+  {
+   "t": 1616,
+   "text": "\"t3\",\"lat\":38"
+  },
+  {
+   "t": 1649,
+   "text": ".7103,\"lng\":"
+  },
+  {
+   "t": 1683,
+   "text": "-9.1333,\"label"
+  },
+  {
+   "t": 1716,
+   "text": "\":\"3. Near the"
+  },
+  {
+   "t": 1750,
+   "text": " Sé cathedral\"},"
+  },
+  {
+   "t": 1783,
+   "text": "{\"id\":\"t4\",\""
+  },
+  {
+   "t": 1816,
+   "text": "lat\":38.7125,"
+  },
+  {
+   "t": 1849,
+   "text": "\"lng\":-9.1"
+  },
+  {
+   "t": 1884,
+   "text": "335,\"label\":\"4."
+  },
+  {
+   "t": 1918,
+   "text": " Ch"
+  },
+  {
+   "t": 1950,
+   "text": "ão da Feira\"},{"
+  },
+  {
+   "t": 1984,
+   "text": "\"id\":\"end\",\"lat"
+  },
+  {
+   "t": 2017,
+   "text": "\":38.7139,\"l"
+  },
+  {
+   "t": 2053,
+   "text": "ng\":-9.1334,"
+  },
+  {
+   "t": 2083,
+   "text": "\"label\":\"São Jor"
+  },
+  {
+   "t": 2116,
+   "text": "ge Castle\",\"color\":\""
+  },
+  {
+   "t": 2155,
+   "text": "oklch(0.65 "
+  },
+  {
+   "t": 2184,
+   "text": "0.22 25)\"}"
+  },
+  {
+   "t": 2217,
+   "text": "],\"paths\":[{\""
+  },
+  {
+   "t": 2250,
+   "text": "id\":\"wal"
+  },
+  {
+   "t": 2284,
+   "text": "k\",\"points\":[[38."
+  },
+  {
+   "t": 2317,
+   "text": "7146,-9.1411"
+  },
+  {
+   "t": 2354,
+   "text": "],[38.7138,-"
+  },
+  {
+   "t": 2385,
+   "text": "9.1387],[38."
+  },
+  {
+   "t": 2420,
+   "text": "7121,-9.1366"
+  },
+  {
+   "t": 2451,
+   "text": "],[38.7103,-"
+  },
+  {
+   "t": 2484,
+   "text": "9.1333],[38."
+  },
+  {
+   "t": 2517,
+   "text": "7125,-9.1335"
+  },
+  {
+   "t": 2552,
+   "text": "],[38.7139,-"
+  },
+  {
+   "t": 2587,
+   "text": "9.1334]],\"color"
+  },
+  {
+   "t": 2616,
+   "text": "\":\"oklch(0."
+  },
+  {
+   "t": 2652,
+   "text": "55 0.18 250"
+  },
+  {
+   "t": 2684,
+   "text": ")"
+  },
+  {
+   "t": 2718,
+   "text": "\",\"weight\":4,\"d"
+  },
+  {
+   "t": 2751,
+   "text": "ashed\":true,\"animate"
+  },
+  {
+   "t": 2785,
+   "text": "\":true,\"label\":\""
+  },
+  {
+   "t": 2821,
+   "text": "Walking route\"}]}},"
+  },
+  {
+   "t": 2852,
+   "text": "{\"type\":\"steps\",\""
+  },
+  {
+   "t": 2891,
+   "text": "props\":{\"steps\":["
+  },
+  {
+   "t": 2926,
+   "text": "{\"title\":\"Le"
+  },
+  {
+   "t": 2955,
+   "text": "ave Rossio station\",\"description"
+  },
+  {
+   "t": 2986,
+   "text": "\":\"Head east through"
+  },
+  {
+   "t": 3020,
+   "text": " Rua"
+  },
+  {
+   "t": 3052,
+   "text": " da Betesga"
+  },
+  {
+   "t": 3086,
+   "text": " to Praça da Figue"
+  },
+  {
+   "t": 3118,
+   "text": "ira.\"},{\"title\":\""
+  },
+  {
+   "t": 3153,
+   "text": "Turn right at Praça"
+  },
+  {
+   "t": 3186,
+   "text": " da Figueira\",\"description\":"
+  },
+  {
+   "t": 3218,
+   "text": "\"Contin"
+  },
+  {
+   "t": 3261,
+   "text": "ue south-"
+  },
+  {
+   "t": 3286,
+   "text": "east along Rua da Mad"
+  },
+  {
+   "t": 3320,
+   "text": "alena.\"},{\"title\":"
+  },
+  {
+   "t": 3353,
+   "text": "\"Follow Rua da"
+  },
+  {
+   "t": 3389,
+   "text": " Madalena to Largo"
+  },
+  {
+   "t": 3421,
+   "text": " da Madalena\",\"description\":"
+  },
+  {
+   "t": 3453,
+   "text": "\"Keep going"
+  },
+  {
+   "t": 3486,
+   "text": " down"
+  },
+  {
+   "t": 3520,
+   "text": "hill, b"
+  },
+  {
+   "t": 3552,
+   "text": "ear"
+  },
+  {
+   "t": 3585,
+   "text": "ing east tow"
+  },
+  {
+   "t": 3618,
+   "text": "ards the"
+  },
+  {
+   "t": 3652,
+   "text": " Sé.\"},{\"title"
+  },
+  {
+   "t": 3693,
+   "text": "\":\"Turn left near the"
+  },
+  {
+   "t": 3720,
+   "text": " Sé cathedral\",\""
+  },
+  {
+   "t": 3759,
+   "text": "description\":\"Start"
+  },
+  {
+   "t": 3788,
+   "text": " clim"
+  },
+  {
+   "t": 3820,
+   "text": "bing north"
+  },
+  {
+   "t": 3938,
+   "text": "-"
+  },
+  {
+   "t": 3942,
+   "text": "east up"
+  },
+  {
+   "t": 3948,
+   "text": " the"
+  },
+  {
+   "t": 4021,
+   "text": " narrow streets of"
+  },
+  {
+   "t": 4021,
+   "text": " Alfama"
+  },
+  {
+   "t": 4060,
+   "text": ".\"},{\"title\":\""
+  },
+  {
+   "t": 4091,
+   "text": "Go"
+  },
+  {
+   "t": 4120,
+   "text": " up"
+  },
+  {
+   "t": 4151,
+   "text": " via"
+  },
+  {
+   "t": 4184,
+   "text": " Ch"
+  },
+  {
+   "t": 4218,
+   "text": "ão da Feira\",\"description\":"
+  },
+  {
+   "t": 4252,
+   "text": "\"Continue to R"
+  },
+  {
+   "t": 4285,
+   "text": "ua de Santa Cru"
+  },
+  {
+   "t": 4317,
+   "text": "z do Castelo.\"},"
+  },
+  {
+   "t": 4352,
+   "text": "{\"title\":\"Ar"
+  },
+  {
+   "t": 4385,
+   "text": "rive at the"
+  },
+  {
+   "t": 4419,
+   "text": " castle gate\",\"description\":\""
+  },
+  {
+   "t": 4452,
+   "text": "Follow the sign"
+  },
+  {
+   "t": 4485,
+   "text": "s the"
+  },
+  {
+   "t": 4520,
+   "text": " last few met"
+  },
+  {
+   "t": 4552,
+   "text": "res.\"}]}}]"
+  },
+  {
+   "t": 4588,
+   "text": "},\"state\":{}"
+  },
+  {
+   "t": 4619,
+   "text": "}"
+  }
+ ]
+}

@@ -1,6 +1,6 @@
 // routes/live/gallery.ts — The one registry behind the /live gallery and the
 // thumbnail capture (scripts/capture-thumbs.ts). Two kinds of item: a run (a
-// recorded or hand-written answer, replayed by Player) and a widget demo (a
+// recorded answer, replayed by Player) and a widget demo (a
 // component in ./demos, rendered live in the same place). Both open in place
 // at /live?s=<key>: a run's key is its scenario id, a demo's `demo-<id>` (run
 // and demo ids overlap). The grid (galleryItems) shows ONE card per widget
@@ -11,8 +11,8 @@
 // Drawings keeps its card, and every iso drawing (isoKeys) sits in Drawings.
 // OFF_GRID keys repeat a topic another card already shows and get no card:
 // the heart and bike gears show as their hand-built figures (heart-pump,
-// bike-gears), so the older iso-scene cards (iso-heart, iso-bike), the recorded
-// gears explainer, the hand-written heart illustration and the illustration
+// bike-gears), so the older same-topic runs (iso-heart, iso-bike), the recorded
+// gears explainer, the heart drawing and the illustration
 // demo (its thumb is that same heart) open by key only. A business run (For
 // business) is always its own card in its own group. Pruned items still open:
 // a pruned run or OFF_GRID demo by its key, any other pruned demo's key
@@ -90,7 +90,7 @@ export const demoItems: GalleryItem[] = [
 	show('illustration', 'Drawings with notes', 'Drawings', 'Animated drawings with notes.')
 ];
 
-/** Every /live run: the model recordings, then the hand-written answers. */
+/** Every /live run, all model recordings. */
 export const liveRuns = [...scenarios, ...playScenarios, ...isoScenarios, ...appScenarios, ...businessScenarios];
 
 const demoWidgets = new Set(demoItems.map((d) => d.widget));

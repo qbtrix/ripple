@@ -2,104 +2,436 @@
  "id": "particle-collider",
  "title": "How a particle collider works",
  "prompt": "How does a particle collider work? Show me the beams, the magnets and the detector, and let me change the beam energy.",
- "model": "hand-written",
- "recordedAt": "2026-10-13T12:00:00.000Z",
+ "model": "sonnet",
+ "recordedAt": "2026-11-04T15:11:03.633Z",
  "chunks": [
   {
    "t": 0,
-   "text": "{\"version\":\"1.0\",\"state\":{\"figure\":null},\"ui\":{\"type\":\"figure\",\"bi"
+   "text": "{\"version\":\"1.0"
   },
   {
-   "t": 18,
-   "text": "nd\":\"{state.figure}\",\"props\":{\"figure\":\"particle-collider\",\"params"
+   "t": 1,
+   "text": "\",\"ui\":{\"type"
   },
   {
-   "t": 36,
-   "text": "\":{\"energy\":6.8,\"rate\":40},\"labels\":[{\"anchor\":\"collision-point\",\""
+   "t": 1,
+   "text": "\":\"figure\",\"props\":{"
   },
   {
-   "t": 54,
-   "text": "note\":\"The two beams cross here. About 25 pairs of protons hit eac"
+   "t": 1,
+   "text": "\"figure\":\"particle-"
   },
   {
-   "t": 72,
-   "text": "h time two bunches meet.\"},{\"anchor\":\"tracker\",\"note\":\"Thin silico"
+   "t": 1,
+   "text": "collider\",\"params\":{\"energ"
   },
   {
-   "t": 90,
-   "text": "n layers record the path of every charged particle. The magnet ben"
+   "t": 1,
+   "text": "y\":6"
   },
   {
-   "t": 108,
-   "text": "ds the paths, which gives their momentum.\"},{\"anchor\":\"ecal\",\"note"
+   "t": 1,
+   "text": ".5,\"rate\":30"
   },
   {
-   "t": 126,
-   "text": "\":\"Crystals stop electrons and photons and measure their energy.\"}"
+   "t": 1,
+   "text": "},\"labels\":[{\""
   },
   {
-   "t": 144,
-   "text": ",{\"anchor\":\"hcal\",\"note\":\"Dense plates stop heavier particles, lik"
+   "t": 1,
+   "text": "anchor\":\"dipole"
   },
   {
-   "t": 162,
-   "text": "e protons and pions, and measure their energy.\"},{\"anchor\":\"soleno"
+   "t": 1,
+   "text": "\",\"label"
   },
   {
-   "t": 180,
-   "text": "id\",\"note\":\"A huge superconducting coil. Its field bends the track"
+   "t": 1,
+   "text": "\":\"Dipole magn"
   },
   {
-   "t": 198,
-   "text": "s.\"},{\"anchor\":\"muon-chambers\",\"note\":\"Muons pass through everythi"
+   "t": 1,
+   "text": "ets"
   },
   {
-   "t": 216,
-   "text": "ng else. These chambers between the iron plates catch them on the "
+   "t": 1,
+   "text": "\",\"note\":\"Bend the"
   },
   {
-   "t": 234,
-   "text": "way out.\"},{\"anchor\":\"dipole\",\"note\":\"Superconducting magnets cool"
+   "t": 1,
+   "text": " pro"
   },
   {
-   "t": 252,
-   "text": "ed to 1.9 K. Their field bends both beams round the ring.\"},{\"anch"
+   "t": 1,
+   "text": "ton beams"
   },
   {
-   "t": 270,
-   "text": "or\":\"quadrupole\",\"note\":\"Focuses the beam like a lens, so the bunc"
+   "t": 1,
+   "text": " around the ring. The"
   },
   {
-   "t": 288,
-   "text": "hes stay thin.\"},{\"anchor\":\"rf-cavities\",\"note\":\"Radio waves in th"
+   "t": 1,
+   "text": " fa"
   },
   {
-   "t": 306,
-   "text": "ese cavities give each bunch a push and keep it tightly bunched.\"}"
+   "t": 1,
+   "text": "ster the prot"
   },
   {
-   "t": 324,
-   "text": ",{\"anchor\":\"magnet-coils\",\"note\":\"Cut through: two beam pipes side"
+   "t": 1,
+   "text": "ons, the stronger the field"
   },
   {
-   "t": 342,
-   "text": " by side, each inside its own coil, in one iron yoke.\"}],\"caption\""
+   "t": 1,
+   "text": " needed.\"},{\"anch"
   },
   {
-   "t": 360,
-   "text": ":\"Like CERN's Large Hadron Collider: two beams of protons go round"
+   "t": 1,
+   "text": "or\":\"quadrupole"
   },
   {
-   "t": 378,
-   "text": " a 27 km ring in opposite directions and meet inside the detector."
+   "t": 1,
+   "text": "\",\"label\":\"Quadr"
   },
   {
-   "t": 396,
-   "text": " Parts that sit kilometres apart are drawn side by side, and every"
+   "t": 1,
+   "text": "upole magnets\",\"note\":"
   },
   {
-   "t": 414,
-   "text": "thing moves far slower than real.\"}}}"
+   "t": 1,
+   "text": "\"Squeeze the be"
+  },
+  {
+   "t": 1,
+   "text": "am like a l"
+  },
+  {
+   "t": 1,
+   "text": "ens so"
+  },
+  {
+   "t": 1,
+   "text": " the"
+  },
+  {
+   "t": 1,
+   "text": " protons stay in"
+  },
+  {
+   "t": 1,
+   "text": " a tight st"
+  },
+  {
+   "t": 1,
+   "text": "ream.\"},{\"anchor"
+  },
+  {
+   "t": 1,
+   "text": "\":\"rf-cavities"
+  },
+  {
+   "t": 1,
+   "text": "\",\"label\":\"RF cav"
+  },
+  {
+   "t": 1,
+   "text": "ities\",\"note\":\"Rad"
+  },
+  {
+   "t": 1,
+   "text": "io-"
+  },
+  {
+   "t": 1,
+   "text": "frequency fields push the pro"
+  },
+  {
+   "t": 1,
+   "text": "ton bunches and"
+  },
+  {
+   "t": 1,
+   "text": " add"
+  },
+  {
+   "t": 1,
+   "text": " energy on"
+  },
+  {
+   "t": 1,
+   "text": " every lap.\"},{\"an"
+  },
+  {
+   "t": 2,
+   "text": "chor\":\"beam-p"
+  },
+  {
+   "t": 2,
+   "text": "ipes\",\"label\":\"Be"
+  },
+  {
+   "t": 2,
+   "text": "am pipes\",\"note\":\""
+  },
+  {
+   "t": 2,
+   "text": "Two separate v"
+  },
+  {
+   "t": 2,
+   "text": "acuum pipes car"
+  },
+  {
+   "t": 2,
+   "text": "ry the"
+  },
+  {
+   "t": 2,
+   "text": " be"
+  },
+  {
+   "t": 3,
+   "text": "ams in opposite directions.\""
+  },
+  {
+   "t": 4,
+   "text": "},{\"anchor\":\""
+  },
+  {
+   "t": 4,
+   "text": "collision-point\",\"label\":\""
+  },
+  {
+   "t": 4,
+   "text": "Collision point\",\"note\":\""
+  },
+  {
+   "t": 4,
+   "text": "The two"
+  },
+  {
+   "t": 5,
+   "text": " beams cross here"
+  },
+  {
+   "t": 5,
+   "text": " and prot"
+  },
+  {
+   "t": 5,
+   "text": "ons sm"
+  },
+  {
+   "t": 5,
+   "text": "ash together"
+  },
+  {
+   "t": 5,
+   "text": ".\""
+  },
+  {
+   "t": 5,
+   "text": "},{\"anchor\":\""
+  },
+  {
+   "t": 5,
+   "text": "tracker\",\"label\":\""
+  },
+  {
+   "t": 7,
+   "text": "Tracker\",\"note\":\""
+  },
+  {
+   "t": 7,
+   "text": "Records"
+  },
+  {
+   "t": 9,
+   "text": " the cur"
+  },
+  {
+   "t": 9,
+   "text": "ved paths of charged particles"
+  },
+  {
+   "t": 9,
+   "text": " made"
+  },
+  {
+   "t": 9,
+   "text": " in"
+  },
+  {
+   "t": 9,
+   "text": " the collision.\"},{\"an"
+  },
+  {
+   "t": 9,
+   "text": "chor\":\"ecal\",\""
+  },
+  {
+   "t": 9,
+   "text": "label\":\"Electromagn"
+  },
+  {
+   "t": 12,
+   "text": "etic calorimeter\",\""
+  },
+  {
+   "t": 12,
+   "text": "note\":\"Stops electr"
+  },
+  {
+   "t": 12,
+   "text": "ons and photons and measures their"
+  },
+  {
+   "t": 12,
+   "text": " energy.\"},{\"anch"
+  },
+  {
+   "t": 12,
+   "text": "or\":\"hcal\",\"label"
+  },
+  {
+   "t": 12,
+   "text": "\":\"H"
+  },
+  {
+   "t": 12,
+   "text": "adron calorimeter\",\""
+  },
+  {
+   "t": 12,
+   "text": "note\":\"Stops heav"
+  },
+  {
+   "t": 12,
+   "text": "ier"
+  },
+  {
+   "t": 12,
+   "text": " particles such"
+  },
+  {
+   "t": 12,
+   "text": " as protons and p"
+  },
+  {
+   "t": 12,
+   "text": "ions and measures their energy.\""
+  },
+  {
+   "t": 12,
+   "text": "},{\"anchor\":\""
+  },
+  {
+   "t": 12,
+   "text": "muon-chambers\",\"label"
+  },
+  {
+   "t": 12,
+   "text": "\":\"Muon chambers"
+  },
+  {
+   "t": 12,
+   "text": "\",\"note\":\"Muons p"
+  },
+  {
+   "t": 12,
+   "text": "ass through"
+  },
+  {
+   "t": 12,
+   "text": " everything else, so det"
+  },
+  {
+   "t": 12,
+   "text": "ectors on"
+  },
+  {
+   "t": 12,
+   "text": " the outside"
+  },
+  {
+   "t": 13,
+   "text": " catch them.\"}],\"ca"
+  },
+  {
+   "t": 14,
+   "text": "ption\":\"Raise the be"
+  },
+  {
+   "t": 14,
+   "text": "am energy and the"
+  },
+  {
+   "t": 14,
+   "text": " d"
+  },
+  {
+   "t": 14,
+   "text": "ipole field must"
+  },
+  {
+   "t": 14,
+   "text": " grow to"
+  },
+  {
+   "t": 14,
+   "text": " h"
+  },
+  {
+   "t": 14,
+   "text": "old the protons on"
+  },
+  {
+   "t": 16,
+   "text": " the ring. Coll"
+  },
+  {
+   "t": 16,
+   "text": "ision"
+  },
+  {
+   "t": 16,
+   "text": " energy is"
+  },
+  {
+   "t": 16,
+   "text": " the sum of both"
+  },
+  {
+   "t": 16,
+   "text": " beams.\"},"
+  },
+  {
+   "t": 16,
+   "text": "\"bind\":\""
+  },
+  {
+   "t": 16,
+   "text": "{state.coll"
+  },
+  {
+   "t": 16,
+   "text": "ider}\"},"
+  },
+  {
+   "t": 16,
+   "text": "\"state\":{\"coll"
+  },
+  {
+   "t": 16,
+   "text": "ider\":{\"energy\":6"
+  },
+  {
+   "t": 16,
+   "text": ".5,\"rate\":30"
+  },
+  {
+   "t": 16,
+   "text": "}}}"
   }
  ]
 }

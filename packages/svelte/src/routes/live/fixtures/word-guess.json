@@ -1,0 +1,89 @@
+{
+ "id": "word-guess",
+ "title": "Guess the word",
+ "prompt": "Make me a 5-letter word guessing game about space, with a hint",
+ "model": "sonnet",
+ "recordedAt": "2026-11-04T15:08:31.354Z",
+ "chunks": [
+  {
+   "t": 0,
+   "text": "{\"version\":\"1.0"
+  },
+  {
+   "t": 0,
+   "text": "\",\"ui\":{\"type"
+  },
+  {
+   "t": 0,
+   "text": "\":\"word-guess\",\"b"
+  },
+  {
+   "t": 0,
+   "text": "ind\":\"{state.game}"
+  },
+  {
+   "t": 0,
+   "text": "\",\"props\":{\"title\":\""
+  },
+  {
+   "t": 0,
+   "text": "Space words\",\"answer\":\""
+  },
+  {
+   "t": 0,
+   "text": "CO"
+  },
+  {
+   "t": 0,
+   "text": "M"
+  },
+  {
+   "t": 0,
+   "text": "ET\",\"hint\":\"An"
+  },
+  {
+   "t": 0,
+   "text": " icy w"
+  },
+  {
+   "t": 0,
+   "text": "anderer with"
+  },
+  {
+   "t": 0,
+   "text": " a gl"
+  },
+  {
+   "t": 0,
+   "text": "owing tail that circ"
+  },
+  {
+   "t": 0,
+   "text": "les the"
+  },
+  {
+   "t": 0,
+   "text": " Sun\",\"max_guesses"
+  },
+  {
+   "t": 0,
+   "text": "\":6}},"
+  },
+  {
+   "t": 0,
+   "text": "\"state\":{\"game\":{"
+  },
+  {
+   "t": 0,
+   "text": "\"guesses\":[],\""
+  },
+  {
+   "t": 1,
+   "text": "status\":\"playing\",\"hint"
+  },
+  {
+   "t": 1,
+   "text": "_used\":false}}}"
+  }
+ ]
+}

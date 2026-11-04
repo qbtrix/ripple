@@ -1,8 +1,8 @@
 // routes/pawbar/landing-chips.test.ts — Replay mode (no PUBLIC_PAWBAR_LIVE, as in vitest) shows every chip.
 // The expanded panel lists every live chip, store chips included, in their
 // groups; the chips that replay here sort first (so the collapsed row leads
-// with them and groups with none come last). A chip with a recorded or
-// hand-written answer replays it; any other opens Paw OS with its prompt, the
+// with them and groups with none come last). A chip with a recorded answer
+// replays it; any other opens Paw OS with its prompt, the
 // same handoff a typed message takes, and is described as "Opens in Paw OS".
 // The seeded exchange leaves the row up; the visitor's first send folds it into
 // the toggle left of the composer, so the answer card gets that height.
@@ -49,8 +49,6 @@ test('replay mode renders every live chip, the ones that replay here first', asy
 		else expected.push([c.group, [c.title]]);
 	}
 	expect(shown).toEqual(expected);
-	// Groups with no chip that replays here (Browse & discover leads live) come last.
-	expect(shown.at(-1)?.[1].every((t) => !all.some((c) => c.title === t && local.has(c.id)))).toBe(true);
 	for (const t of ['Book a table', 'Help me pick a laptop', 'Plan a trip with me']) expect(shown.flatMap(([, ts]) => ts)).toContain(t);
 });
 

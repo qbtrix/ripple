@@ -1,0 +1,637 @@
+{
+ "id": "coffee-nearby",
+ "title": "Coffee nearby",
+ "prompt": "Find quiet coffee shops with wifi near Baixa in Lisbon, with ratings and distance (sample places)",
+ "model": "sonnet",
+ "recordedAt": "2026-11-04T15:09:53.921Z",
+ "chunks": [
+  {
+   "t": 0,
+   "text": "{\"version\":\"1."
+  },
+  {
+   "t": 0,
+   "text": "0\",\"ui\":{\"type"
+  },
+  {
+   "t": 0,
+   "text": "\":\"place-results\",\"props\":"
+  },
+  {
+   "t": 0,
+   "text": "{\"title\":\"Qui"
+  },
+  {
+   "t": 0,
+   "text": "et coffee near"
+  },
+  {
+   "t": 0,
+   "text": " Baixa\",\"query\":\""
+  },
+  {
+   "t": 0,
+   "text": "qu"
+  },
+  {
+   "t": 0,
+   "text": "iet cafes with wif"
+  },
+  {
+   "t": 0,
+   "text": "i, Ba"
+  },
+  {
+   "t": 0,
+   "text": "ixa, Lisbon"
+  },
+  {
+   "t": 0,
+   "text": " (sample places)\",\"places\":"
+  },
+  {
+   "t": 0,
+   "text": "[{\"id\":\"p1"
+  },
+  {
+   "t": 0,
+   "text": "\",\"name\":\"R"
+  },
+  {
+   "t": 0,
+   "text": "ua"
+  },
+  {
+   "t": 0,
+   "text": " Aug"
+  },
+  {
+   "t": 0,
+   "text": "usta Re"
+  },
+  {
+   "t": 0,
+   "text": "ading Room\",\"kind\":\""
+  },
+  {
+   "t": 0,
+   "text": "cafe\",\"r"
+  },
+  {
+   "t": 0,
+   "text": "ating\":4.7"
+  },
+  {
+   "t": 0,
+   "text": ",\"reviews\":520"
+  },
+  {
+   "t": 0,
+   "text": ",\"price\":2"
+  },
+  {
+   "t": 0,
+   "text": ",\"distance\":\""
+  },
+  {
+   "t": 0,
+   "text": "150"
+  },
+  {
+   "t": 0,
+   "text": " m\",\"walkM"
+  },
+  {
+   "t": 1,
+   "text": "inutes\":2,\"open"
+  },
+  {
+   "t": 1,
+   "text": "\":true,\"hours\":\""
+  },
+  {
+   "t": 108,
+   "text": "Until 7"
+  },
+  {
+   "t": 108,
+   "text": " pm\",\"address\":\""
+  },
+  {
+   "t": 108,
+   "text": "Baixa, L"
+  },
+  {
+   "t": 108,
+   "text": "isbon\",\"tags\":[\""
+  },
+  {
+   "t": 108,
+   "text": "wifi\",\"quiet\",\""
+  },
+  {
+   "t": 108,
+   "text": "power"
+  },
+  {
+   "t": 108,
+   "text": " out"
+  },
+  {
+   "t": 108,
+   "text": "lets\"],\"blurb"
+  },
+  {
+   "t": 108,
+   "text": "\":\"Cal"
+  },
+  {
+   "t": 508,
+   "text": "m up"
+  },
+  {
+   "t": 509,
+   "text": "stairs room with long tables"
+  },
+  {
+   "t": 509,
+   "text": " and sl"
+  },
+  {
+   "t": 509,
+   "text": "ow pour-over"
+  },
+  {
+   "t": 509,
+   "text": "s."
+  },
+  {
+   "t": 509,
+   "text": " Good"
+  },
+  {
+   "t": 509,
+   "text": " for foc"
+  },
+  {
+   "t": 510,
+   "text": "used work.\",\"lat\":38"
+  },
+  {
+   "t": 510,
+   "text": ".7107"
+  },
+  {
+   "t": 510,
+   "text": ",\"lng\":-9"
+  },
+  {
+   "t": 510,
+   "text": ".1394},{\"id\":"
+  },
+  {
+   "t": 511,
+   "text": "\"p2\",\"name\":\""
+  },
+  {
+   "t": 511,
+   "text": "Praça da Fig"
+  },
+  {
+   "t": 511,
+   "text": "ueira Cor"
+  },
+  {
+   "t": 686,
+   "text": "ner C"
+  },
+  {
+   "t": 824,
+   "text": "afe\",\"kind\":\"c"
+  },
+  {
+   "t": 825,
+   "text": "afe\",\"rating\":4."
+  },
+  {
+   "t": 825,
+   "text": "5"
+  },
+  {
+   "t": 825,
+   "text": ",\"reviews\":388"
+  },
+  {
+   "t": 826,
+   "text": ",\"price\":2,\"dist"
+  },
+  {
+   "t": 826,
+   "text": "ance\":\"300"
+  },
+  {
+   "t": 826,
+   "text": " m\",\"walkMinut"
+  },
+  {
+   "t": 826,
+   "text": "es\":4,\"open\":true"
+  },
+  {
+   "t": 826,
+   "text": ",\"hours\":\"Until"
+  },
+  {
+   "t": 831,
+   "text": " 6"
+  },
+  {
+   "t": 844,
+   "text": " pm\",\"address\":\""
+  },
+  {
+   "t": 1244,
+   "text": "Near"
+  },
+  {
+   "t": 1255,
+   "text": " Praça da Figueira"
+  },
+  {
+   "t": 1255,
+   "text": "\",\""
+  },
+  {
+   "t": 1255,
+   "text": "tags\":[\"wifi\",\""
+  },
+  {
+   "t": 1255,
+   "text": "ter"
+  },
+  {
+   "t": 1255,
+   "text": "race\""
+  },
+  {
+   "t": 1255,
+   "text": "],\"blurb\":\""
+  },
+  {
+   "t": 1255,
+   "text": "Sunny cor"
+  },
+  {
+   "t": 1255,
+   "text": "ner with"
+  },
+  {
+   "t": 1255,
+   "text": " a quiet back"
+  },
+  {
+   "t": 1256,
+   "text": " room and good esp"
+  },
+  {
+   "t": 1256,
+   "text": "resso.\",\"lat\":38"
+  },
+  {
+   "t": 1256,
+   "text": ".7142"
+  },
+  {
+   "t": 1656,
+   "text": ",\"lng\":-9."
+  },
+  {
+   "t": 1656,
+   "text": "1385"
+  },
+  {
+   "t": 1656,
+   "text": "},{\"id\":\"p3"
+  },
+  {
+   "t": 1656,
+   "text": "\",\"name\":\"Chiado"
+  },
+  {
+   "t": 1656,
+   "text": " Cour"
+  },
+  {
+   "t": 1656,
+   "text": "tyard Co"
+  },
+  {
+   "t": 1656,
+   "text": "ffee\",\"kind\":\"c"
+  },
+  {
+   "t": 1656,
+   "text": "afe\",\"rating\":4."
+  },
+  {
+   "t": 1656,
+   "text": "6,\"reviews\":451"
+  },
+  {
+   "t": 1656,
+   "text": ",\"price\":3"
+  },
+  {
+   "t": 1656,
+   "text": ",\"distance\":\"450 "
+  },
+  {
+   "t": 1656,
+   "text": "m\",\"walkMinutes"
+  },
+  {
+   "t": 1656,
+   "text": "\":6,\"open\":true,"
+  },
+  {
+   "t": 1656,
+   "text": "\"hours\":\"Until "
+  },
+  {
+   "t": 1657,
+   "text": "8 pm\",\"address\":\""
+  },
+  {
+   "t": 1657,
+   "text": "Chiado, Lis"
+  },
+  {
+   "t": 1657,
+   "text": "bon\",\"tags\":[\"w"
+  },
+  {
+   "t": 1657,
+   "text": "ifi\",\"quiet\",\"cour"
+  },
+  {
+   "t": 1657,
+   "text": "tyard\"],\"blur"
+  },
+  {
+   "t": 1657,
+   "text": "b\":\"Tucked-"
+  },
+  {
+   "t": 1657,
+   "text": "away courtyard that st"
+  },
+  {
+   "t": 1658,
+   "text": "ays pe"
+  },
+  {
+   "t": 1658,
+   "text": "aceful on we"
+  },
+  {
+   "t": 1658,
+   "text": "ekday"
+  },
+  {
+   "t": 1658,
+   "text": " mornings.\",\"lat\":"
+  },
+  {
+   "t": 1659,
+   "text": "38.7102"
+  },
+  {
+   "t": 1659,
+   "text": ",\"lng\":-9."
+  },
+  {
+   "t": 1659,
+   "text": "1417"
+  },
+  {
+   "t": 1659,
+   "text": "},{\"id\":\"p4"
+  },
+  {
+   "t": 1659,
+   "text": "\",\"name\":\"Al"
+  },
+  {
+   "t": 1660,
+   "text": "fama"
+  },
+  {
+   "t": 1661,
+   "text": " Slow Bakery\",\""
+  },
+  {
+   "t": 1662,
+   "text": "kind\":\"bakery\",\""
+  },
+  {
+   "t": 1662,
+   "text": "rating\":4.4,\""
+  },
+  {
+   "t": 1662,
+   "text": "reviews\":296"
+  },
+  {
+   "t": 1662,
+   "text": ",\"price\":1"
+  },
+  {
+   "t": 1663,
+   "text": ",\"distance\":\"600 "
+  },
+  {
+   "t": 1663,
+   "text": "m\",\"walkMinutes"
+  },
+  {
+   "t": 1663,
+   "text": "\":8,\"open\":false,"
+  },
+  {
+   "t": 1663,
+   "text": "\"hours\":\"Opens"
+  },
+  {
+   "t": 1663,
+   "text": " 8"
+  },
+  {
+   "t": 1663,
+   "text": " am\",\"address\":\"Al"
+  },
+  {
+   "t": 1663,
+   "text": "fama, Lisbon"
+  },
+  {
+   "t": 1663,
+   "text": "\",\"tags\":[\"wifi"
+  },
+  {
+   "t": 1663,
+   "text": "\",\"pastries\"],\"bl"
+  },
+  {
+   "t": 1663,
+   "text": "urb\":\"Small b"
+  },
+  {
+   "t": 1664,
+   "text": "akery with a few"
+  },
+  {
+   "t": 1664,
+   "text": " window"
+  },
+  {
+   "t": 1664,
+   "text": " seats and f"
+  },
+  {
+   "t": 1664,
+   "text": "resh pastries.\",\"l"
+  },
+  {
+   "t": 1664,
+   "text": "at\":38.7119"
+  },
+  {
+   "t": 1665,
+   "text": ",\"lng\":-9."
+  },
+  {
+   "t": 1665,
+   "text": "1329"
+  },
+  {
+   "t": 1666,
+   "text": "},{\"id\":\"p5"
+  },
+  {
+   "t": 1666,
+   "text": "\",\"name\":\"Ross"
+  },
+  {
+   "t": 1668,
+   "text": "io"
+  },
+  {
+   "t": 1672,
+   "text": " Station"
+  },
+  {
+   "t": 1672,
+   "text": " Cafe\",\"kind\":"
+  },
+  {
+   "t": 1672,
+   "text": "\"cafe\",\"rating\":"
+  },
+  {
+   "t": 1672,
+   "text": "4.2"
+  },
+  {
+   "t": 1672,
+   "text": ",\"reviews\":340,"
+  },
+  {
+   "t": 1672,
+   "text": "\"price\":1"
+  },
+  {
+   "t": 1672,
+   "text": ",\"distance\":\"700"
+  },
+  {
+   "t": 1672,
+   "text": " m\",\"walkMinut"
+  },
+  {
+   "t": 1672,
+   "text": "es\":9,\"open\":true"
+  },
+  {
+   "t": 1672,
+   "text": ",\"hours\":\"Until"
+  },
+  {
+   "t": 1673,
+   "text": " 5"
+  },
+  {
+   "t": 1673,
+   "text": " pm\",\"address\":\""
+  },
+  {
+   "t": 1673,
+   "text": "Near Rossio\",\"tags"
+  },
+  {
+   "t": 1673,
+   "text": "\":[\"wifi\",\"qui"
+  },
+  {
+   "t": 1673,
+   "text": "et\"],\"blurb\":"
+  },
+  {
+   "t": 1673,
+   "text": "\"Quiet side room away"
+  },
+  {
+   "t": 1673,
+   "text": " from the main h"
+  },
+  {
+   "t": 1673,
+   "text": "all,"
+  },
+  {
+   "t": 1673,
+   "text": " with re"
+  },
+  {
+   "t": 1673,
+   "text": "liable w"
+  },
+  {
+   "t": 1673,
+   "text": "ifi.\",\"lat\":38"
+  },
+  {
+   "t": 1673,
+   "text": ".7138"
+  },
+  {
+   "t": 1673,
+   "text": ",\"lng\":-9."
+  },
+  {
+   "t": 1673,
+   "text": "1405"
+  },
+  {
+   "t": 1673,
+   "text": "}]}},"
+  },
+  {
+   "t": 1673,
+   "text": "\"state\":{}"
+  },
+  {
+   "t": 1673,
+   "text": "}"
+  }
+ ]
+}

@@ -1,0 +1,385 @@
+{
+ "id": "company-snapshot",
+ "title": "Company snapshot",
+ "prompt": "Give me a snapshot of a sample public company: share price, analyst ratings, key numbers and recent news",
+ "model": "sonnet",
+ "recordedAt": "2026-11-04T15:17:57.472Z",
+ "chunks": [
+  {
+   "t": 0,
+   "text": "{"
+  },
+  {
+   "t": 317,
+   "text": "\"version"
+  },
+  {
+   "t": 317,
+   "text": "\":\"1"
+  },
+  {
+   "t": 317,
+   "text": ".0\",\"ui\":{\""
+  },
+  {
+   "t": 317,
+   "text": "type\":\"card\",\"props\":{"
+  },
+  {
+   "t": 317,
+   "text": "\"title\":\""
+  },
+  {
+   "t": 317,
+   "text": "Sample Corp (SM"
+  },
+  {
+   "t": 318,
+   "text": "PL)"
+  },
+  {
+   "t": 318,
+   "text": "\",\"description\":\"Sample data"
+  },
+  {
+   "t": 318,
+   "text": " for"
+  },
+  {
+   "t": 318,
+   "text": " illustration,"
+  },
+  {
+   "t": 343,
+   "text": " not real market"
+  },
+  {
+   "t": 370,
+   "text": " figures\"},\"children\":["
+  },
+  {
+   "t": 716,
+   "text": "{\"type\":\"flex\",\""
+  },
+  {
+   "t": 716,
+   "text": "props\":{\"direction\":\""
+  },
+  {
+   "t": 717,
+   "text": "column\",\"gap\":\"16px"
+  },
+  {
+   "t": 717,
+   "text": "\"},\"children\":[{\""
+  },
+  {
+   "t": 717,
+   "text": "type\":\"ticker\",\"props"
+  },
+  {
+   "t": 717,
+   "text": "\":{\"items\":[{\""
+  },
+  {
+   "t": 717,
+   "text": "symbol\":\"SMP"
+  },
+  {
+   "t": 717,
+   "text": "L\",\"price\":\"$84."
+  },
+  {
+   "t": 717,
+   "text": "20\",\"change\":\"+1."
+  },
+  {
+   "t": 718,
+   "text": "35\",\"changePercent\":\""
+  },
+  {
+   "t": 744,
+   "text": "+1.63%\"}]"
+  },
+  {
+   "t": 776,
+   "text": "}"
+  },
+  {
+   "t": 1118,
+   "text": "},{\"type\":\"range-"
+  },
+  {
+   "t": 1118,
+   "text": "bar\",\"props\":{\"label"
+  },
+  {
+   "t": 1118,
+   "text": "\":\"52-week range\",\"min"
+  },
+  {
+   "t": 1118,
+   "text": "\":61.1"
+  },
+  {
+   "t": 1118,
+   "text": ",\"max\":93.8,"
+  },
+  {
+   "t": 1118,
+   "text": "\"current\":84.2,\""
+  },
+  {
+   "t": 1119,
+   "text": "minLabel\":\"$61"
+  },
+  {
+   "t": 1119,
+   "text": ".10\",\"maxLabel"
+  },
+  {
+   "t": 1119,
+   "text": "\":\"$93.80\",\"curr"
+  },
+  {
+   "t": 1119,
+   "text": "entLabel\":\"$84"
+  },
+  {
+   "t": 1143,
+   "text": ".20\"}},{\"type"
+  },
+  {
+   "t": 1180,
+   "text": "\":\"analyst-bar"
+  },
+  {
+   "t": 1527,
+   "text": "\",\"props\":{\"buy\":"
+  },
+  {
+   "t": 1527,
+   "text": "14,\"hold\":7,"
+  },
+  {
+   "t": 1527,
+   "text": "\"sell\":2,\"cons"
+  },
+  {
+   "t": 1527,
+   "text": "ensus\":\"Moderate"
+  },
+  {
+   "t": 1527,
+   "text": " Buy\",\"target\":\"$"
+  },
+  {
+   "t": 1528,
+   "text": "92.00\"}},{\""
+  },
+  {
+   "t": 1528,
+   "text": "type\":\"kv-table\",\""
+  },
+  {
+   "t": 1528,
+   "text": "props\":{\"columns\":2"
+  },
+  {
+   "t": 1528,
+   "text": ",\"striped\":true,\""
+  },
+  {
+   "t": 1528,
+   "text": "rows\":[{\"key\":"
+  },
+  {
+   "t": 1546,
+   "text": "\"Market c"
+  },
+  {
+   "t": 1578,
+   "text": "ap\",\"value\":\"$41"
+  },
+  {
+   "t": 1931,
+   "text": ".8B\"},{\"key"
+  },
+  {
+   "t": 1931,
+   "text": "\":\"P/E ratio"
+  },
+  {
+   "t": 1931,
+   "text": "\",\"value\":\"24"
+  },
+  {
+   "t": 1931,
+   "text": ".6"
+  },
+  {
+   "t": 1931,
+   "text": "\"},{\"key\":\""
+  },
+  {
+   "t": 1931,
+   "text": "Revenue (TTM)"
+  },
+  {
+   "t": 1931,
+   "text": "\",\"value\":\"$12"
+  },
+  {
+   "t": 1931,
+   "text": ".4"
+  },
+  {
+   "t": 1931,
+   "text": "B\"},{\"key\":\""
+  },
+  {
+   "t": 1931,
+   "text": "EPS ("
+  },
+  {
+   "t": 1948,
+   "text": "TTM)\",\"value\":\""
+  },
+  {
+   "t": 1983,
+   "text": "$3.42\"},{\""
+  },
+  {
+   "t": 2330,
+   "text": "key\":\"D"
+  },
+  {
+   "t": 2330,
+   "text": "ividend yield\",\"value\":\""
+  },
+  {
+   "t": 2330,
+   "text": "1.2"
+  },
+  {
+   "t": 2330,
+   "text": "%\"},{\"key\":\""
+  },
+  {
+   "t": 2330,
+   "text": "Beta\",\"value\":\"1"
+  },
+  {
+   "t": 2331,
+   "text": ".08"
+  },
+  {
+   "t": 2331,
+   "text": "\"}]}},{\"type"
+  },
+  {
+   "t": 2331,
+   "text": "\":\"news"
+  },
+  {
+   "t": 2331,
+   "text": "-card\",\"props\":{\"head"
+  },
+  {
+   "t": 2331,
+   "text": "line\":\"Sample Cor"
+  },
+  {
+   "t": 2364,
+   "text": "p beats third-quarter"
+  },
+  {
+   "t": 2383,
+   "text": " revenue est"
+  },
+  {
+   "t": 2718,
+   "text": "imates, ra"
+  },
+  {
+   "t": 2719,
+   "text": "ises full"
+  },
+  {
+   "t": 2719,
+   "text": "-year out"
+  },
+  {
+   "t": 2719,
+   "text": "look\",\"source\":\"Market"
+  },
+  {
+   "t": 2719,
+   "text": " Wire\",\"time\":\"3"
+  },
+  {
+   "t": 2719,
+   "text": " hours ago\",\"sent"
+  },
+  {
+   "t": 2719,
+   "text": "iment\":\"bullish\""
+  },
+  {
+   "t": 2720,
+   "text": "}},{\"type\":\"news"
+  },
+  {
+   "t": 2720,
+   "text": "-card\",\"props\":{\"head"
+  },
+  {
+   "t": 2720,
+   "text": "line\":\"Reg"
+  },
+  {
+   "t": 2747,
+   "text": "ulators open"
+  },
+  {
+   "t": 2780,
+   "text": " review"
+  },
+  {
+   "t": 3180,
+   "text": " of"
+  },
+  {
+   "t": 3185,
+   "text": " Sample Corp's plan"
+  },
+  {
+   "t": 3185,
+   "text": "ned acquisition\",\"source\":"
+  },
+  {
+   "t": 3185,
+   "text": "\"Daily Ledger"
+  },
+  {
+   "t": 3185,
+   "text": "\",\"time\":\""
+  },
+  {
+   "t": 3185,
+   "text": "Yesterday\",\"senti"
+  },
+  {
+   "t": 3185,
+   "text": "ment\":\"neutral\"}"
+  },
+  {
+   "t": 3185,
+   "text": "}]}]},"
+  },
+  {
+   "t": 3185,
+   "text": "\"state\":{}}"
+  }
+ ]
+}

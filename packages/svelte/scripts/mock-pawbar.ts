@@ -25,19 +25,18 @@
 // Flow cards (routes/pawbar/flow-cards.ts): "trip" + "step by step" answers with
 // the trip flow, "laptop" + "questions" with the laptop flow; the flows' own
 // follow-ups land on the Tokyo itinerary recording and, for "laptop", an inline
-// comparison-layout card with a winner. "bike" (or "bicycle") + "gears" answers with
-// an animated `illustration` of the chain drive and a short text (gearsCard).
+// comparison-layout card with a winner. Bike gears questions fall through to
+// pickScenario, which replays the bike-gears figure recording.
 // "map" + "route" answers with a live model card, a walking route in Lisbon
 // (routes/pawbar/fixtures/map-route-card.json).
-// The play chips (memory match, guess the word, space trivia, tic-tac-toe, connect
-// four, habit tracker, focus timer, how a heart pumps) fall through to pickScenario, which answers them with their
-// hand-written cards (routes/pawbar/play-cards.ts) streamed like a recording.
+// A message that is exactly a recording's prompt (every chip with a recording)
+// skips those shortcuts and the store cards: pickScenario replays its recording.
 // Point the site at it: PUBLIC_PAWBAR_LIVE=1 PUBLIC_PAWBAR_ENDPOINT=http://localhost:5288
 // PUBLIC_PAWBAR_WIDGET_ID=demo PUBLIC_PAWBAR_SITE_KEY=demo bun run dev
 
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
-import { pickScenario, recordedEvents, type RecordedMode } from '../src/routes/pawbar/recorded.ts';
-import { gearsCard, laptopAnswerCard, laptopFlowCard, tripFlowCard } from '../src/routes/pawbar/flow-cards.ts';
+import { answerPool, pickScenario, recordedEvents, type RecordedMode } from '../src/routes/pawbar/recorded.ts';
+import { laptopAnswerCard, laptopFlowCard, tripFlowCard } from '../src/routes/pawbar/flow-cards.ts';
 import mapRouteCard from '../src/routes/pawbar/fixtures/map-route-card.json';
 
 const PORT = Number(process.env.MOCK_PAWBAR_PORT ?? 5288);
@@ -138,9 +137,8 @@ async function bookingCard(message: string) {
 	};
 }
 
-/** A card the mock answers with as is: the bike gears, the two flows, the laptop comparison and the map route. */
+/** A card the mock answers with as is: the two flows, the laptop comparison and the map route. */
 function inlineCard(message: string): [id: string, intro: string, card: unknown] | null {
-	if (/\b(bike|bicycle)/i.test(message) && /\bgears?\b/i.test(message)) return ['gears', 'Here is how the chain drive works.', gearsCard];
 	if (/\btrip\b/i.test(message) && /\bstep by step\b/i.test(message)) return ['trip', 'Happy to. A couple of quick questions first.', tripFlowCard];
 	if (/\blaptop\b/i.test(message) && /\bquestions?\b/i.test(message)) return ['laptop', 'Sure. Three quick questions and I will narrow it down.', laptopFlowCard];
 	if (/\bmap\b/i.test(message) && /\broute\b/i.test(message)) return ['map', 'Here is an approximate walking route.', mapRouteCard];
@@ -257,13 +255,15 @@ async function handle(req: IncomingMessage, res: ServerResponse) {
 		res.end();
 	};
 
-	const inline = mode === 'normal' ? inlineCard(message) : null;
+	// A recording made for this exact prompt wins over the shortcuts below.
+	const exact = answerPool.some((s) => s.fixture.prompt === message || s.prompt === message);
+	const inline = mode === 'normal' && !exact ? inlineCard(message) : null;
 	if (inline) {
 		console.info(`[mock-pawbar] inline card: ${inline[0]}`);
 		return streamCard(...inline);
 	}
 
-	const kind = mode === 'normal' ? storeCardKind(message) : null;
+	const kind = mode === 'normal' && !exact ? storeCardKind(message) : null;
 	if (kind) {
 		console.info(`[mock-pawbar] store card: ${kind} from ${STORE}`);
 		let card: unknown;
