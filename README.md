@@ -11,6 +11,8 @@ expressions, runs event handlers, and hands side effects (API calls,
 navigation, toasts) back to your app. The model writes structure; Ripple
 handles the reactivity.
 
+![ripple — a model writes a JSON spec and the UI builds itself while it streams](./docs/assets/ripple-demo.gif)
+
 [![A recorded model run replayed on /live: the streamed spec on the left, the sales dashboard Ripple rendered from it on the right](docs/assets/live-sales-dashboard.png)](https://ripple.pocketpaw.xyz/live)
 
 Watch nine recorded model runs render at
