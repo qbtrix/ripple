@@ -19,7 +19,28 @@ Watch nine recorded model runs render at
 [ripple.pocketpaw.xyz/live](https://ripple.pocketpaw.xyz/live), or write a
 spec yourself in the [playground](https://ripple.pocketpaw.xyz/playground).
 
+If Ripple saves you a component, a star helps other people find it.
+
 ## Quick start
+
+React:
+
+```bash
+npm i @ripple-ui/react
+```
+
+```tsx
+import { Ripple } from '@ripple-ui/react';
+
+export function Answer({ spec }) {
+  return <Ripple spec={spec} onEvent={(e) => console.log(e.type)} />;
+}
+```
+
+Pass the partial JSON text as `spec` with `streaming` while the model writes,
+then set `streaming={false}`. No Svelte or Tailwind needed.
+
+Svelte:
 
 ```bash
 bun add @ripple-ui/svelte
@@ -52,9 +73,8 @@ Widgets use Tailwind CSS v4 classes, so your app needs Tailwind v4 and an
 [Styling section](packages/svelte/README.md#styling) of the Svelte README has
 the setup.
 
-Not on Svelte? In React, `npm i @ripple-ui/react` and render
-`<Ripple spec={spec} />`. On any other page, `npm i @ripple-ui/embed` and call
-`mount(document.querySelector('#card'), spec)`. Neither needs Svelte or
+On any other page, `npm i @ripple-ui/embed` and call
+`mount(document.querySelector('#card'), spec)`. It needs no Svelte or
 Tailwind. [Install](https://ripple.pocketpaw.xyz/docs/getting-started/install#react) has both.
 
 ## What a spec looks like
