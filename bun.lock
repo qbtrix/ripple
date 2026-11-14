@@ -36,6 +36,13 @@
         "vitest": "^4.1.0",
       },
     },
+    "packages/mcp": {
+      "name": "@ripple-ui/mcp",
+      "version": "0.1.0",
+      "bin": {
+        "ripple-mcp": "ripple-mcp.mjs",
+      },
+    },
     "packages/react": {
       "name": "@ripple-ui/react",
       "version": "0.1.0",
@@ -386,6 +393,8 @@
     "@ripple-ui/core": ["@ripple-ui/core@workspace:packages/core"],
 
     "@ripple-ui/embed": ["@ripple-ui/embed@workspace:packages/embed"],
+
+    "@ripple-ui/mcp": ["@ripple-ui/mcp@workspace:packages/mcp"],
 
     "@ripple-ui/react": ["@ripple-ui/react@workspace:packages/react"],
 
