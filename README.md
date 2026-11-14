@@ -114,6 +114,24 @@ one-shot spec (n=6, one judge). The
 [coding agents guide](https://ripple.pocketpaw.xyz/docs/guides/coding-agents)
 covers the loop and the options.
 
+### Answer with live cards in chat (MCP)
+
+[`@ripple-ui/mcp`](packages/mcp) is an MCP server with one tool,
+`ripple_render`. The agent writes a spec and the card shows up inline in the
+chat, in any host that supports MCP Apps.
+
+```bash
+claude mcp add ripple -- npx -y @ripple-ui/mcp
+```
+
+For Claude Desktop and Cursor, add this under `mcpServers` in the config file:
+
+```json
+"ripple": { "command": "npx", "args": ["-y", "@ripple-ui/mcp"] }
+```
+
+The [package README](packages/mcp#install) has the full steps.
+
 ## Packages
 
 | Package | What it is |
@@ -122,6 +140,7 @@ covers the loop and the options.
 | [`@ripple-ui/svelte`](packages/svelte) | The Svelte 5 renderer: 215 widgets, the visual editor, streaming, intents. Depends on core. |
 | [`@ripple-ui/embed`](packages/embed) | The renderer compiled into one ES module for any page: `mount(el, spec)` renders in a shadow root and loads only the widgets the spec uses. Needs no Svelte or Tailwind. |
 | [`@ripple-ui/react`](packages/react) | `<Ripple spec={...} />` for React, a thin wrapper over the embed. |
+| [`@ripple-ui/mcp`](packages/mcp) | An MCP server whose `ripple_render` tool draws a spec as a live card inline in the chat. Loads the embed from jsDelivr. |
 
 Most people installing Ripple to build a UI in Svelte want
 `@ripple-ui/svelte`; core comes with it. In React, Vue or a plain page, use

@@ -1,0 +1,44 @@
+{
+  "name": "@ripple-ui/mcp",
+  "version": "0.1.0",
+  "license": "MIT",
+  "description": "MCP server for Ripple: one tool, ripple_render, that shows a Ripple JSON spec as a live card inline in the chat (MCP Apps).",
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "mcp-apps",
+    "model-context-protocol",
+    "generative-ui",
+    "ripple",
+    "ai"
+  ],
+  "mcpName": "io.github.qbtrix/ripple",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/qbtrix/ripple.git",
+    "directory": "packages/mcp"
+  },
+  "homepage": "https://github.com/qbtrix/ripple/tree/main/packages/mcp#readme",
+  "bugs": {
+    "url": "https://github.com/qbtrix/ripple/issues"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "bin": {
+    "ripple-mcp": "ripple-mcp.mjs"
+  },
+  "files": [
+    "ripple-mcp.mjs",
+    "server.json",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test"
+  }
+}

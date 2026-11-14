@@ -12,6 +12,7 @@ A **monorepo** holding Ripple's spec engine and its renderers. An LLM produces a
 | `@ripple-ui/svelte` | `packages/svelte/` | The Svelte 5 renderer: 215 widgets, editor, intents, streaming. Depends on core via `file:../core`. |
 | `@ripple-ui/embed` | `packages/embed/` | The Svelte renderer compiled from `../svelte/src` into one framework-free ES module with per-widget lazy chunks. Build-only plugins in its `vite.config.ts` swap in a lazy registry; the Svelte package itself is unchanged. |
 | `@ripple-ui/react` | `packages/react/` | A thin React `<Ripple>` over the embed. Depends on embed via `file:../embed`. |
+| `@ripple-ui/mcp` | `packages/mcp/` | A zero-dependency stdio MCP server: one tool, `ripple_render`, drawn as an MCP Apps card that loads the published embed from jsDelivr at a pinned version. `server.json` is its MCP Registry entry. Not part of `scripts/pack-release.mjs`; it publishes on its own. Tests: `node --test`. |
 
 **Which package does a change belong in?** If it needs the Svelte compiler
 (a `.svelte` file, a `$state` rune, a `use:` action) or a DOM, it is

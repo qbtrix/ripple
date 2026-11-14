@@ -1,0 +1,24 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.qbtrix/ripple",
+  "title": "Ripple",
+  "description": "Answer with live UI cards: charts, tables, diagrams and dashboards drawn inline in the chat.",
+  "websiteUrl": "https://ripple.pocketpaw.xyz",
+  "repository": {
+    "url": "https://github.com/qbtrix/ripple",
+    "source": "github",
+    "subfolder": "packages/mcp"
+  },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "@ripple-ui/mcp",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}
