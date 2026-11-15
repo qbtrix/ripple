@@ -1,16 +1,18 @@
-<!-- docs/publishing.md: how the four @ripple-ui packages get to npm.
+<!-- docs/publishing.md: how the five @ripple-ui packages get to npm.
      The manual first publish (owner steps, exact commands) and the CI path
      both pack through scripts/pack-release.mjs, so this doc and that script's
      header must agree on the publish shape. -->
 # Publishing the `@ripple-ui` packages
 
-Four packages, always in this order, each after what it depends on:
+Five packages, always in this order, each after what it depends on:
 
 1. `@ripple-ui/core` `0.6.1-next.0` (pre-release; latest stable 0.6.0)
 2. `@ripple-ui/svelte` `0.9.0-next.0` (pre-release; latest stable 0.8.2; depends on core)
 3. `@ripple-ui/embed` `0.1.0` (bundles svelte and core, so it has no runtime
    dependencies; it still goes after them so the release is consistent)
 4. `@ripple-ui/react` `0.1.0` (depends on embed)
+5. `@ripple-ui/mcp` `0.1.0` (the `ripple_render` MCP server; no dependencies,
+   no build, it loads the embed from a CDN at runtime)
 
 On 2026-10-15 core and svelte were 404 on npm; embed and react are new.
 
@@ -31,7 +33,7 @@ time only. It:
    embed's dev-only links),
 2. copies `THIRD_PARTY_NOTICES.md` into core and embed, and svelte's
    `NOTICE` into embed (embed bundles that code),
-3. runs `npm pack --ignore-scripts` for core, svelte, embed and react,
+3. runs `npm pack --ignore-scripts` for core, svelte, embed, react and mcp,
 4. writes every `package.json` back byte for byte (also on Ctrl-C),
 5. opens each tarball and fails if its `package.json` has a `file:`,
    `link:` or `workspace:` dependency, keeps a `source` condition, or names an
@@ -56,6 +58,7 @@ npm view @ripple-ui/core
 npm view @ripple-ui/svelte
 npm view @ripple-ui/embed
 npm view @ripple-ui/react
+npm view @ripple-ui/mcp
 ```
 
 A 404 means no package exists, not that the scope is yours. Create the
@@ -76,6 +79,7 @@ bun run pack:release
 #   ok  @ripple-ui/svelte@0.9.0  .../release/ripple-ui-svelte-0.9.0.tgz  1814 files, ~1.6 MB packed
 #   ok  @ripple-ui/embed@0.1.0   .../release/ripple-ui-embed-0.1.0.tgz   2025 files, ~3.2 MB packed
 #   ok  @ripple-ui/react@0.1.0   .../release/ripple-ui-react-0.1.0.tgz   5 files, ~3 kB packed
+#   ok  @ripple-ui/mcp@0.1.0     .../release/ripple-ui-mcp-0.1.0.tgz     5 files
 git status --short   # package.json files unchanged; the build always bumps the
                      # generatedAt stamp in packages/svelte/static/manifest.json,
                      # git checkout that file to clear it
@@ -89,6 +93,7 @@ npm publish --access public ./release/ripple-ui-core-0.6.1.tgz
 npm publish --access public ./release/ripple-ui-svelte-0.9.0.tgz
 npm publish --access public ./release/ripple-ui-embed-0.1.0.tgz
 npm publish --access public ./release/ripple-ui-react-0.1.0.tgz
+npm publish --access public ./release/ripple-ui-mcp-0.1.0.tgz
 
 # 5. Verify.
 npm view @ripple-ui/core version            # 0.6.1
@@ -125,9 +130,9 @@ the version number stays burned.
 2. Same commands as above, or run the `release-manifest` workflow by hand with
    `publish_npm: true`. The workflow packs through the same script, publishes
    whichever version is still unpublished, in the order above, and attaches every tarball and the
-   manifests to a GitHub release. It needs an `NPM_TOKEN` repo secret: a
-   granular access token, read and write on the `@ripple-ui` scope only, with
-   an expiry. A plain tag push builds the release but does not publish to npm.
+   manifests to a GitHub release. It authenticates with npm trusted
+   publishing (below), so there is no npm token in the repo. A plain tag push
+   builds the release but does not publish to npm.
 3. Pre-releases: give the version a suffix (`0.9.0-next.0`, `1.0.0-rc.1`) and
    dispatch the workflow with the matching tag (`v0.9.0-next.0`). Any version
    with a `-` publishes under its identifier as the npm dist-tag (`next`,
@@ -136,12 +141,42 @@ the version number stays burned.
    makes a GitHub pre-release. A `^` range on a pre-release only matches
    pre-releases of that same version, so pin pre-releases exactly in hosts.
    To go stable, drop the suffix (`0.9.0`) and dispatch `v0.9.0`.
-4. Provenance is off: the workflow publishes with `bun publish`, which has no
-   `--provenance`.
-5. After this first publish the plan is npm Trusted Publishing (OIDC from
-   GitHub Actions), which needs no stored token. Once it is configured for each
-   package on npmjs.com, the `NPM_TOKEN` repo secret gets deleted. The workflow
-   itself has not changed yet.
+4. The workflow publishes with `npm publish --provenance` (npm pinned to
+   11.21.2 on Node 24), so every CI release carries a signed provenance
+   statement linking it to the commit and workflow run.
+
+## Trusted publishing (CI auth)
+
+The workflow gets a short-lived OIDC token from GitHub (`permissions:
+id-token: write`) and npm swaps it for publish rights, only if the package has
+a trusted publisher that matches. npm checks the tarball's
+`repository.url` against this repo exactly, which is why every
+`package.json` says `git+https://github.com/qbtrix/ripple.git`
+(`pack-release.test.ts` fails if one drifts).
+
+A package must exist on npm before it can get a trusted publisher, so a brand
+new package is published by hand first (the steps above), then configured.
+
+Per package, on npmjs.com: package page, **Settings**, **Trusted
+publishing**, **GitHub Actions**:
+
+| Field | Value |
+|---|---|
+| Organization or user | `qbtrix` |
+| Repository | `ripple` |
+| Workflow filename | `release-manifest.yml` |
+| Environment name | `npm-publish` |
+| Allowed actions | direct `npm publish` on |
+
+The environment name ties publishing to the reviewer-gated `npm-publish`
+environment, so a tag-push run (which also has `id-token: write`) cannot
+publish. npm does not check the settings when you save them; a typo shows up
+as an auth error on the next dispatch. A new trusted publisher that has not
+published within 2 days expires, so add it right before the first dispatch.
+
+After the first green CI publish: delete any `NPM_TOKEN` repo secret, and on
+each package turn on **Require two-factor authentication and disallow
+tokens**. That leaves two ways in: this workflow, and a person with 2FA.
 
 ## What depends on the publish
 

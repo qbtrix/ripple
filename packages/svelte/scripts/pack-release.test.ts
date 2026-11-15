@@ -2,7 +2,8 @@
 // Guards the npm publish shape built by the repo-root scripts/pack-release.mjs:
 // the rewrite applied to the real package.json files leaves no dependency an
 // outside install cannot resolve, and the tarball check catches a file: dep,
-// a leftover `source` condition and a missing export target. The script runs
+// a leftover `source` condition and a missing export target, and every package
+// names this repo exactly (npm provenance rejects a mismatch). The script runs
 // the same check on every real tarball it packs; this keeps it honest in CI.
 
 import { describe, expect, it } from 'vitest';
@@ -10,9 +11,10 @@ import corePkg from '../../core/package.json' with { type: 'json' };
 import sveltePkg from '../package.json' with { type: 'json' };
 import embedPkg from '../../embed/package.json' with { type: 'json' };
 import reactPkg from '../../react/package.json' with { type: 'json' };
+import mcpPkg from '../../mcp/package.json' with { type: 'json' };
 import { publishProblems, publishShape, REQUIRED } from '../../../scripts/pack-release.mjs';
 
-type Pkg = { name: string; exports?: unknown; dependencies?: Record<string, string> };
+type Pkg = { name: string; exports?: unknown; dependencies?: Record<string, string>; repository?: { url?: string } };
 
 /** Every file a tarball would need for `pkg` to pass: its export targets plus the required extras. */
 function filesFor(pkg: Pkg): string[] {
@@ -26,7 +28,17 @@ function filesFor(pkg: Pkg): string[] {
 }
 
 describe('npm publish shape', () => {
-	const shaped = publishShape({ core: corePkg, svelte: sveltePkg, embed: embedPkg, react: reactPkg });
+	const shaped = publishShape({ core: corePkg, svelte: sveltePkg, embed: embedPkg, react: reactPkg, mcp: mcpPkg });
+
+	it('covers every published package', () => {
+		expect(Object.keys(shaped)).toEqual(['core', 'svelte', 'embed', 'react', 'mcp']);
+	});
+
+	it('points every package at this repo, which trusted-publishing provenance checks exactly', () => {
+		for (const pkg of Object.values(shaped) as Pkg[]) {
+			expect(pkg.repository?.url, pkg.name).toBe('git+https://github.com/qbtrix/ripple.git');
+		}
+	});
 
 	it('pins svelte to the core version instead of file:../core', () => {
 		expect(sveltePkg.dependencies['@ripple-ui/core']).toBe('file:../core');

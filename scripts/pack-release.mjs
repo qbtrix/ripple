@@ -1,4 +1,4 @@
-// scripts/pack-release.mjs: packs @ripple-ui/core, svelte, embed and react
+// scripts/pack-release.mjs: packs @ripple-ui/core, svelte, embed, react and mcp
 // into npm-publishable tarballs and checks every tarball before it is trusted.
 //
 //   node scripts/pack-release.mjs [outDir]     (default outDir: release/)
@@ -27,7 +27,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 /** Pack order: a package comes after everything it depends on. */
-export const PACKAGES = ['core', 'svelte', 'embed', 'react'];
+export const PACKAGES = ['core', 'svelte', 'embed', 'react', 'mcp'];
 const dir = (k) => join(ROOT, 'packages', k);
 
 /** Files each tarball must carry beyond its export targets. */
@@ -35,10 +35,12 @@ export const REQUIRED = {
 	'@ripple-ui/core': ['LICENSE', 'THIRD_PARTY_NOTICES.md', 'README.md'],
 	'@ripple-ui/svelte': ['LICENSE', 'NOTICE', 'README.md', 'dist/manifest.json', 'dist/manifest.slim.json'],
 	'@ripple-ui/embed': ['LICENSE', 'NOTICE', 'THIRD_PARTY_NOTICES.md', 'README.md', 'dist/THIRD_PARTY_LICENSES.txt'],
-	'@ripple-ui/react': ['LICENSE', 'README.md']
+	'@ripple-ui/react': ['LICENSE', 'README.md'],
+	// mcp has no exports, only a bin; listing it here is what checks the bin ships.
+	'@ripple-ui/mcp': ['LICENSE', 'README.md', 'ripple-mcp.mjs', 'server.json']
 };
 /** A file each package's build leaves behind; packing without it means `bun run build` was skipped. */
-const BUILT = { core: 'dist/index.js', svelte: 'dist/manifest.json', embed: 'dist/ripple-embed.js', react: 'dist/index.js' };
+const BUILT = { core: 'dist/index.js', svelte: 'dist/manifest.json', embed: 'dist/ripple-embed.js', react: 'dist/index.js', mcp: 'ripple-mcp.mjs' };
 
 const LOCAL_PROTOCOL = /^(file|link|workspace|portal):/;
 const DEP_FIELDS = ['dependencies', 'peerDependencies', 'optionalDependencies'];
