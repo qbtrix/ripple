@@ -18,7 +18,7 @@ const waitFor = <T>(fn: () => T | Promise<T>) => vi.waitFor(fn, { timeout: 8000 
 
 test('no chat answer is hand-written', () => {
 	expect(answerPool.filter((s) => s.fixture.model === 'hand-written').map((s) => s.id)).toEqual([]);
-	for (const s of answerPool) expect(s.fixture.model, s.id).toMatch(/^(sonnet|opus)$/);
+	for (const s of answerPool) expect(s.fixture.model, s.id).toMatch(/^(sonnet|opus|claude-fable-5-2)$/);
 });
 
 test.each(answerPool.map((s) => [s.id, s] as const))('%s renders its final card', async (_id, s) => {

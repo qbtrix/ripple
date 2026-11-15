@@ -20,6 +20,7 @@ import lisbonWeather from './fixtures/lisbon-weather.json';
 import focusMusic from './fixtures/focus-music.json';
 import oceanDocs from './fixtures/ocean-docs.json';
 import rocketEngine from './fixtures/rocket-engine.json';
+import jetEngine from './fixtures/jet-engine.json';
 import ionThruster from './fixtures/ion-thruster.json';
 import tokamak from './fixtures/tokamak.json';
 import fissionReactor from './fixtures/fission-reactor.json';
@@ -28,7 +29,7 @@ import explainer from './fixtures/explainer.json';
 import heart from './fixtures/heart.json';
 
 /** The figure runs, in Learn grid order. live.test.ts replays each. */
-export const figureRuns: Scenario[] = [rocketEngine, ionThruster, tokamak, fissionReactor, particleCollider].map((f) => recorded('Learning', 'Learn', f));
+export const figureRuns: Scenario[] = [jetEngine, rocketEngine, ionThruster, tokamak, fissionReactor, particleCollider].map((f) => recorded('Learning', 'Learn', f));
 
 /** Drawings that had a landing chip before the figures took it: same ids, so their /live links still open. */
 export const retiredChipRuns: Scenario[] = [

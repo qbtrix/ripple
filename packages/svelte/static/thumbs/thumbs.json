@@ -350,6 +350,16 @@
 		"h": 600
 	},
 	{
+		"id": "live-jet-engine",
+		"title": "Inside a jet engine",
+		"caption": "How does a jet engine work? Show me inside one and let me change the throttle.",
+		"group": "Drawings",
+		"tag": "Recorded",
+		"href": "/live?s=jet-engine",
+		"w": 800,
+		"h": 600
+	},
+	{
 		"id": "live-rocket-engine",
 		"title": "Inside a rocket engine",
 		"caption": "How does a rocket engine work? Show me inside one and let me throttle it.",

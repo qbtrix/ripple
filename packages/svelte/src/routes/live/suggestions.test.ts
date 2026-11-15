@@ -29,7 +29,7 @@ test('live, all 9 groups render with the listed chips in order', () => {
 	expect(groups['Organize']).toEqual(['Pack for trip', 'Project timeline', 'Task checklist', 'Weekly schedule', 'Focus timer', 'Take notes', 'View calendar', 'Habit tracker']);
 	expect(groups['Learn & explore']).toEqual([
 		'Spanish flashcards', 'Take a quiz', 'Explain concept', 'Study plan', 'How bike gears work', 'How a heart pumps', 'See a plane in 3D', 'Explore the heart in 3D', 'Explore a skeleton in 3D',
-		'Inside a rocket engine', 'How a plasma thruster works', 'How a fusion reactor works', 'How a fission reactor works', 'How a particle collider works', 'Inside a piston engine'
+		'Inside a jet engine', 'Inside a rocket engine', 'How a plasma thruster works', 'How a fusion reactor works', 'How a fission reactor works', 'How a particle collider works', 'Inside a piston engine'
 	]);
 	expect(groups['Work & productivity']).toEqual(['Health summary', 'Expense breakdown', 'Executive dashboard', 'Create invoice', 'Financial summary', 'Review NDA', 'Due diligence', 'Compliance check', 'Meeting agenda', 'Split the bill', 'Watch savings grow', 'Company snapshot', 'Mission control']);
 	expect(groups['Lifestyle']).toEqual(['Order pizza', 'Order from a cafe', 'Meal planning', 'Find a recipe', 'HIIT workout', 'Yoga session', 'Track progress', 'Find documentaries', 'Play music', 'Podcast discovery']);
@@ -52,7 +52,7 @@ test('every gallery grid card, and the playground example, has a chip that repla
 	for (const item of galleryItems) {
 		if (item.kind === 'demo' && LIVE_ONLY_DEMOS.includes(item.widget)) continue;
 		const s = recordingFor(item.key);
-		expect(s?.fixture.model, item.key).toMatch(/^(sonnet|opus)$/);
+		expect(s?.fixture.model, item.key).toMatch(/^(sonnet|opus|claude-fable-5-2)$/);
 		expect(placedIds.has(s!.id), item.key).toBe(true);
 		expect(pickScenario(s!.prompt ?? s!.fixture.prompt).id, item.key).toBe(s!.id);
 	}
