@@ -201,6 +201,7 @@ export const suggestionGroups: { label: string; chips: GroupChip[] }[] = [
 			['plane-3d', 'box'],
 			['heart-3d', 'box'],
 			['skeleton-3d', 'box'],
+			['jet-engine', 'rocket', 'Inside a jet engine'],
 			['rocket-engine', 'rocket', 'Inside a rocket engine'],
 			['ion-thruster', 'rocket', 'How a plasma thruster works'],
 			['tokamak', 'lightbulb', 'How a fusion reactor works'],

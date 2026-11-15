@@ -1,0 +1,1229 @@
+{
+ "id": "jet-engine",
+ "title": "Inside a jet engine",
+ "prompt": "How does a jet engine work? Show me inside one and let me change the throttle.",
+ "model": "claude-fable-5-2",
+ "recordedAt": "2026-11-15T06:22:45.930Z",
+ "chunks": [
+  {
+   "t": 0,
+   "text": "{"
+  },
+  {
+   "t": 23,
+   "text": "\"version\":\"1.0\",\""
+  },
+  {
+   "t": 75,
+   "text": "ui\":{\"type\":\""
+  },
+  {
+   "t": 129,
+   "text": "iso-scene\",\"props"
+  },
+  {
+   "t": 181,
+   "text": "\":{\"title\":\"In"
+  },
+  {
+   "t": 235,
+   "text": "side a j"
+  },
+  {
+   "t": 287,
+   "text": "et engine\",\"caption\":\""
+  },
+  {
+   "t": 339,
+   "text": "Air is sucked in,"
+  },
+  {
+   "t": 392,
+   "text": " squeezed, bur"
+  },
+  {
+   "t": 444,
+   "text": "ned with"
+  },
+  {
+   "t": 498,
+   "text": " fuel,"
+  },
+  {
+   "t": 549,
+   "text": " then blown out the back."
+  },
+  {
+   "t": 603,
+   "text": " Move the throttle to add"
+  },
+  {
+   "t": 655,
+   "text": " fuel and sp"
+  },
+  {
+   "t": 708,
+   "text": "in everything fa"
+  },
+  {
+   "t": 761,
+   "text": "ster.\",\"params\":["
+  },
+  {
+   "t": 817,
+   "text": "{\"key\":\"throttle"
+  },
+  {
+   "t": 866,
+   "text": "\",\"label\":\"Throttle"
+  },
+  {
+   "t": 921,
+   "text": "\",\"min\":20,\"max\":"
+  },
+  {
+   "t": 972,
+   "text": "100,\"step\":5,\""
+  },
+  {
+   "t": 1026,
+   "text": "unit\":\"%\",\"value\":"
+  },
+  {
+   "t": 1080,
+   "text": "60}],\"parts\":["
+  },
+  {
+   "t": 1130,
+   "text": "{\"id\":\"base\",\"k"
+  },
+  {
+   "t": 1183,
+   "text": "ind\":\"slab\",\"at\":"
+  },
+  {
+   "t": 1236,
+   "text": "[0,0,-2],"
+  },
+  {
+   "t": 1288,
+   "text": "\"w\":250"
+  },
+  {
+   "t": 1342,
+   "text": ",\"d\":80,\"h"
+  },
+  {
+   "t": 1394,
+   "text": "\":4,\"r\":6},"
+  },
+  {
+   "t": 1447,
+   "text": "{\"id\":\"stand-"
+  },
+  {
+   "t": 1504,
+   "text": "front\",\"kind\":\"box\",\""
+  },
+  {
+   "t": 1554,
+   "text": "at\":[-50,0,"
+  },
+  {
+   "t": 1607,
+   "text": "11],\"w\":10,\""
+  },
+  {
+   "t": 1657,
+   "text": "d\":30,\"h\":22"
+  },
+  {
+   "t": 1713,
+   "text": ",\"color\":\"metal\""
+  },
+  {
+   "t": 1763,
+   "text": "},{\"id\":\"stand"
+  },
+  {
+   "t": 1815,
+   "text": "-rear\",\"kind\":\""
+  },
+  {
+   "t": 1870,
+   "text": "box\",\"at\":[50,0"
+  },
+  {
+   "t": 1926,
+   "text": ",11],\"w\":10,"
+  },
+  {
+   "t": 1974,
+   "text": "\"d\":30,\"h\":"
+  },
+  {
+   "t": 2056,
+   "text": "22,\"color\":\"metal"
+  },
+  {
+   "t": 2079,
+   "text": "\"},{\"id\":\"f"
+  },
+  {
+   "t": 2133,
+   "text": "an-case\",\"kind\":\""
+  },
+  {
+   "t": 2187,
+   "text": "cylinder\",\"at\":["
+  },
+  {
+   "t": 2241,
+   "text": "-82,0,44],\""
+  },
+  {
+   "t": 2290,
+   "text": "r\":31"
+  },
+  {
+   "t": 2343,
+   "text": ",\"h\":36"
+  },
+  {
+   "t": 2396,
+   "text": ",\"axis\":\"x\",\""
+  },
+  {
+   "t": 2449,
+   "text": "ghost\":true},{\""
+  },
+  {
+   "t": 2503,
+   "text": "id\":\"core-case"
+  },
+  {
+   "t": 2555,
+   "text": "\",\"kind\":\"cylin"
+  },
+  {
+   "t": 2607,
+   "text": "der\",\"at\":[10,0"
+  },
+  {
+   "t": 2660,
+   "text": ",44],\"r\":22,"
+  },
+  {
+   "t": 2713,
+   "text": "\"h\":140,\"axis"
+  },
+  {
+   "t": 2766,
+   "text": "\":\"x\",\"ghost\":"
+  },
+  {
+   "t": 2820,
+   "text": "true},{\"id\":\"sh"
+  },
+  {
+   "t": 2873,
+   "text": "aft\",\"kind\":\"c"
+  },
+  {
+   "t": 2927,
+   "text": "ylinder\",\"at\":[-"
+  },
+  {
+   "t": 2977,
+   "text": "5,0,44],\"r"
+  },
+  {
+   "t": 3029,
+   "text": "\":3,\"h\":180,"
+  },
+  {
+   "t": 3083,
+   "text": "\"axis\":\"x\",\"color"
+  },
+  {
+   "t": 3136,
+   "text": "\":\"metal\"},{\""
+  },
+  {
+   "t": 3192,
+   "text": "id\":\"spinner\",\"k"
+  },
+  {
+   "t": 3240,
+   "text": "ind\":\"sphere\",\"at"
+  },
+  {
+   "t": 3292,
+   "text": "\":[-98,0,44"
+  },
+  {
+   "t": 3345,
+   "text": "],\"r\":8,\"color"
+  },
+  {
+   "t": 3398,
+   "text": "\":\"metal\",\"on\":\""
+  },
+  {
+   "t": 3451,
+   "text": "fan\"},{\"id\":"
+  },
+  {
+   "t": 3503,
+   "text": "\"fan\",\"kind\":\""
+  },
+  {
+   "t": 3557,
+   "text": "gear\",\"at\":[-88"
+  },
+  {
+   "t": 3609,
+   "text": ",0,44],\"r\":"
+  },
+  {
+   "t": 3662,
+   "text": "27,\"h\":5,\""
+  },
+  {
+   "t": 3720,
+   "text": "teeth\":22,\"ax"
+  },
+  {
+   "t": 3767,
+   "text": "is\":\"x\",\"color\":\""
+  },
+  {
+   "t": 3820,
+   "text": "accent\"},{\"id\":"
+  },
+  {
+   "t": 3872,
+   "text": "\"comp-"
+  },
+  {
+   "t": 3925,
+   "text": "1\",\"kind\":\"gear"
+  },
+  {
+   "t": 3978,
+   "text": "\",\"at\":[-56"
+  },
+  {
+   "t": 4030,
+   "text": ",0,44],\"r\":"
+  },
+  {
+   "t": 4087,
+   "text": "19,\"h\":4,\""
+  },
+  {
+   "t": 4136,
+   "text": "teeth\":24,\"ax"
+  },
+  {
+   "t": 4190,
+   "text": "is\":\"x\",\"color\":\""
+  },
+  {
+   "t": 4244,
+   "text": "blue\"},{\"id\":"
+  },
+  {
+   "t": 4296,
+   "text": "\"comp-2\",\"kind"
+  },
+  {
+   "t": 4348,
+   "text": "\":\"gear\",\"at\":["
+  },
+  {
+   "t": 4399,
+   "text": "-44,0,44],\""
+  },
+  {
+   "t": 4453,
+   "text": "r\":17,\"h\":4"
+  },
+  {
+   "t": 4506,
+   "text": ",\"teeth\":24,"
+  },
+  {
+   "t": 4640,
+   "text": "\"axis\":\"x\",\"color"
+  },
+  {
+   "t": 4640,
+   "text": "\":\"blue\"},{\""
+  },
+  {
+   "t": 4664,
+   "text": "id\":\"comp-3\",\""
+  },
+  {
+   "t": 4716,
+   "text": "kind\":\"gear\",\"at"
+  },
+  {
+   "t": 4771,
+   "text": "\":[-32,0,44"
+  },
+  {
+   "t": 4822,
+   "text": "],\"r\":15,\"h"
+  },
+  {
+   "t": 4875,
+   "text": "\":4,\"teeth\":"
+  },
+  {
+   "t": 4928,
+   "text": "24,\"axis\":\"x"
+  },
+  {
+   "t": 4981,
+   "text": "\",\"color\":\"blue\"},"
+  },
+  {
+   "t": 5033,
+   "text": "{\"id\":\"comp-"
+  },
+  {
+   "t": 5087,
+   "text": "4\",\"kind\":\"gear"
+  },
+  {
+   "t": 5138,
+   "text": "\",\"at\":[-20,0"
+  },
+  {
+   "t": 5190,
+   "text": ",44],\"r\":13,"
+  },
+  {
+   "t": 5244,
+   "text": "\"h\":4,\"tee"
+  },
+  {
+   "t": 5297,
+   "text": "th\":24,\"axis\":"
+  },
+  {
+   "t": 5348,
+   "text": "\"x\",\"color\":\"blue"
+  },
+  {
+   "t": 5401,
+   "text": "\"},{\"id\":\"comb"
+  },
+  {
+   "t": 5454,
+   "text": "ustor\",\"kind\":\"c"
+  },
+  {
+   "t": 5512,
+   "text": "ylinder\",\"at\":[8"
+  },
+  {
+   "t": 5559,
+   "text": ",0,44],\"r\":"
+  },
+  {
+   "t": 5612,
+   "text": "15,\"h\":30,\""
+  },
+  {
+   "t": 5665,
+   "text": "axis\":\"x\",\"color\":"
+  },
+  {
+   "t": 5721,
+   "text": "\"amber\",\"ghost\":"
+  },
+  {
+   "t": 5772,
+   "text": "false},{\"id\":\"f"
+  },
+  {
+   "t": 5823,
+   "text": "uel-line\",\"kind\":"
+  },
+  {
+   "t": 5876,
+   "text": "\"tube\",\"path\":[["
+  },
+  {
+   "t": 5929,
+   "text": "8,-34,2"
+  },
+  {
+   "t": 5982,
+   "text": "],[8,-34,74"
+  },
+  {
+   "t": 6034,
+   "text": "],[8,0,74],"
+  },
+  {
+   "t": 6088,
+   "text": "[8,0,60]],"
+  },
+  {
+   "t": 6140,
+   "text": "\"r\":2,\"color\":"
+  },
+  {
+   "t": 6192,
+   "text": "\"amber\"},{\"id"
+  },
+  {
+   "t": 6246,
+   "text": "\":\"turbine-1\",\""
+  },
+  {
+   "t": 6298,
+   "text": "kind\":\"gear\",\"at"
+  },
+  {
+   "t": 6350,
+   "text": "\":[36,0,44],"
+  },
+  {
+   "t": 6405,
+   "text": "\"r\":16,\"h\":"
+  },
+  {
+   "t": 6456,
+   "text": "4,\"teeth\":28"
+  },
+  {
+   "t": 6509,
+   "text": ",\"axis\":\"x\",\""
+  },
+  {
+   "t": 6562,
+   "text": "color\":\"red\"},{\""
+  },
+  {
+   "t": 6625,
+   "text": "id\":\"turbine-2"
+  },
+  {
+   "t": 6667,
+   "text": "\",\"kind\":\"gear\",\""
+  },
+  {
+   "t": 6730,
+   "text": "at\":[48,0,44"
+  },
+  {
+   "t": 6773,
+   "text": "],\"r\":18,\"h"
+  },
+  {
+   "t": 6825,
+   "text": "\":4,\"teeth\":"
+  },
+  {
+   "t": 6879,
+   "text": "28,\"axis\":\"x"
+  },
+  {
+   "t": 6931,
+   "text": "\",\"color\":\"red\"},{"
+  },
+  {
+   "t": 6983,
+   "text": "\"id\":\"nozzle"
+  },
+  {
+   "t": 7040,
+   "text": "\",\"kind\":\"cylin"
+  },
+  {
+   "t": 7095,
+   "text": "der\",\"at\":[92,0"
+  },
+  {
+   "t": 7143,
+   "text": ",44],\"r\":15,"
+  },
+  {
+   "t": 7195,
+   "text": "\"h\":24,\"axis"
+  },
+  {
+   "t": 7248,
+   "text": "\":\"x\",\"color\":\"met"
+  },
+  {
+   "t": 7299,
+   "text": "al\",\"ghost\":true},"
+  },
+  {
+   "t": 7351,
+   "text": "{\"id\":\"air-in"
+  },
+  {
+   "t": 7406,
+   "text": "\",\"kind\":\"arrow"
+  },
+  {
+   "t": 7459,
+   "text": "\",\"from\":[-150,0"
+  },
+  {
+   "t": 7511,
+   "text": ",44],\"to\":[-"
+  },
+  {
+   "t": 7573,
+   "text": "112,0,44],\"color"
+  },
+  {
+   "t": 7621,
+   "text": "\":\"blue\"},{\""
+  },
+  {
+   "t": 7669,
+   "text": "id\":\"bypass-"
+  },
+  {
+   "t": 7720,
+   "text": "air\",\"kind\":\"arr"
+  },
+  {
+   "t": 7775,
+   "text": "ow\",\"from\":[-60,"
+  },
+  {
+   "t": 7826,
+   "text": "0,74"
+  },
+  {
+   "t": 7881,
+   "text": "],\"to\":[-"
+  },
+  {
+   "t": 7932,
+   "text": "10,0,74],\"color"
+  },
+  {
+   "t": 7984,
+   "text": "\":\"blue\"},{\""
+  },
+  {
+   "t": 8036,
+   "text": "id\":\"exhaust\",\""
+  },
+  {
+   "t": 8089,
+   "text": "kind\":\"arrow\",\""
+  },
+  {
+   "t": 8141,
+   "text": "from\":[108"
+  },
+  {
+   "t": 8196,
+   "text": ",0,44],\"to\":"
+  },
+  {
+   "t": 8246,
+   "text": "[150,0,44],\""
+  },
+  {
+   "t": 8299,
+   "text": "color\":\"red\"}],\""
+  },
+  {
+   "t": 8353,
+   "text": "motions\":[{\"part"
+  },
+  {
+   "t": 8405,
+   "text": "\":\"fan\",\"kind\":"
+  },
+  {
+   "t": 8457,
+   "text": "\"spin\",\"axis\":\""
+  },
+  {
+   "t": 8510,
+   "text": "x\",\"speed\":\"thrott"
+  },
+  {
+   "t": 8564,
+   "text": "le / 100 * 1"
+  },
+  {
+   "t": 8616,
+   "text": ".2\"},{\"part\":"
+  },
+  {
+   "t": 8674,
+   "text": "\"comp-1\",\"kind"
+  },
+  {
+   "t": 8723,
+   "text": "\":\"spin\",\"axis\":"
+  },
+  {
+   "t": 8779,
+   "text": "\"x\",\"speed\":\"thro"
+  },
+  {
+   "t": 8829,
+   "text": "ttle / 100 * "
+  },
+  {
+   "t": 8881,
+   "text": "3\"},{\"part\":\""
+  },
+  {
+   "t": 8934,
+   "text": "comp-2\",\"kind\":"
+  },
+  {
+   "t": 8990,
+   "text": "\"spin\",\"axis\":\""
+  },
+  {
+   "t": 9040,
+   "text": "x\",\"speed\":\"thrott"
+  },
+  {
+   "t": 9092,
+   "text": "le / 100 * 3"
+  },
+  {
+   "t": 9142,
+   "text": "\",\"phase\":0.25"
+  },
+  {
+   "t": 9197,
+   "text": "},{\"part\":\"comp"
+  },
+  {
+   "t": 9250,
+   "text": "-3\",\"kind\":\"sp"
+  },
+  {
+   "t": 9305,
+   "text": "in\",\"axis\":\"x\",\""
+  },
+  {
+   "t": 9354,
+   "text": "speed\":\"throttle /"
+  },
+  {
+   "t": 9405,
+   "text": " 100 * 3\",\"ph"
+  },
+  {
+   "t": 9459,
+   "text": "ase\":0.5},{\""
+  },
+  {
+   "t": 9513,
+   "text": "part\":\"comp-4\",\""
+  },
+  {
+   "t": 9567,
+   "text": "kind\":\"spin\",\"ax"
+  },
+  {
+   "t": 9617,
+   "text": "is\":\"x\",\"speed\":"
+  },
+  {
+   "t": 9672,
+   "text": "\"throttle / 100 "
+  },
+  {
+   "t": 9723,
+   "text": "* 3\",\"phase\":0"
+  },
+  {
+   "t": 9776,
+   "text": ".75},{\"part\":\""
+  },
+  {
+   "t": 9830,
+   "text": "turbine-1\",\"kind"
+  },
+  {
+   "t": 9883,
+   "text": "\":\"spin\",\"axis\":"
+  },
+  {
+   "t": 9942,
+   "text": "\"x\",\"speed\":\"thro"
+  },
+  {
+   "t": 9989,
+   "text": "ttle / 100 * "
+  },
+  {
+   "t": 10040,
+   "text": "3\"},{\"part\":\""
+  },
+  {
+   "t": 10095,
+   "text": "turbine-2\",\"kind"
+  },
+  {
+   "t": 10144,
+   "text": "\":\"spin\",\"axis\":"
+  },
+  {
+   "t": 10197,
+   "text": "\"x\",\"speed\":\"thro"
+  },
+  {
+   "t": 10251,
+   "text": "ttle / 100 * "
+  },
+  {
+   "t": 10313,
+   "text": "1.2\""
+  },
+  {
+   "t": 10354,
+   "text": "},{\"part\":\"combust"
+  },
+  {
+   "t": 10407,
+   "text": "or\",\"kind\":\"pul"
+  },
+  {
+   "t": 10461,
+   "text": "se\",\"range\":0.08,"
+  },
+  {
+   "t": 10512,
+   "text": "\"speed\":\"throttle"
+  },
+  {
+   "t": 10565,
+   "text": " / 100"
+  },
+  {
+   "t": 10660,
+   "text": " * 4\"},{\""
+  },
+  {
+   "t": 10689,
+   "text": "part\":\"fuel-line"
+  },
+  {
+   "t": 10826,
+   "text": "\",\"kind\":\"flow\",\""
+  },
+  {
+   "t": 10826,
+   "text": "speed\":\"throttle /"
+  },
+  {
+   "t": 10838,
+   "text": " 100 * 2\"},"
+  },
+  {
+   "t": 10881,
+   "text": "{\"part\":\"air-in"
+  },
+  {
+   "t": 10951,
+   "text": "\",\"kind\":\"flow\",\""
+  },
+  {
+   "t": 10994,
+   "text": "speed\":\"throttle /"
+  },
+  {
+   "t": 11039,
+   "text": " 100 * 2\"},"
+  },
+  {
+   "t": 11093,
+   "text": "{\"part\":\"bypass"
+  },
+  {
+   "t": 11144,
+   "text": "-air\",\"kind\":\"fl"
+  },
+  {
+   "t": 11197,
+   "text": "ow\",\"speed\":\"thrott"
+  },
+  {
+   "t": 11250,
+   "text": "le / 100 * 2"
+  },
+  {
+   "t": 11304,
+   "text": "\"},{\"part\":\"ex"
+  },
+  {
+   "t": 11355,
+   "text": "haust\",\"kind\":\""
+  },
+  {
+   "t": 11407,
+   "text": "flow\",\"speed\":\"thro"
+  },
+  {
+   "t": 11460,
+   "text": "ttle / 100 * "
+  },
+  {
+   "t": 11513,
+   "text": "4\"}],\"readouts"
+  },
+  {
+   "t": 11566,
+   "text": "\":[{\"label\":\""
+  },
+  {
+   "t": 11621,
+   "text": "Thrust\",\"value\":\"thro"
+  },
+  {
+   "t": 11672,
+   "text": "ttle * 1.2\",\""
+  },
+  {
+   "t": 11724,
+   "text": "unit\":\"kN\",\"dec"
+  },
+  {
+   "t": 11776,
+   "text": "imals\":0},{\"label"
+  },
+  {
+   "t": 11829,
+   "text": "\":\"Fan speed\",\""
+  },
+  {
+   "t": 11881,
+   "text": "value\":\"1000 + thro"
+  },
+  {
+   "t": 11934,
+   "text": "ttle * 30\",\"unit"
+  },
+  {
+   "t": 11988,
+   "text": "\":\"rpm\",\"decim"
+  },
+  {
+   "t": 12039,
+   "text": "als\":0},{\"label\":"
+  },
+  {
+   "t": 12103,
+   "text": "\"Core speed\",\"value\":"
+  },
+  {
+   "t": 12147,
+   "text": "\"6000 + throttle"
+  },
+  {
+   "t": 12197,
+   "text": " * 90\",\"unit\":\""
+  },
+  {
+   "t": 12250,
+   "text": "rpm\",\"decimals\":"
+  },
+  {
+   "t": 12304,
+   "text": "0},{\"label\":\""
+  },
+  {
+   "t": 12356,
+   "text": "Exhaust g"
+  },
+  {
+   "t": 12409,
+   "text": "as\",\"value\":\"350 +"
+  },
+  {
+   "t": 12462,
+   "text": " throttle * 5.5"
+  },
+  {
+   "t": 12514,
+   "text": "\",\"unit\":\"°C\",\""
+  },
+  {
+   "t": 12568,
+   "text": "decimals\":0}],\""
+  },
+  {
+   "t": 12623,
+   "text": "labels\":[{\"part\":"
+  },
+  {
+   "t": 12674,
+   "text": "\"f"
+  },
+  {
+   "t": 12725,
+   "text": "an\",\"label\":\"Fan"
+  },
+  {
+   "t": 12778,
+   "text": "\",\"note\":\"P"
+  },
+  {
+   "t": 12830,
+   "text": "ulls in a huge m"
+  },
+  {
+   "t": 12882,
+   "text": "ass of air. Most of it"
+  },
+  {
+   "t": 12937,
+   "text": " goes around the core"
+  },
+  {
+   "t": 12988,
+   "text": " and makes most of the thr"
+  },
+  {
+   "t": 13040,
+   "text": "ust.\"},{\"part\":\""
+  },
+  {
+   "t": 13093,
+   "text": "comp-2\",\"label\":\""
+  },
+  {
+   "t": 13146,
+   "text": "Compressor\",\"note\":\""
+  },
+  {
+   "t": 13201,
+   "text": "R"
+  },
+  {
+   "t": 13251,
+   "text": "ows of spinning blades squ"
+  },
+  {
+   "t": 13308,
+   "text": "eeze the core"
+  },
+  {
+   "t": 13356,
+   "text": " air into a"
+  },
+  {
+   "t": 13411,
+   "text": " smaller and smaller space"
+  },
+  {
+   "t": 13538,
+   "text": ", making it hot and dense"
+  },
+  {
+   "t": 13538,
+   "text": ".\"},{\"part\":\"comb"
+  },
+  {
+   "t": 13713,
+   "text": "ustor\",\"label\":\"Comb"
+  },
+  {
+   "t": 13713,
+   "text": "ustion chamber\",\"note\":"
+  },
+  {
+   "t": 13713,
+   "text": "\"Fuel is spr"
+  },
+  {
+   "t": 13728,
+   "text": "ayed into the compressed air"
+  },
+  {
+   "t": 13795,
+   "text": " and burns continuously. The"
+  },
+  {
+   "t": 13830,
+   "text": " gas expands h"
+  },
+  {
+   "t": 13883,
+   "text": "ard.\"},{\"part\":\""
+  },
+  {
+   "t": 13936,
+   "text": "fuel-line\",\"label\":"
+  },
+  {
+   "t": 14065,
+   "text": "\"Fuel line\",\"note"
+  },
+  {
+   "t": 14065,
+   "text": "\":\"The throttle sets"
+  },
+  {
+   "t": 14098,
+   "text": " how much fuel fl"
+  },
+  {
+   "t": 14146,
+   "text": "ows in.\"},{\"part\":"
+  },
+  {
+   "t": 14198,
+   "text": "\"turbine-1\",\"label"
+  },
+  {
+   "t": 14255,
+   "text": "\":\"Turbine\",\"note"
+  },
+  {
+   "t": 14312,
+   "text": "\":\"Hot gas sp"
+  },
+  {
+   "t": 14357,
+   "text": "ins these"
+  },
+  {
+   "t": 14410,
+   "text": " blades. They"
+  },
+  {
+   "t": 14462,
+   "text": " drive the comp"
+  },
+  {
+   "t": 14515,
+   "text": "ressor and fan through the sh"
+  },
+  {
+   "t": 14567,
+   "text": "aft.\"},{\"part\":"
+  },
+  {
+   "t": 14623,
+   "text": "\"shaft\",\"label\":\""
+  },
+  {
+   "t": 14675,
+   "text": "Shaft\",\"note\":\""
+  },
+  {
+   "t": 14727,
+   "text": "Links the turbine at the"
+  },
+  {
+   "t": 14778,
+   "text": " back to the comp"
+  },
+  {
+   "t": 14830,
+   "text": "ressor and fan at the front"
+  },
+  {
+   "t": 14882,
+   "text": ".\"},{\"part\":\"n"
+  },
+  {
+   "t": 14935,
+   "text": "ozzle\",\"label\":\""
+  },
+  {
+   "t": 14989,
+   "text": "Nozzle\",\"note\":\""
+  },
+  {
+   "t": 15040,
+   "text": "Spe"
+  },
+  {
+   "t": 15104,
+   "text": "eds the"
+  },
+  {
+   "t": 15145,
+   "text": " exhaust out the back."
+  },
+  {
+   "t": 15198,
+   "text": " Pushing g"
+  },
+  {
+   "t": 15251,
+   "text": "as backward pushes the eng"
+  },
+  {
+   "t": 15306,
+   "text": "ine forward.\"},{\"part"
+  },
+  {
+   "t": 15357,
+   "text": "\":\"bypass-air\",\""
+  },
+  {
+   "t": 15409,
+   "text": "label\":\"Bypass air"
+  },
+  {
+   "t": 15462,
+   "text": "\",\"note\":\"C"
+  },
+  {
+   "t": 15514,
+   "text": "ool"
+  },
+  {
+   "t": 15566,
+   "text": " air from"
+  },
+  {
+   "t": 15619,
+   "text": " the fan that skips the core"
+  },
+  {
+   "t": 15672,
+   "text": ", ad"
+  },
+  {
+   "t": 15724,
+   "text": "ding thrust qu"
+  },
+  {
+   "t": 15776,
+   "text": "ietly and"
+  },
+  {
+   "t": 15829,
+   "text": " efficiently.\"}]},"
+  },
+  {
+   "t": 15882,
+   "text": "\"bind\":\"state.j"
+  },
+  {
+   "t": 15935,
+   "text": "et\"},\"state\":{\""
+  },
+  {
+   "t": 15987,
+   "text": "jet\":{}}}"
+  }
+ ]
+}
