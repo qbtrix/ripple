@@ -15,12 +15,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/qbtrix/ripple-iui.git",
+    "url": "git+https://github.com/qbtrix/ripple.git",
     "directory": "packages/embed"
   },
-  "homepage": "https://github.com/qbtrix/ripple-iui#readme",
+  "homepage": "https://github.com/qbtrix/ripple#readme",
   "bugs": {
-    "url": "https://github.com/qbtrix/ripple-iui/issues"
+    "url": "https://github.com/qbtrix/ripple/issues"
   },
   "type": "module",
   "publishConfig": {

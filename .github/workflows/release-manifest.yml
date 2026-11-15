@@ -1,11 +1,15 @@
 # .github/workflows/release-manifest.yml
 # Publishes a GitHub release on a v* tag push or a manual dispatch: the widget
 # manifests (manifest.json, manifest.slim.json), the manifest zip, and a packed
-# tarball of @ripple-ui/core, svelte, embed and react, so the release alone is
-# installable. npm publishing runs only on a manual dispatch with
-# publish_npm: true. That run enters the npm-publish environment, which holds
-# NPM_TOKEN, only lets main deploy, and waits for a required reviewer, so no
-# one can publish to npm without that approval.
+# tarball of @ripple-ui/core, svelte, embed, react and mcp, so the release alone
+# is installable. npm publishing runs only on a manual dispatch with
+# publish_npm: true. That run enters the npm-publish environment, which only
+# lets main deploy and waits for a required reviewer, so no one can publish to
+# npm without that approval.
+#
+# npm auth is trusted publishing (GitHub Actions OIDC), not a stored token. Each
+# package has a trusted publisher on npmjs.com naming this repo, this workflow
+# file and the npm-publish environment (docs/publishing.md has the setup).
 #
 # Invariants:
 # - Pack runs before publish, and the publish steps upload those exact
@@ -14,14 +18,17 @@
 #   rewrites it only while packing (core drops its `source` export conditions,
 #   each sibling `file:` dependency becomes `^<that package's version>`), then
 #   fails the run if a tarball still carries a file: dependency.
+# - Every package's repository.url is git+https://github.com/qbtrix/ripple.git;
+#   provenance fails if it does not match this repo exactly.
 # - A pre-release version (one with a "-", e.g. 0.9.0-next.0) publishes under
 #   its identifier as the npm dist-tag ("next"), never "latest", and its tag
 #   (v0.9.0-next.0) makes a GitHub pre-release. Stable versions go to "latest".
-# - Packages publish in dependency order: core, svelte, embed, react. A version already on
-#   npm is skipped, so a re-dispatch after a partial publish still reaches the
-#   release step.
-# - The token lives in $HOME/.npmrc only for the publish command; the trap
-#   removes it on any exit, including a cancelled run.
+# - Packages publish in dependency order: core, svelte, embed, react, mcp. A
+#   version already on npm is skipped, so a re-dispatch after a partial publish
+#   still reaches the release step.
+# - Nothing writes an .npmrc or sets NODE_AUTH_TOKEN, so npm can only
+#   authenticate through OIDC. npm is pinned (trusted publishing needs 11.5.1+,
+#   dist-tags over OIDC 11.21.0+).
 # - Dispatch inputs reach shell scripts as environment variables, never as
 #   pasted ${{ }} expressions, so shell syntax in an input stays data.
 name: Release manifest
@@ -37,13 +44,16 @@ on:
         required: true
         type: string
       publish_npm:
-        description: 'Also publish both packages to npm (needs NPM_TOKEN).'
+        description: 'Also publish every package to npm (trusted publishing, needs the npm-publish reviewer).'
         required: false
         type: boolean
         default: false
 
 permissions:
   contents: write
+  # OIDC token for npm trusted publishing. npm only accepts it from a job in
+  # the npm-publish environment (set on each package's trusted publisher).
+  id-token: write
 
 jobs:
   release:
@@ -60,6 +70,12 @@ jobs:
         with:
           bun-version: latest
 
+      # No registry-url: that writes an .npmrc with a NODE_AUTH_TOKEN slot.
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
@@ -74,15 +90,13 @@ jobs:
           node scripts/pack-release.mjs release
           ls -la release
 
-      - name: Publish to npm (core, svelte, embed, react, in that order)
+      - name: Publish to npm (core, svelte, embed, react, mcp, in that order)
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_npm }}
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set -euo pipefail
-          trap 'rm -f "$HOME/.npmrc"' EXIT INT TERM
-          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > "$HOME/.npmrc"
-          for P in core svelte embed react; do
+          npm install -g npm@11.21.2
+          npm --version
+          for P in core svelte embed react mcp; do
             V=$(node -p "require('./packages/$P/package.json').version")
             if npm view "@ripple-ui/$P@$V" version >/dev/null 2>&1; then
               echo "@ripple-ui/$P@$V is already on npm, skipping"
@@ -95,7 +109,8 @@ jobs:
               *) DIST_TAG=latest ;;
             esac
             echo "publishing @ripple-ui/$P@$V under dist-tag $DIST_TAG"
-            bun publish "./release/ripple-ui-$P-$V.tgz" --access public --tag "$DIST_TAG"
+            # Keep the ./ prefix: without it npm reads release/x.tgz as a GitHub shorthand.
+            npm publish "./release/ripple-ui-$P-$V.tgz" --access public --tag "$DIST_TAG" --provenance
           done
 
       - name: Stage release assets
@@ -141,3 +156,4 @@ jobs:
             release/ripple-ui-svelte-*.tgz
             release/ripple-ui-embed-*.tgz
             release/ripple-ui-react-*.tgz
+            release/ripple-ui-mcp-*.tgz
