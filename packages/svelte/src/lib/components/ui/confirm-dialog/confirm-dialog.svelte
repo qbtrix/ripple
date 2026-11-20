@@ -6,7 +6,10 @@
 	 * confirm-dialog.svelte.ts. Mount once at the app root (e.g. +layout.svelte);
 	 * open from anywhere via `await confirmDialog({...})`.
 	 *
-	 * Created 2026-07-20.
+	 * A confirm is always the top question, often asked from inside an open
+	 * Dialog or Sheet. Its host mounts at startup, so its portal sits earliest in
+	 * <body>; at the shared z-50 every later overlay would paint over it. Both
+	 * layers are lifted to z-[100] (Dialog.Content's class + overlayClass).
 	 */
 	import * as Dialog from "$lib/components/ui/dialog";
 	import { Button } from "$lib/components/ui/button";
@@ -16,7 +19,7 @@
 </script>
 
 <Dialog.Root open={dialogState.open} onOpenChange={(open) => { if (!open) _handleCancel(); }}>
-	<Dialog.Content class="sm:max-w-[400px]">
+	<Dialog.Content class="z-[100] sm:max-w-[400px]" overlayClass="z-[100]">
 		<Dialog.Header>
 			<Dialog.Title>
 				{dialogState.options?.title ?? ""}
